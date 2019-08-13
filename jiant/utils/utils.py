@@ -33,6 +33,12 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
+def get_output_attribute(out, attribute):
+    if torch.cuda.device_count() > 1:
+        return out[attribute].sum()
+    else:
+        return out[attribute]
+    
 def select_pool_type(args):
     """
         Select a sane default sequence pooling type.

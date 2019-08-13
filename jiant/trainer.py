@@ -29,6 +29,7 @@ from jiant.utils.utils import (
     assert_for_log,
     find_last_checkpoint_epoch,
     check_for_previous_checkpoints,
+    get_output_attribute
 )  # pylint: disable=import-error
 
 
@@ -255,6 +256,7 @@ class SamplingMultiTaskTrainer:
         patience = self._patience + 1
         best_fn = min if should_decrease else max
         best_score = best_fn(metric_history)
+        import pdb; pdb.set_trace()
         if best_score == cur_score:
             best_so_far = metric_history.index(best_score) == len(metric_history) - 1
         else:
@@ -595,7 +597,7 @@ class SamplingMultiTaskTrainer:
                 assert_for_log(
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
-                loss = output_dict["loss"].sum()  # optionally scale loss
+                loss = get_output_attribute(output_dict, "loss")  # optionally scale loss
 
                 loss *= scaling_weights[task.name]
 
@@ -839,9 +841,9 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = out["loss"].sum()
+            loss = get_output_attribute(out, "loss")
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-            n_examples += out["n_exs"].sum()
+            n_examples += get_output_attribute(out, "n_exs")
 
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
