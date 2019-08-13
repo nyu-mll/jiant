@@ -185,7 +185,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         args:
             sent: batch dictionary, in which 
                 sent[self.tokenizer_required]: <long> [batch_size, var_seq_len] input token IDs
-            unused_task_name: makeshift input slot, due to an outdated logic in sentence_encoder,
+            unused_task_name: makeshift input slot, due to some logic in sentence_encoder,
                 TODO: deprecate this when sentence_encoder get fixed
 
         returns:
