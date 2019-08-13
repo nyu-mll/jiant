@@ -67,11 +67,9 @@ class CharSeq2SeqTask(SequenceGenerationTask):
                 row = row.strip().split("\t")
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                print(row)
-                exit()
-                src_sent = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
-                # Currently: force Moses tokenization on targets
-                tgt_sent = process_sentence("MosesTokenizer", row[1], self.max_seq_len)
+                # "SplitChars" is the tokenizer here.
+                src_sent = process_sentence("SplitChars", row[0], self.max_seq_len)
+                tgt_sent = process_sentence("SplitChars", row[2], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:

@@ -33,7 +33,7 @@ from jiant.tasks import (
     ALL_GLUE_TASKS,
     ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
-    ALL_SEQ2SEQ_TASKS
+    ALL_SEQ2SEQ_TASKS,
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import CharSeq2SeqTask
@@ -191,15 +191,18 @@ def _build_embeddings(args, vocab, emb_file: str):
     log.info("\tBuilding embeddings from scratch.")
     word_v_size, unk_idx = vocab.get_vocab_size("tokens"), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, args.d_word)
-    with io.open(
-        args.word_embs_file, "r", encoding="utf-8", newline="\n", errors="ignore"
-    ) as vec_fh:
-        for line in vec_fh:
-            word, vec = line.split(" ", 1)
-            idx = vocab.get_token_index(word)
-            if idx != unk_idx:
-                embeddings[idx] = np.array(list(map(float, vec.split())))
+
+    if "word_embs_file" in args and args.word_embs_file != "None":
+        with io.open(
+            args.word_embs_file, "r", encoding="utf-8", newline="\n", errors="ignore"
+        ) as vec_fh:
+            for line in vec_fh:
+                word, vec = line.split(" ", 1)
+                idx = vocab.get_token_index(word)
+                if idx != unk_idx:
+                    embeddings[idx] = np.array(list(map(float, vec.split())))
     embeddings[vocab.get_token_index(vocab._padding_token)] = 0.0
+
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading embeddings")
 
