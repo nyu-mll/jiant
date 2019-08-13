@@ -674,7 +674,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
 
     # Build the classifier
     n_classes = task.n_classes if hasattr(task, "n_classes") else 1
-    if model.use_pytorch_transformers:
+    if model.use_pair_embedding:
         # BERT/XLNet handle pair tasks by concatenating the inputs and classifying the joined
         # sequence, so we use a single sentence classifier
         if isinstance(task, WiCTask):
