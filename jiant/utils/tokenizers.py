@@ -42,6 +42,17 @@ class OpenAIBPETokenizer(Tokenizer):
         return self.lookup_ids(ids)
 
 
+class SplitCharsTokenizer(Tokenizer):
+    def __init__(self):
+        super().__init__()
+    
+    def tokenize(self, sentence):
+        return list(sentence)
+
+    def detokenize(self, tokens):
+        return ''.join(tokens)
+
+
 class MosesTokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
@@ -72,6 +83,8 @@ def get_tokenizer(tokenizer_name):
         tokenizer = OpenAIBPETokenizer()
     elif tokenizer_name == "MosesTokenizer":
         tokenizer = MosesTokenizer()
+    elif tokenizer_name == "SplitChars":
+        tokenizer = SplitCharsTokenizer()
     elif tokenizer_name == "":
         tokenizer = SpaceTokenizer()
     else:
