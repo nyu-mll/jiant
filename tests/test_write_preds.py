@@ -89,7 +89,7 @@ class TestWritePreds(unittest.TestCase):
                 },
             ]
         )
-        indexers = {"pytorch_transformers_wpm_pretokenized": SingleIdTokenIndexer("bert-xe-cased")}
+        indexers = {"bert_cased": SingleIdTokenIndexer("bert-xe-cased")}
         self.wic.val_data = [
             Instance(
                 {
