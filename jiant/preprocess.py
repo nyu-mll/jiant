@@ -227,7 +227,7 @@ def _build_vocab(args, tasks, vocab_path: str):
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
     if input_module_uses_pytorch_transformers(args.input_module):
-        # Add pre-computed WPM/ByteBPE/BPE vocabulary for pytorch transformer models.
+        # Add pre-computed vocabulary of corresponding tokenizer for pytorch transformer models.
         add_pytorch_transformers_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
@@ -312,7 +312,7 @@ def build_tasks(args):
             word_embs = pkl.load(open(emb_file, "rb"))
         log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
-    # 4) Set up task modulator, this includes
+    # 4) Set up task modulator, this includes boundary function and model flags
     if args.input_module.startswith("bert-"):
         from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 
@@ -586,7 +586,7 @@ def add_task_label_vocab(vocab, task):
 
 
 def add_pytorch_transformers_vocab(vocab, tokenizer_name):
-    """Add BERT/XLNet WPM, GPT2 ByteBPE, or GPT BPE vocabulary for use with pre-tokenized data.
+    """Add BERT/XLNet WPM or other pytorch_transformers vocabulary for use with pre-tokenized data.
 
     These tokenizers have a convert_tokens_to_ids method, but this doesn't do
     anything special, so we can just use the standard indexers.
