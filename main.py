@@ -37,6 +37,7 @@ from jiant.utils.utils import (
     check_for_previous_checkpoints,
     select_pool_type,
     delete_all_checkpoints,
+    get_model_attribute
 )
 
 
@@ -462,7 +463,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
             "they should not be updated! Check sep_embs_for_skip flag or make an issue.",
         )
         # Only train task-specific module
-        pred_module = getattr(model, "%s_mdl" % task.name)
+        pred_module = get_model_attribute(model, "%s_mdl" % task.name)
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         to_train += elmo_scalars
     return to_train

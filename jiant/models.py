@@ -896,9 +896,10 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _span_forward(self, batch, task, predict):
+        import pdb; pdb.set_trace()
         sent_embs, sent_mask = self.sent_encoder(batch["input1"], task)
         module = getattr(self, "%s_mdl" % task.name)
-        out = module.forward(batch, sent_embs, sent_mask, task, predict)
+        out = module.forward(batch, sent_embs, sent_mask, task, predict, self._cuda_device)
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):
