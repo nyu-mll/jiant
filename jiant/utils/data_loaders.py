@@ -118,9 +118,17 @@ def load_tsv(
         has_labels (bool): If False, don't look for labels at position label_idx.
         filter_value (str|None): The value in which we want filter_idx to be equal to.
         filter_idx (int|None): The column index in which to look for filter_value.
-        tag_vocab (TODO(YADA)): Vocab object contains the tags (TODO(YADA): What are these?)
-        tag2idx_dict (dict<string, int>): Map from coarse category name to column index
-            (TODO(Yada): Clarify.)
+        tag_vocab (allennlp vocabulary): In some datasets, examples are attached to tags, and we
+            need to know the results on examples with certain tags, this is a vocabulary for
+            tracking tags in a dataset across splits
+        tag2idx_dict (dict<string, int>): The tags form a two-level hierarchy, each fine tag belong
+            to a coarse tag. In the tsv, each coarse tag has one column, the content in that column
+            indicates what fine tags(seperated by ;) beneath that coarse tag the examples have. 
+            tag2idx_dict is a dictionary to map coarse tag to the index of corresponding column.
+            e.g. if we have two coarse tags: source at column 0, topic at column 1; and four fine
+            tags: wiki, reddit beneath source, and economics, politics beneath topic. The tsv will
+            be: | wiki  | economics;politics|, with the tag2idx_dict as {"source": 0, "topic": 1}
+                | reddit| politics          |
 
     Returns:
         List of first and second sentences, labels, and if applicable indices
