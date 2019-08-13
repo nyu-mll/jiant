@@ -29,7 +29,7 @@ from jiant.utils.utils import (
     assert_for_log,
     find_last_checkpoint_epoch,
     check_for_previous_checkpoints,
-    get_output_attribute
+    get_output_attribute,
 )  # pylint: disable=import-error
 
 
