@@ -113,7 +113,9 @@ def setup_target_task_training(args, target_tasks, model, strict):
         if args.transfer_paradigm == "frozen":
             assert_for_log(
                 args.allow_untrained_encoder_parameters,
-                "No best checkpoint found to target train on. Set `allow_untrained_encoder_parameters` if you really want to use an untrained encoder.",
+                "No best checkpoint found to target train on. Set \
+                `allow_untrained_encoder_parameters` if you really want to use an untrained \
+                encoder.",
             )
         model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
         torch.save(model.state_dict(), model_path)
