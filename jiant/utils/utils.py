@@ -6,6 +6,7 @@ import copy
 import json
 import logging
 import os
+from pkg_resources import resource_filename
 import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
@@ -225,7 +226,7 @@ def select_relevant_print_args(args):
 
     exp_config_file = os.path.join(args.run_dir, "params.conf")
     root_directory = Path(__file__).parents[2]
-    defaults_file = os.path.join(str(root_directory) + "/config/defaults.conf")
+    defaults_file = resource_filename("jiant", "/config/defaults.conf")
     exp_basedir = os.path.dirname(exp_config_file)
     default_basedir = os.path.dirname(defaults_file)
     fd = open(exp_config_file, "r")

@@ -14,6 +14,7 @@ import argparse
 import glob
 import io
 import os
+from pkg_resources import resource_filename
 import random
 import subprocess
 import sys
@@ -52,7 +53,7 @@ def handle_arguments(cl_arguments):
         "-c",
         type=str,
         nargs="+",
-        default="config/defaults.conf",
+        default=resource_filename("jiant", "config/defaults.conf"),
         help="Config file(s) (.conf) for model parameters.",
     )
     parser.add_argument(

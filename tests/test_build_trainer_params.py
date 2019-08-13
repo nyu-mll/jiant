@@ -1,3 +1,4 @@
+from pkg_resources import resource_filename
 import unittest
 from jiant.trainer import build_trainer_params
 from jiant.utils.config import params_from_file
@@ -19,7 +20,9 @@ class TestBuildTrainerParams(unittest.TestCase):
                 max_epochs = 789
             }
         """
-        DEFAULTS_PATH = "config/defaults.conf"  # To get other required values.
+        DEFAULTS_PATH = resource_filename(
+            "jiant", "config/defaults.conf"
+        )  # To get other required values.
         params = params_from_file(DEFAULTS_PATH, HOCON)
         self.processed_pretrain_params = build_trainer_params(
             params, ["mnli", "qqp"], phase="pretrain"

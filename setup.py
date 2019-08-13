@@ -12,7 +12,18 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/nyu-mll/jiant",
     license="MIT",
-    packages=["jiant"],
+    packages=[
+        "jiant",
+        "jiant.allennlp_mods",
+        "jiant.metrics",
+        "jiant.modules",
+        "jiant.modules.onlstm",
+        "jiant.modules.prpn",
+        "jiant.openai_transformer_lm",
+        "jiant.pytorch_transformers_interface",
+        "jiant.tasks",
+        "jiant.utils",
+    ],
     install_requires=[
         "torch==1.0.*",
         "numpy==1.14.5",
@@ -31,4 +42,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    include_package_data=True,
+    package_data={"": ["jiant/config/**/*.conf"]},
 )
