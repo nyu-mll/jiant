@@ -38,7 +38,8 @@ def get_output_attribute(out, attribute):
         return out[attribute].sum()
     else:
         return out[attribute]
-    
+
+
 def select_pool_type(args):
     """
         Select a sane default sequence pooling type.
