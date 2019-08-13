@@ -33,11 +33,18 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
-def get_output_attribute(out, attribute):
+def get_output_attribute(out, attribute_name):
     if torch.cuda.device_count() > 1:
-        return out[attribute].sum()
+        return out[attribute_name].sum()
     else:
-        return out[attribute]
+        return out[attribute_name]
+
+
+def get_model_attribute(model, attribute_name):
+    if torch.cuda.device_count() > 1:
+        return getattr(model.module, attribute_name)
+    else:
+        return getattr(model, attribute_name)
 
 
 def select_pool_type(args):
