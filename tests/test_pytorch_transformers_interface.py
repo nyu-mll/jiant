@@ -38,19 +38,19 @@ class TestPytorchTransformersInterface(unittest.TestCase):
 
         # [CLS] 8 [SEP] 9 10 11 [SEP]
         # [CLS] 8 9 [SEP] 10 [SEP] [PAD]
-        inp = torch.Tensor([[5, 8, 3, 9, 10, 11, 3], [5, 8, 9, 3, 10, 3, 7]])
+        inp = torch.LongTensor([[5, 8, 3, 9, 10, 11, 3], [5, 8, 9, 3, 10, 3, 7]])
         mask = inp != bert_model._pad_id
         output = bert_model.get_seg_ids(bert_model, inp, mask.long())
         assert torch.all(
-            torch.eq(output, torch.Tensor([[0, 0, 0, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1, 0]]))
+            torch.eq(output, torch.LongTensor([[0, 0, 0, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1, 0]]))
         )
 
         # [CLS] 8 9 [SEP]
         # [CLS] 8 [SEP] [PAD]
-        inp = torch.Tensor([[5, 8, 9, 3], [5, 9, 3, 7]])
+        inp = torch.LongTensor([[5, 8, 9, 3], [5, 9, 3, 7]])
         mask = inp != bert_model._pad_id
         output = bert_model.get_seg_ids(bert_model, inp, mask.long())
-        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 0], [0, 0, 0, 0]])))
+        assert torch.all(torch.eq(output, torch.LongTensor([[0, 0, 0, 0], [0, 0, 0, 0]])))
 
     def test_xlnet_seg_ids(self):
         xlnet_model = mock.Mock()
@@ -63,16 +63,16 @@ class TestPytorchTransformersInterface(unittest.TestCase):
 
         # 8 [SEP] 9 10 11 [SEP] [CLS]
         # 8 [SEP] 9 10 [SEP] [CLS] [PAD]
-        inp = torch.Tensor([[8, 3, 9, 10, 11, 3, 5], [8, 3, 9, 10, 3, 5, 7]])
+        inp = torch.LongTensor([[8, 3, 9, 10, 11, 3, 5], [8, 3, 9, 10, 3, 5, 7]])
         mask = inp != xlnet_model._pad_id
         output = xlnet_model.get_seg_ids(xlnet_model, inp, mask.long())
         assert torch.all(
-            torch.eq(output, torch.Tensor([[0, 3, 1, 1, 1, 3, 2], [0, 3, 1, 1, 3, 2, 0]]))
+            torch.eq(output, torch.LongTensor([[0, 3, 1, 1, 1, 3, 2], [0, 3, 1, 1, 3, 2, 0]]))
         )
 
         # 8 9 10 [SEP] [CLS]
         # 8 9 [SEP] [CLS] [PAD]
-        inp = torch.Tensor([[8, 9, 10, 3, 5], [8, 9, 3, 5, 7]])
+        inp = torch.LongTensor([[8, 9, 10, 3, 5], [8, 9, 3, 5, 7]])
         mask = inp != xlnet_model._pad_id
         output = xlnet_model.get_seg_ids(xlnet_model, inp, mask.long())
-        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 3, 2], [0, 0, 3, 2, 0]])))
+        assert torch.all(torch.eq(output, torch.LongTensor([[0, 0, 0, 3, 2], [0, 0, 3, 2, 0]])))

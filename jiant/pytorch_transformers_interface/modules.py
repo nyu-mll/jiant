@@ -90,7 +90,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         """
         ids = sent[self.tokenizer_required]
 
-        mask = ids != 0
+        mask = (ids != 0).long()
         ids[ids == 0] = self._pad_id + 2
         # map AllenNLP @@PADDING@@ to _pad_id in specific pytorch_transformer
         if self._unk_id is not None:
@@ -98,7 +98,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
         ids -= 2  # shift indexes to match pretrained token embedding indexes
 
-        return ids, mask.long()
+        return ids, mask
 
     def prepare_output(self, lex_seq, hidden_states, mask):
         """
