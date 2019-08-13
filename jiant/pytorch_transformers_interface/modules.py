@@ -36,14 +36,14 @@ class PytorchTransformersEmbedderModule(nn.Module):
         self.tokenizer_required = input_module_tokenized_name(args.input_module)
 
         # Integer token indices for special symbols.
-        self._sep_id = None
         self._cls_id = None
+        self._sep_id = None
         self._pad_id = None
         self._unk_id = None
 
         # If set, treat these special tokens as part of input segments other than A/B.
-        self._SEG_ID_SEP = None
         self._SEG_ID_CLS = None
+        self._SEG_ID_SEP = None
 
     def parameter_setup(self, args):
         # Set trainability of this module.
@@ -324,7 +324,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.model = pytorch_transformers.OpenAIGPTModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
-        )
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
 
         tokenizer = pytorch_transformers.OpenAIGPTTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
@@ -368,7 +368,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 
         self.model = pytorch_transformers.GPT2Model.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
-        )
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
 
         tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
@@ -411,7 +411,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.model = pytorch_transformers.TransfoXLModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
-        )
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
 
         tokenizer = pytorch_transformers.TransfoXLTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
@@ -460,7 +460,7 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.model = pytorch_transformers.XLMModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
-        )
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
 
         tokenizer = pytorch_transformers.XLMTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
