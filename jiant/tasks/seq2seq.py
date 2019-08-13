@@ -106,5 +106,11 @@ class CharSeq2SeqTask(SequenceGenerationTask):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
-        unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        return {"perplexity": math.exp(avg_nll), "accuracy": 0}
+        avg_acc = self.scorer2.get_metric(reset)
+        return {"perplexity": math.exp(avg_nll), "accuracy": avg_acc}
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        # TODO(Katharina): NLL for scorer1 and acc for scorer2
+        self.scorer1(mean_squared_error(logits, labels))  # update average MSE
+        self.scorer2(logits, labels)
+        return
