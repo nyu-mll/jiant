@@ -352,8 +352,9 @@ class SamplingMultiTaskTrainer:
                 # can use that information. This should be the next validation after we hit the epoch
                 # limit.
                 if self._max_epochs > 0:
+                    n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
                     max_epochs_in_vals = math.ceil(
-                        (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
+                        (n_epoch_steps * self._max_epochs) / self._val_interval
                     )
                     val_limit = min(max_epochs_in_vals, self._max_vals)
                 else:
@@ -643,7 +644,7 @@ class SamplingMultiTaskTrainer:
                 task_info["last_log"] = time.time()
 
                 if self._model.utilization is not None:
-                    batch_util = self._model.utilization.get_metric(reset=True)
+                    batch_util = self._model.utilization.get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
@@ -673,7 +674,7 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
                 if self._model.utilization is not None:
-                    batch_util = self._model.utilization.get_metric()
+                    batch_util = self._model.utilization.get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
                 # Validate
@@ -786,6 +787,7 @@ class SamplingMultiTaskTrainer:
         this_val_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]["hist"]
         metric_history.append(this_val_metric)
+        import pdb; pdb.set_trace()
         is_best_so_far, out_of_patience = self._check_history(
             metric_history, this_val_metric, metric_decreases
         )
@@ -867,6 +869,7 @@ class SamplingMultiTaskTrainer:
         for name, value in task_metrics.items():
             all_val_metrics["%s_%s" % (task.name, name)] = value
         all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+        import pdb; pdb.set_trace()
         if task.val_metric_decreases and len(tasks) > 1:
             all_val_metrics["micro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
