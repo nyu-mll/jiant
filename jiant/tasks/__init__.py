@@ -90,7 +90,7 @@ ALL_COLA_NPI_TASKS = [
 ]
 
 # Seq2seq tasks
-SEQ2SEQ_TASKS = ["seg_wix"]
+ALL_SEQ2SEQ_TASKS = ["seg_wix"]
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list

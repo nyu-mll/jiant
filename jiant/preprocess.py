@@ -33,8 +33,10 @@ from jiant.tasks import (
     ALL_GLUE_TASKS,
     ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
+    ALL_SEQ2SEQ_TASKS
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
+from jiant.tasks.seq2seq import CharSeq2SeqTask
 from jiant.utils import config, serialize, utils
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
@@ -487,9 +489,13 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        log.info("\tCounting words for task %s.", task.name)
-        for sentence in task.get_sentences():
-            update_vocab_freqs(sentence)
+        log.info("\tCounting units for task %s.", task.name)
+        if isinstance(task, CharSeq2SeqTask):
+            for src_sent, tgt_sent in task.get_sentences():
+                update_vocab_freqs(src_sent)
+        else:
+            for sentence in task.get_sentences():
+                update_vocab_freqs(sentence)
 
     # This branch is meant for tasks that have *English* target sentences
     # (or more generally, same language source and target sentences)
