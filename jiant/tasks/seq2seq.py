@@ -19,10 +19,11 @@ from .tasks import (
     sentence_to_text_field,
 )
 
+
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
 class CharSeq2SeqTask(SequenceGenerationTask):
     """Character-based Sequence-to-sequence Task"""
-    
+
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         """ """
         super().__init__(name, **kw)
@@ -36,20 +37,20 @@ class CharSeq2SeqTask(SequenceGenerationTask):
         self.max_targ_v_size = max_targ_v_size
         self.target_indexer = {"characters": SingleIdTokenIndexer(namespace=self._label_namespace)}
         self.files_by_split = {
-            split: os.path.join(path, "%s.txt" % split) for split in ["train", "val", "test"]
+            split: os.path.join(path, "%s.tsv" % split) for split in ["train", "val", "test"]
         }
-    
+
     def load_data(self):
         # Data is exposed as iterable: no preloading
         pass
-    
+
     def get_split_text(self, split: str):
         """
         Get split text as iterable of records.
         Split should be one of 'train', 'val', or 'test'.
         """
         return self.get_data_iter(self.files_by_split[split])
-    
+
     def get_all_labels(self) -> List[str]:
         """ Build character vocabulary and return it as a list """
         word2freq = collections.Counter()
@@ -85,20 +86,20 @@ class CharSeq2SeqTask(SequenceGenerationTask):
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(
-                                        1 for _ in codecs.open(split_path, "r", "utf-8", errors="ignore")
-                                        )
+                1 for _ in codecs.open(split_path, "r", "utf-8", errors="ignore")
+            )
         self.example_counts = example_counts
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        
+
         def _make_instance(input_, target):
             d = {
                 "inputs": sentence_to_text_field(input_, indexers),
                 "targs": sentence_to_text_field(target, self.target_indexer),
             }
             return Instance(d)
-        
+
         for sent1, sent2 in split:
             yield _make_instance(sent1, sent2)
 
@@ -106,8 +107,4 @@ class CharSeq2SeqTask(SequenceGenerationTask):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
         unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        return {
-            "perplexity": math.exp(avg_nll),
-            "accuracy": 0,
-        }
-
+        return {"perplexity": math.exp(avg_nll), "accuracy": 0}
