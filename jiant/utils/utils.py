@@ -38,14 +38,16 @@ def select_pool_type(args):
         Select a sane default sequence pooling type.
     """
     if args.pool_type == "auto":
-        if args.sent_enc == "none" and args.input_module.startswith("bert-"):
-            pool_type = "first"
-        elif args.sent_enc == "none" and args.input_module.startswith("xlnet-"):
-            pool_type = "final"
-        elif args.sent_enc == "none" and args.input_module == "gpt":
-            pool_type = "final"
-        else:
-            pool_type = "max"
+        pool_type = "max"
+        if args.sent_enc == "none":
+            if args.input_module.startswith("bert-") or args.input_module.startswith("xlm"):
+                pool_type = "first"
+            elif (
+                args.input_module.startswith("xlnet-")
+                or args.input_module.startswith("openai-gpt")
+                or args.input_module.startswith("gpt2")
+            ):
+                pool_type = "final"
     else:
         pool_type = args.pool_type
     return pool_type
