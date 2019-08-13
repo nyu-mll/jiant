@@ -126,7 +126,7 @@ def load_tsv(
         List of first and second sentences, labels, and if applicable indices
     """
 
-    # TODO(Yada): [Make this an issue] Instead of index integers, adjust this to pass in column names
+    # TODO(Yada): Instead of index integers, adjust this to pass in column names
     # get the first row as the columns to pass into the pandas reader
     # This reads the data file given the delimiter, skipping over any rows
     # (usually header row)
