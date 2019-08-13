@@ -8,3 +8,11 @@ user_config.sh
 .ipynb_checkpoints/
 perluniprops/
 .DS_Store
+
+# package/distribution artifacts
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
