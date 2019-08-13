@@ -953,7 +953,8 @@ class MultiTaskModel(nn.Module):
         """ For variational autoencoder """
         out = {}
         sent, sent_mask = self.sent_encoder(batch["inputs"], task)
-        out["n_exs"] = get_batch_size(batch)
+        out["n_exs"] = torch.tensor(get_batch_size(batch))
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
 
         if "targs" in batch:
             pass
@@ -1033,6 +1034,8 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch["targs"]["words"].size()
         n_pad = batch["targs"]["words"].eq(pad_idx).sum().item()
         out["n_exs"] = (b_size * seq_len - n_pad) * 2
+        out["n_exs"] = torch.tensor((b_size * seq_len - n_pad) * 2)
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
 
         sent, mask = sent_encoder(batch["input"], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -1082,6 +1085,7 @@ class MultiTaskModel(nn.Module):
                 logit = module(inp, inp_mask)
                 logits.append(logit)
             out["n_exs"] = batch["choice0"]["words"].size(0)
+        out["n_exs"] = torch.tensor(get_batch_size(batch))
         out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
         logits = torch.cat(logits, dim=1)
         out["logits"] = logits
@@ -1120,6 +1124,9 @@ class MultiTaskModel(nn.Module):
         # No of examples: only left to right, every unit in the sequence length is
         # a training example only once.
         out["n_exs"] = b_size * seq_len - n_pad
+        out["n_exs"] = torch.tensor(b_size * seq_len - n_pad)
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+
         sent, mask = self.sent_encoder(batch["input"], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
@@ -1162,7 +1169,7 @@ class MultiTaskModel(nn.Module):
 
             logits = classifier(inp, inp_mask)
         out["logits"] = logits
-
+        out["n_exs"] = move_to_device(torch.tensor(out["n_exs"]), self._cuda_device)
         if "label" in batch:
             idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
             labels = batch["label"]
