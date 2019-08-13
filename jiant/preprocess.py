@@ -411,6 +411,8 @@ def _get_task(name, args, data_path, scratch_path):
             # TODO: remove special case, replace with something general
             # to pass custom loader args to task.
             task_kw["probe_path"] = args["nli-prob"].probe_path
+        if name in ALL_SEQ2SEQ_TASKS:
+            task_kw["max_targ_v_size"] = args.max_targ_word_v_size
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(
             task_src_path,
