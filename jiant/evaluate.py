@@ -584,9 +584,8 @@ def _write_glue_preds(
     if task_name == "mnli" and split_name == "test":  # 9796 + 9847 = 19643
         assert len(preds_df) == 19643, "Missing predictions for MNLI!"
         log.info("There are %d examples in MNLI, 19643 were expected", len(preds_df))
-        # Sort back to original order. Otherwise mismatched, matched and diagnostic
-        # would be mixed together
-        # Mismatched, matched and diagnostic all begin by index 0.
+        # Sort back to original order to split matched and mismatched, which are
+        # treated as a single dataset by jiant.
         preds_df.sort_index(inplace=True)
         pred_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
         _apply_pred_map(preds_df, pred_map, "prediction")
