@@ -41,7 +41,10 @@ from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
 from jiant.modules.prpn.PRPN import PRPN
 from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
-from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+from jiant.pytorch_transformers_interface import (
+    input_module_uses_pytorch_transformers,
+    input_module_support_pair_embedding,
+)
 from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
@@ -764,9 +767,10 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
-        self.use_pytorch_transformers = input_module_uses_pytorch_transformers(args.input_module)
+        self.use_pair_embedding = input_module_support_pair_embedding(args.input_module)
         self.project_before_pooling = not (
-            self.use_pytorch_transformers and args.transfer_paradigm == "finetune"
+            input_module_uses_pytorch_transformers(args.input_module)
+            and args.transfer_paradigm == "finetune"
         )  # Rough heuristic. TODO: Make this directly user-controllable.
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
@@ -873,7 +877,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if self.use_pair_embedding:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             logits = classifier(sent, mask)
         else:
@@ -911,7 +915,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if self.use_pair_embedding:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             # special case for WiC b/c we want to add representations of particular tokens
             if isinstance(task, WiCTask):
@@ -1070,7 +1074,7 @@ class MultiTaskModel(nn.Module):
 
         logits = []
         module = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if self.use_pair_embedding:
             for choice_idx in range(task.n_choices):
                 sent, mask = self.sent_encoder(batch["choice%d" % choice_idx], task)
                 logit = module(sent, mask)
@@ -1140,7 +1144,7 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         classifier = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if self.use_pair_embedding:
             # if using BERT/XLNet, we concatenate the passage, question, and answer
             inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
