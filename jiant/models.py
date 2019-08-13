@@ -834,7 +834,7 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         logits = classifier(word_embs_in_context, sent_mask)
         out["logits"] = logits
-        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = torch.tensor(get_batch_size(batch))
         out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
 
         if "labels" in batch:  # means we should compute loss
@@ -873,7 +873,7 @@ class MultiTaskModel(nn.Module):
             sent2, mask2 = self.sent_encoder(batch["input2"], task)
             logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
-        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = torch.tensor(get_batch_size(batch))
         out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
 
         if "labels" in batch:
@@ -919,7 +919,7 @@ class MultiTaskModel(nn.Module):
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
-        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = torch.tensor(get_batch_size(batch))
         out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
         tagmask = batch.get("tagmask", None)
         if "labels" in batch:
@@ -978,7 +978,7 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
-        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = torch.tensor(get_batch_size(batch))
         out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch["inputs"], task)

@@ -256,7 +256,6 @@ class SamplingMultiTaskTrainer:
         patience = self._patience + 1
         best_fn = min if should_decrease else max
         best_score = best_fn(metric_history)
-        import pdb; pdb.set_trace()
         if best_score == cur_score:
             best_so_far = metric_history.index(best_score) == len(metric_history) - 1
         else:
@@ -787,7 +786,6 @@ class SamplingMultiTaskTrainer:
         this_val_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]["hist"]
         metric_history.append(this_val_metric)
-        import pdb; pdb.set_trace()
         is_best_so_far, out_of_patience = self._check_history(
             metric_history, this_val_metric, metric_decreases
         )
@@ -869,7 +867,6 @@ class SamplingMultiTaskTrainer:
         for name, value in task_metrics.items():
             all_val_metrics["%s_%s" % (task.name, name)] = value
         all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
-        import pdb; pdb.set_trace()
         if task.val_metric_decreases and len(tasks) > 1:
             all_val_metrics["micro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
