@@ -943,8 +943,6 @@ class MultiTaskModel(nn.Module):
             out.update(decoder.forward(sent, sent_mask, batch["targs"]))
             task.scorer1(out["loss"].item())
 
-        print("check")
-        exit()
         if "targs" in batch:
             pass
 
