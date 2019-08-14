@@ -576,9 +576,21 @@ class SamplingMultiTaskTrainer:
                 optimizer.zero_grad()
                 output_dict = self._forward(batch, task=task)
                 assert_for_log(
-                    "loss" in output_dict, "Model must return a dict containing a 'loss' key"
+                    "loss" in output_dict and "logits" in output_dict,
+                    "Model must return a dict containing a 'loss' and a 'logits' key"
                 )
                 loss = output_dict["loss"]  # optionally scale loss
+                logits = output_dict["logits"]
+                
+                print(logits)
+                print(logits.shape)
+                print()
+                exit()
+                if isinstance(task, CharSeq2SeqTask):
+                    task.update_metrics(logits, batch["targets"])
+                    print(task.scorer2.correct_count)
+                    print(task.scorer2.total_count)
+                exit()
 
                 loss *= scaling_weights[task.name]
 
