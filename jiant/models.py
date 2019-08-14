@@ -245,7 +245,6 @@ def build_model(args, vocab, pretrained_embs, tasks):
         # Default case, used for ELMo, CoVe, word embeddings, etc.
         d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
     d_sent_input = args.d_hid
-
     sent_encoder, d_sent_output = build_sent_encoder(
         args, vocab, d_emb, tasks, embedder, cove_layer
     )
@@ -943,7 +942,9 @@ class MultiTaskModel(nn.Module):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch["targs"]))
             task.scorer1(out["loss"].item())
-        
+
+        print("check")
+        exit()
         if "targs" in batch:
             pass
 
