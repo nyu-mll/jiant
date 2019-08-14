@@ -219,8 +219,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     # i.e. not something generic like "targets".
     log.info("\tBuilding vocab from scratch.")
     max_v_sizes = {"word": args.max_word_v_size, "char": args.max_char_v_size}
-    word2freq, char2freq = get_words(tasks)
-    vocab = get_vocab(word2freq, char2freq, max_v_sizes)
+    word2freq, char2freq, tgt_word2freq, tgt_char2freq = get_words(tasks)
+    # TODO(Katharina): get_vocab for tgt
+    vocab = get_vocab(word2freq, char2freq, tgt_word2freq, tgt_char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
     if args.force_include_wsj_vocabulary:
@@ -484,6 +485,8 @@ def get_words(tasks):
     Return dictionary mapping words to frequencies.
     """
     word2freq, char2freq = defaultdict(int), defaultdict(int)
+    # The following is for tasks which require a target vocabulary.
+    tgt_word2freq, tgt_char2freq = defaultdict(int), defaultdict(int)
 
     def update_vocab_freqs(sentence):
         """Update counts for words in the sentence"""
@@ -493,11 +496,20 @@ def get_words(tasks):
                 char2freq[char] += 1
         return
 
+    def update_tgt_vocab_freqs(sentence):
+        """Update counts for words in the sentence"""
+        for word in sentence:
+            tgt_word2freq[word] += 1
+            for char in list(word):
+                tgt_char2freq[char] += 1
+                return
+
     for task in tasks:
         log.info("\tCounting units for task %s.", task.name)
         if isinstance(task, CharSeq2SeqTask):
             for src_sent, tgt_sent in task.get_sentences():
                 update_vocab_freqs(src_sent)
+                update_tgt_vocab_freqs(tgt_sent)
         else:
             for sentence in task.get_sentences():
                 update_vocab_freqs(sentence)
@@ -511,10 +523,10 @@ def get_words(tasks):
             for sentence in task.target_sentences:
                 update_target_vocab_freqs(sentence)
 
-    return word2freq, char2freq
+    return word2freq, char2freq, tgt_word2freq, tgt_char2freq
 
 
-def get_vocab(word2freq, char2freq, max_v_sizes):
+def get_vocab(word2freq, char2freq, tgt_word2freq, tgt_char2freq, max_v_sizes):
     """Build vocabulary by selecting the most frequent tokens"""
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
@@ -525,10 +537,20 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
     for word, _ in words_by_freq[: max_v_sizes["word"]]:
         vocab.add_token_to_namespace(word, "tokens")
 
+    tgt_words_by_freq = [(word, freq) for word, freq in tgt_word2freq.items()]
+    tgt_words_by_freq.sort(key=lambda x: x[1], reverse=True)
+    for word, _ in tgt_words_by_freq[: max_v_sizes["word"]]:
+        vocab.add_token_to_namespace(word, "tgt_tokens")
+
     chars_by_freq = [(char, freq) for char, freq in char2freq.items()]
     chars_by_freq.sort(key=lambda x: x[1], reverse=True)
     for char, _ in chars_by_freq[: max_v_sizes["char"]]:
         vocab.add_token_to_namespace(char, "chars")
+
+    tgt_chars_by_freq = [(char, freq) for char, freq in tgt_char2freq.items()]
+    tgt_chars_by_freq.sort(key=lambda x: x[1], reverse=True)
+    for char, _ in tgt_chars_by_freq[: max_v_sizes["char"]]:
+        vocab.add_token_to_namespace(char, "tgt_chars")
 
     return vocab
 
