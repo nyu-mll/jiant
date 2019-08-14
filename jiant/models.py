@@ -481,7 +481,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
 def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, args):
     """ Build task-specific components for a task and add them to model.
         These include decoders, linear layers for linear models.
-     """
+    """
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(
@@ -514,10 +514,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, SequenceGenerationTask):
-        decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
-        setattr(model, "%s_decoder" % task.name, decoder)
-        setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, (MultiRCTask, ReCoRDTask)):
         module = build_qa_module(task, d_sent, model.use_bert, task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -540,6 +536,10 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
         setattr(model, "%s_decoder" % task.name, decoder)
+    elif isinstance(task, SequenceGenerationTask):
+        decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
+        setattr(model, "%s_decoder" % task.name, decoder)
+        setattr(model, "%s_hid2voc" % task.name, hid2voc)
     else:
         raise ValueError("Module not found for %s" % task.name)
 
