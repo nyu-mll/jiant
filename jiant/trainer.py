@@ -832,23 +832,20 @@ class SamplingMultiTaskTrainer:
             with torch.no_grad():
                 out = self._forward(batch, task=task)
             loss = out["loss"]
-            logits = out["logits"]
-                
+
             if isinstance(task, CharSeq2SeqTask):
                 # logits: batch_size * seq_len * tgt_voc_size
                 logits = out["logits"]
                 target = batch["targs"]["words"][:, 1:].contiguous()
-                target_mask = output_dict["target_mask"]
+                target_mask = out["target_mask"]
                 task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
-            
+
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
 
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()
-                print(task_metrics)
-                exit()
                 task_metrics["%s_loss" % task.name] = (
                     all_val_metrics["%s_loss" % task.name] / batch_num
                 )

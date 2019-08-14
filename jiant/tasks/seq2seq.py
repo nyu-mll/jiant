@@ -29,8 +29,8 @@ class CharSeq2SeqTask(SequenceGenerationTask):
         super().__init__(name, **kw)
         self.scorer2 = BooleanAccuracy()
         self.scorers.append(self.scorer2)
-        self.val_metric = "%s_perplexity" % self.name
-        self.val_metric_decreases = True
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
         self.max_targ_v_size = max_targ_v_size
@@ -109,7 +109,5 @@ class CharSeq2SeqTask(SequenceGenerationTask):
         return {"perplexity": math.exp(avg_nll), "accuracy": acc}
 
     def update_metrics(self, logits, labels, tagmask=None):
-        # TODO(Katharina): NLL for scorer1 and acc for scorer2
-        # self.scorer1(mean_squared_error(logits, labels))  # update average MSE
         self.scorer2(logits.max(2)[1], labels, tagmask)
         return
