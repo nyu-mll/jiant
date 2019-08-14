@@ -21,7 +21,7 @@ from jiant.tasks.tasks import (
     WinogradCoreferenceTask,
     GLUEDiagnosticTask,
 )
-from jiant.tasks.qa import MultiRCTask, ReCoRDTask, QASRLTask
+from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.edge_probing import EdgeProbingTask
 
 
