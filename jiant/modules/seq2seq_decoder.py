@@ -182,6 +182,7 @@ class Seq2SeqDecoder(Model):
             target_mask = get_text_field_mask(target_tokens)
             loss = self._get_loss(logits, targets, target_mask)
             output_dict["loss"] = loss
+            output_dict["target_mask"] = target_mask
 
         return output_dict
 

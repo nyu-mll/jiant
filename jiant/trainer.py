@@ -24,6 +24,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from jiant.evaluate import evaluate
+from jiant.tasks.seq2seq import CharSeq2SeqTask
 from jiant.utils import config
 from jiant.utils.utils import (
     assert_for_log,
@@ -577,20 +578,16 @@ class SamplingMultiTaskTrainer:
                 output_dict = self._forward(batch, task=task)
                 assert_for_log(
                     "loss" in output_dict and "logits" in output_dict,
-                    "Model must return a dict containing a 'loss' and a 'logits' key"
+                    "Model must return a dict containing a 'loss' and a 'logits' key",
                 )
                 loss = output_dict["loss"]  # optionally scale loss
                 logits = output_dict["logits"]
-                
-                print(logits)
-                print(logits.shape)
-                print()
-                exit()
+
                 if isinstance(task, CharSeq2SeqTask):
-                    task.update_metrics(logits, batch["targets"])
-                    print(task.scorer2.correct_count)
-                    print(task.scorer2.total_count)
-                exit()
+                    # logits: batch_size * seq_len * tgt_voc_size
+                    target = batch["targs"]["words"][:, 1:].contiguous()
+                    target_mask = output_dict["target_mask"]
+                    task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
 
                 loss *= scaling_weights[task.name]
 
