@@ -7,7 +7,7 @@ from typing import Iterable, List, Sequence, Type
 
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
-from allennlp.training.metrics import Average
+from allennlp.training.metrics import Average, BooleanAccuracy
 
 from ..utils.data_loaders import process_sentence
 from .registry import register_task
@@ -27,9 +27,8 @@ class CharSeq2SeqTask(SequenceGenerationTask):
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         """ """
         super().__init__(name, **kw)
-        self.scorer1 = Average()
-        self.scorer2 = Average()
-        self.scorers = [self.scorer1, self.scorer2]
+        self.scorer2 = BooleanAccuracy()
+        self.scorers.append(self.scorer2)
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
@@ -106,8 +105,8 @@ class CharSeq2SeqTask(SequenceGenerationTask):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
-        avg_acc = self.scorer2.get_metric(reset)
-        return {"perplexity": math.exp(avg_nll), "accuracy": avg_acc}
+        acc = self.scorer2.get_metric(reset)
+        return {"perplexity": math.exp(avg_nll), "accuracy": acc}
 
     def update_metrics(self, logits, labels, tagmask=None):
         # TODO(Katharina): NLL for scorer1 and acc for scorer2
