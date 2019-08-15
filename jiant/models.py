@@ -674,7 +674,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
 
     # Build the classifier
     n_classes = task.n_classes if hasattr(task, "n_classes") else 1
-    if model.use_pair_embedding:
+    if model.uses_pair_embedding:
         # BERT/XLNet handle pair tasks by concatenating the inputs and classifying the joined
         # sequence, so we use a single sentence classifier
         if isinstance(task, WiCTask):
@@ -767,7 +767,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
-        self.use_pair_embedding = input_module_supports_pair_embedding(args.input_module)
+        self.uses_pair_embedding = input_module_supports_pair_embedding(args.input_module)
         self.project_before_pooling = not (
             input_module_uses_pytorch_transformers(args.input_module)
             and args.transfer_paradigm == "finetune"
@@ -877,7 +877,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_pair_embedding:
+        if self.uses_pair_embedding:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             logits = classifier(sent, mask)
         else:
@@ -915,7 +915,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_pair_embedding:
+        if self.uses_pair_embedding:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             # special case for WiC b/c we want to add representations of particular tokens
             if isinstance(task, WiCTask):
@@ -1074,7 +1074,7 @@ class MultiTaskModel(nn.Module):
 
         logits = []
         module = self._get_classifier(task)
-        if self.use_pair_embedding:
+        if self.uses_pair_embedding:
             for choice_idx in range(task.n_choices):
                 sent, mask = self.sent_encoder(batch["choice%d" % choice_idx], task)
                 logit = module(sent, mask)
@@ -1144,7 +1144,7 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         classifier = self._get_classifier(task)
-        if self.use_pair_embedding:
+        if self.uses_pair_embedding:
             # if using BERT/XLNet, we concatenate the passage, question, and answer
             inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
