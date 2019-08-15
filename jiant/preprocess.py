@@ -261,7 +261,7 @@ def build_indexers(args):
             "must match the specified model."
         )
         tokenizer_name = input_module_tokenizer_name(args.input_module)
-        indexers[tokenizer_name] = SingleIdTokenIndexer(args.input_module)
+        indexers[tokenizer_name] = SingleIdTokenIndexer(tokenizer_name)
     return indexers
 
 
