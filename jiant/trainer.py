@@ -836,6 +836,24 @@ class SamplingMultiTaskTrainer:
             if isinstance(task, CharSeq2SeqTask):
                 # logits: batch_size * seq_len * tgt_voc_size
                 logits = out["logits"]
+                if batch_num == 1:
+                    voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
+                    voc_out = self._model.vocab.get_index_to_token_vocabulary("seg_wix_tokens")
+                    current_in = batch["inputs"]["words"][0][1:]
+                    current_gold = batch["targs"]["words"][0][1:]
+                    current_out = logits.max(2)[1][0]
+                    log.info(
+                        "\tInput:\t%s",
+                        "".join([voc_in[c.item()] for c in current_in]).split("<EOS>")[0],
+                    )
+                    log.info(
+                        "\tGold:\t%s",
+                        "".join([voc_out[c.item()] for c in current_gold]).split("<EOS>")[0],
+                    )
+                    log.info(
+                        "\tOutput:\t%s",
+                        "".join([voc_out[c.item()] for c in current_out]).split("<EOS>")[0],
+                    )
                 target = batch["targs"]["words"][:, 1:].contiguous()
                 target_mask = out["target_mask"]
                 task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
