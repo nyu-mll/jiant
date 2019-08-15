@@ -786,7 +786,7 @@ class SamplingMultiTaskTrainer:
     def _calculate_validation_performance(
         self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
     ):
-        """
+        """_calculate_validation_performance
         Builds validation generator, evaluates on each task and produces validation metrics.
 
         Parameters
@@ -849,6 +849,7 @@ class SamplingMultiTaskTrainer:
             all_val_metrics["%s_%s" % (task.name, name)] = value
         all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
         # compute task contribution to macro and micro averages
+        n_examples_overall += n_examples
         if task.val_metric_decreases and len(tasks) > 1:
 
             all_val_metrics["micro_avg"] += (
@@ -865,7 +866,6 @@ class SamplingMultiTaskTrainer:
                 all_val_metrics[task.val_metric] * n_examples / n_examples_overall
             )
             all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric] / len(tasks)
-        n_examples_overall += n_examples
 
         # Reset training progress
         task_info["n_batches_since_val"] = 0
