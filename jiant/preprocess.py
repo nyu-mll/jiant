@@ -118,7 +118,8 @@ def _index_split(task, split, indexers, vocab, record_file, task_modulator):
         indexers: dict of token indexers
         vocab: Vocabulary instance
         record_file: (string) file to write serialized Instances to
-        task_modulator: packed information from model that effects the task data
+        task_modulator: packed information from model that effects the task data, including
+            whether to concatenate sentence pair, and how to mark the sentence boundry
     """
     log_prefix = "\tTask %s (%s)" % (task.name, split)
     log.info("%s: Indexing from scratch.", log_prefix)
@@ -586,7 +587,7 @@ def add_task_label_vocab(vocab, task):
 
 
 def add_pytorch_transformers_vocab(vocab, tokenizer_name):
-    """Add BERT/XLNet WPM or other pytorch_transformers vocabulary for use with pre-tokenized data.
+    """Add vocabulary from tokenizers in pytorch_transformers for use with pre-tokenized data.
 
     These tokenizers have a convert_tokens_to_ids method, but this doesn't do
     anything special, so we can just use the standard indexers.
