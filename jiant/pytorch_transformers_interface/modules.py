@@ -86,11 +86,11 @@ class PytorchTransformersEmbedderModule(nn.Module):
         
         returns:
             ids: <long> [bath_size, var_seq_len] corrected token IDs
-            mask: <long> [bath_size, var_seq_len] sentence mask 
+            input_mask: <long> [bath_size, var_seq_len] mask of input sequence
         """
         ids = sent[self.tokenizer_required]
 
-        mask = (ids != 0).long()
+        input_mask = (ids != 0).long()
         ids[ids == 0] = self._pad_id + 2
         # map AllenNLP @@PADDING@@ to _pad_id in specific pytorch_transformer
         if self._unk_id is not None:
@@ -98,9 +98,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
         ids -= 2  # shift indexes to match pretrained token embedding indexes
 
-        return ids, mask
+        return ids, input_mask
 
-    def prepare_output(self, lex_seq, hidden_states, mask):
+    def prepare_output(self, lex_seq, hidden_states, input_mask):
         """
         Convert the output of the pytorch_transformers module to a vector sequence as expected by jiant.
 
@@ -108,7 +108,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             lex_seq: The sequence of input word embeddings as a tensor (batch_size, sequence_length, hidden_size).
                      Used only if output_mode = "only".
             hidden_states: A list of sequences of model hidden states as tensors (batch_size, sequence_length, hidden_size).
-            mask: A tensor with 1s in positions corresponding to non-padding tokens (batch_size, sequence_length).
+            input_mask: A tensor with 1s in positions corresponding to non-padding tokens (batch_size, sequence_length).
 
         returns:
             h: Output embedding as a tensor (batch_size, sequence_length, output_dim)
@@ -122,7 +122,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         elif self.output_mode == "cat":
             h = torch.cat([available_layers[-1], lex_seq], dim=2)
         elif self.output_mode == "mix":
-            h = self.scalar_mix(available_layers, mask=mask)
+            h = self.scalar_mix(available_layers, mask=input_mask)
         else:
             raise NotImplementedError(f"output_mode={self.output_mode}" " not supported.")
 
@@ -134,14 +134,14 @@ class PytorchTransformersEmbedderModule(nn.Module):
         else:
             return self.model.config.hidden_size
 
-    def get_seg_ids(self, token_ids, mask):
+    def get_seg_ids(self, token_ids, input_mask):
         """ Dynamically build the segment IDs for a concatenated pair of sentences
         Searches for index _sep_id in the tensor. Supports BERT or XLNet-style padding.
         Sets padding tokens to segment zero.
 
         args:
             token_ids (torch.LongTensor): batch of token IDs
-            mask (torch.LongTensor): batch of sentence mask
+            input_mask (torch.LongTensor): mask of token_ids
 
         returns:
             seg_ids (torch.LongTensor): batch of segment IDs
@@ -149,13 +149,13 @@ class PytorchTransformersEmbedderModule(nn.Module):
         example:
         > sents = ["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]", "[PAD]"]
         > token_tensor = torch.Tensor([[vocab[w] for w in sent]]) # a tensor of token indices
-        > seg_ids = get_seg_ids(token_tensor)
+        > seg_ids = get_seg_ids(token_tensor, torch.LongTensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]))
         > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0])
         """
 
         sep_idxs = (token_ids == self._sep_id).long()
         sep_count = torch.cumsum(sep_idxs, dim=-1) - sep_idxs
-        seg_ids = sep_count * mask
+        seg_ids = sep_count * input_mask
 
         if self._SEG_ID_CLS is not None:
             seg_ids[token_ids == self._cls_id] = self._SEG_ID_CLS
@@ -169,6 +169,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
     def apply_boundary_tokens(s1, s2=None):
         """
         A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence.
+        This function should be implmented in subclasses.
         
         args:
             s1: list[str], tokens from sentence 1
@@ -181,6 +182,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
     def forward(self, sent, unused_task_name):
         """ Run pytorch_transformers model and return output representation 
+        This function should be implmented in subclasses.
         
         args:
             sent: batch dictionary, in which 
@@ -197,6 +199,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         """ Download another transformer model with LM head, extract the LM head and tie its
         weight to the input token embedding. In most cases, this module needs to work with
         output_mode as "top" or "none"
+        This function should be implmented in subclasses.
         
         returns:
             lm_head: module [*, hidden_size] -> [*, vocab_size]
@@ -235,17 +238,17 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        ids, mask = self.correct_sent_indexing(sent)
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
         if self.output_mode != "only":
-            token_types = self.get_seg_ids(ids, mask)
+            token_types = self.get_seg_ids(ids, input_mask)
             _, output_pooled_vec, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
-        return self.prepare_output(lex_seq, hidden_states, mask)
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
         model_with_lm_head = pytorch_transformers.BertForMaskedLM.from_pretrained(
@@ -295,16 +298,16 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        ids, mask = self.correct_sent_indexing(sent)
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.word_embedding(ids)
         if self.output_mode != "only":
-            token_types = self.get_seg_ids(ids, mask)
+            token_types = self.get_seg_ids(ids, input_mask)
             _, output_mems, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
-        return self.prepare_output(lex_seq, hidden_states, mask)
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self, args):
         model_with_lm_head = pytorch_transformers.XLNetLMHeadModel.from_pretrained(
@@ -342,13 +345,13 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        ids, mask = self.correct_sent_indexing(sent)
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.tokens_embed(ids)
         if self.output_mode != "only":
             _, hidden_states = self.model(ids)
-        return self.prepare_output(lex_seq, hidden_states, mask)
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self, args):
         model_with_lm_head = pytorch_transformers.OpenAIGPTLMHeadModel.from_pretrained(
@@ -385,13 +388,13 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        ids, mask = self.correct_sent_indexing(sent)
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.wte(ids)
         if self.output_mode != "only":
             _, _, hidden_states = self.model(ids)
-        return self.prepare_output(lex_seq, hidden_states, mask)
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
         model_with_lm_head = pytorch_transformers.GPT2LMHeadModel.from_pretrained(
@@ -429,13 +432,13 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        ids, mask = self.correct_sent_indexing(sent)
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.word_emb(ids)
         if self.output_mode != "only":
             _, _, hidden_states = self.model(ids)
-        return self.prepare_output(lex_seq, hidden_states, mask)
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
         # Note: pytorch_transformers didn't implement TransfoXLLMHeadModel, use this in eval only
@@ -478,13 +481,13 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        ids, mask = self.correct_sent_indexing(sent)
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings(ids)
         if self.output_mode != "only":
             _, _, hidden_states = self.model(ids)
-        return self.prepare_output(lex_seq, hidden_states, mask)
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
         model_with_lm_head = pytorch_transformers.XLMWithLMHeadModel.from_pretrained(
