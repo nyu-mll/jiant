@@ -78,7 +78,7 @@ please also add the tests.
 
 For any PR, make sure to update any existing `conf` files, tutorials, and scripts to match your changes. If your PR adds or changes functionality that can be directly tested, add or update a test.
 
-For PRs that typical users will need to be aware of, include  make a matching PR to the [documentation](https://github.com/nyu-mll/jiant-site). We will merge that documentation PR once the original PR is merged in _and pushed out in a release_. (Proposals for better ways to do this are welcome.)
+For PRs that typical users will need to be aware of, include  make a matching PR to the [documentation](https://github.com/nyu-mll/jiant-site/edit/master/documentation/README.md). We will merge that documentation PR once the original PR is merged in _and pushed out in a release_. (Proposals for better ways to do this are welcome.)
 
 
 ## License
