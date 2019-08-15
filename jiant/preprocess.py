@@ -258,7 +258,7 @@ def build_indexers(args):
         ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
         "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "pytorch_transformer models use custom tokenization for each model, so tokenizer "
+            "pytorch_transformers models use custom tokenization for each model, so tokenizer "
             "must match the specified model."
         )
         tokenizer_name = input_module_tokenizer_name(args.input_module)

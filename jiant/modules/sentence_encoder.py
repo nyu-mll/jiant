@@ -84,7 +84,7 @@ class SentenceEncoder(Model):
             self.reset_states()
 
         # General sentence embeddings (for sentence encoder).
-        # Make sent_mask first, pytorch_transformer text_field_embedder will change the token index
+        # Make sent_mask first, pytorch_transformers text_field_embedder will change the token index
         sent_mask = util.get_text_field_mask(sent).float()
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
