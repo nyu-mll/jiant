@@ -29,7 +29,7 @@ from allennlp.data.token_indexers import (
 
 from jiant.pytorch_transformers_interface import (
     input_module_uses_pytorch_transformers,
-    input_module_tokenized_name,
+    input_module_tokenizer_name,
 )
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
@@ -260,8 +260,8 @@ def build_indexers(args):
             "pytorch_transformer models use custom tokenization for each model, so tokenizer "
             "must match the specified model."
         )
-        tokenized_name = input_module_tokenized_name(args.input_module)
-        indexers[tokenized_name] = SingleIdTokenIndexer(args.input_module)
+        tokenizer_name = input_module_tokenizer_name(args.input_module)
+        indexers[tokenizer_name] = SingleIdTokenIndexer(args.input_module)
     return indexers
 
 
@@ -341,9 +341,9 @@ def build_tasks(args):
         boundary_token_fn = utils.apply_standard_boundary_tokens
 
     model_flags = {}
-    from jiant.pytorch_transformers_interface import input_module_support_pair_embedding
+    from jiant.pytorch_transformers_interface import input_module_supports_pair_embedding
 
-    model_flags["support_pair_embedding"] = input_module_support_pair_embedding(args.input_module)
+    model_flags["supports_pair_embedding"] = input_module_supports_pair_embedding(args.input_module)
 
     task_modulator = TaskModulator(boundary_token_fn, model_flags)
 

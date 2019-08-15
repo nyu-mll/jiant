@@ -43,7 +43,7 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.pytorch_transformers_interface import (
     input_module_uses_pytorch_transformers,
-    input_module_support_pair_embedding,
+    input_module_supports_pair_embedding,
 )
 from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
@@ -251,7 +251,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     elif args.input_module.startswith("gpt2"):
         from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
 
-        log.info(f"Using GPT2 model ({args.input_module}).")
+        log.info(f"Using GPT-2 model ({args.input_module}).")
         embedder = GPT2EmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("transfo-xl-"):
@@ -767,7 +767,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
-        self.use_pair_embedding = input_module_support_pair_embedding(args.input_module)
+        self.use_pair_embedding = input_module_supports_pair_embedding(args.input_module)
         self.project_before_pooling = not (
             input_module_uses_pytorch_transformers(args.input_module)
             and args.transfer_paradigm == "finetune"

@@ -12,12 +12,12 @@ Note: huggingface forgot to upload bert-large-uncased-whole-word-masking-finetun
 When they fix it, remove this note
 https://github.com/huggingface/pytorch-transformers/issues/763 
 
-TODO: we do not support non english xlm, if you need them, add some code in XLMEmbedderModule
+TODO: we do not support non-English versions of xlm, if you need them, add some code in XLMEmbedderModule
 to prepare langs input to pytorch_transformers.XLMModel
 """
 
 
-def input_module_support_pair_embedding(module_name):
+def input_module_supports_pair_embedding(module_name):
     return module_name.startswith("bert-") or module_name.startswith("xlnet-")
 
 
@@ -32,7 +32,7 @@ def input_module_uses_pytorch_transformers(module_name):
     )
 
 
-def input_module_tokenized_name(module_name):
+def input_module_tokenizer_name(module_name):
     input_module_to_pretokenized = {
         "bert-base-uncased": "bert_uncased",
         "bert-large-uncased": "bert_uncased",

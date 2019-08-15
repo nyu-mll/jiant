@@ -11,7 +11,7 @@ import pytorch_transformers
 
 from jiant.preprocess import parse_task_list_arg
 from jiant.utils import utils
-from jiant.pytorch_transformers_interface import input_module_tokenized_name
+from jiant.pytorch_transformers_interface import input_module_tokenizer_name
 
 
 class PytorchTransformersEmbedderModule(nn.Module):
@@ -33,7 +33,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         self.output_mode = args.pytorch_transformers_output_mode
         self.input_module = args.input_module
         self.max_seq_len = args.max_seq_len
-        self.tokenizer_required = input_module_tokenized_name(args.input_module)
+        self.tokenizer_required = input_module_tokenizer_name(args.input_module)
 
         # Integer token indices for special symbols.
         self._cls_id = None
@@ -177,10 +177,10 @@ class PytorchTransformersEmbedderModule(nn.Module):
         returns
             s: list[str], token sequence with boundry tokens
         """
-        pass
+        raise NotImplementedError
 
     def forward(self, sent, unused_task_name):
-        """ Run transformer model and return output representation 
+        """ Run pytorch_transformers model and return output representation 
         
         args:
             sent: batch dictionary, in which 
@@ -191,7 +191,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         returns:
             transformer_emb: <float32> [batch_size, var_seq_len, output_dim] output embedding
         """
-        pass
+        raise NotImplementedError
 
     def get_pretrained_lm_head(self):
         """ Download another transformer model with LM head, extract the LM head and tie its
@@ -201,7 +201,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         returns:
             lm_head: module [*, hidden_size] -> [*, vocab_size]
         """
-        pass
+        raise NotImplementedError
 
 
 class BertEmbedderModule(PytorchTransformersEmbedderModule):
@@ -360,7 +360,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
 
 
 class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
-    """ Wrapper for GPT2 module to fit into jiant APIs.
+    """ Wrapper for GPT-2 module to fit into jiant APIs.
     Check PytorchTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
@@ -379,7 +379,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 
     @staticmethod
     def apply_boundary_tokens(s1):
-        # GPT2-style boundary token marking on string token sequences
+        # GPT-2-style boundary token marking on string token sequences
         return ["<|endoftext|>"] + s1 + ["<|endoftext|>"]
 
     def forward(

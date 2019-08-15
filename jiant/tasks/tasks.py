@@ -95,7 +95,7 @@ def process_single_pair_task_split(
     def _make_instance(input1, input2, labels, idx):
         d = {}
         d["sent1_str"] = MetadataField(" ".join(input1))
-        if task_modulator.model_flags["support_pair_embedding"] and is_pair:
+        if task_modulator.model_flags["supports_pair_embedding"] and is_pair:
             inp = task_modulator.boundary_token_fn(input1, input2)
             d["inputs"] = sentence_to_text_field(inp, indexers)
             d["sent2_str"] = MetadataField(" ".join(input2))
@@ -1362,7 +1362,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
             """ from multiple types in one column create multiple fields """
             d = {}
-            if task_modulator.model_flags["support_pair_embedding"]:
+            if task_modulator.model_flags["supports_pair_embedding"]:
                 inp = task_modulator.boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
@@ -1570,7 +1570,7 @@ class WinogenderTask(GLUEDiagnosticTask):
         def _make_instance(input1, input2, labels, idx, pair_id):
             d = {}
             d["sent1_str"] = MetadataField(" ".join(input1))
-            if task_modulator.model_flags["support_pair_embedding"]:
+            if task_modulator.model_flags["supports_pair_embedding"]:
                 inp = task_modulator.boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
                 d["sent2_str"] = MetadataField(" ".join(input2))
@@ -2024,7 +2024,7 @@ class DisSentTask(PairClassificationTask):
 
         def _make_instance(input1, input2, labels):
             d = {}
-            if task_modulator.model_flags["support_pair_embedding"]:
+            if task_modulator.model_flags["supports_pair_embedding"]:
                 inp = task_modulator.boundary_token_fn(input1, input2)  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
@@ -2544,7 +2544,7 @@ class WiCTask(PairClassificationTask):
             d = {}
             d["sent1_str"] = MetadataField(" ".join(input1))
             d["sent2_str"] = MetadataField(" ".join(input2))
-            if task_modulator.model_flags["support_pair_embedding"]:
+            if task_modulator.model_flags["supports_pair_embedding"]:
                 inp = task_modulator.boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
                 idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
@@ -2649,14 +2649,14 @@ class COPATask(MultipleChoiceTask):
         def _make_instance(context, choices, question, label, idx):
             d = {}
             d["question_str"] = MetadataField(" ".join(context))
-            if not task_modulator.model_flags["support_pair_embedding"]:
+            if not task_modulator.model_flags["supports_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
                     task_modulator.boundary_token_fn(context), indexers
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
                     task_modulator.boundary_token_fn(context, question + choice)
-                    if task_modulator.model_flags["support_pair_embedding"]
+                    if task_modulator.model_flags["supports_pair_embedding"]
                     else task_modulator.boundary_token_fn(choice)
                 )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
@@ -2733,14 +2733,14 @@ class SWAGTask(MultipleChoiceTask):
         def _make_instance(question, choices, label, idx):
             d = {}
             d["question_str"] = MetadataField(" ".join(question))
-            if not task_modulator.model_flags["support_pair_embedding"]:
+            if not task_modulator.model_flags["supports_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
                     task_modulator.boundary_token_fn(question), indexers
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
                     task_modulator.boundary_token_fn(question, choice)
-                    if task_modulator.model_flags["support_pair_embedding"]
+                    if task_modulator.model_flags["supports_pair_embedding"]
                     else task_modulator.boundary_token_fn(choice)
                 )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
@@ -2854,7 +2854,7 @@ class BooleanQuestionTask(PairClassificationTask):
             new_d = {}
             new_d["question_str"] = MetadataField(" ".join(d["question"]))
             new_d["passage_str"] = MetadataField(" ".join(d["passage"]))
-            if not task_modulator.model_flags["support_pair_embedding"]:
+            if not task_modulator.model_flags["supports_pair_embedding"]:
                 new_d["input1"] = sentence_to_text_field(
                     task_modulator.boundary_token_fn(d["passage"]), indexers
                 )
