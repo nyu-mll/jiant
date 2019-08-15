@@ -88,6 +88,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
             ids: <long> [bath_size, var_seq_len] corrected token IDs
             input_mask: <long> [bath_size, var_seq_len] mask of input sequence
         """
+        assert (
+            self.tokenizer_required in sent
+        ), "pytorch_transformers cannot find correcpondingly tokenized input"
         ids = sent[self.tokenizer_required]
 
         input_mask = (ids != 0).long()
@@ -97,6 +100,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
             ids[ids == 1] = self._unk_id + 2
             # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
         ids -= 2  # shift indexes to match pretrained token embedding indexes
+        assert (
+            ids >= 0
+        ).all(), "out-of-vocabulary token found in the input, but _unk_id of pytorch_transformers model is not specified"
 
         return ids, input_mask
 
