@@ -848,24 +848,28 @@ class SamplingMultiTaskTrainer:
         for name, value in task_metrics.items():
             all_val_metrics["%s_%s" % (task.name, name)] = value
         all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+        # compute task contribution to macro and micro averages
         if task.val_metric_decreases and len(tasks) > 1:
+
             all_val_metrics["micro_avg"] += (
-                1 - all_val_metrics[task.val_metric] / self._dec_val_scale
-            ) * n_examples
+                (1 - all_val_metrics[task.val_metric] / self._dec_val_scale)
+                * n_examples
+                / n_examples_overall
+            )
             all_val_metrics["macro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
-            )
+            ) / len(tasks)
         else:
             # triggers for single-task cases and during MTL when task val metric increases
-            all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
+            all_val_metrics["micro_avg"] += (
+                all_val_metrics[task.val_metric] * n_examples / n_examples_overall
+            )
+            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric] / len(tasks)
         n_examples_overall += n_examples
 
         # Reset training progress
         task_info["n_batches_since_val"] = 0
         task_info["loss"] = 0
-        all_val_metrics["micro_avg"] /= n_examples_overall
-        all_val_metrics["macro_avg"] /= len(tasks)
         return n_examples_overall, task_infos, all_val_metrics
 
     def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
