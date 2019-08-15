@@ -227,7 +227,7 @@ def _build_vocab(args, tasks, vocab_path: str):
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
     if input_module_uses_pytorch_transformers(args.input_module):
-        # Add pre-computed vocabulary of corresponding tokenizer for pytorch transformer models.
+        # Add pre-computed vocabulary of corresponding tokenizer for pytorch_transformers models.
         add_pytorch_transformers_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
@@ -619,7 +619,7 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
         tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
-    log.info("Pytorch transformer vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
+    log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, tokenizer_name)
 
