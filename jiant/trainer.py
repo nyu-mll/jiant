@@ -786,7 +786,7 @@ class SamplingMultiTaskTrainer:
     def _calculate_validation_performance(
         self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
     ):
-        """_calculate_validation_performance
+        """
         Builds validation generator, evaluates on each task and produces validation metrics.
 
         Parameters
