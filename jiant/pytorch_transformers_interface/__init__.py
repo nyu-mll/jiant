@@ -20,6 +20,7 @@ to prepare langs input to pytorch_transformers.XLMModel
 def input_module_uses_pytorch_transformers(input_module):
     return (
         input_module.startswith("bert-")
+        or input_module.startswith("roberta-")
         or input_module.startswith("xlnet-")
         or input_module.startswith("gpt2")
         or input_module.startswith("openai-gpt")
