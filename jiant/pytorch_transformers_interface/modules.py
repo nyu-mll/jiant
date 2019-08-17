@@ -245,12 +245,12 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         )
         self.max_pos = model.config.max_position_embeddings
 
-        tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
+        self.tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
-        self._sep_id = tokenizer.convert_tokens_to_ids("[SEP]")
-        self._cls_id = tokenizer.convert_tokens_to_ids("[CLS]")
-        self._pad_id = tokenizer.convert_tokens_to_ids("[PAD]")
+        self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
+        self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
 
         self.parameter_setup(args)
 
@@ -297,13 +297,13 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )
 
-        tokenizer = pytorch_transformers.XLNetTokenizer.from_pretrained(
+        self.tokenizer = pytorch_transformers.XLNetTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
-        self._sep_id = tokenizer.convert_tokens_to_ids("<sep>")
-        self._cls_id = tokenizer.convert_tokens_to_ids("<cls>")
-        self._pad_id = tokenizer.convert_tokens_to_ids("<pad>")
-        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
+        self._sep_id = self.tokenizer.convert_tokens_to_ids("<sep>")
+        self._cls_id = self.tokenizer.convert_tokens_to_ids("<cls>")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 
@@ -357,22 +357,28 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self.max_pos = self.model.config.n_positions
 
-        tokenizer = pytorch_transformers.OpenAIGPTTokenizer.from_pretrained(
+        self.tokenizer = pytorch_transformers.OpenAIGPTTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
-        self._pad_id = tokenizer.convert_tokens_to_ids("\n</w>")
-        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
+        self.tokenizer.add_special_tokens(
+            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        )
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("\n</w>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1 ,s2=None):
+    def apply_boundary_tokens(s1, s2=None):
         # OpenAI-GPT-style boundary token marking on string token sequences
-        return ["\n</w>"] + s1 + ["\n</w>"]
+        if s2:
+            return ["<start>"] + s1 + ["<delim>"] + s2 + ["<extract>"]
+        else:
+            return ["<start>"] + s1 + ["<extract>"]
 
     @staticmethod
     def apply_lm_boundary_tokens(s1):
-        # OpenAI-GPT-style boundary token marking on string token sequences
+        # OpenAI-GPT-style boundary token marking on string token sequences for LM tasks
         return ["\n</w>"] + s1 + ["\n</w>"]
 
     def forward(
@@ -407,16 +413,27 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self.max_pos = self.model.config.n_positions
 
-        tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
+        self.tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
-        self._pad_id = tokenizer.convert_tokens_to_ids("<|endoftext|>")
+        self.tokenizer.add_special_tokens(
+            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        )
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<|endoftext|>")
 
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1):
+    def apply_boundary_tokens(s1, s2=None):
         # GPT-2-style boundary token marking on string token sequences
+        if s2:
+            return ["<start>"] + s1 + ["<delim>"] + s2 + ["<extract>"]
+        else:
+            return ["<start>"] + s1 + ["<extract>"]
+
+    @staticmethod
+    def apply_lm_boundary_tokens(s1):
+        # GPT-2-style boundary token marking on string token sequences for LM tasks
         return ["<|endoftext|>"] + s1 + ["<|endoftext|>"]
 
     def forward(
@@ -450,17 +467,28 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
 
-        tokenizer = pytorch_transformers.TransfoXLTokenizer.from_pretrained(
+        self.tokenizer = pytorch_transformers.TransfoXLTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
-        self._pad_id = tokenizer.convert_tokens_to_ids("<eos>")
-        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
+        self.tokenizer.add_special_tokens(
+            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        )
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<eos>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1):
+    def apply_boundary_tokens(s1, s2=None):
         # TransformerXL-style boundary token marking on string token sequences
+        if s2:
+            return ["<start>"] + s1 + ["<delim>"] + s2 + ["<extract>"]
+        else:
+            return ["<start>"] + s1 + ["<extract>"]
+
+    @staticmethod
+    def apply_lm_boundary_tokens(s1):
+        # TransformerXL-style boundary token marking on string token sequences for LM tasks
         return ["<\n>"] + s1 + ["<\n>"]
 
     def forward(
@@ -500,11 +528,11 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self.max_pos = model.config.max_position_embeddings
 
-        tokenizer = pytorch_transformers.XLMTokenizer.from_pretrained(
+        self.tokenizer = pytorch_transformers.XLMTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
-        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
-        self._pad_id = tokenizer.convert_tokens_to_ids("<pad>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
 
         self.parameter_setup(args)
 

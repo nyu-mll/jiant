@@ -624,6 +624,17 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     elif tokenizer_name.startswith("xlm-"):
         tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
 
+    if (
+        tokenizer_name.startswith("openai-gpt")
+        or tokenizer_name.startswith("gpt2")
+        or tokenizer_name.startswith("transo-xl-")
+    ):
+        tokenizer.add_special_tokens(
+            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        )
+    # TODO: this is another place can be simplified by "model-before-preprocess" reorganization
+    # we can pass tokenizer created in model here, see issue <TBD>
+
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
     log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
