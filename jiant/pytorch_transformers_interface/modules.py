@@ -146,7 +146,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
     def get_seg_ids(self, token_ids, input_mask):
         """ Dynamically build the segment IDs for a concatenated pair of sentences
-        Searches for index _sep_id in the tensor. Supports BERT, RoBERTa or XLNet-style padding.
+        Searches for index _sep_id in the tensor. Supports BERT or XLNet-style padding.
         Sets padding tokens to segment zero.
 
         args:
@@ -164,7 +164,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         """
         # TODO: creating sentence segment id(and language segment id for XLM) is more suitable for preprocess
         sep_idxs = (token_ids == self._sep_id).long()
-        sep_count = (torch.cumsum(sep_idxs, dim=-1) - sep_idxs).clamp(max=1)
+        sep_count = torch.cumsum(sep_idxs, dim=-1) - sep_idxs
         seg_ids = sep_count * input_mask
 
         if self._SEG_ID_CLS is not None:
@@ -324,10 +324,7 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
         if self.output_mode != "only":
-            token_types = self.get_seg_ids(ids, input_mask)
-            _, output_pooled_vec, hidden_states = self.model(
-                ids, token_type_ids=token_types, attention_mask=input_mask
-            )
+            _, output_pooled_vec, hidden_states = self.model(ids, attention_mask=input_mask)
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
