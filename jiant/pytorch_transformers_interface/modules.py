@@ -206,15 +206,15 @@ class PytorchTransformersEmbedderModule(nn.Module):
         """
         raise NotImplementedError
 
-    def forward(self, sent, unused_task_name):
+    def forward(self, sent, task_name):
         """ Run pytorch_transformers model and return output representation 
         This function should be implmented in subclasses.
         
         args:
             sent: batch dictionary, in which 
                 sent[self.tokenizer_required]: <long> [batch_size, var_seq_len] input token IDs
-            unused_task_name: makeshift input slot, due to some logic in sentence_encoder,
-                TODO: deprecate this when sentence_encoder get fixed
+            task_name: task_name string, this can used to implement different mixing scalars for
+                differnt tasks. See the TODO in parameter_setup for more details.
 
         returns:
             transformer_emb: <float32> [batch_size, var_seq_len, output_dim] output embedding
@@ -262,9 +262,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         else:
             return ["[CLS]"] + s1 + ["[SEP]"]
 
-    def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
-    ) -> torch.FloatTensor:
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
@@ -315,9 +313,7 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
         else:
             return ["[CLS]"] + s1 + ["[SEP]"]
 
-    def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
-    ) -> torch.FloatTensor:
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
@@ -372,9 +368,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         else:
             return s1 + ["<sep>", "<cls>"]
 
-    def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
-    ) -> torch.FloatTensor:
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
@@ -431,9 +425,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         # OpenAI-GPT-style boundary token marking on string token sequences for LM tasks
         return ["\n</w>"] + s1 + ["\n</w>"]
 
-    def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
-    ) -> torch.FloatTensor:
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
@@ -486,9 +478,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         # GPT-2-style boundary token marking on string token sequences for LM tasks
         return ["<|endoftext|>"] + s1 + ["<|endoftext|>"]
 
-    def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
-    ) -> torch.FloatTensor:
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
@@ -541,9 +531,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         # TransformerXL-style boundary token marking on string token sequences for LM tasks
         return ["<\n>"] + s1 + ["<\n>"]
 
-    def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
-    ) -> torch.FloatTensor:
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
@@ -594,9 +582,7 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
         else:
             return ["</s>"] + s1 + ["</s>"]
 
-    def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
-    ) -> torch.FloatTensor:
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
