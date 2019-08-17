@@ -41,10 +41,7 @@ from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
 from jiant.modules.prpn.PRPN import PRPN
 from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
-from jiant.pytorch_transformers_interface import (
-    input_module_uses_pytorch_transformers,
-    input_module_supports_pair_embedding,
-)
+from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
@@ -767,7 +764,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
-        self.uses_pair_embedding = input_module_supports_pair_embedding(args.input_module)
+        self.uses_pair_embedding = input_module_uses_pair_embedding(args.input_module)
         self.project_before_pooling = not (
             input_module_uses_pytorch_transformers(args.input_module)
             and args.transfer_paradigm == "finetune"
@@ -1212,3 +1209,26 @@ class MultiTaskModel(nn.Module):
                         self.sent_encoder._text_field_embedder, task=None
                     )
         return params
+
+
+def input_module_uses_pair_embedding(input_module):
+    """
+    This function tells whether the input module concatenate the two sentences in a pair when
+    running on pair tasks, like what GPT / BERT do on MNLI.
+    It seems redundant now, but it allows us to load similar models from other sources later on
+    """
+    from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+
+    return input_module_uses_pytorch_transformers(input_module)
+
+
+def input_module_uses_mirrored_pair(input_module):
+    """
+    This function tells whether the input model uses raw pair and mirrored pair simutaneously when
+    running on symmetrical pair tasks, like what GPT do on STS-B 
+    """
+    return (
+        input_module.startswith("openai-gpt")
+        or input_module.startswith("gpt2")
+        or input_module.startswith("transfo-xl-")
+    )

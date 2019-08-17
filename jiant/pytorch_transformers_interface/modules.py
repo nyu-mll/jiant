@@ -174,12 +174,28 @@ class PytorchTransformersEmbedderModule(nn.Module):
     @staticmethod
     def apply_boundary_tokens(s1, s2=None):
         """
-        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence.
+        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
+        token sequence pair for most tasks. 
         This function should be implmented in subclasses.
         
         args:
             s1: list[str], tokens from sentence 1
             s2: list[str] (optional), tokens from sentence 2, used for pair embedding
+        
+        returns
+            s: list[str], token sequence with boundry tokens
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def apply_lm_boundary_tokens(s1):
+        """
+        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence for
+        language modeling tasks.
+        This function should be implmented in subclasses.
+        
+        args:
+            s1: list[str], tokens from sentence
         
         returns
             s: list[str], token sequence with boundry tokens
@@ -344,7 +360,12 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1):
+    def apply_boundary_tokens(s1 ,s2=None):
+        # OpenAI-GPT-style boundary token marking on string token sequences
+        return ["\n</w>"] + s1 + ["\n</w>"]
+    
+    @staticmethod
+    def apply_lm_boundary_tokens(s1):
         # OpenAI-GPT-style boundary token marking on string token sequences
         return ["\n</w>"] + s1 + ["\n</w>"]
 
@@ -475,14 +496,17 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
             args.input_module, cache_dir=self.cache_dir
         )
         self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
-        self._pad_id = tokenizer.convert_tokens_to_ids("<eos>")
+        self._pad_id = tokenizer.convert_tokens_to_ids("<pad>")
 
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1):
+    def apply_boundary_tokens(s1, s2=None):
         # XLM-style boundary token marking on string token sequences
-        return ["</s>"] + s1 + ["</s>"]
+        if s2:
+            return ["</s>"] + s1 + ["</s>"] + s2 + ["</s>"]
+        else:
+            return ["</s>"] + s1 + ["</s>"]
 
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""

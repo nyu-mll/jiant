@@ -31,6 +31,24 @@ from jiant.pytorch_transformers_interface import (
     input_module_uses_pytorch_transformers,
     input_module_tokenizer_name,
 )
+from jiant.pytorch_transformers_interface.modules import (
+    BertEmbedderModule,
+    XLNetEmbedderModule,
+    OpenAIGPTEmbedderModule,
+    GPT2EmbedderModule,
+    TransfoXLEmbedderModule,
+    XLMEmbedderModule,
+)
+from pytorch_transformers import (
+    BertTokenizer,
+    XLNetTokenizer,
+    OpenAIGPTTokenizer,
+    GPT2Tokenizer,
+    TransfoXLTokenizer,
+    XLMTokenizer,
+)
+
+from jiant.models import input_module_uses_pair_embedding, input_module_uses_mirrored_pair
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
     ALL_COLA_NPI_TASKS,
@@ -314,39 +332,36 @@ def build_tasks(args):
         log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
     # 4) Set up task modulator, this includes boundary function and model flags
-    if args.input_module.startswith("bert-"):
-        from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+    boundary_token_fn = None
+    lm_boundary_token_fn = None
 
+    if args.input_module.startswith("bert-"):
         boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
     elif args.input_module.startswith("xlnet-"):
-        from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
-
         boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
     elif args.input_module.startswith("openai-gpt"):
-        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
-
         boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
+        lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
     elif args.input_module.startswith("gpt2"):
-        from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
-
         boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
+        lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
     elif args.input_module.startswith("transfo-xl-"):
-        from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
-
         boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
+        lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
     elif args.input_module.startswith("xlm-"):
-        from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
-
         boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
     else:
         boundary_token_fn = utils.apply_standard_boundary_tokens
 
     model_flags = {}
-    from jiant.pytorch_transformers_interface import input_module_supports_pair_embedding
+    model_flags["uses_pair_embedding"] = input_module_uses_pair_embedding(args.input_module)
+    model_flags["uses_mirrored_pair"] = input_module_uses_mirrored_pair(args.input_module)
 
-    model_flags["supports_pair_embedding"] = input_module_supports_pair_embedding(args.input_module)
-
-    task_modulator = TaskModulator(boundary_token_fn, model_flags)
+    task_modulator = TaskModulator(
+        model_flags=model_flags,
+        boundary_token_fn=boundary_token_fn,
+        lm_boundary_token_fn=lm_boundary_token_fn,
+    )
 
     # 5) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
@@ -595,28 +610,18 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     do_lower_case = "uncased" in tokenizer_name
 
     if tokenizer_name.startswith("bert-"):
-        from pytorch_transformers import BertTokenizer
-
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("roberta-"):
+        tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("xlnet-"):
-        from pytorch_transformers import XLNetTokenizer
-
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("openai-gpt"):
-        from pytorch_transformers import OpenAIGPTTokenizer
-
         tokenizer = OpenAIGPTTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("gpt2"):
-        from pytorch_transformers import GPT2Tokenizer
-
         tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("transfo-xl-"):
-        from pytorch_transformers import TransfoXLTokenizer
-
         tokenizer = TransfoXLTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("xlm-"):
-        from pytorch_transformers import XLMTokenizer
-
         tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
@@ -641,11 +646,19 @@ class TaskModulator(object):
     """ A task modulator describes everything the task process needs to know about the model
     """
 
-    def __init__(self, boundary_token_fn, model_flags):
+    def __init__(self, model_flags, boundary_token_fn, lm_boundary_token_fn=None):
         """
-        boundary_token_fn: (list[str], list[str] (optional) -> list[str]):
-            A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence.
         model_flags: Dict[str, bool]
+        boundary_token_fn: (list[str], list[str] (optional) -> list[str]):
+            A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
+            token sequence pair for most tasks. 
+        lm_boundary_token_fn: (list[str] -> list[str]):
+            A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence for
+            language modeling tasks.
         """
-        self.boundary_token_fn = boundary_token_fn
         self.model_flags = model_flags
+        self.boundary_token_fn = boundary_token_fn
+        if lm_boundary_token_fn is not None:
+            self.lm_boundary_token_fn = lm_boundary_token_fn
+        else:
+            self.lm_boundary_token_fn = boundary_token_fn

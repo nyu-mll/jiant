@@ -17,22 +17,18 @@ to prepare langs input to pytorch_transformers.XLMModel
 """
 
 
-def input_module_supports_pair_embedding(module_name):
-    return module_name.startswith("bert-") or module_name.startswith("xlnet-")
-
-
-def input_module_uses_pytorch_transformers(module_name):
+def input_module_uses_pytorch_transformers(input_module):
     return (
-        module_name.startswith("bert-")
-        or module_name.startswith("xlnet-")
-        or module_name.startswith("gpt2")
-        or module_name.startswith("openai-gpt")
-        or module_name.startswith("transfo-xl-")
-        or module_name.startswith("xlm-")
+        input_module.startswith("bert-")
+        or input_module.startswith("xlnet-")
+        or input_module.startswith("gpt2")
+        or input_module.startswith("openai-gpt")
+        or input_module.startswith("transfo-xl-")
+        or input_module.startswith("xlm-")
     )
 
 
-def input_module_tokenizer_name(module_name):
+def input_module_tokenizer_name(input_module):
     input_module_to_pretokenized = {
         "bert-base-uncased": "bert_uncased",
         "bert-large-uncased": "bert_uncased",
@@ -61,4 +57,4 @@ def input_module_tokenizer_name(module_name):
         "xlm-mlm-tlm-xnli15-1024": "xlm_xnli",
         "xlm-mlm-xnli15-1024": "xlm_xnli",
     }
-    return input_module_to_pretokenized[module_name]
+    return input_module_to_pretokenized[input_module]
