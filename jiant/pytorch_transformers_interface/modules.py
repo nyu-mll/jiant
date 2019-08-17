@@ -146,7 +146,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
     def get_seg_ids(self, token_ids, input_mask):
         """ Dynamically build the segment IDs for a concatenated pair of sentences
-        Searches for index _sep_id in the tensor. Supports BERT or XLNet-style padding.
+        Searches for index _sep_id in the tensor. Supports BERT, RoBERTa or XLNet-style padding.
         Sets padding tokens to segment zero.
 
         args:
@@ -162,9 +162,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
         > seg_ids = get_seg_ids(token_tensor, torch.LongTensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]))
         > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0])
         """
-
+        # TODO: creating sentence segment id(and language segment id for XLM) is more suitable for preprocess
         sep_idxs = (token_ids == self._sep_id).long()
-        sep_count = torch.cumsum(sep_idxs, dim=-1) - sep_idxs
+        sep_count = (torch.cumsum(sep_idxs, dim=-1) - sep_idxs).clamp(max=1)
         seg_ids = sep_count * input_mask
 
         if self._SEG_ID_CLS is not None:
@@ -243,7 +243,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         self.model = pytorch_transformers.BertModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )
-        self.max_pos = model.config.max_position_embeddings
+        self.max_pos = self.model.config.max_position_embeddings
 
         self.tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
@@ -273,7 +273,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         if self.output_mode != "only":
             token_types = self.get_seg_ids(ids, input_mask)
             _, output_pooled_vec, hidden_states = self.model(
-                ids, token_type_ids=token_types, attention_mask=mask
+                ids, token_type_ids=token_types, attention_mask=input_mask
             )
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
@@ -282,6 +282,59 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.cls
+        lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+
+
+class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
+    """ Wrapper for RoBERTa module to fit into jiant APIs.
+    Check PytorchTransformersEmbedderModule for function definitions """
+
+    def __init__(self, args):
+        super(RobertaEmbedderModule, self).__init__(args)
+
+        self.model = pytorch_transformers.RobertaModel.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+        )
+        self.max_pos = self.model.config.max_position_embeddings
+
+        self.tokenizer = pytorch_transformers.RobertaTokenizer.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
+        self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
+
+        self.parameter_setup(args)
+
+    @staticmethod
+    def apply_boundary_tokens(s1, s2=None):
+        # RoBERTa-style boundary token padding on string token sequences
+        if s2:
+            return ["[CLS]"] + s1 + ["[SEP]", "[SEP]"] + s2 + ["[SEP]"]
+        else:
+            return ["[CLS]"] + s1 + ["[SEP]"]
+
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
+        ids, input_mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
+            lex_seq = self.model.embeddings.word_embeddings(ids)
+            lex_seq = self.model.embeddings.LayerNorm(lex_seq)
+        if self.output_mode != "only":
+            token_types = self.get_seg_ids(ids, input_mask)
+            _, output_pooled_vec, hidden_states = self.model(
+                ids, token_type_ids=token_types, attention_mask=input_mask
+            )
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
+
+    def get_pretrained_lm_head(self):
+        model_with_lm_head = pytorch_transformers.RobertaForMaskedLM.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.lm_head
         lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
@@ -332,7 +385,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         if self.output_mode != "only":
             token_types = self.get_seg_ids(ids, input_mask)
             _, output_mems, hidden_states = self.model(
-                ids, token_type_ids=token_types, attention_mask=mask
+                ids, token_type_ids=token_types, attention_mask=input_mask
             )
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
@@ -526,7 +579,7 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
         self.model = pytorch_transformers.XLMModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
-        self.max_pos = model.config.max_position_embeddings
+        self.max_pos = self.model.config.max_position_embeddings
 
         self.tokenizer = pytorch_transformers.XLMTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
