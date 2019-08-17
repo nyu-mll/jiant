@@ -40,7 +40,11 @@ def select_pool_type(args):
     if args.pool_type == "auto":
         pool_type = "max"
         if args.sent_enc == "none":
-            if args.input_module.startswith("bert-") or args.input_module.startswith("xlm"):
+            if (
+                args.input_module.startswith("bert-")
+                or args.input_module.startswith("roberta-")
+                or args.input_module.startswith("xlm-")
+            ):
                 pool_type = "first"
             elif (
                 args.input_module.startswith("xlnet-")

@@ -33,6 +33,7 @@ from jiant.pytorch_transformers_interface import (
 )
 from jiant.pytorch_transformers_interface.modules import (
     BertEmbedderModule,
+    RobertaEmbedderModule,
     XLNetEmbedderModule,
     OpenAIGPTEmbedderModule,
     GPT2EmbedderModule,
@@ -41,6 +42,7 @@ from jiant.pytorch_transformers_interface.modules import (
 )
 from pytorch_transformers import (
     BertTokenizer,
+    RobertaTokenizer,
     XLNetTokenizer,
     OpenAIGPTTokenizer,
     GPT2Tokenizer,
@@ -337,6 +339,8 @@ def build_tasks(args):
 
     if args.input_module.startswith("bert-"):
         boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
+    elif args.input_module.startswith("roberta-"):
+        boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
     elif args.input_module.startswith("xlnet-"):
         boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
     elif args.input_module.startswith("openai-gpt"):
