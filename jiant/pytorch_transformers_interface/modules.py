@@ -32,7 +32,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
         self.output_mode = args.pytorch_transformers_output_mode
         self.input_module = args.input_module
-        self.max_seq_len = args.max_seq_len
+        self.max_pos = None
         self.tokenizer_required = input_module_tokenizer_name(args.input_module)
 
         # Integer token indices for special symbols.
@@ -103,6 +103,10 @@ class PytorchTransformersEmbedderModule(nn.Module):
         assert (
             ids >= 0
         ).all(), "out-of-vocabulary token found in the input, but _unk_id of pytorch_transformers model is not specified"
+        if self.max_pos is not None:
+            assert (
+                ids.size()[-1] <= self.max_pos
+            ), "input length exceeds position embedding capacity, reduce max_seq_len"
 
         return ids, input_mask
 
@@ -239,6 +243,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         self.model = pytorch_transformers.BertModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )
+        self.max_pos = model.config.max_position_embeddings
 
         tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
@@ -350,6 +355,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         self.model = pytorch_transformers.OpenAIGPTModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self.max_pos = self.model.config.n_positions
 
         tokenizer = pytorch_transformers.OpenAIGPTTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
@@ -363,7 +369,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
     def apply_boundary_tokens(s1 ,s2=None):
         # OpenAI-GPT-style boundary token marking on string token sequences
         return ["\n</w>"] + s1 + ["\n</w>"]
-    
+
     @staticmethod
     def apply_lm_boundary_tokens(s1):
         # OpenAI-GPT-style boundary token marking on string token sequences
@@ -399,6 +405,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         self.model = pytorch_transformers.GPT2Model.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self.max_pos = self.model.config.n_positions
 
         tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
@@ -491,6 +498,7 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
         self.model = pytorch_transformers.XLMModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self.max_pos = model.config.max_position_embeddings
 
         tokenizer = pytorch_transformers.XLMTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
