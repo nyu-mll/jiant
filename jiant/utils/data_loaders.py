@@ -113,7 +113,8 @@ def load_tsv(
         s2_idx (int|None): The column index for the second text field, if present.
         label_fn (fn: str -> int|None): A function to map items in column label_idx to int-valued
             labels.
-        col_indices (list[int]): TODO(YADA): ???
+        col_indices (list[int]): column names, which should be 1-n, where n is the number of columns
+        in the csv. 
         skip_rows (int|list): Skip this many header rows or skip these specific row indices.
         has_labels (bool): If False, don't look for labels at position label_idx.
         filter_value (str|None): The value in which we want filter_idx to be equal to.
