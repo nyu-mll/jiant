@@ -623,6 +623,9 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("roberta-"):
         tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
+        # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None
+        if tokenizer.convert_ids_to_tokens(tokenizer.vocab_size - 1) is None:
+            tokenizer.vocab_size -= 1
     elif tokenizer_name.startswith("xlnet-"):
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("openai-gpt"):
