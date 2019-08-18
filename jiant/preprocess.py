@@ -623,9 +623,6 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("roberta-"):
         tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
-        # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None
-        if tokenizer.convert_ids_to_tokens(tokenizer.vocab_size - 1) is None:
-            tokenizer.vocab_size -= 1
     elif tokenizer_name.startswith("xlnet-"):
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("openai-gpt"):
@@ -648,7 +645,17 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     # TODO: this is another place can be simplified by "model-before-preprocess" reorganization
     # we can pass tokenizer created in model here, see issue <TBD>
 
-    ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
+    vocab_size = tokenizer.vocab_size
+    if (
+        tokenizer_name.startswith("roberta-")
+        and tokenizer.convert_ids_to_tokens(tokenizer.vocab_size - 1) is None
+    ):
+        vocab_size -= 1
+    else:
+        log.info("Time to delete vocab_size-1 in preprocess.py !!!")
+    # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None, remove this when they fix the problem
+
+    ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
     log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, input_module_tokenizer_name(tokenizer_name))
