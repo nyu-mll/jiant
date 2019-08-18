@@ -251,6 +251,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("[UNK]")
 
         self.parameter_setup(args)
 
@@ -299,9 +300,10 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
         self.tokenizer = pytorch_transformers.RobertaTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
-        self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
-        self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
-        self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
+        self._sep_id = self.tokenizer.convert_tokens_to_ids("</s>")
+        self._cls_id = self.tokenizer.convert_tokens_to_ids("<s>")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 
@@ -309,9 +311,9 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
     def apply_boundary_tokens(s1, s2=None):
         # RoBERTa-style boundary token padding on string token sequences
         if s2:
-            return ["[CLS]"] + s1 + ["[SEP]", "[SEP]"] + s2 + ["[SEP]"]
+            return ["<s>"] + s1 + ["</s>", "</s>"] + s2 + ["</s>"]
         else:
-            return ["[CLS]"] + s1 + ["[SEP]"]
+            return ["<s>"] + s1 + ["</s>"]
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
         ids, input_mask = self.correct_sent_indexing(sent)
