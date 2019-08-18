@@ -86,13 +86,13 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         assertionerror_found = False
         sent = {"wrong_tokenizer": copy.deepcopy(allenNLP_indexed)}
         try:
-            model.correct_sent_indexing(sent)
+            model.correct_sent_indexing(model, sent)
         except AssertionError:
             assertionerror_found = True
         assert assertionerror_found
 
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
-        ids, input_mask = model.correct_sent_indexing(sent)
+        ids, input_mask = model.correct_sent_indexing(model, sent)
         assert torch.all(torch.eq(ids, expected_ids))
         assert torch.all(torch.eq(input_mask, expected_mask))
 
@@ -100,7 +100,7 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         assertionerror_found = False
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
         try:
-            model.correct_sent_indexing(sent)
+            model.correct_sent_indexing(model, sent)
         except AssertionError:
             assertionerror_found = True
         assert assertionerror_found
@@ -110,14 +110,14 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         assertionerror_found = False
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
         try:
-            model.correct_sent_indexing(sent)
+            model.correct_sent_indexing(model, sent)
         except AssertionError:
             assertionerror_found = True
         assert assertionerror_found
 
         model.max_pos = 7
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
-        ids, input_mask = model.correct_sent_indexing(sent)
+        ids, input_mask = model.correct_sent_indexing(model, sent)
         assert torch.all(torch.eq(ids, expected_ids))
         assert torch.all(torch.eq(input_mask, expected_mask))
 
