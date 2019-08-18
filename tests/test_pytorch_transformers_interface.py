@@ -1,7 +1,17 @@
 import unittest
 from unittest import mock
 import torch
-from jiant.pytorch_transformers_interface.modules import BertEmbedderModule, XLNetEmbedderModule
+import copy
+from jiant.pytorch_transformers_interface.modules import (
+    PytorchTransformersEmbedderModule,
+    BertEmbedderModule,
+    RobertaEmbedderModule,
+    XLNetEmbedderModule,
+    OpenAIGPTEmbedderModule,
+    GPT2EmbedderModule,
+    TransfoXLEmbedderModule,
+    XLMEmbedderModule,
+)
 
 
 class TestPytorchTransformersInterface(unittest.TestCase):
@@ -16,6 +26,17 @@ class TestPytorchTransformersInterface(unittest.TestCase):
             ["[CLS]", "A", "B", "C", "[SEP]", "D", "E", "[SEP]"],
         )
 
+    def test_roberta_apply_boundary_tokens(self):
+        s1 = ["A", "B", "C"]
+        s2 = ["D", "E"]
+        self.assertListEqual(
+            RobertaEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
+        )
+        self.assertListEqual(
+            RobertaEmbedderModule.apply_boundary_tokens(s1, s2),
+            ["[CLS]", "A", "B", "C", "[SEP]", "[SEP]", "D", "E", "[SEP]"],
+        )
+
     def test_xlnet_apply_boundary_tokens(self):
         s1 = ["A", "B", "C"]
         s2 = ["D", "E"]
@@ -26,6 +47,79 @@ class TestPytorchTransformersInterface(unittest.TestCase):
             XLNetEmbedderModule.apply_boundary_tokens(s1, s2),
             ["A", "B", "C", "<sep>", "D", "E", "<sep>", "<cls>"],
         )
+
+    def test_gpt_apply_boundary_tokens(self):
+        s1 = ["A", "B", "C"]
+        s2 = ["D", "E"]
+        self.assertListEqual(
+            OpenAIGPTEmbedderModule.apply_boundary_tokens(s1),
+            ["<start>", "A", "B", "C", "<extract>"],
+        )
+        self.assertListEqual(
+            OpenAIGPTEmbedderModule.apply_boundary_tokens(s1, s2),
+            ["<start>", "A", "B", "C", "<delim>", "D", "E", "<extract>"],
+        )
+
+    def test_xlm_apply_boundary_tokens(self):
+        s1 = ["A", "B", "C"]
+        s2 = ["D", "E"]
+        self.assertListEqual(
+            XLMEmbedderModule.apply_boundary_tokens(s1), ["</s>", "A", "B", "C", "</s>"]
+        )
+        self.assertListEqual(
+            XLMEmbedderModule.apply_boundary_tokens(s1, s2),
+            ["</s>", "A", "B", "C", "</s>", "D", "E", "</s>"],
+        )
+
+    def test_correct_sent_indexing(self):
+        model = mock.Mock()
+        model._pad_id = 7
+        model._unk_id = 10
+        model.tokenizer_required = "correct_tokenizer"
+        model.correct_sent_indexing = PytorchTransformersEmbedderModule.correct_sent_indexing
+
+        allenNLP_indexed = torch.LongTensor([[7, 10, 5, 11, 1, 13, 5], [7, 10, 11, 5, 1, 5, 0]])
+
+        expected_ids = torch.LongTensor([[5, 8, 3, 9, 10, 11, 3], [5, 8, 9, 3, 10, 3, 7]])
+        expected_mask = torch.LongTensor([[1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0]])
+
+        assertionerror_found = False
+        sent = {"wrong_tokenizer": copy.deepcopy(allenNLP_indexed)}
+        try:
+            model.correct_sent_indexing(sent)
+        except AssertionError:
+            assertionerror_found = True
+        assert assertionerror_found
+
+        sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
+        ids, input_mask = model.correct_sent_indexing(sent)
+        assert torch.all(torch.eq(ids, expected_ids))
+        assert torch.all(torch.eq(input_mask, expected_mask))
+
+        model._unk_id = None
+        assertionerror_found = False
+        sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
+        try:
+            model.correct_sent_indexing(sent)
+        except AssertionError:
+            assertionerror_found = True
+        assert assertionerror_found
+
+        model._unk_id = 10
+        model.max_pos = 6
+        assertionerror_found = False
+        sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
+        try:
+            model.correct_sent_indexing(sent)
+        except AssertionError:
+            assertionerror_found = True
+        assert assertionerror_found
+
+        model.max_pos = 7
+        sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
+        ids, input_mask = model.correct_sent_indexing(sent)
+        assert torch.all(torch.eq(ids, expected_ids))
+        assert torch.all(torch.eq(input_mask, expected_mask))
 
     def test_bert_seg_ids(self):
         bert_model = mock.Mock()
