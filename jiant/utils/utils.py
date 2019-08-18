@@ -50,6 +50,7 @@ def select_pool_type(args):
                 args.input_module.startswith("xlnet-")
                 or args.input_module.startswith("openai-gpt")
                 or args.input_module.startswith("gpt2")
+                or args.input_module.startswith("transfo-xl-")
             ):
                 pool_type = "final"
     else:
