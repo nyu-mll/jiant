@@ -30,11 +30,11 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         s1 = ["A", "B", "C"]
         s2 = ["D", "E"]
         self.assertListEqual(
-            RobertaEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
+            RobertaEmbedderModule.apply_boundary_tokens(s1), ["<s>", "A", "B", "C", "</s>"]
         )
         self.assertListEqual(
             RobertaEmbedderModule.apply_boundary_tokens(s1, s2),
-            ["[CLS]", "A", "B", "C", "[SEP]", "[SEP]", "D", "E", "[SEP]"],
+            ["<s>", "A", "B", "C", "</s>", "</s>", "D", "E", "</s>"],
         )
 
     def test_xlnet_apply_boundary_tokens(self):
