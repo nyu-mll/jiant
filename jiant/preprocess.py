@@ -342,22 +342,22 @@ def build_tasks(args):
         boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
     elif args.input_module.startswith("openai-gpt"):
         from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
-        
+
         boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
         lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
     elif args.input_module.startswith("gpt2"):
         from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
-        
+
         boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
         lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
     elif args.input_module.startswith("transfo-xl-"):
         from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
-        
+
         boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
         lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
     elif args.input_module.startswith("xlm-"):
         from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
-        
+
         boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
     else:
         boundary_token_fn = utils.apply_standard_boundary_tokens
