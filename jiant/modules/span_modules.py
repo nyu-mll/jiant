@@ -12,6 +12,7 @@ from jiant.tasks.tasks import Task
 from jiant.modules.simple_modules import Classifier
 from jiant.utils.utils import get_batch_size
 
+
 class SpanClassifierModule(nn.Module):
     """
         Build span classifier components as a sub-module.
