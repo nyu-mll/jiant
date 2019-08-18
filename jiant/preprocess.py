@@ -41,7 +41,6 @@ from pytorch_transformers import (
     XLMTokenizer,
 )
 
-from jiant.models import input_module_uses_pair_embedding, input_module_uses_mirrored_pair
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
     ALL_COLA_NPI_TASKS,
@@ -361,6 +360,8 @@ def build_tasks(args):
         boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
     else:
         boundary_token_fn = utils.apply_standard_boundary_tokens
+
+    from jiant.models import input_module_uses_pair_embedding, input_module_uses_mirrored_pair
 
     model_flags = {}
     model_flags["uses_pair_embedding"] = input_module_uses_pair_embedding(args.input_module)
