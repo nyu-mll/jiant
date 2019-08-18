@@ -59,6 +59,7 @@ from jiant.tasks.tasks import (
     STSBTask,
     TaggingTask,
     WiCTask,
+    MRPCTask,
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -771,6 +772,7 @@ class MultiTaskModel(nn.Module):
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
         self.uses_pair_embedding = input_module_uses_pair_embedding(args.input_module)
+        self.uses_mirrored_pair = input_module_uses_mirrored_pair(args.input_module)
         self.project_before_pooling = not (
             input_module_uses_pytorch_transformers(args.input_module)
             and args.transfer_paradigm == "finetune"
@@ -918,7 +920,13 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.uses_pair_embedding:
+        if isinstance(task, (MRPCTask, STSBTask)) and self.uses_mirrored_pair:
+            # Mirrored pair is a trick used by GPT-like models in similarity tasks
+            # TODO: Wic also falls into this type, although GPT paper didn't expeirment with this task
+            sent, mask = self.sent_encoder(batch["inputs"], task)
+            sent_m, mask_m = self.sent_encoder(batch["inputs_m"], task)
+            logits = classifier(sent, mask) + classifier(sent_m, mask_m)
+        elif self.uses_pair_embedding:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             # special case for WiC b/c we want to add representations of particular tokens
             if isinstance(task, WiCTask):

@@ -74,7 +74,7 @@ def atomic_tokenize(
 
 
 def process_single_pair_task_split(
-    split, indexers, task_modulator, is_pair=True, classification=True
+    split, indexers, task_modulator, is_pair=True, classification=True, is_symmetrical_pair=False
 ):
     """
     Convert a dataset of sentences into padded sequences of indices. Shared
@@ -86,6 +86,9 @@ def process_single_pair_task_split(
         - task_modulator: packed information from model that effects the task data
         - is_pair (Bool)
         - classification (Bool)
+        - is_symmetrical_pair (Bool) whether reverse the sentences in a pair will change the result,
+            if this is true, and the model allows uses_mirrored_pair, a mirrored pair will be added
+            to the input
 
     Returns:
         - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
@@ -99,6 +102,9 @@ def process_single_pair_task_split(
             inp = task_modulator.boundary_token_fn(input1, input2)
             d["inputs"] = sentence_to_text_field(inp, indexers)
             d["sent2_str"] = MetadataField(" ".join(input2))
+            if task_modulator.model_flags["uses_mirrored_pair"] and is_symmetrical_pair:
+                inp_m = task_modulator.boundary_token_fn(input1, input2)
+                d["inputs_m"] = sentence_to_text_field(inp_m, indexers)
         else:
             d["input1"] = sentence_to_text_field(task_modulator.boundary_token_fn(input1), indexers)
             if input2:
@@ -977,6 +983,17 @@ class MRPCTask(PairClassificationTask):
             "recall": rcl,
         }
 
+    def process_split(self, split, indexers, task_modulator) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            task_modulator,
+            is_pair=True,
+            classification=True,
+            is_symmetrical_pair=True,
+        )
+
 
 @register_task("sts-b", rel_path="STS-B/")
 # second copy for different params
@@ -1044,6 +1061,17 @@ class STSBTask(PairRegressionTask):
         pearsonr = self.scorer1.get_metric(reset)
         spearmanr = self.scorer2.get_metric(reset)
         return {"corr": (pearsonr + spearmanr) / 2, "pearsonr": pearsonr, "spearmanr": spearmanr}
+
+    def process_split(self, split, indexers, task_modulator) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            task_modulator,
+            is_pair=True,
+            classification=False,
+            is_symmetrical_pair=True,
+        )
 
 
 @register_task("snli", rel_path="SNLI/")
