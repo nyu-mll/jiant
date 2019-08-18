@@ -199,8 +199,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         assert_for_log(
             args.skip_embs,
             "skip_embs is false and sent_enc is none, "
-            "which means that your token representations are zero-dimensional. Consider "
-            "setting skip_embs.",
+            "which means that your token representations are zero-dimensional. Consider setting skip_embs.",
         )
         phrase_layer = NullPhraseLayer(rnn_params["input_size"])
         sent_encoder = SentenceEncoder(
