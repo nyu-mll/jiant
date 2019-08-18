@@ -851,7 +851,6 @@ class SamplingMultiTaskTrainer:
         # compute task contribution to macro and micro averages
         n_examples_overall += n_examples
         if task.val_metric_decreases and len(tasks) > 1:
-
             all_val_metrics["micro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
             ) * n_examples
