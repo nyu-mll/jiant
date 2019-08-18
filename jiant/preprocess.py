@@ -653,7 +653,8 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
         vocab_size -= 1
     else:
         log.info("Time to delete vocab_size-1 in preprocess.py !!!")
-    # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None, remove this when they fix the problem
+    # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None, remove
+    # this when they fix the problem
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
     log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
