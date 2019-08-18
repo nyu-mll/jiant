@@ -1,3 +1,3 @@
-# jsalt -rw,hard 10.0.0.2:/jsalt
-jsalt -rw,hard jsalt-fileserver-vm:/data
+# Change this to the NFS server on your cluster
+jiant -rw,hard jiant:/jiant
 
