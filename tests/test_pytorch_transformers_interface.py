@@ -83,6 +83,7 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         expected_ids = torch.LongTensor([[5, 8, 3, 9, 10, 11, 3], [5, 8, 9, 3, 10, 3, 7]])
         expected_mask = torch.LongTensor([[1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0]])
 
+        # test the required_tokenizer assertion(bad case)
         assertionerror_found = False
         sent = {"wrong_tokenizer": copy.deepcopy(allenNLP_indexed)}
         try:
@@ -91,11 +92,14 @@ class TestPytorchTransformersInterface(unittest.TestCase):
             assertionerror_found = True
         assert assertionerror_found
 
+        # test the required_tokenizer, unk_id assertion(good case)
+        # test the result correctness
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
         ids, input_mask = model.correct_sent_indexing(model, sent)
         assert torch.all(torch.eq(ids, expected_ids))
         assert torch.all(torch.eq(input_mask, expected_mask))
 
+        # test the unk_id assertion(bad case)
         model._unk_id = None
         assertionerror_found = False
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
@@ -104,8 +108,9 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         except AssertionError:
             assertionerror_found = True
         assert assertionerror_found
-
         model._unk_id = 10
+
+        # test the max input length assertion(bad case)
         model.max_pos = 6
         assertionerror_found = False
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
@@ -115,6 +120,7 @@ class TestPytorchTransformersInterface(unittest.TestCase):
             assertionerror_found = True
         assert assertionerror_found
 
+        # test the max input length assertion(good case)
         model.max_pos = 7
         sent = {"correct_tokenizer": copy.deepcopy(allenNLP_indexed)}
         ids, input_mask = model.correct_sent_indexing(model, sent)
