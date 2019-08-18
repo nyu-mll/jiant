@@ -75,6 +75,7 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         model = mock.Mock()
         model._pad_id = 7
         model._unk_id = 10
+        model.max_pos = None
         model.tokenizer_required = "correct_tokenizer"
         model.correct_sent_indexing = PytorchTransformersEmbedderModule.correct_sent_indexing
 
