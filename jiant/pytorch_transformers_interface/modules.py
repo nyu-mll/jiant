@@ -394,7 +394,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
     Check PytorchTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
-        super(OpenAIGPTEmbedderModule).__init__(args)
+        super(OpenAIGPTEmbedderModule, self).__init__(args)
 
         self.model = pytorch_transformers.OpenAIGPTModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
@@ -588,7 +588,7 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings(ids)
         if self.output_mode != "only":
-            _, _, hidden_states = self.model(ids)
+            _, hidden_states = self.model(ids)
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
