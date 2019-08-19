@@ -469,8 +469,7 @@ class QASRLTask(SpanPredictionTask):
         self.train_data = self._load_file(os.path.join(self.path, "orig", "train.jsonl.gz"))
 
         self.val_data = self._load_file(os.path.join(self.path, "orig", "dev.jsonl.gz"))
-        # Shuffle validation data to ensure diversity in periodic validation with val_data_limit
-        random.Random(1234).shuffle(self.val_data)
+        self._shuffle_data(self.val_data)
 
         self.test_data = self._load_file(os.path.join(self.path, "orig", "test.jsonl.gz"))
         self.sentences = []
@@ -479,8 +478,12 @@ class QASRLTask(SpanPredictionTask):
             self.train_data[0] + self.train_data[1] + self.val_data[0] + self.val_data[1]
         )
 
-    def process_split(self, split, indexers):
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """ Yield sentences, used to compute vocabulary. """
+        yield from self.sentences
+
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
+        is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(sentence_tokens, question_tokens, answer_span, idx):
             d = dict()
@@ -489,12 +492,12 @@ class QASRLTask(SpanPredictionTask):
             d["raw_sentence"] = MetadataField(" ".join(sentence_tokens[1:-1]))
             d["raw_question"] = MetadataField(" ".join(question_tokens[1:-1]))
 
-            if is_using_bert:
-                inp = sentence_tokens + question_tokens[1:]  # throw away question leading [CLS]
+            if is_using_pytorch_transformers:
+                inp = boundary_token_fn(sentence_tokens, question_tokens)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["sentence"] = sentence_to_text_field(sentence_tokens, indexers)
-                d["question"] = sentence_to_text_field(question_tokens, indexers)
+                d["sentence"] = sentence_to_text_field(boundary_token_fn(sentence_tokens), indexers)
+                d["question"] = sentence_to_text_field(boundary_token_fn(question_tokens), indexers)
 
             d["span_start"] = NumericField(answer_span[0], label_namespace="span_start_labels")
             d["span_end"] = NumericField(answer_span[1], label_namespace="span_end_labels")
@@ -539,6 +542,13 @@ class QASRLTask(SpanPredictionTask):
             [example[k] for example in example_list]
             for k in ["sentence_tokens", "question_tokens", "answer_span", "idx"]
         ]
+
+    @classmethod
+    def _shuffle_data(cls, data, seed=1234):
+        # Shuffle validation data to ensure diversity in periodic validation with val_data_limit
+        indices = list(range(len(data[0])))
+        random.Random(seed).shuffle(indices)
+        return [[sub_data[i] for i in indices] for sub_data in data]
 
     def _process_sentence(self, sent):
         return tokenize_and_truncate(
