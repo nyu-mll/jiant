@@ -21,7 +21,7 @@ from jiant.tasks.tasks import (
     WinogradCoreferenceTask,
     GLUEDiagnosticTask,
 )
-from jiant.tasks.qa import MultiRCTask, ReCoRDTask
+from jiant.tasks.qa import MultiRCTask, ReCoRDTask, QASRLTask
 from jiant.tasks.edge_probing import EdgeProbingTask
 
 
@@ -218,7 +218,7 @@ def write_preds(
             _write_diagnostics_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
-        elif task.CSV_PREDS:
+        elif isinstance(task, QASRLTask):
             _write_simple_csv_preds(task, preds_df, pred_dir, split_name)
         else:
             log.warning("Task '%s' not supported by write_preds().", task.name)

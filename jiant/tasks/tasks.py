@@ -198,8 +198,6 @@ class Task(object):
         - optimizer
     """
 
-    CSV_PREDS = False
-
     def __init__(self, name, tokenizer_name):
         self.name = name
         self._tokenizer_name = tokenizer_name
@@ -2573,10 +2571,9 @@ class MultipleChoiceTask(Task):
 
 
 class SpanPredictionTask(Task):
+    """ Generic task class for predicting a span """
 
     n_classes = 2
-
-    """ Generic task class for predicting a span """
 
 
 @register_task("copa", rel_path="COPA/")

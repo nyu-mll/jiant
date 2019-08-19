@@ -432,9 +432,6 @@ class ReCoRDTask(Task):
 
 @register_task("qasrl", rel_path="QASRL/")
 class QASRLTask(SpanPredictionTask):
-
-    CSV_PREDS = True
-
     def __init__(self, path, max_seq_len, name, **kw):
         """QA-SRL (Question-Answer Driven Semantic Role Labeling)
         See http://qasrl.org/
