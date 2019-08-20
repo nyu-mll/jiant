@@ -57,6 +57,15 @@ class PytorchTransformersEmbedderModule(nn.Module):
         else:
             self.max_layer = self.num_layers
 
+        if args.transfer_paradigm == "frozen":
+            if isinstance(
+                self, (OpenAIGPTEmbedderModule, GPT2EmbedderModule, TransfoXLEmbedderModule)
+            ):
+                log.warning(
+                    "NOTE: OpenAI GPT, GPT-2 and Transformer-XL add new tokens for classification"
+                    "tasks, under 'frozen' transfer_paradigm, their embeddings will not be trained"
+                )
+
         # Configure scalar mixing, ELMo-style.
         if self.output_mode == "mix":
             if args.transfer_paradigm == "frozen":
@@ -392,7 +401,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
 
 class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
-    """ Wrapper for OpenAIGPT module to fit into jiant APIs.
+    """ Wrapper for OpenAI GPT module to fit into jiant APIs.
     Check PytorchTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
@@ -406,11 +415,16 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         self.tokenizer = pytorch_transformers.OpenAIGPTTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
-        self.tokenizer.add_special_tokens(
-            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
-        )
         self._pad_id = self.tokenizer.convert_tokens_to_ids("\n</w>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+
+        special_tokens = {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        self.tokenizer.add_special_tokens(special_tokens)
+        embedding = self.model.tokens_embed
+        self.model.tokens_embed = nn.Embedding(
+            embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
+        )
+        self.model.tokens_embed[: embedding.num_embeddings] = embedding.weight
 
         self.parameter_setup(args)
 
@@ -441,7 +455,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
-        lm_head.weight = self.model.tokens_embed.weight
+        lm_head.weight = self.model.tokens_embed.weight[: lm_head.weight.size()[0]]
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
@@ -460,10 +474,15 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         self.tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
-        self.tokenizer.add_special_tokens(
-            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
-        )
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<|endoftext|>")
+
+        special_tokens = {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        self.tokenizer.add_special_tokens(special_tokens)
+        embedding = self.model.wte
+        self.model.wte = nn.Embedding(
+            embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
+        )
+        self.model.wte[: embedding.num_embeddings] = embedding.weight
 
         self.parameter_setup(args)
 
@@ -494,7 +513,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
-        lm_head.weight = self.model.wte.weight
+        lm_head.weight = self.model.wte.weight[: lm_head.weight.size()[0]]
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
@@ -512,11 +531,19 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         self.tokenizer = pytorch_transformers.TransfoXLTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
-        self.tokenizer.add_special_tokens(
-            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
-        )
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<eos>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+
+        special_tokens = {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        self.tokenizer.add_special_tokens(special_tokens)
+        self.model.word_emb.n_token += len(special_tokens)
+        self.model.word_emb.cutoffs[-1] += len(special_tokens)
+        self.model.word_emb.cutoff_ends[-1] += len(special_tokens)
+        embedding = self.model.word_emb.emb_layers[-1]
+        self.model.word_emb.emb_layers[-1] = nn.Embedding(
+            embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
+        )
+        self.model.word_emb.emb_layers[-1][: embedding.num_embeddings] = embedding.weight
 
         self.parameter_setup(args)
 
@@ -548,8 +575,11 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.crit
-        for i in range(len(model_with_lm_head.crit.out_layers)):
-            lm_head.out_layers[i].weight = self.model.word_emb.emb_layers[i].weight
+        for i in range(len(model_with_lm_head.crit.out_layers) - 1):
+            lm_head.out_layers[i].weight = self.model.word_emb.emb_layers[i].weights
+        lm_Head.out_layers[-1] = self.model.word_emb.emb_layers[-1].weight[
+            : lm_head.out_layers[-1].weight.size()[0]
+        ]
         for i, tie_proj in enumerate(model_with_lm_head.config.tie_projs):
             if tie_proj:
                 lm_head.out_projs[i] = self.model.word_emb.emb_projs[i]

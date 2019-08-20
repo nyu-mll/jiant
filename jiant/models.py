@@ -249,7 +249,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     elif args.input_module.startswith("openai-gpt"):
         from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
 
-        log.info(f"Using OpenAIGPT model ({args.input_module}).")
+        log.info(f"Using OpenAI GPT model ({args.input_module}).")
         embedder = OpenAIGPTEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("gpt2"):

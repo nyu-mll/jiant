@@ -645,7 +645,8 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     # TODO: this is another place can be simplified by "model-before-preprocess" reorganization
     # we can pass tokenizer created in model here, see issue <TBD>
 
-    vocab_size = tokenizer.vocab_size
+    vocab_size = len(tokenizer)
+    # do not use tokenizer.vocab_size, it does not include newly added token 
     if (
         tokenizer_name.startswith("roberta-")
         and tokenizer.convert_ids_to_tokens(tokenizer.vocab_size - 1) is None
