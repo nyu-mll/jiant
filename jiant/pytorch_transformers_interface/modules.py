@@ -424,7 +424,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         self.model.tokens_embed = nn.Embedding(
             embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
         )
-        self.model.tokens_embed[: embedding.num_embeddings] = embedding.weight
+        self.model.tokens_embed.weight.data[: embedding.num_embeddings] = embedding.weight.data
 
         self.parameter_setup(args)
 
@@ -482,7 +482,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         self.model.wte = nn.Embedding(
             embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
         )
-        self.model.wte[: embedding.num_embeddings] = embedding.weight
+        self.model.wte.weight.data[: embedding.num_embeddings] = embedding.weight.data
 
         self.parameter_setup(args)
 
@@ -543,7 +543,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         self.model.word_emb.emb_layers[-1] = nn.Embedding(
             embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
         )
-        self.model.word_emb.emb_layers[-1][: embedding.num_embeddings] = embedding.weight
+        self.model.word_emb.emb_layers[-1].weight.data[: embedding.num_embeddings] = embedding.weight.data
 
         self.parameter_setup(args)
 
@@ -577,7 +577,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         lm_head = model_with_lm_head.crit
         for i in range(len(model_with_lm_head.crit.out_layers) - 1):
             lm_head.out_layers[i].weight = self.model.word_emb.emb_layers[i].weights
-        lm_Head.out_layers[-1] = self.model.word_emb.emb_layers[-1].weight[
+        lm_head.out_layers[-1].weight = self.model.word_emb.emb_layers[-1].weight[
             : lm_head.out_layers[-1].weight.size()[0]
         ]
         for i, tie_proj in enumerate(model_with_lm_head.config.tie_projs):
