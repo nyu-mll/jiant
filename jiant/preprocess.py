@@ -647,13 +647,11 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
 
     vocab_size = len(tokenizer)
     # do not use tokenizer.vocab_size, it does not include newly added token
-    if (
-        tokenizer_name.startswith("roberta-")
-        and tokenizer.convert_ids_to_tokens(tokenizer.vocab_size - 1) is None
-    ):
-        vocab_size -= 1
-    else:
-        log.info("Time to delete vocab_size-1 in preprocess.py !!!")
+    if tokenizer_name.startswith("roberta-"):
+        if tokenizer.convert_ids_to_tokens(tokenizer.vocab_size - 1) is None:
+            vocab_size -= 1
+        else:
+            log.info("Time to delete vocab_size-1 in preprocess.py !!!")
     # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None, remove
     # this when they fix the problem
 
