@@ -646,7 +646,7 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     # we can pass tokenizer created in model here, see issue <TBD>
 
     vocab_size = len(tokenizer)
-    # do not use tokenizer.vocab_size, it does not include newly added token 
+    # do not use tokenizer.vocab_size, it does not include newly added token
     if (
         tokenizer_name.startswith("roberta-")
         and tokenizer.convert_ids_to_tokens(tokenizer.vocab_size - 1) is None
