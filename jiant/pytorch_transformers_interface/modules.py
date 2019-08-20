@@ -543,7 +543,9 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         self.model.word_emb.emb_layers[-1] = nn.Embedding(
             embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
         )
-        self.model.word_emb.emb_layers[-1].weight.data[: embedding.num_embeddings] = embedding.weight.data
+        self.model.word_emb.emb_layers[-1].weight.data[
+            : embedding.num_embeddings
+        ] = embedding.weight.data
 
         self.parameter_setup(args)
 
