@@ -946,7 +946,8 @@ class MultiTaskModel(nn.Module):
         if "targs" in batch:
             # logits: batch_size * seq_len * tgt_voc_size
             target = batch["targs"]["words"][:, 1:].contiguous()
-            target_mask = output_dict["target_mask"]
+            target_mask = out["target_mask"]
+            logits = out["logits"]
             task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
 
         if predict:
