@@ -785,7 +785,8 @@ class SamplingMultiTaskTrainer:
         return metric_infos, this_val_metric, should_save, new_best
 
     def _calculate_validation_performance(
-        self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
+        self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall,
+        debug_print=True
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
@@ -825,26 +826,28 @@ class SamplingMultiTaskTrainer:
                 out = self._forward(batch, task=task)
             loss = out["loss"]
 
-            if isinstance(task, CharSeq2SeqTask):
-                if batch_num == 1:
-                    voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
-                    voc_out = self._model.vocab.get_index_to_token_vocabulary("seg_wix_tokens")
-                    current_in = batch["inputs"]["words"][0][1:]
-                    current_gold = batch["targs"]["words"][0][1:]
-                    logits = out["logits"]
-                    current_out = logits.max(2)[1][0]
-                    log.info(
-                        "\tInput:\t%s",
-                        "".join([voc_in[c.item()] for c in current_in]).split("<EOS>")[0],
-                    )
-                    log.info(
-                        "\tGold:\t%s",
-                        "".join([voc_out[c.item()] for c in current_gold]).split("<EOS>")[0],
-                    )
-                    log.info(
-                        "\tOutput:\t%s",
-                        "".join([voc_out[c.item()] for c in current_out]).split("<EOS>")[0],
-                    )
+            if debug_print:
+                if isinstance(task, CharSeq2SeqTask):
+                    if batch_num == 1:
+                        voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
+                        voc_out = self._model.vocab.get_index_to_token_vocabulary(
+                            "%s_tokens", task.name)
+                        current_in = batch["inputs"]["words"][0][1:]
+                        current_gold = batch["targs"]["words"][0][1:]
+                        logits = out["logits"]
+                        current_out = logits.max(2)[1][0]
+                        log.info(
+                            "\tInput:\t%s",
+                            "".join([voc_in[c.item()] for c in current_in]).split("<EOS>")[0],
+                        )
+                        log.info(
+                            "\tGold:\t%s",
+                            "".join([voc_out[c.item()] for c in current_gold]).split("<EOS>")[0],
+                        )
+                        log.info(
+                            "\tOutput:\t%s",
+                            "".join([voc_out[c.item()] for c in current_out]).split("<EOS>")[0],
+                        )
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
