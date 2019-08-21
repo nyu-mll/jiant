@@ -867,24 +867,23 @@ class SamplingMultiTaskTrainer:
         for name, value in task_metrics.items():
             all_val_metrics["%s_%s" % (task.name, name)] = value
         all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+        # compute task contribution to macro and micro averages
+        n_examples_overall += n_examples
         if task.val_metric_decreases and len(tasks) > 1:
             all_val_metrics["micro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
             ) * n_examples
             all_val_metrics["macro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
-            )
+            ) / len(tasks)
         else:
             # triggers for single-task cases and during MTL when task val metric increases
             all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
-        n_examples_overall += n_examples
+            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric] / len(tasks)
 
         # Reset training progress
         task_info["n_batches_since_val"] = 0
         task_info["loss"] = 0
-        all_val_metrics["micro_avg"] /= n_examples_overall
-        all_val_metrics["macro_avg"] /= len(tasks)
         return n_examples_overall, task_infos, all_val_metrics
 
     def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
@@ -919,7 +918,9 @@ class SamplingMultiTaskTrainer:
             n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(  # noqa
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
-
+        # scale the micro avg contributions w/ total size of validation set.
+        if "micro_avg" in all_val_metrics:
+            all_val_metrics["micro_avg"] /= n_examples_overall
         # Track per task patience
         should_save = periodic_save  # whether to save this validation pass or not.
         # Currently we save every validation in the main training runs.
