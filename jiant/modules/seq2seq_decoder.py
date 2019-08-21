@@ -8,8 +8,9 @@ import torch
 from allennlp.common.util import END_SYMBOL, START_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
-from allennlp.modules.attention import BilinearAttention
+from allennlp.modules.attention import BilinearAttention, LinearAttention
 from allennlp.modules.token_embedders import Embedding
+from allennlp.nn import Activation
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 from overrides import overrides
 from torch.nn.modules.linear import Linear
@@ -73,7 +74,11 @@ class Seq2SeqDecoder(Model):
         self._sent_pooler = Pooler(project=True, d_inp=input_dim, d_proj=decoder_hidden_size)
 
         if attention == "bilinear":
-            self._decoder_attention = BilinearAttention(decoder_hidden_size, input_dim)
+            self._decoder_attention = BilinearAttention(
+                decoder_hidden_size + target_embedding_dim, input_dim
+            )
+            # self._decoder_attention = LinearAttention(decoder_hidden_size + target_embedding_dim,
+            #        input_dim, activation=Activation.by_name('tanh')())
             # The output of attention, a weighted average over encoder outputs, will be
             # concatenated to the input vector of the decoder at each time
             # step.
@@ -234,8 +239,9 @@ class Seq2SeqDecoder(Model):
             encoder_outputs_mask = encoder_outputs_mask.float()
             encoder_outputs_mask = encoder_outputs_mask[:, :, 0]
             # (batch_size, input_sequence_length)
+            attention_input = torch.cat((decoder_hidden_state, embedded_input), 1)
             input_weights = self._decoder_attention(
-                decoder_hidden_state, encoder_outputs, encoder_outputs_mask
+                attention_input, encoder_outputs, encoder_outputs_mask
             )
             # (batch_size, input_dim)
             attended_input = weighted_sum(encoder_outputs, input_weights)
