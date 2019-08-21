@@ -420,11 +420,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
 
         special_tokens = {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
         self.tokenizer.add_special_tokens(special_tokens)
-        embedding = self.model.tokens_embed
-        self.model.tokens_embed = nn.Embedding(
-            embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
-        )
-        self.model.tokens_embed.weight.data[: embedding.num_embeddings] = embedding.weight.data
+        self.model.resize_token_embeddings(len(self.tokenizer))
 
         self.parameter_setup(args)
 
@@ -478,11 +474,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 
         special_tokens = {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
         self.tokenizer.add_special_tokens(special_tokens)
-        embedding = self.model.wte
-        self.model.wte = nn.Embedding(
-            embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
-        )
-        self.model.wte.weight.data[: embedding.num_embeddings] = embedding.weight.data
+        self.model.resize_token_embeddings(len(self.tokenizer))
 
         self.parameter_setup(args)
 
@@ -536,16 +528,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
 
         special_tokens = {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
         self.tokenizer.add_special_tokens(special_tokens)
-        self.model.word_emb.n_token += len(special_tokens)
-        self.model.word_emb.cutoffs[-1] += len(special_tokens)
-        self.model.word_emb.cutoff_ends[-1] += len(special_tokens)
-        embedding = self.model.word_emb.emb_layers[-1]
-        self.model.word_emb.emb_layers[-1] = nn.Embedding(
-            embedding.num_embeddings + len(special_tokens), embedding.embedding_dim
-        )
-        self.model.word_emb.emb_layers[-1].weight.data[
-            : embedding.num_embeddings
-        ] = embedding.weight.data
+        self.model.resize_token_embeddings(len(self.tokenizer))
 
         self.parameter_setup(args)
 
