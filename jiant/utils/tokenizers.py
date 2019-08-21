@@ -45,7 +45,7 @@ class OpenAIBPETokenizer(Tokenizer):
 class SplitCharsTokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
-    
+
     def tokenize(self, sentence):
         return list(sentence)
 

@@ -507,7 +507,8 @@ class SamplingMultiTaskTrainer:
                 )
                 if ckpt_directory is None:
                     log.warning(
-                        "load_model=1 but there is not checkpoint. Starting training without restoring from a checkpoint."
+                        "load_model=1 but there is not checkpoint. \
+                        Starting training without restoring from a checkpoint."
                     )
                 else:
                     n_step, should_stop = self._restore_checkpoint(phase, tasks)
@@ -760,7 +761,8 @@ class SamplingMultiTaskTrainer:
         Returns
         ________
         metric_infos: dict storing information about the various metrics
-        this_val_metric: dict, metric information for this validation pass, used for optimization scheduler
+        this_val_metric: dict, metric information for this validation pass, used for optimization
+            scheduler
         should_save: bool
         new_best: bool
         """
