@@ -577,8 +577,7 @@ class SamplingMultiTaskTrainer:
                 optimizer.zero_grad()
                 output_dict = self._forward(batch, task=task)
                 assert_for_log(
-                    "loss" in output_dict,
-                    "Model must return a dict containing a 'loss' key",
+                    "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
                 loss = output_dict["loss"]  # optionally scale loss
                 loss *= scaling_weights[task.name]
@@ -785,8 +784,14 @@ class SamplingMultiTaskTrainer:
         return metric_infos, this_val_metric, should_save, new_best
 
     def _calculate_validation_performance(
-        self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall,
-        debug_print=True
+        self,
+        task,
+        task_infos,
+        tasks,
+        batch_size,
+        all_val_metrics,
+        n_examples_overall,
+        debug_print=True,
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
@@ -831,7 +836,8 @@ class SamplingMultiTaskTrainer:
                     if batch_num == 1:
                         voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
                         voc_out = self._model.vocab.get_index_to_token_vocabulary(
-                            "%s_tokens", task.name)
+                            task.name + "_tokens"
+                        )
                         current_in = batch["inputs"]["words"][0][1:]
                         current_gold = batch["targs"]["words"][0][1:]
                         logits = out["logits"]
