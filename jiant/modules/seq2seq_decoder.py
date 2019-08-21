@@ -17,6 +17,7 @@ from torch.nn.modules.linear import Linear
 from torch.nn.modules.rnn import LSTMCell
 
 from jiant.modules.simple_modules import Pooler
+from jiant.modules.attention import BahdanauAttention
 
 
 class Seq2SeqDecoder(Model):
