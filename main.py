@@ -206,7 +206,8 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
 def _log_git_info():
     try:
-        # Make sure we run git in the directory that contains this file, even if the working directory is elsewhere.
+        # Make sure we run git in the directory that contains this file, even if the working
+        # directory is elsewhere.
         main_dir = os.path.dirname(os.path.abspath(__file__))
 
         # Use git to get branch/commit ID information.
