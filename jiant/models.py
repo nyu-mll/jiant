@@ -528,6 +528,12 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
         setattr(model, "%s_mdl" % task.name, hid2voc)
     elif isinstance(task, LanguageModelingTask):
+        assert not input_module_uses_pytorch_transformers(
+            args.input_module
+        ), ("our LM Task does not support pytorch_transformers, if you need them, try to update",
+            "corresponding parts of the code. You may find get_pretrained_lm_head and", 
+            "apply_lm_boundary_tokens from pytorch_transformer_interface.module useful,",
+            "do check if they are working correctly though.")
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
