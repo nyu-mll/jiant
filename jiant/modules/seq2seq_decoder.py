@@ -75,9 +75,12 @@ class Seq2SeqDecoder(Model):
         self._sent_pooler = Pooler(project=True, d_inp=input_dim, d_proj=decoder_hidden_size)
 
         if attention == "bilinear":
-            self._decoder_attention = BilinearAttention(
+            self._decoder_attention = BahdanauAttention(
                 decoder_hidden_size + target_embedding_dim, input_dim
             )
+            #self._decoder_attention = BilinearAttention(
+            #    decoder_hidden_size + target_embedding_dim, input_dim
+            #)
             # self._decoder_attention = LinearAttention(decoder_hidden_size + target_embedding_dim,
             #        input_dim, activation=Activation.by_name('tanh')())
             # The output of attention, a weighted average over encoder outputs, will be
