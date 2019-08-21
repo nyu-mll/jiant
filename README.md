@@ -97,3 +97,4 @@ No. DGE 1342536. Any opinions, findings, and conclusions or recommendations expr
 material are those of the author(s) and do not necessarily reflect the views of the National Science
 Foundation.
 - Developer Yada Pruksachatkun is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.
+- Sam Bowman's work on `jiant` during Summer 2019 took place in his capacity as a visiting researcher at Google.
