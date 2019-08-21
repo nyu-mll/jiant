@@ -206,12 +206,22 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
 def _log_git_info():
     try:
+        # Make sure we run git in the directory that contains this file, even if the working
+        # directory is elsewhere.
+        main_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Use git to get branch/commit ID information.
         c = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"], timeout=10, stdout=subprocess.PIPE
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            timeout=10,
+            stdout=subprocess.PIPE,
+            cwd=main_dir,
         )
         git_branch_name = c.stdout.decode().strip()
         log.info("Git branch: %s", git_branch_name)
-        c = subprocess.run(["git", "rev-parse", "HEAD"], timeout=10, stdout=subprocess.PIPE)
+        c = subprocess.run(
+            ["git", "rev-parse", "HEAD"], timeout=10, stdout=subprocess.PIPE, cwd=main_dir
+        )
         git_sha = c.stdout.decode().strip()
         log.info("Git SHA: %s", git_sha)
     except subprocess.TimeoutExpired as e:
