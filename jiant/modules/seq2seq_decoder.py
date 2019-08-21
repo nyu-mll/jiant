@@ -8,9 +8,8 @@ import torch
 from allennlp.common.util import END_SYMBOL, START_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
-from allennlp.modules.attention import BilinearAttention, LinearAttention
+from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.token_embedders import Embedding
-from allennlp.nn import Activation
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 from overrides import overrides
 from torch.nn.modules.linear import Linear
@@ -39,11 +38,6 @@ class Seq2SeqDecoder(Model):
         scheduled_sampling_ratio: float = 0.0,
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
-
-        # deprecated module
-        log.warning(
-            "DeprecationWarning: modules.Seq2SeqDecoder is deprecated and is no longer maintained"
-        )
 
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
