@@ -2,7 +2,6 @@ import torch
 from torch import nn
 from overrides import overrides
 from allennlp.modules.attention import Attention
-from allennlp.nn.activations import Activation
 
 
 @Attention.register("Bahdanau")
@@ -12,7 +11,6 @@ class BahdanauAttention(Attention):
         tensor_1_dim: int,
         tensor_2_dim: int,
         att_hid_size: int = 100,
-        activation: Activation = None,
         normalize: bool = True,
     ) -> None:
         super().__init__(normalize)

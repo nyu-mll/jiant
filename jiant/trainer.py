@@ -577,18 +577,10 @@ class SamplingMultiTaskTrainer:
                 optimizer.zero_grad()
                 output_dict = self._forward(batch, task=task)
                 assert_for_log(
-                    "loss" in output_dict and "logits" in output_dict,
-                    "Model must return a dict containing a 'loss' and a 'logits' key",
+                    "loss" in output_dict,
+                    "Model must return a dict containing a 'loss' key",
                 )
                 loss = output_dict["loss"]  # optionally scale loss
-                logits = output_dict["logits"]
-
-                if isinstance(task, CharSeq2SeqTask):
-                    # logits: batch_size * seq_len * tgt_voc_size
-                    target = batch["targs"]["words"][:, 1:].contiguous()
-                    target_mask = output_dict["target_mask"]
-                    task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
-
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
@@ -834,13 +826,12 @@ class SamplingMultiTaskTrainer:
             loss = out["loss"]
 
             if isinstance(task, CharSeq2SeqTask):
-                # logits: batch_size * seq_len * tgt_voc_size
-                logits = out["logits"]
                 if batch_num == 1:
                     voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
                     voc_out = self._model.vocab.get_index_to_token_vocabulary("seg_wix_tokens")
                     current_in = batch["inputs"]["words"][0][1:]
                     current_gold = batch["targs"]["words"][0][1:]
+                    logits = out["logits"]
                     current_out = logits.max(2)[1][0]
                     log.info(
                         "\tInput:\t%s",
@@ -854,9 +845,6 @@ class SamplingMultiTaskTrainer:
                         "\tOutput:\t%s",
                         "".join([voc_out[c.item()] for c in current_out]).split("<EOS>")[0],
                     )
-                target = batch["targs"]["words"][:, 1:].contiguous()
-                target_mask = out["target_mask"]
-                task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
