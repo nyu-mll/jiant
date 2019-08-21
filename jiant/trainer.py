@@ -346,10 +346,18 @@ class SamplingMultiTaskTrainer:
             # deepcopy b/c using Params pops values and we may want to reuse
             # the Params object later
             opt_params = copy.deepcopy(optimizer_params)
-            if self._max_epochs > 0 and "t_total" in optimizer_params:
-                # If we know in advance how many opt steps for the transformer
-                # there are, set it.
-                opt_params["t_total"] = task_info["n_tr_batches"] * self._max_epochs
+            if "t_total" in optimizer_params:
+                # If we know in advance how many opt steps there will be, set it so the LR scheduler
+                # can use that information. This should be the next validation after we hit the epoch
+                # limit.
+                if self._max_epochs > 0:
+                    max_epochs_in_vals = math.ceil(
+                        (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
+                    )
+                    val_limit = min(max_epochs_in_vals, self._max_vals)
+                else:
+                    val_limit = self._max_vals
+                opt_params["t_total"] = val_limit * self._val_interval
             task_info["optimizer"] = Optimizer.from_params(train_params, opt_params)
             task_info["scheduler"] = LearningRateScheduler.from_params(
                 task_info["optimizer"], copy.deepcopy(scheduler_params)
@@ -488,9 +496,20 @@ class SamplingMultiTaskTrainer:
         )
 
         optimizer_params = copy.deepcopy(optimizer_params)
-        if "t_total" in optimizer_params and self._max_epochs > 0:
-            n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
-            optimizer_params["t_total"] = n_epoch_steps * self._max_epochs
+        if "t_total" in optimizer_params:
+            # If we know in advance how many opt steps there will be, set it so the LR scheduler
+            # can use that information. This should be the next validation after we hit the epoch
+            # limit.
+            if self._max_epochs > 0:
+                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
+                max_epochs_in_vals = math.ceil(
+                    (n_epoch_steps * self._max_epochs) / self._val_interval
+                )
+                val_limit = min(max_epochs_in_vals, self._max_vals)
+            else:
+                val_limit = self._max_vals
+            optimizer_params["t_total"] = val_limit * self._val_interval
+
         optimizer = Optimizer.from_params(train_params, optimizer_params)
         scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
         self._optimizer = optimizer
@@ -882,24 +901,23 @@ class SamplingMultiTaskTrainer:
         for name, value in task_metrics.items():
             all_val_metrics["%s_%s" % (task.name, name)] = value
         all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+        # compute task contribution to macro and micro averages
+        n_examples_overall += n_examples
         if task.val_metric_decreases and len(tasks) > 1:
             all_val_metrics["micro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
             ) * n_examples
             all_val_metrics["macro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
-            )
+            ) / len(tasks)
         else:
             # triggers for single-task cases and during MTL when task val metric increases
             all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
-        n_examples_overall += n_examples
+            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric] / len(tasks)
 
         # Reset training progress
         task_info["n_batches_since_val"] = 0
         task_info["loss"] = 0
-        all_val_metrics["micro_avg"] /= n_examples_overall
-        all_val_metrics["macro_avg"] /= len(tasks)
         return n_examples_overall, task_infos, all_val_metrics
 
     def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
@@ -934,7 +952,9 @@ class SamplingMultiTaskTrainer:
             n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(  # noqa
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
-
+        # scale the micro avg contributions w/ total size of validation set.
+        if "micro_avg" in all_val_metrics:
+            all_val_metrics["micro_avg"] /= n_examples_overall
         # Track per task patience
         should_save = periodic_save  # whether to save this validation pass or not.
         # Currently we save every validation in the main training runs.

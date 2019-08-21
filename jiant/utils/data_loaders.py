@@ -13,18 +13,16 @@ from allennlp.data import vocabulary
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.utils.retokenize import realign_spans
 
-BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
-SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
-
 
 def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
-    Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes the text.
+    Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes
+    the text.
     Re-alignment of spans involves transforming the spans so that it matches the text after
     tokenization.
-    For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased tokenization, we get
-    [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization,
-    it becomes [0, 3].
+    For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased
+    tokenization, we get [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2],
+    under the new tokenization, it becomes [0, 3].
     The task file should of be of the following form:
         text: str,
         label: bool
@@ -32,7 +30,8 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     Args:
         tokenizer_name: str,
         file_name: str,
-        label_fn: function that expects a row and outputs a transformed row with labels tarnsformed.
+        label_fn: function that expects a row and outputs a transformed row with labels
+          transformed.
     Returns:
         List of dictionaries of the aligned spans and tokenized text.
     """
@@ -48,27 +47,27 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
 
 def load_pair_nli_jsonl(data_file, tokenizer_name, max_seq_len, targ_map):
     """
-    Loads a pair NLI task. 
+    Loads a pair NLI task.
 
     Parameters
     -----------------
     data_file: path to data file,
-    tokenizer_name: str, 
-    max_seq_len: int, 
-    targ_map: a dictionary that maps labels to ints 
+    tokenizer_name: str,
+    max_seq_len: int,
+    targ_map: a dictionary that maps labels to ints
 
     Returns
     -----------------
-    sent1s: list of strings of tokenized first sentences, 
-    sent2s: list of strings of tokenized second sentences, 
+    sent1s: list of strings of tokenized first sentences,
+    sent2s: list of strings of tokenized second sentences,
     trgs: list of ints of labels,
     idxs: list of ints
     """
     data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
     sent1s, sent2s, trgs, idxs, pair_ids = [], [], [], [], []
     for example in data:
-        sent1s.append(process_sentence(tokenizer_name, example["premise"], max_seq_len))
-        sent2s.append(process_sentence(tokenizer_name, example["hypothesis"], max_seq_len))
+        sent1s.append(tokenize_and_truncate(tokenizer_name, example["premise"], max_seq_len))
+        sent2s.append(tokenize_and_truncate(tokenizer_name, example["hypothesis"], max_seq_len))
         trg = targ_map[example["label"]] if "label" in example else 0
         trgs.append(trg)
         idxs.append(example["idx"])
@@ -143,11 +142,11 @@ def load_tsv(
     if has_labels:
         mask = mask & rows[label_idx].notnull()
     rows = rows.loc[mask]
-    sent1s = rows[s1_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
+    sent1s = rows[s1_idx].apply(lambda x: tokenize_and_truncate(tokenizer_name, x, max_seq_len))
     if s2_idx is None:
         sent2s = pd.Series()
     else:
-        sent2s = rows[s2_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
+        sent2s = rows[s2_idx].apply(lambda x: tokenize_and_truncate(tokenizer_name, x, max_seq_len))
 
     label_fn = label_fn if label_fn is not None else (lambda x: x)
     if has_labels:
@@ -236,8 +235,8 @@ def load_diagnostic_tsv(
         rows[col_name] = rows[col_name].apply(lambda x: [word_to_idx[x]] if x != "" else [])
         return word_to_idx, idx_to_word, rows[col_name]
 
-    sent1s = rows[s1_col].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
-    sent2s = rows[s2_col].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
+    sent1s = rows[s1_col].apply(lambda x: tokenize_and_truncate(tokenizer_name, x, max_seq_len))
+    sent2s = rows[s2_col].apply(lambda x: tokenize_and_truncate(tokenizer_name, x, max_seq_len))
     labels = rows[label_col].apply(lambda x: label_fn(x))
     # Build indices for field attributes
     lex_sem_to_ix_dic, ix_to_lex_sem_dic, lex_sem = targs_to_idx("Lexical Semantics")
@@ -286,17 +285,13 @@ def get_tag_list(tag_vocab):
     return tag_list
 
 
-def process_sentence(tokenizer_name, sent, max_seq_len):
-    """process a sentence """
-    max_seq_len -= 2
-    assert max_seq_len > 0, "Max sequence length should be at least 2!"
+def tokenize_and_truncate(tokenizer_name, sent, max_seq_len):
+    """Truncate and tokenize a sentence or paragraph."""
+    max_seq_len -= 2  # For boundary tokens.
     tokenizer = get_tokenizer(tokenizer_name)
-    if tokenizer_name.startswith("bert-"):
-        sos_tok, eos_tok = BERT_CLS_TOK, BERT_SEP_TOK
-    else:
-        sos_tok, eos_tok = SOS_TOK, EOS_TOK
+
     if isinstance(sent, str):
-        return [sos_tok] + tokenizer.tokenize(sent)[:max_seq_len] + [eos_tok]
+        return tokenizer.tokenize(sent)[:max_seq_len]
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
-        return [sos_tok] + sent[:max_seq_len] + [eos_tok]
+        return sent[:max_seq_len]
