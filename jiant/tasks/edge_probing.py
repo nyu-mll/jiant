@@ -211,7 +211,9 @@ class EdgeProbingTask(Task):
         )
         return Instance(d)
 
-    def process_split(self, records, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, records, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _map_fn(r, idx):

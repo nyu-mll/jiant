@@ -83,7 +83,9 @@ class LanguageModelingTask(SequenceGenerationTask):
                     continue
                 yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
         Args:
             split: (list) a single list of sentences

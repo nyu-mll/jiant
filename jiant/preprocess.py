@@ -350,7 +350,9 @@ def build_tasks(args):
                 if os.path.exists(record_file) and os.path.islink(record_file):
                     os.remove(record_file)
 
-                _index_split(task, split, indexers, vocab, record_file, model_preprocessing_interface)
+                _index_split(
+                    task, split, indexers, vocab, record_file, model_preprocessing_interface
+                )
 
         # Delete in-memory data - we'll lazy-load from disk later.
         # TODO: delete task.{split}_data_text as well?

@@ -74,7 +74,12 @@ def atomic_tokenize(
 
 
 def process_single_pair_task_split(
-    split, indexers, model_preprocessing_interface, is_pair=True, classification=True, is_symmetrical_pair=False
+    split,
+    indexers,
+    model_preprocessing_interface,
+    is_pair=True,
+    classification=True,
+    is_symmetrical_pair=False,
 ):
     """
     Convert a dataset of sentences into padded sequences of indices. Shared
@@ -102,11 +107,16 @@ def process_single_pair_task_split(
             inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
             d["inputs"] = sentence_to_text_field(inp, indexers)
             d["sent2_str"] = MetadataField(" ".join(input2))
-            if model_preprocessing_interface.model_flags["uses_mirrored_pair"] and is_symmetrical_pair:
+            if (
+                model_preprocessing_interface.model_flags["uses_mirrored_pair"]
+                and is_symmetrical_pair
+            ):
                 inp_m = model_preprocessing_interface.boundary_token_fn(input1, input2)
                 d["inputs_m"] = sentence_to_text_field(inp_m, indexers)
         else:
-            d["input1"] = sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(input1), indexers)
+            d["input1"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
             if input2:
                 d["input2"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(input2), indexers
@@ -259,7 +269,9 @@ class Task(object):
         """
         return len(split_text[0])
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         raise NotImplementedError
 
@@ -304,9 +316,13 @@ class SingleClassificationTask(ClassificationTask):
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        return process_single_pair_task_split(split, indexers, model_preprocessing_interface, is_pair=False)
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=False
+        )
 
 
 class PairClassificationTask(ClassificationTask):
@@ -326,9 +342,13 @@ class PairClassificationTask(ClassificationTask):
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        return process_single_pair_task_split(split, indexers, model_preprocessing_interface, is_pair=True)
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=True
+        )
 
 
 class PairRegressionTask(RegressionTask):
@@ -347,7 +367,9 @@ class PairRegressionTask(RegressionTask):
         mse = self.scorer1.get_metric(reset)
         return {"mse": mse}
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         return process_single_pair_task_split(
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
@@ -373,7 +395,9 @@ class PairOrdinalRegressionTask(RegressionTask):
         spearmanr = self.scorer2.get_metric(reset)
         return {"1-mse": 1 - mse, "mse": mse, "spearmanr": spearmanr}
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         return process_single_pair_task_split(
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
@@ -733,7 +757,9 @@ class CoLAAnalysisTask(SingleClassificationTask):
         def _make_instance(input1, labels, tagids):
             """ from multiple types in one column create multiple fields """
             d = {}
-            d["input1"] = sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(input1), indexers)
+            d["input1"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
             d["sent1_str"] = MetadataField(" ".join(input1))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
@@ -983,7 +1009,9 @@ class MRPCTask(PairClassificationTask):
             "recall": rcl,
         }
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         return process_single_pair_task_split(
             split,
@@ -1062,7 +1090,9 @@ class STSBTask(PairRegressionTask):
         spearmanr = self.scorer2.get_metric(reset)
         return {"corr": (pearsonr + spearmanr) / 2, "pearsonr": pearsonr, "spearmanr": spearmanr}
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         return process_single_pair_task_split(
             split,
@@ -1366,7 +1396,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self._scorer_all_mcc(preds, labels)
         self._scorer_all_acc(logits, labels)
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def create_labels_from_tags(fields_dict, ix_to_tag_dict, tag_arr, tag_group):
@@ -1954,13 +1986,19 @@ class Wiki103Classification(PairClassificationTask):
             for sent in self.load_data_for_path(path):
                 yield sent
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process a language modeling split.  Split is a single list of sentences here.  """
 
         def _make_instance(input1, input2, labels):
             d = {}
-            d["input1"] = sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(input1), indexers)
-            d["input2"] = sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(input2), indexers)
+            d["input1"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
+            d["input2"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input2), indexers
+            )
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
@@ -2047,13 +2085,17 @@ class DisSentTask(PairClassificationTask):
             example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(input1, input2, labels):
             d = {}
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(input1, input2)  # drop leading [CLS] token
+                inp = model_preprocessing_interface.boundary_token_fn(
+                    input1, input2
+                )  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(
@@ -2174,7 +2216,9 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = None
         self.test_data_text = None
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process a tagging task """
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         targs = [
@@ -2383,7 +2427,9 @@ class SpanClassificationTask(Task):
         )
         return Instance(example)
 
-    def process_split(self, records, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, records, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _map_fn(r, idx):
@@ -2671,7 +2717,9 @@ class COPATask(MultipleChoiceTask):
         )
         log.info("\tFinished loading COPA (as QA) data.")
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
 
         def _make_instance(context, choices, question, label, idx):
@@ -2755,7 +2803,9 @@ class SWAGTask(MultipleChoiceTask):
         )
         log.info("\tFinished loading SWAG data.")
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
 
         def _make_instance(question, choices, label, idx):
@@ -2875,7 +2925,9 @@ class BooleanQuestionTask(PairClassificationTask):
         ]
         log.info("\tFinished loading BoolQ data.")
 
-    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
 
         def _make_instance(d, idx):
@@ -2890,7 +2942,9 @@ class BooleanQuestionTask(PairClassificationTask):
                     model_preprocessing_interface.boundary_token_fn(d["question"]), indexers
                 )
             else:  # BERT/XLNet
-                psg_qst = model_preprocessing_interface.boundary_token_fn(d["passage"], d["question"])
+                psg_qst = model_preprocessing_interface.boundary_token_fn(
+                    d["passage"], d["question"]
+                )
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
             new_d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
