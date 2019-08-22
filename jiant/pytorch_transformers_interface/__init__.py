@@ -12,7 +12,7 @@ Note: huggingface forgot to upload bert-large-uncased-whole-word-masking-finetun
 When they fix it, remove this note
 https://github.com/huggingface/pytorch-transformers/issues/763 
 
-TODO: we do not support non-English versions of XLM, if you need them, add some code in XLMEmbedderModule
+TODO: We do not support non-English versions of XLM, if you need them, add some code in XLMEmbedderModule
 to prepare langs input to pytorch_transformers.XLMModel
 """
 
