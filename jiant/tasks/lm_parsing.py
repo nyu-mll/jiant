@@ -32,16 +32,16 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             example_counts[split] = int(math.ceil(allf / self.max_seq_len))
         self.example_counts = example_counts
 
-    def process_split(self, split, indexers, task_modulator) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
         Args:
             split: (list) a single list of sentences
             indexers: (Indexer object) indexer to index input words
-            task_modulator.boundary_token_fn: Inserts start and end symbols for classification
+            model_preprocessing_interface.boundary_token_fn: Inserts start and end symbols for classification
               tasks. Not used here. This may be a problem for GPT-2 or future LMs that use
               non-standard boundary tokens.
         """
-        del task_modulator.boundary_token_fn  # Enforcing that this won't be used.
+        del model_preprocessing_interface.boundary_token_fn  # Enforcing that this won't be used.
 
         def _make_instance(sent):
             """ Forward targs adds <s> as a target for input </s>

@@ -120,7 +120,7 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, indexers, vocab, record_file, task_modulator):
+def _index_split(task, split, indexers, vocab, record_file, model_preprocessing_interface):
     """Index instances and stream to disk.
     Args:
         task: Task instance
@@ -128,13 +128,13 @@ def _index_split(task, split, indexers, vocab, record_file, task_modulator):
         indexers: dict of token indexers
         vocab: Vocabulary instance
         record_file: (string) file to write serialized Instances to
-        task_modulator: packed information from model that effects the task data, including
+        model_preprocessing_interface: packed information from model that effects the task data, including
             whether to concatenate sentence pair, and how to mark the sentence boundry
     """
     log_prefix = "\tTask %s (%s)" % (task.name, split)
     log.info("%s: Indexing from scratch.", log_prefix)
     split_text = task.get_split_text(split)
-    instance_iter = task.process_split(split_text, indexers, task_modulator)
+    instance_iter = task.process_split(split_text, indexers, model_preprocessing_interface)
     if hasattr(instance_iter, "__len__"):  # if non-lazy
         log.warn(
             "%s: non-lazy Instance generation. You'll want to refactor "
@@ -324,7 +324,7 @@ def build_tasks(args):
         log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
     # 4) Set up model_preprocessing_interface
-    task_modulator = ModelPreprocessingInterface(args)
+    model_preprocessing_interface = ModelPreprocessingInterface(args)
 
     # 5) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
@@ -350,7 +350,7 @@ def build_tasks(args):
                 if os.path.exists(record_file) and os.path.islink(record_file):
                     os.remove(record_file)
 
-                _index_split(task, split, indexers, vocab, record_file, task_modulator)
+                _index_split(task, split, indexers, vocab, record_file, model_preprocessing_interface)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         # TODO: delete task.{split}_data_text as well?

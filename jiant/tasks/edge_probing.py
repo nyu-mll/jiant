@@ -178,10 +178,10 @@ class EdgeProbingTask(Task):
     def _make_span_field(cls, s, text_field, offset=1):
         return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
-    def make_instance(self, record, idx, indexers, task_modulator) -> Type[Instance]:
+    def make_instance(self, record, idx, indexers, model_preprocessing_interface) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record["text"].split()  # already space-tokenized by Moses
-        tokens = task_modulator.boundary_token_fn(
+        tokens = model_preprocessing_interface.boundary_token_fn(
             tokens
         )  # apply model-appropriate variants of [cls] and [sep].
         text_field = sentence_to_text_field(tokens, indexers)
@@ -211,11 +211,11 @@ class EdgeProbingTask(Task):
         )
         return Instance(d)
 
-    def process_split(self, records, indexers, task_modulator) -> Iterable[Type[Instance]]:
+    def process_split(self, records, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _map_fn(r, idx):
-            return self.make_instance(r, idx, indexers, task_modulator)
+            return self.make_instance(r, idx, indexers, model_preprocessing_interface)
 
         return map(_map_fn, records, itertools.count())
 

@@ -144,7 +144,7 @@ class MultiRCTask(Task):
                     for answer in question["answers"]:
                         yield answer["text"]
 
-    def process_split(self, split, indexers, task_modulator) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(passage, question, answer, label, par_idx, qst_idx, ans_idx):
@@ -157,18 +157,18 @@ class MultiRCTask(Task):
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
-            if task_modulator.model_flags["uses_pair_embedding"]:
-                inp = task_modulator.boundary_token_fn(para, question + answer)
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(para, question + answer)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
                 d["psg"] = sentence_to_text_field(
-                    task_modulator.boundary_token_fn(passage), indexers
+                    model_preprocessing_interface.boundary_token_fn(passage), indexers
                 )
                 d["qst"] = sentence_to_text_field(
-                    task_modulator.boundary_token_fn(question), indexers
+                    model_preprocessing_interface.boundary_token_fn(question), indexers
                 )
                 d["ans"] = sentence_to_text_field(
-                    task_modulator.boundary_token_fn(answer), indexers
+                    model_preprocessing_interface.boundary_token_fn(answer), indexers
                 )
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
@@ -329,7 +329,7 @@ class ReCoRDTask(Task):
                 yield example["passage"]
                 yield example["query"]
 
-    def process_split(self, split, indexers, task_modulator) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, model_preprocessing_interface) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def is_answer(x, ys):
@@ -352,12 +352,12 @@ class ReCoRDTask(Task):
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
-            if task_modulator.model_flags["uses_pair_embedding"]:
-                inp = task_modulator.boundary_token_fn(psg, qst)
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(psg, qst)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["psg"] = sentence_to_text_field(task_modulator.boundary_token_fn(psg), indexers)
-                d["qst"] = sentence_to_text_field(task_modulator.boundary_token_fn(qst), indexers)
+                d["psg"] = sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(psg), indexers)
+                d["qst"] = sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(qst), indexers)
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
