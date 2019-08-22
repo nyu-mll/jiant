@@ -323,55 +323,8 @@ def build_tasks(args):
             word_embs = pkl.load(open(emb_file, "rb"))
         log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
-    # 4) Set up task modulator, this includes boundary function and model flags
-    boundary_token_fn = None
-    lm_boundary_token_fn = None
-
-    if args.input_module.startswith("bert-"):
-        from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
-
-        boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
-    elif args.input_module.startswith("roberta-"):
-        from jiant.pytorch_transformers_interface.modules import RobertaEmbedderModule
-
-        boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
-    elif args.input_module.startswith("xlnet-"):
-        from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
-
-        boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
-    elif args.input_module.startswith("openai-gpt"):
-        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
-
-        boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
-        lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
-    elif args.input_module.startswith("gpt2"):
-        from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
-
-        boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
-        lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
-    elif args.input_module.startswith("transfo-xl-"):
-        from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
-
-        boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
-        lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
-    elif args.input_module.startswith("xlm-"):
-        from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
-
-        boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
-    else:
-        boundary_token_fn = utils.apply_standard_boundary_tokens
-
-    from jiant.models import input_module_uses_pair_embedding, input_module_uses_mirrored_pair
-
-    model_flags = {}
-    model_flags["uses_pair_embedding"] = input_module_uses_pair_embedding(args.input_module)
-    model_flags["uses_mirrored_pair"] = input_module_uses_mirrored_pair(args.input_module)
-
-    task_modulator = TaskModulator(
-        model_flags=model_flags,
-        boundary_token_fn=boundary_token_fn,
-        lm_boundary_token_fn=lm_boundary_token_fn,
-    )
+    # 4) Set up model_preprocessing_interface
+    task_modulator = ModelPreprocessingInterface(args)
 
     # 5) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
@@ -673,23 +626,68 @@ def add_wsj_vocab(vocab, data_dir, namespace="tokens"):
     log.info("\tAdded WSJ vocabulary from %s", wsj_tokens)
 
 
-class TaskModulator(object):
-    """ A task modulator describes everything the task process needs to know about the model
+class ModelPreprocessingInterface(object):
+    """ This class holds parts of preprocessing that is model-specific
+    members:
+    
+    model_flags: Dict[str, bool], model-specific flags that may be used in task preprocessing
+    boundary_token_fn: (list[str], list[str] (optional) -> list[str]):
+        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
+        token sequence pair for most tasks. 
+    lm_boundary_token_fn: (list[str] -> list[str]):
+        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence for
+        language modeling tasks.
+        
     """
 
-    def __init__(self, model_flags, boundary_token_fn, lm_boundary_token_fn=None):
-        """
-        model_flags: Dict[str, bool]
-        boundary_token_fn: (list[str], list[str] (optional) -> list[str]):
-            A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
-            token sequence pair for most tasks. 
-        lm_boundary_token_fn: (list[str] -> list[str]):
-            A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence for
-            language modeling tasks.
-        """
-        self.model_flags = model_flags
+    def __init__(self, args):
+        boundary_token_fn = None
+        lm_boundary_token_fn = None
+
+        if args.input_module.startswith("bert-"):
+            from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+
+            boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("roberta-"):
+            from jiant.pytorch_transformers_interface.modules import RobertaEmbedderModule
+
+            boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("xlnet-"):
+            from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+
+            boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("openai-gpt"):
+            from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+
+            boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
+            lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
+        elif args.input_module.startswith("gpt2"):
+            from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+
+            boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
+            lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
+        elif args.input_module.startswith("transfo-xl-"):
+            from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+
+            boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
+            lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
+        elif args.input_module.startswith("xlm-"):
+            from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
+
+            boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
+        else:
+            boundary_token_fn = utils.apply_standard_boundary_tokens
+
         self.boundary_token_fn = boundary_token_fn
         if lm_boundary_token_fn is not None:
             self.lm_boundary_token_fn = lm_boundary_token_fn
         else:
             self.lm_boundary_token_fn = boundary_token_fn
+
+        from jiant.models import input_module_uses_pair_embedding, input_module_uses_mirrored_pair
+
+        self.model_flags = {}
+        self.model_flags["uses_pair_embedding"] = input_module_uses_pair_embedding(
+            args.input_module
+        )
+        self.model_flags["uses_mirrored_pair"] = input_module_uses_mirrored_pair(args.input_module)
