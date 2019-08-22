@@ -66,7 +66,7 @@ class SplitCharsTokenizer(Tokenizer):
         return list(sentence)
 
     def detokenize(self, tokens):
-        return ''.join(tokens)
+        return "".join(tokens)
 
 
 class MosesTokenizer(Tokenizer):

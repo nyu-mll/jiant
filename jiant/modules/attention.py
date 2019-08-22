@@ -7,11 +7,7 @@ from allennlp.modules.attention import Attention
 @Attention.register("Bahdanau")
 class BahdanauAttention(Attention):
     def __init__(
-        self,
-        tensor_1_dim: int,
-        tensor_2_dim: int,
-        att_hid_size: int = 100,
-        normalize: bool = True,
+        self, tensor_1_dim: int, tensor_2_dim: int, att_hid_size: int = 100, normalize: bool = True
     ) -> None:
         super().__init__(normalize)
 
