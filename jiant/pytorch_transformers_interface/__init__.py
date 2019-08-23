@@ -52,6 +52,7 @@ def input_module_tokenizer_name(input_module):
         "openai-gpt": "openai_gpt",
         "gpt2": "gpt2",
         "gpt2-medium": "gpt2",
+        "gpt2-large": "gpt2",
         "transfo-xl-wt103": "transfo_xl",
         "xlm-mlm-en-2048": "xlm_en",
         "xlm-mlm-ende-1024": "xlm_ende",
