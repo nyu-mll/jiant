@@ -10,7 +10,7 @@
 # Or, make a copy of this, customize, and run immediately before the training
 # binary:
 # cp user_config_template.sh user_config.sh
-# source user_config.sh; python main.py --config ../config/demo.conf \
+# source user_config.sh; python main.py --config jiant/config/demo.conf \
 #   --overrides "do_pretrain = 0"
 # ... or use scripts/export_from_bash.sh to set BASH up to run source automatically.
 

@@ -37,7 +37,7 @@ function elmo_chars_exp() {
     # Usage: elmo_chars_exp <task_name>
     OVERRIDES="exp_name=elmo-chars-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1, input_module=elmo-chars-only"
-    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function elmo_full_exp() {
@@ -45,7 +45,7 @@ function elmo_full_exp() {
     # Usage: elmo_full_exp <task_name>
     OVERRIDES="exp_name=elmo-full-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1, input_module=elmo"
-    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function elmo_ortho_exp() {
@@ -55,7 +55,7 @@ function elmo_ortho_exp() {
     OVERRIDES="exp_name=elmo-ortho-$1, run_name=run_seed_$2"
     OVERRIDES+=", target_tasks=$1, input_module=elmo"
     OVERRIDES+=", elmo_weight_file_path=${ELMO_WEIGHTS_PATH}"
-    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function elmo_random_exp() {
@@ -65,7 +65,7 @@ function elmo_random_exp() {
     OVERRIDES="exp_name=elmo-random-$1, run_name=run_seed_$2"
     OVERRIDES+=", target_tasks=$1, input_module=elmo"
     OVERRIDES+=", elmo_weight_file_path=${ELMO_WEIGHTS_PATH}"
-    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function train_chars_exp() {
@@ -74,7 +74,7 @@ function train_chars_exp() {
     OVERRIDES="exp_name=train-chars-$1, run_name=run"
     OVERRIDES+=", pretrain_tasks=$1, max_vals=$2, val_interval=$3"
     OVERRIDES+=", input_module=elmo-chars-only"
-    run_exp "config/edgeprobe/edgeprobe_train.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_train.conf" "${OVERRIDES}"
 }
 
 function train_full_exp() {
@@ -83,7 +83,7 @@ function train_full_exp() {
     OVERRIDES="exp_name=train-full-$1, run_name=run"
     OVERRIDES+=", pretrain_tasks=$1, max_vals=$2, val_interval=$3"
     OVERRIDES+=", input_module=elmo"
-    run_exp "config/edgeprobe/edgeprobe_train.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_train.conf" "${OVERRIDES}"
 }
 
 ##
@@ -93,7 +93,7 @@ function glove_exp() {
     # Usage: glove_exp <task_name>
     OVERRIDES="exp_name=glove-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
-    run_exp "config/edgeprobe/edgeprobe_glove.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_glove.conf" "${OVERRIDES}"
 }
 
 function cove_exp() {
@@ -101,7 +101,7 @@ function cove_exp() {
     # Usage: cove_exp <task_name>
     OVERRIDES="exp_name=cove-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
-    run_exp "config/edgeprobe/edgeprobe_cove.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_cove.conf" "${OVERRIDES}"
 }
 
 ##
@@ -111,7 +111,7 @@ function openai_exp() {
     # Usage: openai_exp <task_name>
     OVERRIDES="exp_name=openai-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
-    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_cat_exp() {
@@ -120,7 +120,7 @@ function openai_cat_exp() {
     OVERRIDES="exp_name=openai-cat-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_output_mode=cat"
-    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_lex_exp() {
@@ -129,7 +129,7 @@ function openai_lex_exp() {
     OVERRIDES="exp_name=openai-lex-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_output_mode=only"
-    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_mix_exp() {
@@ -138,7 +138,7 @@ function openai_mix_exp() {
     OVERRIDES="exp_name=openai-mix-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_output_mode=mix"
-    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_bwb_exp() {
@@ -149,7 +149,7 @@ function openai_bwb_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_transformer_ckpt=${CKPT_PATH}"
     OVERRIDES+=", openai_output_mode=cat"
-    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 ##
@@ -163,7 +163,7 @@ function bert_cat_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", pytorch_transformers_output_mode=cat"
-    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
 function bert_lex_exp() {
@@ -173,7 +173,7 @@ function bert_lex_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", pytorch_transformers_output_mode=only"
-    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
 function bert_mix_exp() {
@@ -183,7 +183,7 @@ function bert_mix_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", pytorch_transformers_output_mode=mix"
-    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
 ##
@@ -196,7 +196,7 @@ function bert_mix_k_exp() {
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", pytorch_transformers_output_mode=mix"
     OVERRIDES+=", pytorch_transformers_max_layer=${3}"
-    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
 function bert_at_k_exp() {
@@ -207,5 +207,5 @@ function bert_at_k_exp() {
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", pytorch_transformers_output_mode=top"
     OVERRIDES+=", pytorch_transformers_max_layer=${3}"
-    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }

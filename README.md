@@ -23,9 +23,9 @@ Our official documentation is here: https://jiant.info/documentation#/
 
 
 ## Running
-To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:
+To run an experiment, make a config file similar to `jiant/config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:
 ```sh
-python main.py --config_file config/demo.conf \
+python main.py --config_file jiant/config/demo.conf \
     --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
