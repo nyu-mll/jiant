@@ -1,3 +1,34 @@
+"""Setuptools package definition for PyPI/pip distribution
+
+Dependencies will need to be updated in the "install_requires" of setup()
+below. Those dependencies are used to create the CircleCI virtual environment.
+These are generally the same dependencies as in environment.yml, but should be
+limited to dependencies required by most users. New directories added under
+the jiant directory will also need to be added to the "packages" section of
+setup().
+
+Distributions are automatically versioned based on git tags. After creating a
+new git tag, a release can be created by running:
+
+    # install twine, if necessary
+    # pip install --user twine
+
+    # create distribution
+    python setup.py sdist bdist_wheel
+
+    # upload to PyPI
+    python -m twine upload dist/*
+
+Twine will prompt for login. Login details can be stored for reuse in the file
+"~/.pypirc". See https://docs.python.org/3.3/distutils/packageindex.html#pypirc
+
+If you need to test a distribution before tagging, you can use the following
+(with example version 0.1.0rc1), but take care to delete the distribution from
+dist before the next twine upload to PyPI:
+
+    SETUPTOOLS_SCM_PRETEND_VERSION=0.1.0rc1 python setup.py sdist bdist_wheel
+    python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+"""
 import setuptools
 
 with open("README.md", "r") as fh:

@@ -77,6 +77,21 @@ install` should ensure you comply with this in all your future commits. If you'r
 please also add the tests.
 
 
+## Releases
+
+Releases are identified using git tags and distributed via PyPI for pip installation. After passing CI tests and creating a new git tag for a release, it can be uploaded to PyPI by running:
+
+```bash
+# create distribution
+python setup.py sdist bdist_wheel
+
+# upload to PyPI
+python -m twine upload dist/*
+```
+
+More details can be found in [setup.py](setup.py).
+
+
 ## License
 
 This package is released under the [MIT License](LICENSE.md). The material in the allennlp_mods directory is based on [AllenNLP](https://github.com/allenai/allennlp), which was originally released under the Apache 2.0 license.
