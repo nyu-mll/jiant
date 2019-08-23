@@ -2,7 +2,7 @@
 
 To debug this, run with -m ipdb:
 
-    python -m ipdb main.py --config_file ...
+    ipdb3 jiant/__main__.py  --config_file ...
 """
 # pylint: disable=no-member
 import logging as log
