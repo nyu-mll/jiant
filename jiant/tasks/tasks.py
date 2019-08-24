@@ -2202,7 +2202,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             label_fn=lambda t: t.split(" "),
         )
@@ -2214,7 +2213,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             label_fn=lambda t: t.split(" "),
         )
@@ -2226,7 +2224,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             has_labels=False,
         )

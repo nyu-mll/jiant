@@ -84,7 +84,6 @@ def load_tsv(
     s1_idx=0,
     s2_idx=1,
     label_fn=None,
-    col_indices=None,
     skip_rows=0,
     return_indices=False,
     delimiter="\t",
@@ -113,8 +112,6 @@ def load_tsv(
         s2_idx (int|None): The column index for the second text field, if present.
         label_fn (fn: str -> int|None): A function to map items in column label_idx to int-valued
             labels.
-        col_indices (list[int]): column names, which should be 1-n, where n is the number of columns
-        in the csv. 
         skip_rows (int|list): Skip this many header rows or skip these specific row indices.
         has_labels (bool): If False, don't look for labels at position label_idx.
         filter_value (str|None): The value in which we want filter_idx to be equal to.
@@ -143,13 +140,13 @@ def load_tsv(
         data_file,
         sep=delimiter,
         error_bad_lines=False,
-        names=col_indices,
         header=None,
         skiprows=skip_rows,
         quoting=quote_level,
         keep_default_na=False,
         encoding="utf-8",
     )
+
     if filter_idx and filter_value:
         rows = rows[rows[filter_idx] == filter_value]
     # Filter for sentence1s that are of length 0
