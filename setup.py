@@ -36,7 +36,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="jiant",
-    author="NYU Machine Learning for Language",
+    author="NYU Machine Learning for Language Group",
     author_email="bowman@nyu.edu",
     description="jiant is a software toolkit for natural language processing research, designed to \
     facilitate work on multitask learning and transfer learning for sentence understanding tasks.",
