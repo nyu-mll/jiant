@@ -29,7 +29,7 @@ dependencies:
         # for --remote_log functionality
         - google-cloud-logging==1.11.0
         # ftfy and spacy are used for GPT
-        - ftfy==5.4.1
+        # - ftfy==5.4.1
         - spacy==2.0.11
 
         # Warning: jiant currently depends on *both* pytorch_pretrained_bert > 0.6 _and_
