@@ -25,7 +25,7 @@ from jiant import evaluate
 import jiant.trainer as trainer
 from jiant.models import MultiTaskModel
 import jiant.tasks.tasks as tasks
-from main import evaluate_and_write, get_best_checkpoint_path
+from jiant.__main__ import evaluate_and_write, get_best_checkpoint_path
 
 
 def build_trainer_params(args, task_names, phase="pretrain"):

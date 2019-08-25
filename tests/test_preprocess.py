@@ -1,6 +1,7 @@
 import csv
 import os
 import os.path
+from pkg_resources import resource_filename
 import shutil
 import tempfile
 import unittest
@@ -37,7 +38,9 @@ class TestProprocess(unittest.TestCase):
             tokenizer = bert-large-cased
             input_module = bert-base-cased
         """
-        self.DEFAULTS_PATH = "config/defaults.conf"  # To get other required values.
+        self.DEFAULTS_PATH = resource_filename(
+            "jiant", "config/defaults.conf"
+        )  # To get other required values.
         self.params1 = params_from_file(self.DEFAULTS_PATH, self.HOCON1)
 
     def test_get_task_without_loading_data(self):

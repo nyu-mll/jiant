@@ -117,7 +117,7 @@ The `run_batch.sh` script handles creating an appropriate config on the fly; see
 ```sh
 export JIANT_PATH="/nfs/jiant/home/$USER/jiant"
 ./run_batch.sh <job_name> \
-   "python $JIANT_PATH/main.py --config_file $JIANT_PATH/config/demo.conf --overrides 'run_name = kubernetes-demo, target_tasks = \"wnli,commitbank\"'"
+   "python $JIANT_PATH/main.py --config_file $JIANT_PATH/jiant/config/demo.conf --overrides 'run_name = kubernetes-demo, target_tasks = \"wnli,commitbank\"'"
 ```
 
 You should see your job as `<job_name>` in Kubernetes Engine -> Workloads, and can monitor status, resource usage, and logs from that page.

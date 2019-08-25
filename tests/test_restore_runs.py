@@ -8,7 +8,7 @@ from unittest import mock
 from jiant import evaluate
 import jiant.tasks.tasks as tasks
 from jiant.utils import utils
-from main import evaluate_and_write, get_best_checkpoint_path
+from jiant.__main__ import evaluate_and_write, get_best_checkpoint_path
 
 
 class TestRestoreRuns(unittest.TestCase):
