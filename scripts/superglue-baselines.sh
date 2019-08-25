@@ -1,8 +1,8 @@
 #!/bin/bash
 # Functions to run SuperGLUE BERT baselines.
 # Usage: ./scripts/superglue-baselines.sh ${TASK} ${GPU_ID} ${SEED}
-#   - TASK: one of {"boolq", "cb", "copa", "multirc", "record", "rte", "wic", "wsc"},
-#           as well as their *-bow variants and *++ for {"boolq", "cb", "copa", "rte"}
+#   - TASK: one of {"boolq", "commit", "copa", "multirc", "record", "rte", "wic", "wsc"},
+#           as well as their *-bow variants and *++ for {"boolq", "commit", "copa", "rte"}
 #   - GPU_ID: GPU to use, or -1 for CPU. Defaults to 0.
 #   - SEED: random seed. Defaults to 111.
 
