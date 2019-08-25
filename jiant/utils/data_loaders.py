@@ -84,7 +84,6 @@ def load_tsv(
     s1_idx=0,
     s2_idx=1,
     label_fn=None,
-    col_indices=None,
     skip_rows=0,
     return_indices=False,
     delimiter="\t",
@@ -113,14 +112,21 @@ def load_tsv(
         s2_idx (int|None): The column index for the second text field, if present.
         label_fn (fn: str -> int|None): A function to map items in column label_idx to int-valued
             labels.
-        col_indices (list[int]): TODO(YADA): ???
         skip_rows (int|list): Skip this many header rows or skip these specific row indices.
         has_labels (bool): If False, don't look for labels at position label_idx.
         filter_value (str|None): The value in which we want filter_idx to be equal to.
         filter_idx (int|None): The column index in which to look for filter_value.
-        tag_vocab (TODO(YADA)): Vocab object contains the tags (TODO(YADA): What are these?)
-        tag2idx_dict (dict<string, int>): Map from coarse category name to column index
-            (TODO(Yada): Clarify.)
+        tag_vocab (allennlp vocabulary): In some datasets, examples are attached to tags, and we
+            need to know the results on examples with certain tags, this is a vocabulary for
+            tracking tags in a dataset across splits
+        tag2idx_dict (dict<string, int>): The tags form a two-level hierarchy, each fine tag belong
+            to a coarse tag. In the tsv, each coarse tag has one column, the content in that column
+            indicates what fine tags(seperated by ;) beneath that coarse tag the examples have. 
+            tag2idx_dict is a dictionary to map coarse tag to the index of corresponding column.
+            e.g. if we have two coarse tags: source at column 0, topic at column 1; and four fine
+            tags: wiki, reddit beneath source, and economics, politics beneath topic. The tsv will
+            be: | wiki  | economics;politics|, with the tag2idx_dict as {"source": 0, "topic": 1}
+                | reddit| politics          |
 
     Returns:
         List of first and second sentences, labels, and if applicable indices
@@ -134,13 +140,13 @@ def load_tsv(
         data_file,
         sep=delimiter,
         error_bad_lines=False,
-        names=col_indices,
         header=None,
         skiprows=skip_rows,
         quoting=quote_level,
         keep_default_na=False,
         encoding="utf-8",
     )
+
     if filter_idx and filter_value:
         rows = rows[rows[filter_idx] == filter_value]
     # Filter for sentence1s that are of length 0
