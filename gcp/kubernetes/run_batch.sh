@@ -10,7 +10,7 @@
 # Example usage:
 # export JIANT_PATH="/nfs/jiant/home/$USER/jiant"
 # ./run_batch.sh <job_name> "python $JIANT_PATH/main.py \
-#    --config_file $JIANT_PATH/config/demo.conf \
+#    --config_file $JIANT_PATH/jiant/config/demo.conf \
 #    --notify <your_email_address>"
 #
 # You can specify additional arguments as flags:
@@ -21,7 +21,7 @@
 #
 # For example:
 # ./run_batch.sh -p demos -m k80 jiant-demo \
-#     "python $JIANT_PATH/main.py --config_file $JIANT_PATH/config/demo.conf"
+#     "python $JIANT_PATH/main.py --config_file $JIANT_PATH/jiant/config/demo.conf"
 #
 # will run as job name 'demos.jiant-demo' and write results to /nfs/jsalt/exp/demos
 #
@@ -32,7 +32,7 @@ GPU_TYPE="p100"
 PROJECT_NAME="$USER"
 NOTIFY_EMAIL=""
 
-# Get the NFS path from the Kubernetes config, so that it doesn't need to be 
+# Get the NFS path from the Kubernetes config, so that it doesn't need to be
 # hardcoded here.
 pushd $(dirname $0)/templates
 NFS_EXP_DIR=$(jsonnet -S -e "local env = import 'jiant_env.libsonnet'; env.nfs_exp_dir")

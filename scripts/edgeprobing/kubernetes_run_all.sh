@@ -12,7 +12,8 @@
 # This is mostly a wrapper around gcp/kubernetes/run_batch.sh. It constructs
 # command lines that use the pre-set experiment functions defined in
 # exp_fns.sh, and calls run_batch.sh to start jobs. See exp_fns.sh for the
-# override params, and config/edgeprobe/edgeprobe_*.conf for the base configs.
+# override params, and jiant/config/edgeprobe/edgeprobe_*.conf for the base
+# configs.
 #
 # In addition to starting jobs, this script copies the current jiant/ repo to
 # the project folder. This serves as a record of the code used for a particular
