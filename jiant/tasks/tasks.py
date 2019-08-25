@@ -836,79 +836,6 @@ class QQPTask(PairClassificationTask):
         }
 
 
-@register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
-@register_task("mnli-slate", rel_path="MNLI/", genre="slate")
-@register_task("mnli-government", rel_path="MNLI/", genre="government")
-@register_task("mnli-telephone", rel_path="MNLI/", genre="telephone")
-@register_task("mnli-travel", rel_path="MNLI/", genre="travel")
-class MultiNLISingleGenreTask(PairClassificationTask):
-    """ Task class for Multi-Genre Natural Language Inference, Fiction genre."""
-
-    def __init__(self, path, max_seq_len, genre, name, **kw):
-        """MNLI"""
-        super(MultiNLISingleGenreTask, self).__init__(name, n_classes=3, **kw)
-        self.path = path
-        self.max_seq_len = max_seq_len
-        self.genre = genre
-
-        self.train_data_text = None
-        self.val_data_text = None
-        self.test_data_text = None
-
-    def load_data(self):
-        """Process the dataset located at path. We only use the in-genre matche data."""
-        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
-        self.train_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "train.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            label_idx=11,
-            label_fn=targ_map.__getitem__,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=self.genre,
-        )
-        self.val_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "dev_matched.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            label_idx=11,
-            label_fn=targ_map.__getitem__,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=self.genre,
-        )
-        self.test_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "test_matched.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            has_labels=False,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=self.genre,
-        )
-        self.sentences = (
-            self.train_data_text[0]
-            + self.train_data_text[1]
-            + self.val_data_text[0]
-            + self.val_data_text[1]
-        )
-        log.info("\tFinished loading MNLI " + self.genre + " data.")
-
-    def get_metrics(self, reset=False):
-        """ No F1 """
-        return {"accuracy": self.scorer1.get_metric(reset)}
-
-
 @register_task("mrpc", rel_path="MRPC/")
 class MRPCTask(PairClassificationTask):
     """Task class for Microsoft Research Paraphase Task."""
@@ -1105,14 +1032,25 @@ class SNLITask(PairClassificationTask):
 @register_task("mnli", rel_path="MNLI/")
 # second copy for different params
 @register_task("mnli-alt", rel_path="MNLI/")
+@register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
+@register_task("mnli-slate", rel_path="MNLI/", genre="slate")
+@register_task("mnli-government", rel_path="MNLI/", genre="government")
+@register_task("mnli-telephone", rel_path="MNLI/", genre="telephone")
+@register_task("mnli-travel", rel_path="MNLI/", genre="travel")
 class MultiNLITask(PairClassificationTask):
-    """ Task class for Multi-Genre Natural Language Inference """
+    """ Task class for Multi-Genre Natural Language Inference. """
 
-    def __init__(self, path, max_seq_len, name, **kw):
-        """MNLI"""
+    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+        """Set up the MNLI task object.
+
+        When genre is set to one of the ten MNLI genres, only examples matching that genre will be
+        loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
+        being empty.
+        """
         super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
+        self.genre = genre
 
         self.train_data_text = None
         self.val_data_text = None
@@ -1130,6 +1068,8 @@ class MultiNLITask(PairClassificationTask):
             label_idx=11,
             label_fn=targ_map.__getitem__,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
 
         # Warning to anyone who edits this: The reference label is column *15*,
@@ -1143,6 +1083,8 @@ class MultiNLITask(PairClassificationTask):
             label_idx=15,
             label_fn=targ_map.__getitem__,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
         val_mismatched_data = load_tsv(
             self._tokenizer_name,
@@ -1153,6 +1095,8 @@ class MultiNLITask(PairClassificationTask):
             label_idx=15,
             label_fn=targ_map.__getitem__,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
@@ -1166,6 +1110,8 @@ class MultiNLITask(PairClassificationTask):
             has_labels=False,
             return_indices=True,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
         te_mismatched_data = load_tsv(
             self._tokenizer_name,
@@ -1176,20 +1122,10 @@ class MultiNLITask(PairClassificationTask):
             has_labels=False,
             return_indices=True,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
-        te_diagnostic_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "diagnostic.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=1,
-            s2_idx=2,
-            has_labels=False,
-            return_indices=True,
-            skip_rows=1,
-        )
-        te_data = [
-            m + mm + d for m, mm, d in zip(te_matched_data, te_mismatched_data, te_diagnostic_data)
-        ]
+        te_data = [m + mm for m, mm in zip(te_matched_data, te_mismatched_data)]
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1201,6 +1137,109 @@ class MultiNLITask(PairClassificationTask):
             + self.val_data_text[1]
         )
         log.info("\tFinished loading MNLI data.")
+
+
+@register_task("mnli-ho", rel_path="MNLI/")
+@register_task("mnli-fiction-ho", rel_path="MNLI/", genre="fiction")
+@register_task("mnli-slate-ho", rel_path="MNLI/", genre="slate")
+@register_task("mnli-government-ho", rel_path="MNLI/", genre="government")
+@register_task("mnli-telephone-ho", rel_path="MNLI/", genre="telephone")
+@register_task("mnli-travel-ho", rel_path="MNLI/", genre="travel")
+class MultiNLIHypothesisOnlyTask(SingleClassificationTask):
+    """ Task class for MultiNLI hypothesis-only classification. """
+
+    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+        """Set up the MNLI-HO task object.
+
+        When genre is set to one of the ten MNLI genres, only examples matching that genre will be
+        loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
+        being empty.
+        """
+        super(MultiNLIHypothesisOnlyTask, self).__init__(name, n_classes=3, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.genre = genre
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+    def load_data(self):
+        """Process the dataset located at path."""
+        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=None,
+            label_idx=11,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+
+        # Warning to anyone who edits this: The reference label is column *15*,
+        # not 11 as above.
+        val_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev_matched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=None,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        val_mismatched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev_mismatched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=None,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        val_data = tuple(val_data)
+
+        te_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test_matched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        te_mismatched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test_mismatched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        te_data = [m + mm for m, mm in zip(te_matched_data, te_mismatched_data)]
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        log.info("\tFinished loading MNLI-HO data.")
 
 
 # GLUE diagnostic (3-class NLI), expects TSV
@@ -2163,7 +2202,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             label_fn=lambda t: t.split(" "),
         )
@@ -2175,7 +2213,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             label_fn=lambda t: t.split(" "),
         )
@@ -2187,7 +2224,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             has_labels=False,
         )
