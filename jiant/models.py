@@ -60,6 +60,7 @@ from jiant.tasks.tasks import (
     TaggingTask,
     WiCTask,
     MRPCTask,
+    QQPTask,
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -926,7 +927,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if isinstance(task, (MRPCTask, STSBTask)) and self.uses_mirrored_pair:
+        if isinstance(task, (MRPCTask, STSBTask, QQPTask)) and self.uses_mirrored_pair:
             # Mirrored pair is a trick used by GPT-like models in similarity tasks
             # TODO: Wic also falls into this type, although GPT paper didn't expeirment with this task
             sent, mask = self.sent_encoder(batch["inputs"], task)

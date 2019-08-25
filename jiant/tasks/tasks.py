@@ -867,6 +867,14 @@ class QQPTask(PairClassificationTask):
             "recall": rcl,
         }
 
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=True, is_symmetrical_pair=True
+        )
+
 
 @register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate", rel_path="MNLI/", genre="slate")
@@ -1014,12 +1022,7 @@ class MRPCTask(PairClassificationTask):
     ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         return process_single_pair_task_split(
-            split,
-            indexers,
-            model_preprocessing_interface,
-            is_pair=True,
-            classification=True,
-            is_symmetrical_pair=True,
+            split, indexers, model_preprocessing_interface, is_pair=True, is_symmetrical_pair=True
         )
 
 
