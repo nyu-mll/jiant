@@ -24,7 +24,7 @@ import torch
 
 from jiant import evaluate
 from jiant.models import build_model
-from jiant.preprocess import build_tasks, parse_task_list_arg
+from jiant.preprocess import build_tasks
 from jiant import tasks as task_modules
 from jiant.trainer import build_trainer
 from jiant.utils import config, tokenizers
