@@ -2,8 +2,8 @@
 
 This is the main page for the following papers:
 
-- [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX), a.k.a. "Edge Probing"
-- [BERT Rediscovers the Classical NLP Pipeline](https://arxiv.org/abs/1905.05950) a.k.a. "BERT layer paper"
+- **What do you learn from context? Probing for sentence structure in contextualized word representations** (Tenney et al., ICLR 2019), the "edge probing paper": [[paper](https://openreview.net/forum?id=SJzSgnRcKX)] [[poster](https://iftenney.github.io/edgeprobe-poster-iclr-final.pdf)]
+- **BERT Rediscovers the Classical NLP Pipeline** (Tenney et al., ACL 2019), the "BERT layer paper":[[paper](https://arxiv.org/abs/1905.05950)] [[poster](https://iftenney.github.io/bert-layer-poster-acl-final.pdf)]
 
 Most of the code for these is integrated into `jiant` proper, but this directory contains data preparation and analysis code specific to the edge probing experiments. Additionally, the runner scripts live in [jiant/scripts/edgeprobing](../scripts/edgeprobing).
 
