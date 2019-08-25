@@ -114,13 +114,13 @@ Now that we've set up the environment, let's get started!
 ### 3.a) Configuring our experiment
 
 Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch.
-This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy called `config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit.
+This is almost exactly what is specified in `jiant/config/demo.conf`, with one major change. From here, we suggest you to go to [`jiant/config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/jiant/config/demo.conf), make a copy called `jiant/config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit.
 
 ```
-cp config/demo.conf config/tutorial.conf
+cp jiant/config/demo.conf jiant/config/tutorial.conf
 ```
 
-Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file.
+Next, we need to make a configuration file that defines the parameters of our experiment. `jiant/config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `jiant/config/defaults.conf`, which you can do by putting the below at the top of your config file.
 
 ```
 include "defaults.conf"
@@ -128,10 +128,10 @@ include "defaults.conf"
 
 Some important options include:
 
-* `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `config/tutorial.conf`, set  `sent_enc=rnn`.
-* `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
+* `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `jiant/config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `jiant/config/tutorial.conf`, set  `sent_enc=rnn`.
+* `pretrain_tasks`: This is a comma-delimited string of tasks. In `jiant/config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
 * `target_tasks`: This is a comma-delimited string of tasks you want to fine-tune and evaluate on (in this case "sts-b,wnli").
-* `input_module`: This is a string specifying the type of (contextualized) word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`.
+* `input_module`: This is a string specifying the type of (contextualized) word embedding you want to use. In `jiant/config/demo.conf`, this is already set to `scratch`.
 * `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining. A step is a batch update.
 * `exp_name`, which expects a string of your experiment name.
 * `run_name`, which expects a string of your run name.
@@ -203,7 +203,7 @@ To run the experiment, you can simply run the below command via command line, or
  You can use the `--overrides` flag to override specific variables. For example:
 
 ```sh
-python main.py --config_file config/tutorial.conf \
+python main.py --config_file jiant/config/tutorial.conf \
     --overrides "exp_name = my_exp, run_name = foobar"
 ```
 
