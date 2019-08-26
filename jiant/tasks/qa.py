@@ -144,9 +144,10 @@ class MultiRCTask(Task):
                     for answer in question["answers"]:
                         yield answer["text"]
 
-    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(passage, question, answer, label, par_idx, qst_idx, ans_idx):
             """ pq_id: passage-question ID """
@@ -158,13 +159,19 @@ class MultiRCTask(Task):
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
-            if is_using_pytorch_transformers:
-                inp = boundary_token_fn(para, question + answer)
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(para, question + answer)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["psg"] = sentence_to_text_field(boundary_token_fn(passage), indexers)
-                d["qst"] = sentence_to_text_field(boundary_token_fn(question), indexers)
-                d["ans"] = sentence_to_text_field(boundary_token_fn(answer), indexers)
+                d["psg"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(passage), indexers
+                )
+                d["qst"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                )
+                d["ans"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(answer), indexers
+                )
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
@@ -324,9 +331,10 @@ class ReCoRDTask(Task):
                 yield example["passage"]
                 yield example["query"]
 
-    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def is_answer(x, ys):
             """ Given a list of answers, determine if x is an answer """
@@ -348,12 +356,16 @@ class ReCoRDTask(Task):
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
-            if is_using_pytorch_transformers:
-                inp = boundary_token_fn(psg, qst)
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(psg, qst)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["psg"] = sentence_to_text_field(boundary_token_fn(psg), indexers)
-                d["qst"] = sentence_to_text_field(boundary_token_fn(qst), indexers)
+                d["psg"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(psg), indexers
+                )
+                d["qst"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(qst), indexers
+                )
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
