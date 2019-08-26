@@ -51,7 +51,6 @@ setuptools.setup(
         "jiant.modules",
         "jiant.modules.onlstm",
         "jiant.modules.prpn",
-        "jiant.openai_transformer_lm",
         "jiant.pytorch_transformers_interface",
         "jiant.tasks",
         "jiant.utils",
