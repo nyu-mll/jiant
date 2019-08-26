@@ -59,6 +59,8 @@ from jiant.tasks.tasks import (
     STSBTask,
     TaggingTask,
     WiCTask,
+    MRPCTask,
+    QQPTask,
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -227,31 +229,51 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build embeddings.
     cove_layer = None
-    if args.input_module == "gpt":
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .openai_transformer_lm.utils import OpenAIEmbedderModule
-
-        log.info("Using OpenAI transformer model.")
-        # Here, this uses openAIEmbedder.
-        embedder = OpenAIEmbedderModule(args)
-        d_emb = embedder.get_output_dim()
-    elif args.input_module.startswith("bert"):
+    if args.input_module.startswith("bert-"):
         from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 
         log.info(f"Using BERT model ({args.input_module}).")
         embedder = BertEmbedderModule(args)
         d_emb = embedder.get_output_dim()
-    elif args.input_module.startswith("xlnet"):
+    elif args.input_module.startswith("roberta-"):
+        from jiant.pytorch_transformers_interface.modules import RobertaEmbedderModule
+
+        log.info(f"Using RoBERTa model ({args.input_module}).")
+        embedder = RobertaEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("xlnet-"):
         from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
 
         log.info(f"Using XLNet model ({args.input_module}).")
         embedder = XLNetEmbedderModule(args)
         d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("openai-gpt"):
+        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+
+        log.info(f"Using OpenAI GPT model ({args.input_module}).")
+        embedder = OpenAIGPTEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("gpt2"):
+        from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+
+        log.info(f"Using GPT-2 model ({args.input_module}).")
+        embedder = GPT2EmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("transfo-xl-"):
+        from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+
+        log.info(f"Using Transformer-XL model ({args.input_module}).")
+        embedder = TransfoXLEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("xlm-"):
+        from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
+
+        log.info(f"Using XLM model ({args.input_module}).")
+        embedder = XLMEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.
         d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
-    d_sent_input = args.d_hid
 
     sent_encoder, d_sent_output = build_sent_encoder(
         args, vocab, d_emb, tasks, embedder, cove_layer
@@ -312,7 +334,6 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         word_embs = nn.Embedding(n_token_vocab, d_word).weight
     else:
         assert input_module_uses_pytorch_transformers(args.input_module) or args.input_module in [
-            "gpt",
             "elmo",
             "elmo-chars-only",
         ], f"'{args.input_module}' is not a valid value for input_module."
@@ -508,6 +529,12 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
         setattr(model, "%s_mdl" % task.name, hid2voc)
     elif isinstance(task, LanguageModelingTask):
+        assert not input_module_uses_pytorch_transformers(args.input_module), (
+            "our LM Task does not support pytorch_transformers, if you need them, try to update",
+            "corresponding parts of the code. You may find get_pretrained_lm_head and",
+            "apply_lm_boundary_tokens from pytorch_transformer_interface.module useful,",
+            "do check if they are working correctly though.",
+        )
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
@@ -658,7 +685,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
 
     # Build the classifier
     n_classes = task.n_classes if hasattr(task, "n_classes") else 1
-    if model.use_pytorch_transformers:
+    if model.uses_pair_embedding:
         # BERT/XLNet handle pair tasks by concatenating the inputs and classifying the joined
         # sequence, so we use a single sentence classifier
         if isinstance(task, WiCTask):
@@ -751,9 +778,11 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
-        self.use_pytorch_transformers = input_module_uses_pytorch_transformers(args.input_module)
+        self.uses_pair_embedding = input_module_uses_pair_embedding(args.input_module)
+        self.uses_mirrored_pair = input_module_uses_mirrored_pair(args.input_module)
         self.project_before_pooling = not (
-            self.use_pytorch_transformers and args.transfer_paradigm == "finetune"
+            input_module_uses_pytorch_transformers(args.input_module)
+            and args.transfer_paradigm == "finetune"
         )  # Rough heuristic. TODO: Make this directly user-controllable.
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
@@ -860,7 +889,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if self.uses_pair_embedding:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             logits = classifier(sent, mask)
         else:
@@ -898,7 +927,13 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if isinstance(task, (MRPCTask, STSBTask, QQPTask)) and self.uses_mirrored_pair:
+            # Mirrored pair is a trick used by GPT-like models in similarity tasks
+            # TODO: Wic also falls into this type, although GPT paper didn't expeirment with this task
+            sent, mask = self.sent_encoder(batch["inputs"], task)
+            sent_m, mask_m = self.sent_encoder(batch["inputs_m"], task)
+            logits = classifier(sent, mask) + classifier(sent_m, mask_m)
+        elif self.uses_pair_embedding:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             # special case for WiC b/c we want to add representations of particular tokens
             if isinstance(task, WiCTask):
@@ -1057,12 +1092,11 @@ class MultiTaskModel(nn.Module):
 
         logits = []
         module = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if self.uses_pair_embedding:
             for choice_idx in range(task.n_choices):
                 sent, mask = self.sent_encoder(batch["choice%d" % choice_idx], task)
                 logit = module(sent, mask)
                 logits.append(logit)
-            out["n_exs"] = batch["choice0"]["pytorch_transformers_wpm_pretokenized"].size(0)
         else:
             ctx, ctx_mask = self.sent_encoder(batch["question"], task)
             for choice_idx in range(task.n_choices):
@@ -1071,9 +1105,9 @@ class MultiTaskModel(nn.Module):
                 inp_mask = torch.cat([ctx_mask, mask], dim=1)
                 logit = module(inp, inp_mask)
                 logits.append(logit)
-            out["n_exs"] = batch["choice0"]["words"].size(0)
         logits = torch.cat(logits, dim=1)
         out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch, keyword="choice0")
 
         if "label" in batch:
             labels = batch["label"]
@@ -1128,12 +1162,12 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         classifier = self._get_classifier(task)
-        if self.use_pytorch_transformers:
+        if self.uses_pair_embedding:
             # if using BERT/XLNet, we concatenate the passage, question, and answer
             inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
-            out["n_exs"] = inp["pytorch_transformers_wpm_pretokenized"].size(0)
+            out["n_exs"] = get_batch_size(batch, keyword="psg_qst_ans")
         else:
             # else, we embed each independently and concat them
             psg_emb, psg_mask = self.sent_encoder(batch["psg"], task)
@@ -1143,11 +1177,11 @@ class MultiTaskModel(nn.Module):
                 ans_emb, ans_mask = self.sent_encoder(batch["ans"], task)
                 inp = torch.cat([psg_emb, qst_emb, ans_emb], dim=1)
                 inp_mask = torch.cat([psg_mask, qst_mask, ans_mask], dim=1)
-                out["n_exs"] = batch["ans"]["words"].size(0)
+                out["n_exs"] = get_batch_size(batch, keyword="ans")
             else:  # ReCoRD inserts answer into the query
                 inp = torch.cat([psg_emb, qst_emb], dim=1)
                 inp_mask = torch.cat([psg_mask, qst_mask], dim=1)
-                out["n_exs"] = batch["qst"]["words"].size(0)
+                out["n_exs"] = get_batch_size(batch, keyword="qst")
 
             logits = classifier(inp, inp_mask)
         out["logits"] = logits
@@ -1196,3 +1230,26 @@ class MultiTaskModel(nn.Module):
                         self.sent_encoder._text_field_embedder, task=None
                     )
         return params
+
+
+def input_module_uses_pair_embedding(input_module):
+    """
+    This function tells whether the input module concatenate the two sentences in a pair when
+    running on pair tasks, like what GPT / BERT do on MNLI.
+    It seems redundant now, but it allows us to load similar models from other sources later on
+    """
+    from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+
+    return input_module_uses_pytorch_transformers(input_module)
+
+
+def input_module_uses_mirrored_pair(input_module):
+    """
+    This function tells whether the input model uses raw pair and mirrored pair simutaneously when
+    running on symmetrical pair tasks, like what GPT do on STS-B 
+    """
+    return (
+        input_module.startswith("openai-gpt")
+        or input_module.startswith("gpt2")
+        or input_module.startswith("transfo-xl-")
+    )
