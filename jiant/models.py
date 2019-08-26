@@ -525,9 +525,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, (MultiRCTask, ReCoRDTask)):
-        module = build_qa_module(task, d_sent, model.use_bert, task_params)
-        setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, CharSeq2SeqTask):
         log.info("using {} attention".format(args.s2s["attention"]))
         decoder_params = Params(
