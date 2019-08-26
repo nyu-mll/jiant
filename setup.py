@@ -66,6 +66,7 @@ setuptools.setup(
         "pyhocon==0.3.35",
         "python-Levenshtein==0.12.0",
         "pytorch-transformers==1.0.0",
+        "sacremoses",
     ],
     use_scm_version=True,
     setup_requires=["setuptools_scm"],

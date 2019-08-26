@@ -7,8 +7,8 @@ import functools
 import logging as log
 import os
 
-from nltk.tokenize.moses import MosesDetokenizer
-from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer
+from sacremoses import MosesDetokenizer
+from sacremoses import MosesTokenizer as SacreMosesTokenizer
 from nltk.tokenize.simple import SpaceTokenizer
 
 
@@ -61,7 +61,7 @@ class OpenAIBPETokenizer(Tokenizer):
 class MosesTokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
-        self._tokenizer = NLTKMosesTokenizer()
+        self._tokenizer = SacreMosesTokenizer()
         self._detokenizer = MosesDetokenizer()
 
     def tokenize(self, sentence):
