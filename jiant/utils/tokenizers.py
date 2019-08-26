@@ -59,6 +59,9 @@ class OpenAIBPETokenizer(Tokenizer):
 
 
 class SplitCharsTokenizer(Tokenizer):
+    """
+        This tokenizer splits a string (sentence or word) into individual characters.
+    """
     def __init__(self):
         super().__init__()
 
