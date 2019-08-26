@@ -84,6 +84,8 @@ class SentenceEncoder(Model):
             self.reset_states()
 
         # General sentence embeddings (for sentence encoder).
+        # Make sent_mask first, pytorch_transformers text_field_embedder will change the token index
+        sent_mask = util.get_text_field_mask(sent).float()
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
             word_embs_in_context = self._highway_layer(self._text_field_embedder(sent))
@@ -133,7 +135,6 @@ class SentenceEncoder(Model):
             task_word_embs_in_context = self._dropout(task_word_embs_in_context)
 
         # The rest of the model
-        sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
         if word_embs_in_context is not None:
             if isinstance(self._phrase_layer, ONLSTMStack) or isinstance(self._phrase_layer, PRPN):
