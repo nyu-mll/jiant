@@ -960,15 +960,14 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _seq_gen_forward(self, batch, task, predict):
-        """ For variational autoencoder """
+        """ For sequence generation tasks """
         out = {}
         sent, sent_mask = self.sent_encoder(batch["inputs"], task)
         out["n_exs"] = get_batch_size(batch)
 
-        if isinstance(task, (CharSeq2SeqTask)):
-            decoder = getattr(self, "%s_decoder" % task.name)
-            out.update(decoder.forward(sent, sent_mask, batch["targs"]))
-            task.scorer1(out["loss"].item())
+        decoder = getattr(self, "%s_decoder" % task.name)
+        out.update(decoder.forward(sent, sent_mask, batch["targs"]))
+        task.scorer1(out["loss"].item())
 
         if "targs" in batch:
             # logits: batch_size * seq_len * tgt_voc_size
