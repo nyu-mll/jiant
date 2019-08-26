@@ -84,11 +84,10 @@ def load_tsv(
     s1_idx=0,
     s2_idx=1,
     label_fn=None,
-    col_indices=None,
     skip_rows=0,
     return_indices=False,
     delimiter="\t",
-    quote_level=3,  # csv.QUOTE_NONE
+    quote_level=csv.QUOTE_NONE,
     filter_idx=None,
     has_labels=True,
     filter_value=None,
@@ -97,27 +96,43 @@ def load_tsv(
 ):
     """
     Load a tsv.
-    To load only rows that have a certain value for a certain column,
-    like genre in MNLI, set filter_idx and filter_value (for example,
-    for mnli-fiction  we want columns where genre == 'fiction' ).
+
+    To load only rows that have a certain value for a certain columnn, set filter_idx and
+    filter_value (for example, for mnli-fiction we want rows where the genre column has
+    value 'fiction').
+
     Args:
-        s1_idx; int
-        s2_idx (int|None): if not None, look for sentence2 at s2_idx.
-                           else, return empty list
-        targ_idx: int
-        has_labels: if False, don't look for labels at position label_idx.
-                    No value for labels will be returned.
-        filter_idx: int this is the index that we want to filter from
-        filter_value: string the value in which we want filter_idx to be equal to
-        return_indices: bool that describes if you need to return indices
-            (for purposes of matching)
-        label_fn is a function that expects a row and outputs the label
-        tag_vocab is a allenlp vocab object contains the tags
-        tag2idx_dict is a <string, int> dictionary from coarse category name to column index
+        tokenizer_name (str): The name of the tokenizer to use (see defaluts.conf for values).
+        data_file (str): The path to the file to read.
+        max_seq_len (int): The maximum number of tokens to keep after tokenization, per text field.
+            Start and end symbols are introduced before tokenization, and are counted, so we will
+            keep max_seq_len - 2 tokens *of text*.
+        label_idx (int|None): The column index for the label field, if present.
+        s1_idx (int): The column index for the first text field.
+        s2_idx (int|None): The column index for the second text field, if present.
+        label_fn (fn: str -> int|None): A function to map items in column label_idx to int-valued
+            labels.
+        skip_rows (int|list): Skip this many header rows or skip these specific row indices.
+        has_labels (bool): If False, don't look for labels at position label_idx.
+        filter_value (str|None): The value in which we want filter_idx to be equal to.
+        filter_idx (int|None): The column index in which to look for filter_value.
+        tag_vocab (allennlp vocabulary): In some datasets, examples are attached to tags, and we
+            need to know the results on examples with certain tags, this is a vocabulary for
+            tracking tags in a dataset across splits
+        tag2idx_dict (dict<string, int>): The tags form a two-level hierarchy, each fine tag belong
+            to a coarse tag. In the tsv, each coarse tag has one column, the content in that column
+            indicates what fine tags(seperated by ;) beneath that coarse tag the examples have. 
+            tag2idx_dict is a dictionary to map coarse tag to the index of corresponding column.
+            e.g. if we have two coarse tags: source at column 0, topic at column 1; and four fine
+            tags: wiki, reddit beneath source, and economics, politics beneath topic. The tsv will
+            be: | wiki  | economics;politics|, with the tag2idx_dict as {"source": 0, "topic": 1}
+                | reddit| politics          |
+
     Returns:
         List of first and second sentences, labels, and if applicable indices
     """
-    # TODO(Yada): Instead of index integers, adjust this to pass ins column names
+
+    # TODO(Yada): Instead of index integers, adjust this to pass in column names
     # get the first row as the columns to pass into the pandas reader
     # This reads the data file given the delimiter, skipping over any rows
     # (usually header row)
@@ -125,14 +140,14 @@ def load_tsv(
         data_file,
         sep=delimiter,
         error_bad_lines=False,
-        names=col_indices,
         header=None,
         skiprows=skip_rows,
         quoting=quote_level,
         keep_default_na=False,
         encoding="utf-8",
     )
-    if filter_idx:
+
+    if filter_idx and filter_value:
         rows = rows[rows[filter_idx] == filter_value]
     # Filter for sentence1s that are of length 0
     # Filter if row[targ_idx] is nan
@@ -152,8 +167,7 @@ def load_tsv(
     if has_labels:
         labels = rows[label_idx].apply(lambda x: label_fn(x))
     else:
-        # If dataset doesn't have labels, for example for test set, then mock
-        # labels
+        # If dataset doesn't have labels, for example for test set, then mock labels
         labels = np.zeros(len(rows), dtype=int)
     if tag2idx_dict is not None:
         # -2 offset to cancel @@unknown@@ and @@padding@@ in vocab

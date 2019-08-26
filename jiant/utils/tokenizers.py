@@ -10,6 +10,16 @@ import os
 from nltk.tokenize.moses import MosesDetokenizer
 from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer
 from nltk.tokenize.simple import SpaceTokenizer
+from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+from pytorch_transformers import (
+    BertTokenizer,
+    RobertaTokenizer,
+    XLNetTokenizer,
+    OpenAIGPTTokenizer,
+    GPT2Tokenizer,
+    TransfoXLTokenizer,
+    XLMTokenizer,
+)
 
 
 class Tokenizer(object):
@@ -22,40 +32,13 @@ def select_tokenizer(args):
         Select a sane default tokenizer.
     """
     if args.tokenizer == "auto":
-        if args.input_module.startswith("bert-") or args.input_module.startswith("xlnet-"):
+        if input_module_uses_pytorch_transformers(args.input_module):
             tokenizer_name = args.input_module
-        elif args.input_module == "gpt":
-            tokenizer_name = "OpenAI.BPE"
         else:
             tokenizer_name = "MosesTokenizer"
     else:
         tokenizer_name = args.tokenizer
     return tokenizer_name
-
-
-class OpenAIBPETokenizer(Tokenizer):
-    # TODO: Add detokenize method to OpenAIBPE class
-    def __init__(self):
-        super().__init__()
-        from ..openai_transformer_lm.pytorch_huggingface import utils as openai_utils
-        from ..openai_transformer_lm.pytorch_huggingface.text_utils import TextEncoder
-
-        OPENAI_DATA_DIR = os.path.join(os.path.dirname(openai_utils.__file__), "model")
-        ENCODER_PATH = os.path.join(OPENAI_DATA_DIR, "encoder_bpe_40000.json")
-        BPE_PATH = os.path.join(OPENAI_DATA_DIR, "vocab_40000.bpe")
-        self._tokenizer = TextEncoder(ENCODER_PATH, BPE_PATH)
-        self._encoder_dict = self._tokenizer.encoder
-        self._reverse_encoder_dict = {v: k for k, v in self._encoder_dict.items()}
-
-    def lookup_ids(self, ids):
-        return [self._reverse_encoder_dict[i] for i in ids]
-
-    def encode(self, sentences):
-        return self._tokenizer.encode(sentences)
-
-    def tokenize(self, sentence):
-        ids = self.encode([sentence])[0]
-        return self.lookup_ids(ids)
 
 
 class MosesTokenizer(Tokenizer):
@@ -80,17 +63,22 @@ class MosesTokenizer(Tokenizer):
 def get_tokenizer(tokenizer_name):
     log.info(f"\tLoading Tokenizer {tokenizer_name}")
     if tokenizer_name.startswith("bert-"):
-        from pytorch_transformers import BertTokenizer
-
         do_lower_case = tokenizer_name.endswith("uncased")
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("roberta-"):
+        tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("xlnet-"):
-        from pytorch_transformers import XLNetTokenizer
-
         do_lower_case = tokenizer_name.endswith("uncased")
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
-    elif tokenizer_name == "OpenAI.BPE":
-        tokenizer = OpenAIBPETokenizer()
+    elif tokenizer_name.startswith("openai-gpt"):
+        tokenizer = OpenAIGPTTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("gpt2"):
+        tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("transfo-xl-"):
+        # TransformerXL is trained on data pretokenized with MosesTokenizer
+        tokenizer = MosesTokenizer()
+    elif tokenizer_name.startswith("xlm-"):
+        tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name == "MosesTokenizer":
         tokenizer = MosesTokenizer()
     elif tokenizer_name == "":
