@@ -128,6 +128,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     Checks configurations for any obvious logical flaws
     and that necessary parameters are set for each step -
     throws asserts and exits if found.
+
     Parameters
     ----------------
     args: Params object
@@ -185,21 +186,28 @@ def check_configurations(args, pretrain_tasks, target_tasks):
             "Error: Must specify at least one target task: [%s]" % args.target_tasks,
         )
         if not args.do_target_task_training:
-            untrained_tasks = set(target_tasks)
+            untrained_tasks = set(
+                config.get_task_attr(args, task.name, "use_classifier", default=task.name)
+                for task in target_tasks
+            )
             if args.do_pretrain:
-                untrained_tasks -= set(pretrain_tasks)
+                untrained_tasks -= set(
+                    config.get_task_attr(args, task.name, "use_classifier", default=task.name)
+                    for task in pretrain_tasks
+                )
             if len(untrained_tasks) > 0:
                 assert (
                     args.load_model
                     or args.load_target_train_checkpoint not in ["none", ""]
                     or args.allow_untrained_encoder_parameters
-                ), "Evaluating a model without training it on this run or loading a checkpoint. "
-                "Set `allow_untrained_encoder_parameters` if you really want to use an untrained "
-                "task model."
+                ), f"Evaluating a target task model on tasks {untrained_tasks} "
+                "without training it on this run or loading a checkpoint. "
+                "Set `allow_untrained_encoder_parameters` if you really want to use "
+                "an untrained task model."
                 log.warning(
-                    "Evauluating a target task model without training it in this run. It's up to "
-                    "you to ensure that you are loading parameters that were sufficiently trained "
-                    "for this task."
+                    f"Evauluating a target task model on tasks {untrained_tasks} without training "
+                    "it in this run. It's up to you to ensure that you are loading parameters "
+                    "that were sufficiently trained for this task."
                 )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 

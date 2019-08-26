@@ -29,8 +29,8 @@ class TestProprocess(unittest.TestCase):
         self.HOCON3 = """
             pretrain_task s= mnli
             target_tasks = qqp
-            input_module = gpt
-            tokenizer = OpenAI.BPE
+            input_module = openai-gpt
+            tokenizer = openai-gpt
         """
         self.HOCON4 = """
             pretrain_tasks = mnli
@@ -53,11 +53,11 @@ class TestProprocess(unittest.TestCase):
         self.params3 = params_from_file(self.DEFAULTS_PATH, self.HOCON3)
         self.params4 = params_from_file(self.DEFAULTS_PATH, self.HOCON4)
         indexer = build_indexers(self.params1)
-        len(indexer) == 1 and list(indexer.keys())[0] == "pytorch_transformers_wpm_pretokenized"
+        len(indexer) == 1 and list(indexer.keys())[0] == "bert_cased"
         indexer = build_indexers(self.params2)
         len(indexer) == 1 and list(indexer.keys())[0] == "words"
         indexer = build_indexers(self.params3)
-        len(indexer) == 1 and list(indexer.keys())[0] == "openai_bpe_pretokenized"
+        len(indexer) == 1 and list(indexer.keys())[0] == "openai_gpt"
         with self.assertRaises(AssertionError) as error:
             # BERT model and tokenizer must be equal, so this should throw an error.
             indexer = build_indexers(self.params4)
