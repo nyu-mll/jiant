@@ -31,7 +31,7 @@ sudo docker build --build-arg "NFS_MOUNT=$NFS_PATH" -t $IMAGE_NAME .
 # container root. See the -v "src:dst" flags below for the mapping.
 declare -a COMMAND
 COMMAND+=( python $NFS_PATH/jiant/main.py )
-COMMAND+=( --config_file $NFS_PATH/jiant/config/demo.conf )
+COMMAND+=( --config_file $NFS_PATH/jiant/jiant/config/demo.conf )
 COMMAND+=( -o "exp_name=jiant-demo" )
 
 # Run demo.conf in the docker container.
