@@ -812,7 +812,7 @@ class SamplingMultiTaskTrainer:
         batch_size,
         all_val_metrics,
         n_examples_overall,
-        debug_print=True,
+        print_output=True,
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
@@ -824,7 +824,8 @@ class SamplingMultiTaskTrainer:
         tasks: list of task objects to train on
         batch_size: int, batch size to use for the tasks
         all_val_metrics: dictionary. storing the validation performance
-        n_examples_overall = int, current number of examples the model is validated on
+        n_examples_overall: int, current number of examples the model is validated on
+        print_output: bool, prints one example per validation
 
         Returns
         -------
@@ -852,7 +853,7 @@ class SamplingMultiTaskTrainer:
                 out = self._forward(batch, task=task)
             loss = out["loss"]
 
-            if debug_print:
+            if print_output:
                 if isinstance(task, CharSeq2SeqTask):
                     if batch_num == 1:
                         voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
