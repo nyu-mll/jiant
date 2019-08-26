@@ -64,7 +64,7 @@ setuptools.setup(
         "nltk==3.2.5",
         "pyhocon==0.3.35",
         "python-Levenshtein==0.12.0",
-        "pytorch-transformers==1.0.0",
+        "pytorch-transformers==1.1.0",
     ],
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
