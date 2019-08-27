@@ -860,21 +860,16 @@ class SamplingMultiTaskTrainer:
                         voc_trg = self._model.vocab.get_index_to_token_vocabulary(
                             task.name + "_tokens"
                         )
-                        current_in = batch["inputs"]["words"][0][1:]
-                        current_gold = batch["targs"]["words"][0][1:]
+                        inputs = batch["inputs"]["words"][0][1:]
+                        gold = batch["targs"]["words"][0][1:]
                         logits = out["logits"]
-                        current_out = logits.max(2)[1][0]
+                        output = logits.max(2)[1][0]
                         input_string, gold_string, output_string = task.get_prediction(
-                            voc_src, voc_trg, current_in, current_gold, current_out)
-                        log.info(
-                            "\tInput:\t%s", input_string,
+                            voc_src, voc_trg, inputs, gold, output
                         )
-                        log.info(
-                            "\tGold:\t%s", gold_string,
-                        )
-                        log.info(
-                            "\tOutput:\t%s", output_string,
-                        )
+                        log.info("\tInput:\t%s", input_string)
+                        log.info("\tGold:\t%s", gold_string)
+                        log.info("\tOutput:\t%s", output_string)
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]

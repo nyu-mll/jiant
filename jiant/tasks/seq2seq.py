@@ -118,11 +118,17 @@ class Seq2SeqTask(SequenceGenerationTask):
         self.scorer2(logits.max(2)[1], labels, tagmask)
         return
 
-    def get_prediction(self, voc_src, voc_trg, input, gold, output):
+    def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
         tokenizer = get_tokenizer(self._tokenizer_name)
-        
-        input_string = tokenizer.detokenize([voc_src[token.item()] for token in input]).split("<EOS>")[0]
-        gold_string = tokenizer.detokenize([voc_trg[token.item()] for token in gold]).split("<EOS>")[0]
-        output_string = tokenizer.detokenize([voc_trg[token.item()] for token in output]).split("<EOS>")[0]
+
+        input_string = tokenizer.detokenize([voc_src[token.item()] for token in inputs]).split(
+            "<EOS>"
+        )[0]
+        gold_string = tokenizer.detokenize([voc_trg[token.item()] for token in gold]).split(
+            "<EOS>"
+        )[0]
+        output_string = tokenizer.detokenize([voc_trg[token.item()] for token in output]).split(
+            "<EOS>"
+        )[0]
 
         return input_string, gold_string, output_string
