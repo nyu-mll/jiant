@@ -6,7 +6,7 @@ dependencies:
     - pytorch=1.0.0
     - torchvision=0.2.1
     - numpy=1.14.5
-    - nltk=3.2.5
+    - nltk=3.4.5
     - scikit-learn=0.19.1
     - pandas=0.23.0
     # bokeh for plotting
@@ -36,4 +36,5 @@ dependencies:
         # these two versions. AllenNLP requires 0.6 to support the BertAdam optimizer, and jiant
         # directly requires 1.0 to support XLNet and WWM-BERT.
         # This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
+        - sacremoses
         - pytorch-transformers==1.1.0
