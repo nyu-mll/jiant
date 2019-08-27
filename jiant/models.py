@@ -46,7 +46,7 @@ from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
-from jiant.tasks.seq2seq import CharSeq2SeqTask
+from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
@@ -525,7 +525,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, CharSeq2SeqTask):
+    elif isinstance(task, Seq2SeqTask):
         log.info("using {} attention".format(args.s2s["attention"]))
         decoder_params = Params(
             {
