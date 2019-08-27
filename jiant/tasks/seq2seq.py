@@ -9,7 +9,7 @@ from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy
 
-from ..utils.data_loaders import process_sentence
+from ..utils.data_loaders import tokenize_and_truncate
 from .registry import register_task
 from .tasks import (
     UNK_TOK_ALLENNLP,
@@ -67,8 +67,8 @@ class CharSeq2SeqTask(SequenceGenerationTask):
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
                 # "SplitChars" is the tokenizer here.
-                src_sent = process_sentence("SplitChars", row[0], self.max_seq_len)
-                tgt_sent = process_sentence("SplitChars", row[2], self.max_seq_len)
+                src_sent = tokenize_and_truncate("SplitChars", row[0], self.max_seq_len)
+                tgt_sent = tokenize_and_truncate("SplitChars", row[2], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -89,13 +89,17 @@ class CharSeq2SeqTask(SequenceGenerationTask):
             )
         self.example_counts = example_counts
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(input_, target):
             d = {
-                "inputs": sentence_to_text_field(input_, indexers),
-                "targs": sentence_to_text_field(target, self.target_indexer),
+                "inputs": sentence_to_text_field(model_preprocessing_interface(input_), indexers),
+                "targs": sentence_to_text_field(
+                    model_preprocessing_interface(target), self.target_indexer
+                ),
             }
             return Instance(d)
 
