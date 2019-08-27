@@ -35,10 +35,10 @@ from jiant.tasks import (
     ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
     ALL_SEQ2SEQ_TASKS,
-    SequenceGenerationTask
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import CharSeq2SeqTask
+from jiant.tasks.tasks import SequenceGenerationTask
 from jiant.utils import config, serialize, utils
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
@@ -576,13 +576,13 @@ def add_task_label_vocab(vocab, task):
     if namespace is None:
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
-    for label in task.get_all_labels():
-        vocab.add_token_to_namespace(label, namespace)
 
     if isinstance(task, SequenceGenerationTask):
         for special in SPECIALS:
             vocab.add_token_to_namespace(special, namespace)
 
+    for label in task.get_all_labels():
+        vocab.add_token_to_namespace(label, namespace)
 
 
 def add_pytorch_transformers_wpm_vocab(vocab, tokenizer_name):
