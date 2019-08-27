@@ -7,8 +7,8 @@ import functools
 import logging as log
 import os
 
-from nltk.tokenize.moses import MosesDetokenizer
-from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer
+from sacremoses import MosesDetokenizer
+from sacremoses import MosesTokenizer as SacreMosesTokenizer
 from nltk.tokenize.simple import SpaceTokenizer
 from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from pytorch_transformers import (
@@ -44,7 +44,7 @@ def select_tokenizer(args):
 class MosesTokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
-        self._tokenizer = NLTKMosesTokenizer()
+        self._tokenizer = SacreMosesTokenizer()
         self._detokenizer = MosesDetokenizer()
 
     def tokenize(self, sentence):
