@@ -1049,6 +1049,7 @@ class SamplingMultiTaskTrainer:
                 "serialization_dir not specified - cannot "
                 "restore a model without a directory path."
             )
+        log.info("Saving checkpoints to: %s", self._serialization_dir)
 
         val_pass = training_state["validation_pass"]
         if new_best:
@@ -1123,8 +1124,6 @@ class SamplingMultiTaskTrainer:
 
         if not self._keep_all_checkpoints:
             self._delete_old_checkpoints(phase, val_pass, task_dir_name)
-
-        log.info("Saved checkpoints to %s", self._serialization_dir)
 
     def _restore_checkpoint(self, phase, tasks=None):
         """
