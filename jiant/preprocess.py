@@ -35,6 +35,7 @@ from jiant.tasks import (
     ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
     ALL_SEQ2SEQ_TASKS,
+    SequenceGenerationTask
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import CharSeq2SeqTask
@@ -577,6 +578,11 @@ def add_task_label_vocab(vocab, task):
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
+
+    if isinstance(task, SequenceGenerationTask):
+        for special in SPECIALS:
+            vocab.add_token_to_namespace(special, namespace)
+
 
 
 def add_pytorch_transformers_wpm_vocab(vocab, tokenizer_name):
