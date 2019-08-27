@@ -9,6 +9,7 @@ from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy
 
+from jiant.utils.tokenizers import get_tokenizer
 from ..utils.data_loaders import tokenize_and_truncate
 from .registry import register_task
 from .tasks import (
@@ -66,7 +67,6 @@ class Seq2SeqTask(SequenceGenerationTask):
                 row = row.strip().split("\t")
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                # "SplitChars" is the tokenizer here.
                 src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
                 tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
                 yield (src_sent, tgt_sent)
@@ -117,3 +117,12 @@ class Seq2SeqTask(SequenceGenerationTask):
     def update_metrics(self, logits, labels, tagmask=None):
         self.scorer2(logits.max(2)[1], labels, tagmask)
         return
+
+    def get_prediction(self, voc_src, voc_trg, input, gold, output):
+        tokenizer = get_tokenizer(self._tokenizer_name)
+        
+        input_string = tokenizer.detokenize([voc_src[token.item()] for token in input]).split("<EOS>")[0]
+        gold_string = tokenizer.detokenize([voc_trg[token.item()] for token in gold]).split("<EOS>")[0]
+        output_string = tokenizer.detokenize([voc_trg[token.item()] for token in output]).split("<EOS>")[0]
+
+        return input_string, gold_string, output_string

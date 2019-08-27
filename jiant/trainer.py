@@ -856,25 +856,24 @@ class SamplingMultiTaskTrainer:
             if print_output:
                 if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
-                        voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
-                        voc_out = self._model.vocab.get_index_to_token_vocabulary(
+                        voc_src = self._model.vocab.get_index_to_token_vocabulary("tokens")
+                        voc_trg = self._model.vocab.get_index_to_token_vocabulary(
                             task.name + "_tokens"
                         )
                         current_in = batch["inputs"]["words"][0][1:]
                         current_gold = batch["targs"]["words"][0][1:]
                         logits = out["logits"]
                         current_out = logits.max(2)[1][0]
+                        input_string, gold_string, output_string = task.get_prediction(
+                            voc_src, voc_trg, current_in, current_gold, current_out)
                         log.info(
-                            "\tInput:\t%s",
-                            "".join([voc_in[c.item()] for c in current_in]).split("<EOS>")[0],
+                            "\tInput:\t%s", input_string,
                         )
                         log.info(
-                            "\tGold:\t%s",
-                            "".join([voc_out[c.item()] for c in current_gold]).split("<EOS>")[0],
+                            "\tGold:\t%s", gold_string,
                         )
                         log.info(
-                            "\tOutput:\t%s",
-                            "".join([voc_out[c.item()] for c in current_out]).split("<EOS>")[0],
+                            "\tOutput:\t%s", output_string,
                         )
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
