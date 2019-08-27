@@ -24,7 +24,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from jiant.evaluate import evaluate
-from jiant.tasks.seq2seq import CharSeq2SeqTask
+from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.utils import config
 from jiant.utils.utils import (
     assert_for_log,
@@ -854,7 +854,7 @@ class SamplingMultiTaskTrainer:
             loss = out["loss"]
 
             if print_output:
-                if isinstance(task, CharSeq2SeqTask):
+                if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
                         voc_in = self._model.vocab.get_index_to_token_vocabulary("tokens")
                         voc_out = self._model.vocab.get_index_to_token_vocabulary(

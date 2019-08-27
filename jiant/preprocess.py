@@ -37,7 +37,7 @@ from jiant.tasks import (
     ALL_SEQ2SEQ_TASKS,
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
-from jiant.tasks.seq2seq import CharSeq2SeqTask
+from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask
 from jiant.utils import config, serialize, utils
 
@@ -512,7 +512,7 @@ def get_words(tasks):
 
     for task in tasks:
         log.info("\tCounting units for task %s.", task.name)
-        if isinstance(task, CharSeq2SeqTask):
+        if isinstance(task, Seq2SeqTask):
             for src_sent, tgt_sent in task.get_sentences():
                 update_vocab_freqs(src_sent)
         else:

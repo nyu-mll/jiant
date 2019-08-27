@@ -21,8 +21,8 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
-class CharSeq2SeqTask(SequenceGenerationTask):
-    """Character-based Sequence-to-sequence Task"""
+class Seq2SeqTask(SequenceGenerationTask):
+    """Sequence-to-sequence Task"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         """ """
