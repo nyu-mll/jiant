@@ -194,7 +194,7 @@ def _build_embeddings(args, vocab, emb_file: str):
     word_v_size, unk_idx = vocab.get_vocab_size("tokens"), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, args.d_word)
 
-    if "word_embs_file" in args and args.word_embs_file != "None":
+    if args.word_embs_file:
         with io.open(
             args.word_embs_file, "r", encoding="utf-8", newline="\n", errors="ignore"
         ) as vec_fh:
