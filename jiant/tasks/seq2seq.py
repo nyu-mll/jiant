@@ -56,7 +56,7 @@ class Seq2SeqTask(SequenceGenerationTask):
         for split in ["train", "val"]:
             for _, sequence in self.get_data_iter(self.files_by_split[split]):
                 for token in sequence:
-                    token2freq[word] += 1
+                    token2freq[token] += 1
         return [t for t, _ in token2freq.most_common(self.max_targ_v_size)]
 
     def get_data_iter(self, path):
@@ -67,8 +67,8 @@ class Seq2SeqTask(SequenceGenerationTask):
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
                 # "SplitChars" is the tokenizer here.
-                src_sent = tokenize_and_truncate("SplitChars", row[0], self.max_seq_len)
-                tgt_sent = tokenize_and_truncate("SplitChars", row[2], self.max_seq_len)
+                src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
+                tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
