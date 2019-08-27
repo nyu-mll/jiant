@@ -351,7 +351,7 @@ def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, 
 
 
 def align_bpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
-    eow_tokens = space_tokenize_with_eow(text)
+    eow_tokens = space_tokenize_with_eow(text.lower())
     bpe_tokenizer = get_tokenizer(tokenizer_name)
     bpe_tokens = bpe_tokenizer.tokenize(text)
     ta = TokenAligner(eow_tokens, bpe_tokens)
@@ -364,7 +364,8 @@ def align_bytebpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[T
     bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
 
     modified_bytebpe_tokens = list(map(process_bytebpe_for_alignment, bytebpe_tokens))
-    modified_bytebpe_tokens[0] = "<w>" + modified_bytebpe_tokens[0]
+    if len(modified_bytebpe_tokens) > 0:
+        modified_bytebpe_tokens[0] = "<w>" + modified_bytebpe_tokens[0]
     ta = TokenAligner(bow_tokens, modified_bytebpe_tokens)
     return ta, bytebpe_tokens
 
