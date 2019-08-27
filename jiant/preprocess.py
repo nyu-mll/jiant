@@ -648,15 +648,15 @@ def add_wsj_vocab(vocab, data_dir, namespace="tokens"):
 class ModelPreprocessingInterface(object):
     """ This class holds parts of preprocessing that is model-specific
     members:
-    
+
     model_flags: Dict[str, bool], model-specific flags that may be used in task preprocessing
     boundary_token_fn: (list[str], list[str] (optional) -> list[str]):
         A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
-        token sequence pair for most tasks. 
+        token sequence pair for most tasks.
     lm_boundary_token_fn: (list[str] -> list[str]):
         A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence for
         language modeling tasks.
-        
+
     """
 
     def __init__(self, args):
