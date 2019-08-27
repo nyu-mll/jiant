@@ -19,8 +19,10 @@ from scipy import sparse
 # install with: pip install python-Levenshtein
 from Levenshtein.StringMatcher import StringMatcher
 
-from .tokenizers import get_tokenizer
-from .utils import unescape_moses
+from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+from jiant.utils.tokenizers import get_tokenizer
+from jiant.utils.utils import unescape_moses
+
 
 # Tokenizer instance for internal use.
 _SIMPLE_TOKENIZER = SpaceTokenizer()
@@ -307,14 +309,6 @@ def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
     return ta, moses_tokens
 
 
-def align_openai(text: Text) -> Tuple[TokenAligner, List[Text]]:
-    eow_tokens = space_tokenize_with_eow(text)
-    openai_utils = get_tokenizer("OpenAI.BPE")
-    bpe_tokens = openai_utils.tokenize(text)
-    ta = TokenAligner(eow_tokens, bpe_tokens)
-    return ta, bpe_tokens
-
-
 def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
     # If using lowercase, do this for the source tokens for better matching.
     do_lower_case = tokenizer_name.endswith("uncased")
@@ -331,9 +325,7 @@ def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]
 def get_aligner_fn(tokenizer_name: Text):
     if tokenizer_name == "MosesTokenizer":
         return align_moses
-    elif tokenizer_name == "OpenAI.BPE":
-        return align_openai
-    elif tokenizer_name.startswith("bert-") or tokenizer_name.startswith("xlnet-"):
+    elif input_module_uses_pytorch_transformers(tokenizer_name):
         return functools.partial(align_wpm, tokenizer_name=tokenizer_name)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
