@@ -30,5 +30,5 @@ pushd "${PWD%jiant*}jiant"
 # Finally, apply custom overrides defined above.
 # To add email notifications, add an additional argument:
 #   --notify my_email@example.com
-python main.py -c config/defaults.conf ${PARAM_FILE} config/edgeprobe/edgeprobe_existing.conf \
+python main.py -c jiant/config/defaults.conf ${PARAM_FILE} jiant/config/edgeprobe/edgeprobe_existing.conf \
     -o "${OVERRIDES}" --remote_log

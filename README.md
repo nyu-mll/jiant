@@ -23,9 +23,9 @@ Our official documentation is here: https://jiant.info/documentation#/
 
 
 ## Running
-To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:
+To run an experiment, make a config file similar to `jiant/config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:
 ```sh
-python main.py --config_file config/demo.conf \
+python main.py --config_file jiant/config/demo.conf \
     --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
@@ -42,8 +42,8 @@ If you use `jiant` in academic work, please cite it directly:
 
 ```
 @misc{wang2019jiant,
-    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Jason Phang and Edouard Grave and Najoung Kim and Phu Mon Htut and Thibault F'{e}vry and Berlin Chen and Nikita Nangia and Haokun Liu and and Anhad Mohananey and Shikha Bordia and Nicolas Patry and Ellie Pavlick and Samuel R. Bowman},
-    title = {{jiant} 1.1: A software toolkit for research on general-purpose text understanding models},
+    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Jason Phang and Edouard Grave and Najoung Kim and Phu Mon Htut and Thibault F'{e}vry and Berlin Chen and Nikita Nangia and Haokun Liu and Anhad Mohananey and Shikha Bordia and Nicolas Patry and Ellie Pavlick and Samuel R. Bowman},
+    title = {\texttt{jiant} 1.1: A software toolkit for research on general-purpose text understanding models},
     howpublished = {\url{http://jiant.info/}},
     year = {2019}
 }
@@ -79,6 +79,22 @@ please also add the tests.
 For any PR, make sure to update any existing `conf` files, tutorials, and scripts to match your changes. If your PR adds or changes functionality that can be directly tested, add or update a test.
 
 For PRs that typical users will need to be aware of, include  make a matching PR to the [documentation](https://github.com/nyu-mll/jiant-site/edit/master/documentation/README.md). We will merge that documentation PR once the original PR is merged in _and pushed out in a release_. (Proposals for better ways to do this are welcome.)
+
+For PRs that change package dependencies, update both `environment.yml` (used for conda) and `setup.py` (used by pip, and in automatic CircleCI tests).
+
+## Releases
+
+Releases are identified using git tags and distributed via PyPI for pip installation. After passing CI tests and creating a new git tag for a release, it can be uploaded to PyPI by running:
+
+```bash
+# create distribution
+python setup.py sdist bdist_wheel
+
+# upload to PyPI
+python -m twine upload dist/*
+```
+
+More details can be found in [setup.py](setup.py).
 
 
 ## License

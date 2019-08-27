@@ -3,7 +3,7 @@
   jobs:
     test:
       docker:
-        - image: continuumio/miniconda3:4.6.14
+        - image: circleci/python:3.7.4
 
       working_directory: ~/repo
 
@@ -14,39 +14,48 @@
       steps:
         # Step 1: obtain repo from GitHub
         - checkout
-        # Step 2: style check
+        # Step 2: restore pip dependencies from cache, keyed on branch and content of setup.py
+        - restore_cache:
+            key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}
+        # Step 3: style check
         - run:
             name: check style
             command: |
-              pip install black
-              black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|jiant/modules/cove)/"
-        # Step 3: get data needed for demo.sh
+              pip install --user black
+              black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|jiant/modules/cove|venv)/"
+        # Step 4: get data needed for demo.sh
         - run:
             name: download demo data
             command: |
               python scripts/download_glue_data.py --data_dir $JIANT_DATA_DIR --tasks MRPC,STS,SST
               python scripts/download_superglue_data.py --data_dir $JIANT_DATA_DIR --tasks CB
-        # Step 4: create virtual env and install dependencies
+        # Step 5: create virtual env and install dependencies
         - run:
             name: install dependencies
             command: |
-              apt-get update
-              apt-get install -y cmake build-essential gcc g++
-              conda env create -q -f environment.yml
-        # Step 5: demo.sh run test
+              python3 -m venv venv
+              source venv/bin/activate
+              pip install -e ~/repo
+              pip install nose2
+        # Step 6: cache dependencies for future CI jobs
+        - save_cache:
+            key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}
+            paths:
+              - "venv"
+        # Step 7: demo.sh run test
         - run:
             name: running demo.sh
             command: |
-              source activate jiant
+              source venv/bin/activate
               python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
-              python main.py --config_file config/demo.conf
-              python main.py --config_file config/demo.conf --overrides "do_pretrain = 0, do_target_task_training = 0, load_model = 1"
-        # Step 6: run tests
+              python main.py --config_file jiant/config/demo.conf
+              python main.py --config_file jiant/config/demo.conf --overrides "do_pretrain = 0, do_target_task_training = 0, load_model = 1"
+        # Step 8: run tests
         - run:
             name: run tests
             command: |
+              source venv/bin/activate
               mkdir ~/repo/test_output
-              source activate jiant
               nose2 -v
   workflows:
     version: 2
