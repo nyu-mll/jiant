@@ -96,9 +96,11 @@ class Seq2SeqTask(SequenceGenerationTask):
 
         def _make_instance(input_, target):
             d = {
-                "inputs": sentence_to_text_field(model_preprocessing_interface(input_), indexers),
+                "inputs": sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input_), indexers
+                ),
                 "targs": sentence_to_text_field(
-                    model_preprocessing_interface(target), self.target_indexer
+                    model_preprocessing_interface.boundary_token_fn(target), self.target_indexer
                 ),
             }
             return Instance(d)
