@@ -52,12 +52,12 @@ class Seq2SeqTask(SequenceGenerationTask):
 
     def get_all_labels(self) -> List[str]:
         """ Build character vocabulary and return it as a list """
-        word2freq = collections.Counter()
+        token2freq = collections.Counter()
         for split in ["train", "val"]:
-            for _, sent in self.get_data_iter(self.files_by_split[split]):
-                for word in sent:
-                    word2freq[word] += 1
-        return [w for w, _ in word2freq.most_common(self.max_targ_v_size)]
+            for _, sequence in self.get_data_iter(self.files_by_split[split]):
+                for token in sequence:
+                    token2freq[word] += 1
+        return [t for t, _ in token2freq.most_common(self.max_targ_v_size)]
 
     def get_data_iter(self, path):
         """ Load data """
