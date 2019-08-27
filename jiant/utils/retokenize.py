@@ -19,7 +19,6 @@ from scipy import sparse
 # install with: pip install python-Levenshtein
 from Levenshtein.StringMatcher import StringMatcher
 
-from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.utils.utils import unescape_moses
 
@@ -100,7 +99,8 @@ def realign_spans(record, tokenizer_name):
     """
     Builds the indices alignment while also tokenizing the input
     piece by piece.
-    Only BERT/XLNet and Moses tokenization is supported currently.
+    Currently, SentencePiece(for XLNet), WPM(for BERT), BPE(for GPT/XLM, ByteBPE(for RoBERTa/GPT-2)
+    and Moses(for Transformer-XL and default) tokenization are supported.
 
     Parameters
     -----------------------
@@ -296,6 +296,22 @@ def process_wordpiece_for_alignment(t):
         return "<w>" + t
 
 
+def process_sentencepiece_for_alignment(t):
+    """Add <w> markers to ensure word-boundary alignment."""
+    if t.startswith("▁"):
+        return "<w>" + re.sub(r"^▁", "", t)
+    else:
+        return t
+
+
+def process_bytebpe_for_alignment(t):
+    """Add <w> markers to ensure word-boundary alignment."""
+    if t.startswith("▁"):
+        return "<w>" + re.sub(r"^Ġ", "", t)
+    else:
+        return t
+
+
 def space_tokenize_with_bow(sentence):
     """Add <w> markers to ensure word-boundary alignment."""
     return ["<w>" + t for t in sentence.split()]
@@ -322,10 +338,47 @@ def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]
     return ta, wpm_tokens
 
 
+def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+    bow_tokens = space_tokenize_with_bow(text)
+    sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
+    sentencepiece_tokens = sentencepiece_tokenizer.tokenize(text)
+
+    modified_sentencepiece_tokens = list(
+        map(process_sentencepiece_for_alignment, sentencepiece_tokens)
+    )
+    ta = TokenAligner(bow_tokens, modified_sentencepiece_tokens)
+    return ta, sentencepiece_tokens
+
+
+def align_bpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+    eow_tokens = space_tokenize_with_eow(text)
+    bpe_tokenizer = get_tokenizer(tokenizer_name)
+    bpe_tokens = bpe_tokenizer.tokenize(text)
+    ta = TokenAligner(eow_tokens, bpe_tokens)
+    return ta, bpe_tokens
+
+
+def align_bytebpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+    bow_tokens = space_tokenize_with_bow(text)
+    bytebpe_tokenizer = get_tokenizer(tokenizer_name)
+    bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
+
+    modified_bytebpe_tokens = list(map(process_bytebpe_for_alignment, bytebpe_tokens))
+    modified_bytebpe_tokens[0] = "<w>" + modified_bytebpe_tokens[0]
+    ta = TokenAligner(bow_tokens, modified_bytebpe_tokens)
+    return ta, bytebpe_tokens
+
+
 def get_aligner_fn(tokenizer_name: Text):
-    if tokenizer_name == "MosesTokenizer":
+    if tokenizer_name == "MosesTokenizer" or tokenizer_name.startswith("transfo-xl-"):
         return align_moses
-    elif input_module_uses_pytorch_transformers(tokenizer_name):
+    elif tokenizer_name.startswith("bert-"):
         return functools.partial(align_wpm, tokenizer_name=tokenizer_name)
+    elif tokenizer_name.startswith("openai-gpt") or tokenizer_name.startswith("xlm-mlm-en-"):
+        return functools.partial(align_bpe, tokenizer_name=tokenizer_name)
+    elif tokenizer_name.startswith("xlnet-"):
+        return functools.partial(align_sentencepiece, tokenizer_name=tokenizer_name)
+    elif tokenizer_name.startswith("roberta-") or tokenizer_name.startswith("gpt2"):
+        return functools.partial(align_bytebpe, tokenizer_name=tokenizer_name)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
