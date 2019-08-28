@@ -41,7 +41,7 @@ class Seq2SeqTask(SequenceGenerationTask):
         }
 
         # The following is necessary since word-level tasks (e.g., MT) haven't been tested, yet.
-        if self._tokenizer_name != "SplitChars":
+        if self._tokenizer_name != "SplitChars" and self._tokenizer_name != "dummy_tokenizer_name":
             raise NotImplementedError("For now, Seq2SeqTask only supports character-level tasks.")
 
     def load_data(self):
