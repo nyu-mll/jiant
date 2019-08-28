@@ -99,8 +99,8 @@ def realign_spans(record, tokenizer_name):
     """
     Builds the indices alignment while also tokenizing the input
     piece by piece.
-    Currently, SentencePiece(for XLNet), WPM(for BERT), BPE(for GPT/XLM, ByteBPE(for RoBERTa/GPT-2)
-    and Moses(for Transformer-XL and default) tokenization are supported.
+    Currently, SentencePiece (for XLNet), WPM (for BERT), BPE (for GPT/XLM, ByteBPE (for RoBERTa/GPT-2)
+    and Moses (for Transformer-XL and default) tokenization are supported.
 
     Parameters
     -----------------------
