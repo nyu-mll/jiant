@@ -273,10 +273,12 @@ class ReCoRDTask(Task):
             """ Tokenize questions while preserving @placeholder token """
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
-            sent_parts = [
-                tokenize_and_truncate(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
-            ]
-            return sent_parts[0] + ["@placeholder"] + sent_parts[1]
+            placeholder_loc = len(
+                tokenize_and_truncate(self.tokenizer_name, sent_parts[0], self.max_seq_len)
+            )
+            sent_tok = tokenize_and_truncate(self.tokenizer_name, sent, self.max_seq_len)
+            sent_tok.insert(placeholder_loc, "@placeholder")
+            return sent_tok
 
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
