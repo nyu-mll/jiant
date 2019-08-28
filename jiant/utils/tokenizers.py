@@ -45,11 +45,12 @@ class SplitCharsTokenizer(Tokenizer):
     """
         This tokenizer splits a string (sentence or word) into individual characters.
     """
+
     def __init__(self):
         super().__init__()
 
-    def tokenize(self, sentence):
-        return list(sentence)
+    def tokenize(self, sequence):
+        return list(sequence)
 
     def detokenize(self, tokens):
         return "".join(tokens)
