@@ -41,6 +41,21 @@ def select_tokenizer(args):
     return tokenizer_name
 
 
+class SplitCharsTokenizer(Tokenizer):
+    """
+        This tokenizer splits a string (sentence or word) into individual characters.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def tokenize(self, sequence):
+        return list(sequence)
+
+    def detokenize(self, tokens):
+        return "".join(tokens)
+
+
 class MosesTokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
@@ -81,6 +96,8 @@ def get_tokenizer(tokenizer_name):
         tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name == "MosesTokenizer":
         tokenizer = MosesTokenizer()
+    elif tokenizer_name == "SplitChars":
+        tokenizer = SplitCharsTokenizer()
     elif tokenizer_name == "":
         tokenizer = SpaceTokenizer()
     else:

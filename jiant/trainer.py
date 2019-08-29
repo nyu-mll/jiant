@@ -24,6 +24,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from jiant.evaluate import evaluate
+from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.utils import config
 from jiant.utils.utils import (
     assert_for_log,
@@ -525,7 +526,8 @@ class SamplingMultiTaskTrainer:
                 )
                 if ckpt_directory is None:
                     log.warning(
-                        "load_model=1 but there is not checkpoint. Starting training without restoring from a checkpoint."
+                        "load_model=1 but there is not checkpoint. \
+                        Starting training without restoring from a checkpoint."
                     )
                 else:
                     n_step, should_stop = self._restore_checkpoint(phase, tasks)
@@ -598,7 +600,6 @@ class SamplingMultiTaskTrainer:
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
                 loss = output_dict["loss"]  # optionally scale loss
-
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
@@ -779,7 +780,8 @@ class SamplingMultiTaskTrainer:
         Returns
         ________
         metric_infos: dict storing information about the various metrics
-        this_val_metric: dict, metric information for this validation pass, used for optimization scheduler
+        this_val_metric: dict, metric information for this validation pass, used for optimization
+            scheduler
         should_save: bool
         new_best: bool
         """
@@ -803,7 +805,14 @@ class SamplingMultiTaskTrainer:
         return metric_infos, this_val_metric, should_save, new_best
 
     def _calculate_validation_performance(
-        self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
+        self,
+        task,
+        task_infos,
+        tasks,
+        batch_size,
+        all_val_metrics,
+        n_examples_overall,
+        print_output=True,
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
@@ -815,7 +824,8 @@ class SamplingMultiTaskTrainer:
         tasks: list of task objects to train on
         batch_size: int, batch size to use for the tasks
         all_val_metrics: dictionary. storing the validation performance
-        n_examples_overall = int, current number of examples the model is validated on
+        n_examples_overall: int, current number of examples the model is validated on
+        print_output: bool, prints one example per validation
 
         Returns
         -------
@@ -842,6 +852,25 @@ class SamplingMultiTaskTrainer:
             with torch.no_grad():
                 out = self._forward(batch, task=task)
             loss = out["loss"]
+
+            if print_output:
+                if isinstance(task, Seq2SeqTask):
+                    if batch_num == 1:
+                        voc_src = self._model.vocab.get_index_to_token_vocabulary("tokens")
+                        voc_trg = self._model.vocab.get_index_to_token_vocabulary(
+                            task.name + "_tokens"
+                        )
+                        inputs = batch["inputs"]["words"][0][1:]
+                        gold = batch["targs"]["words"][0][1:]
+                        logits = out["logits"]
+                        output = logits.max(2)[1][0]
+                        input_string, gold_string, output_string = task.get_prediction(
+                            voc_src, voc_trg, inputs, gold, output
+                        )
+                        log.info("\tInput:\t%s", input_string)
+                        log.info("\tGold:\t%s", gold_string)
+                        log.info("\tOutput:\t%s", output_string)
+
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
 
