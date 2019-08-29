@@ -47,8 +47,11 @@ from jiant.tasks import (
     ALL_GLUE_TASKS,
     ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
+    ALL_SEQ2SEQ_TASKS,
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
+from jiant.tasks.seq2seq import Seq2SeqTask
+from jiant.tasks.tasks import SequenceGenerationTask
 from jiant.utils import config, serialize, utils
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
@@ -205,15 +208,18 @@ def _build_embeddings(args, vocab, emb_file: str):
     log.info("\tBuilding embeddings from scratch.")
     word_v_size, unk_idx = vocab.get_vocab_size("tokens"), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, args.d_word)
-    with io.open(
-        args.word_embs_file, "r", encoding="utf-8", newline="\n", errors="ignore"
-    ) as vec_fh:
-        for line in vec_fh:
-            word, vec = line.split(" ", 1)
-            idx = vocab.get_token_index(word)
-            if idx != unk_idx:
-                embeddings[idx] = np.array(list(map(float, vec.split())))
+
+    if args.word_embs_file:
+        with io.open(
+            args.word_embs_file, "r", encoding="utf-8", newline="\n", errors="ignore"
+        ) as vec_fh:
+            for line in vec_fh:
+                word, vec = line.split(" ", 1)
+                idx = vocab.get_token_index(word)
+                if idx != unk_idx:
+                    embeddings[idx] = np.array(list(map(float, vec.split())))
     embeddings[vocab.get_token_index(vocab._padding_token)] = 0.0
+
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading embeddings")
 
@@ -423,6 +429,8 @@ def _get_task(name, args, data_path, scratch_path):
             # TODO: remove special case, replace with something general
             # to pass custom loader args to task.
             task_kw["probe_path"] = args["nli-prob"].probe_path
+        if name in ALL_SEQ2SEQ_TASKS:
+            task_kw["max_targ_v_size"] = args.max_targ_word_v_size
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(
             task_src_path,
@@ -501,9 +509,13 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        log.info("\tCounting words for task %s.", task.name)
-        for sentence in task.get_sentences():
-            update_vocab_freqs(sentence)
+        log.info("\tCounting units for task %s.", task.name)
+        if isinstance(task, Seq2SeqTask):
+            for src_sent, tgt_sent in task.get_sentences():
+                update_vocab_freqs(src_sent)
+        else:
+            for sentence in task.get_sentences():
+                update_vocab_freqs(sentence)
 
     # This branch is meant for tasks that have *English* target sentences
     # (or more generally, same language source and target sentences)
@@ -562,6 +574,11 @@ def add_task_label_vocab(vocab, task):
     if namespace is None:
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
+
+    if isinstance(task, SequenceGenerationTask):
+        for special in SPECIALS:
+            vocab.add_token_to_namespace(special, namespace)
+
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
@@ -631,15 +648,15 @@ def add_wsj_vocab(vocab, data_dir, namespace="tokens"):
 class ModelPreprocessingInterface(object):
     """ This class holds parts of preprocessing that is model-specific
     members:
-    
+
     model_flags: Dict[str, bool], model-specific flags that may be used in task preprocessing
     boundary_token_fn: (list[str], list[str] (optional) -> list[str]):
         A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
-        token sequence pair for most tasks. 
+        token sequence pair for most tasks.
     lm_boundary_token_fn: (list[str] -> list[str]):
         A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence for
         language modeling tasks.
-        
+
     """
 
     def __init__(self, args):

@@ -46,6 +46,7 @@ from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
+from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
@@ -510,7 +511,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
 def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, args):
     """ Build task-specific components for a task and add them to model.
         These include decoders, linear layers for linear models.
-     """
+    """
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(
@@ -552,6 +553,25 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
+    elif isinstance(task, Seq2SeqTask):
+        log.info("using {} attention".format(args.s2s["attention"]))
+        decoder_params = Params(
+            {
+                "input_dim": d_sent,
+                "target_embedding_dim": 300,
+                "decoder_hidden_size": args.s2s["d_hid_dec"],
+                "output_proj_input_dim": args.s2s["output_proj_input_dim"],
+                "max_decoding_steps": args.max_seq_len,
+                "target_namespace": task._label_namespace
+                if hasattr(task, "_label_namespace")
+                else "targets",
+                "attention": args.s2s["attention"],
+                "dropout": args.dropout,
+                "scheduled_sampling_ratio": 0.0,
+            }
+        )
+        decoder = Seq2SeqDecoder(vocab, **decoder_params)
+        setattr(model, "%s_decoder" % task.name, decoder)
     elif isinstance(task, SequenceGenerationTask):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
@@ -976,13 +996,21 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _seq_gen_forward(self, batch, task, predict):
-        """ For variational autoencoder """
+        """ For sequence generation tasks """
         out = {}
         sent, sent_mask = self.sent_encoder(batch["inputs"], task)
         out["n_exs"] = get_batch_size(batch)
 
+        decoder = getattr(self, "%s_decoder" % task.name)
+        out.update(decoder.forward(sent, sent_mask, batch["targs"]))
+        task.scorer1(out["loss"].item())
+
         if "targs" in batch:
-            pass
+            # logits: batch_size * seq_len * tgt_voc_size
+            target = batch["targs"]["words"][:, 1:].contiguous()
+            target_mask = out["target_mask"]
+            logits = out["logits"]
+            task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
 
         if predict:
             pass
