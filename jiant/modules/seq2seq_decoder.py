@@ -134,6 +134,7 @@ class Seq2SeqDecoder(Model):
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
         target_tokens: Dict[str, torch.LongTensor] = None,
+        validate = False
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
@@ -144,11 +145,19 @@ class Seq2SeqDecoder(Model):
         encoder_outputs : torch.FloatTensor, [bs, T, h]
         encoder_outputs_mask : torch.LongTensor, [bs, T, 1]
         target_tokens : Dict[str, torch.LongTensor]
+        validate: bool; use this for generation if gold targets should not be used
         """
         # TODO: target_tokens is not optional.
         batch_size, _, _ = encoder_outputs.size()
+        
+        validate = True
+        for param in self.parameters:
+            print(param.requires_grad)
+        
+        exit()
+        use_gold = target_tokens is not None and not validate
 
-        if target_tokens is not None:
+        if use_gold:
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
             num_decoding_steps = target_sequence_length - 1
@@ -162,7 +171,15 @@ class Seq2SeqDecoder(Model):
         step_logits = []
 
         for timestep in range(num_decoding_steps):
-            input_choices = targets[:, timestep]
+            if use_gold:
+                input_choices = targets[:, timestep]
+            elif timestep == 0:
+                input_choices = torch.ones((batch_size, 1)) * self._start_index
+                print(input_choices)
+                print('yes')
+                exit()
+            else:
+                input_choices = step_logits[0][:, 0, :]  # TODO: max
             decoder_input = self._prepare_decode_step_input(
                 input_choices, decoder_hidden, encoder_outputs, encoder_outputs_mask
             )
