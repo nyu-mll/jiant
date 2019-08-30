@@ -178,6 +178,10 @@ class Seq2SeqDecoder(Model):
             # list of (batch_size, 1, num_classes)
             step_logit = output_projections.unsqueeze(1)
             step_logits.append(step_logit)
+            print("\nstep_logits: ")
+            print(step_logits)
+            print(step_logits[0].shape)
+            exit()
 
         # (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
