@@ -44,8 +44,8 @@ class Seq2SeqDecoder(Model):
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
-        self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
-        self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
+        self._start_index = self.vocab.get_token_index("<SOS>", self._target_namespace)
+        self._end_index = self.vocab.get_token_index("<EOS>", self._target_namespace)
         self._unk_index = self.vocab.get_token_index("@@UNKNOWN@@", self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
 
@@ -134,7 +134,6 @@ class Seq2SeqDecoder(Model):
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
         target_tokens: Dict[str, torch.LongTensor] = None,
-        validate = False
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
@@ -147,15 +146,9 @@ class Seq2SeqDecoder(Model):
         target_tokens : Dict[str, torch.LongTensor]
         validate: bool; use this for generation if gold targets should not be used
         """
-        # TODO: target_tokens is not optional.
         batch_size, _, _ = encoder_outputs.size()
-        
-        validate = True
-        for param in self.parameters:
-            print(param.requires_grad)
-        
-        exit()
-        use_gold = target_tokens is not None and not validate
+
+        use_gold = target_tokens is not None and self.training
 
         if use_gold:
             targets = target_tokens["words"]
@@ -174,12 +167,9 @@ class Seq2SeqDecoder(Model):
             if use_gold:
                 input_choices = targets[:, timestep]
             elif timestep == 0:
-                input_choices = torch.ones((batch_size, 1)) * self._start_index
-                print(input_choices)
-                print('yes')
-                exit()
+                input_choices = torch.ones((batch_size,)) * self._start_index
             else:
-                input_choices = step_logits[0][:, 0, :]  # TODO: max
+                input_choices = torch.max(step_logits[-1], dim=2)[1].squeeze(1)
             decoder_input = self._prepare_decode_step_input(
                 input_choices, decoder_hidden, encoder_outputs, encoder_outputs_mask
             )
@@ -195,10 +185,10 @@ class Seq2SeqDecoder(Model):
             # list of (batch_size, 1, num_classes)
             step_logit = output_projections.unsqueeze(1)
             step_logits.append(step_logit)
-            print("\nstep_logits: ")
-            print(step_logits)
-            print(step_logits[0].shape)
-            exit()
+            # print("\nstep_logits: ")
+            # print(step_logits)
+            # print(step_logits[0].shape)
+            # exit()
 
         # (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
@@ -206,10 +196,14 @@ class Seq2SeqDecoder(Model):
         output_dict = {"logits": logits}
 
         if target_tokens:
+            targets = target_tokens["words"]
             target_mask = get_text_field_mask(target_tokens)
-            loss = self._get_loss(logits, targets, target_mask)
-            output_dict["loss"] = loss
             output_dict["target_mask"] = target_mask
+            relevant_logits = logits[:, : targets.shape[1] - 1, :].contiguous()
+            loss = self._get_loss(relevant_logits, targets, target_mask)
+            output_dict["loss"] = loss
+        else:
+            output_dict["loss"] = torch.tensor([-1.0])
 
         return output_dict
 
