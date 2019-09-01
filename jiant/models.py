@@ -884,8 +884,7 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         logits = classifier(word_embs_in_context, sent_mask)
         out["logits"] = logits
-        out["n_exs"] = torch.tensor(get_batch_size(batch))
-        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+        out["n_exs"] = move_to_device(torch.tensor(get_batch_size(batch)), self._cuda_device)
 
         if "labels" in batch:  # means we should compute loss
             if batch["labels"].dim() == 0:
@@ -923,8 +922,7 @@ class MultiTaskModel(nn.Module):
             sent2, mask2 = self.sent_encoder(batch["input2"], task)
             logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
-        out["n_exs"] = torch.tensor(get_batch_size(batch))
-        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+        out["n_exs"] = move_to_device(torch.tensor(get_batch_size(batch)), self._cuda_device)
 
         if "labels" in batch:
             if batch["labels"].dim() == 0:
@@ -946,7 +944,8 @@ class MultiTaskModel(nn.Module):
     def _span_forward(self, batch, task, predict):
         sent_embs, sent_mask = self.sent_encoder(batch["input1"], task)
         module = getattr(self, "%s_mdl" % task.name)
-        out = module.forward(batch, sent_embs, sent_mask, task, predict, self._cuda_device)
+        out = module.forward(batch, sent_embs, sent_mask, task, predict)
+        out["n_exs"] = move_to_device(torch.tensor(get_batch_size(batch)), self._cuda_device)
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):
@@ -975,8 +974,7 @@ class MultiTaskModel(nn.Module):
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
-        out["n_exs"] = torch.tensor(get_batch_size(batch))
-        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+        out["n_exs"] = move_to_device(torch.tensor(get_batch_size(batch)), self._cuda_device)
         tagmask = batch.get("tagmask", None)
         if "labels" in batch:
             labels = batch["labels"]
@@ -1007,8 +1005,7 @@ class MultiTaskModel(nn.Module):
         """ For sequence generation tasks """
         out = {}
         sent, sent_mask = self.sent_encoder(batch["inputs"], task)
-        out["n_exs"] = torch.tensor(get_batch_size(batch))
-        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+        out["n_exs"] = move_to_device(torch.tensor(get_batch_size(batch)), self._cuda_device)
 
         decoder = getattr(self, "%s_decoder" % task.name)
         out.update(decoder.forward(sent, sent_mask, batch["targs"]))
@@ -1043,8 +1040,7 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
-        out["n_exs"] = torch.tensor(get_batch_size(batch))
-        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+        out["n_exs"] = move_to_device(torch.tensor(get_batch_size(batch)), self._cuda_device)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch["inputs"], task)
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -1095,9 +1091,9 @@ class MultiTaskModel(nn.Module):
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token, "tokens")
         b_size, seq_len = batch["targs"]["words"].size()
         n_pad = batch["targs"]["words"].eq(pad_idx).sum().item()
-        out["n_exs"] = (b_size * seq_len - n_pad) * 2
-        out["n_exs"] = torch.tensor((b_size * seq_len - n_pad) * 2)
-        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+        out["n_exs"] = move_to_device(
+            torch.tensor((b_size * seq_len - n_pad) * 2), self._cuda_device
+        )
 
         sent, mask = sent_encoder(batch["input"], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -1147,7 +1143,9 @@ class MultiTaskModel(nn.Module):
                 logits.append(logit)
         logits = torch.cat(logits, dim=1)
         out["logits"] = logits
-        out["n_exs"] = move_to_device(torch.tensor(get_batch_size(batch, keyword="choice0")), self._cuda_device)
+        out["n_exs"] = move_to_device(
+            torch.tensor(get_batch_size(batch, keyword="choice0")), self._cuda_device
+        )
 
         if "label" in batch:
             labels = batch["label"]
@@ -1182,9 +1180,7 @@ class MultiTaskModel(nn.Module):
         n_pad = batch["targs"]["words"].eq(pad_idx).sum().item()
         # No of examples: only left to right, every unit in the sequence length is
         # a training example only once.
-        out["n_exs"] = b_size * seq_len - n_pad
-        out["n_exs"] = torch.tensor(b_size * seq_len - n_pad)
-        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
+        out["n_exs"] = move_to_device(torch.tensor(b_size * seq_len - n_pad), self._cuda_device)
 
         sent, mask = self.sent_encoder(batch["input"], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)

@@ -42,6 +42,18 @@ def get_output_attribute(out, attribute_name):
 
 
 def get_model_attribute(model, attribute_name):
+    """
+        Getter function for both CPU and GPU. 
+
+        Parameters
+        ____________________
+        model: MultiTaskModel object, 
+        attribute_name: str
+
+        Returns
+        --------------------
+        The attribute object from the model. 
+    """
     if torch.cuda.device_count() > 1:
         return getattr(model.module, attribute_name)
     else:
