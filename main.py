@@ -4,13 +4,12 @@ log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
 )  # noqa
 
-=import sys
+import sys
 
 from jiant.__main__ import main
 
 # Global notification handler, can be accessed outside main() during exception handling.
 EMAIL_NOTIFIER = None
-
 
 if __name__ == "__main__":
     try:

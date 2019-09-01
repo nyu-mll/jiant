@@ -1,6 +1,6 @@
 """Train a multi-task model using AllenNLP
 To debug this, run with -m ipdb:
-    python -m ipdb main.py --config_file ...
+    ipdb3 jiant/__main__.py  --config_file ...
 """
 # pylint: disable=no-member
 import logging as log
@@ -12,6 +12,7 @@ import argparse
 import glob
 import io
 import os
+from pkg_resources import resource_filename
 import random
 import subprocess
 import sys
@@ -35,7 +36,7 @@ from jiant.utils.utils import (
     check_for_previous_checkpoints,
     select_pool_type,
     delete_all_checkpoints,
-    get_model_attribute,
+    get_model_attribute
 )
 
 
@@ -51,7 +52,7 @@ def handle_arguments(cl_arguments):
         "-c",
         type=str,
         nargs="+",
-        default="config/defaults.conf",
+        default=resource_filename("jiant", "config/defaults.conf"),
         help="Config file(s) (.conf) for model parameters.",
     )
     parser.add_argument(
@@ -109,7 +110,9 @@ def setup_target_task_training(args, target_tasks, model, strict):
         if args.transfer_paradigm == "frozen":
             assert_for_log(
                 args.allow_untrained_encoder_parameters,
-                "No best checkpoint found to target train on. Set `allow_untrained_encoder_parameters` if you really want to use an untrained encoder.",
+                "No best checkpoint found to target train on. Set \
+                `allow_untrained_encoder_parameters` if you really want to use an untrained \
+                encoder.",
             )
         model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
         torch.save(model.state_dict(), model_path)
@@ -178,21 +181,28 @@ def check_configurations(args, pretrain_tasks, target_tasks):
             "Error: Must specify at least one target task: [%s]" % args.target_tasks,
         )
         if not args.do_target_task_training:
-            untrained_tasks = set(target_tasks)
+            untrained_tasks = set(
+                config.get_task_attr(args, task.name, "use_classifier", default=task.name)
+                for task in target_tasks
+            )
             if args.do_pretrain:
-                untrained_tasks -= set(pretrain_tasks)
+                untrained_tasks -= set(
+                    config.get_task_attr(args, task.name, "use_classifier", default=task.name)
+                    for task in pretrain_tasks
+                )
             if len(untrained_tasks) > 0:
                 assert (
                     args.load_model
                     or args.load_target_train_checkpoint not in ["none", ""]
                     or args.allow_untrained_encoder_parameters
-                ), "Evaluating a model without training it on this run or loading a checkpoint. "
-                "Set `allow_untrained_encoder_parameters` if you really want to use an untrained "
-                "task model."
+                ), f"Evaluating a target task model on tasks {untrained_tasks} "
+                "without training it on this run or loading a checkpoint. "
+                "Set `allow_untrained_encoder_parameters` if you really want to use "
+                "an untrained task model."
                 log.warning(
-                    "Evauluating a target task model without training it in this run. It's up to "
-                    "you to ensure that you are loading parameters that were sufficiently trained "
-                    "for this task."
+                    f"Evauluating a target task model on tasks {untrained_tasks} without training "
+                    "it in this run. It's up to you to ensure that you are loading parameters "
+                    "that were sufficiently trained for this task."
                 )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
@@ -202,12 +212,22 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
 def _log_git_info():
     try:
+        # Make sure we run git in the directory that contains this file, even if the working
+        # directory is elsewhere.
+        main_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Use git to get branch/commit ID information.
         c = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"], timeout=10, stdout=subprocess.PIPE
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            timeout=10,
+            stdout=subprocess.PIPE,
+            cwd=main_dir,
         )
         git_branch_name = c.stdout.decode().strip()
         log.info("Git branch: %s", git_branch_name)
-        c = subprocess.run(["git", "rev-parse", "HEAD"], timeout=10, stdout=subprocess.PIPE)
+        c = subprocess.run(
+            ["git", "rev-parse", "HEAD"], timeout=10, stdout=subprocess.PIPE, cwd=main_dir
+        )
         git_sha = c.stdout.decode().strip()
         log.info("Git SHA: %s", git_sha)
     except subprocess.TimeoutExpired as e:
@@ -566,9 +586,7 @@ def main(cl_arguments):
         # Evaluate on target_tasks.
         for task in target_tasks:
             # Find the task-specific best checkpoint to evaluate on.
-            task_to_use = get_model_attribute(model, "_get_task_params")(task.name).get(
-                "use_classifier", task.name
-            )
+            task_to_use = get_model_attribute(model, "_get_task_params")(task.name).get("use_classifier", task.name)
             ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
@@ -577,6 +595,7 @@ def main(cl_arguments):
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:
         log.info("Deleting all checkpoints.")
         delete_all_checkpoints(args.run_dir)
+
     log.info("Done!")
 
 
