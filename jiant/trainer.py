@@ -510,7 +510,7 @@ class SamplingMultiTaskTrainer:
                 val_limit = min(max_epochs_in_vals, self._max_vals)
             else:
                 val_limit = self._max_vals
-            opt_params["t_total"] = val_limit * self._val_interval
+            optimizer_params["t_total"] = val_limit * self._val_interval
         optimizer = Optimizer.from_params(train_params, optimizer_params)
         scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
         self._optimizer = optimizer

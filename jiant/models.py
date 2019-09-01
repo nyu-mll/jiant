@@ -202,8 +202,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         assert_for_log(
             args.skip_embs,
             "skip_embs is false and sent_enc is none, "
-            "which means that your token representations are zero-dimensional. Consider "
-            "setting skip_embs.",
+            "which means that your token representations are zero-dimensional. Consider setting skip_embs.",
         )
         phrase_layer = NullPhraseLayer(rnn_params["input_size"])
         sent_encoder = SentenceEncoder(
@@ -947,7 +946,7 @@ class MultiTaskModel(nn.Module):
     def _span_forward(self, batch, task, predict):
         sent_embs, sent_mask = self.sent_encoder(batch["input1"], task)
         module = getattr(self, "%s_mdl" % task.name)
-        out = module.forward(batch, sent_embs, sent_mask, task, predict)
+        out = module.forward(batch, sent_embs, sent_mask, task, predict, self._cuda_device)
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):

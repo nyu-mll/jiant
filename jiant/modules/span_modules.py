@@ -6,9 +6,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from allennlp.modules.span_extractors import EndpointSpanExtractor, SelfAttentiveSpanExtractor
+from allennlp.nn.util import device_mapping, move_to_device
 
 from jiant.tasks.tasks import Task
 from jiant.modules.simple_modules import Classifier
+from jiant.utils.utils import get_batch_size
 
 
 class SpanClassifierModule(nn.Module):
@@ -78,6 +80,7 @@ class SpanClassifierModule(nn.Module):
         sent_mask: torch.Tensor,
         task: Task,
         predict: bool,
+        cuda_device: int,
     ) -> Dict:
         """
         Run forward pass.
@@ -106,7 +109,6 @@ class SpanClassifierModule(nn.Module):
         """
         out = {}
         batch_size = sent_embs.shape[0]
-        out["n_inputs"] = batch_size
 
         # Apply projection CNN layer for each span of the input sentence
         sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
@@ -116,7 +118,8 @@ class SpanClassifierModule(nn.Module):
             se_projs.append(se_proj)
 
         span_embs = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
-        out["n_exs"] = batch_size
+        out["n_exs"] = torch.tensor(get_batch_size(batch))
+        out["n_exs"] = move_to_device(out["n_exs"], cuda_device)
         _kw = dict(sequence_mask=sent_mask.long())
         for i in range(self.num_spans):
             # spans are [batch_size, num_targets, span_modules]
