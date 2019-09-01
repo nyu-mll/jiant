@@ -217,7 +217,7 @@ def write_preds(
 # Exact file names per task required by the GLUE evaluation server
 GLUE_NAME_MAP = {
     "cola": "CoLA",
-    "diagnostic": "AX",
+    "glue-diagnostic": "AX",
     "mnli-mm": "MNLI-mm",
     "mnli-m": "MNLI-m",
     "mrpc": "MRPC",
@@ -581,12 +581,11 @@ def _write_glue_preds(
         inplace=True,
     )
 
-    if task_name == "mnli" and split_name == "test":  # 9796 + 9847 + 1104 = 20747
-        assert len(preds_df) == 20747, "Missing predictions for MNLI!"
-        log.info("There are %d examples in MNLI, 20747 were expected", len(preds_df))
-        # Sort back to original order. Otherwise mismatched, matched and diagnostic
-        # would be mixed together
-        # Mismatched, matched and diagnostic all begin by index 0.
+    if task_name == "mnli" and split_name == "test":  # 9796 + 9847 = 19643
+        assert len(preds_df) == 19643, "Missing predictions for MNLI!"
+        log.info("There are %d examples in MNLI, 19643 were expected", len(preds_df))
+        # Sort back to original order to split matched and mismatched, which are
+        # treated as a single dataset by jiant.
         preds_df.sort_index(inplace=True)
         pred_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
         _apply_pred_map(preds_df, pred_map, "prediction")
@@ -595,14 +594,9 @@ def _write_glue_preds(
             _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format),
         )
         _write_preds_with_pd(
-            preds_df.iloc[9796:19643],
+            preds_df.iloc[9796:],
             _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format),
         )
-        _write_preds_with_pd(
-            preds_df.iloc[19643:],
-            _get_pred_filename("diagnostic", pred_dir, split_name, strict_glue_format),
-        )
-
     elif task_name in ["rte", "qnli"]:
         pred_map = {0: "not_entailment", 1: "entailment"}
         _apply_pred_map(preds_df, pred_map, "prediction")

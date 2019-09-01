@@ -24,6 +24,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from jiant.evaluate import evaluate
+from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.utils import config
 from jiant.utils.utils import (
     assert_for_log,
@@ -526,7 +527,8 @@ class SamplingMultiTaskTrainer:
                 )
                 if ckpt_directory is None:
                     log.warning(
-                        "load_model=1 but there is not checkpoint. Starting training without restoring from a checkpoint."
+                        "load_model=1 but there is not checkpoint. \
+                        Starting training without restoring from a checkpoint."
                     )
                 else:
                     n_step, should_stop = self._restore_checkpoint(phase, tasks)
@@ -599,7 +601,6 @@ class SamplingMultiTaskTrainer:
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
                 loss = get_output_attribute(output_dict, "loss")  # optionally scale loss
-
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
@@ -782,7 +783,8 @@ class SamplingMultiTaskTrainer:
         Returns
         ________
         metric_infos: dict storing information about the various metrics
-        this_val_metric: dict, metric information for this validation pass, used for optimization scheduler
+        this_val_metric: dict, metric information for this validation pass, used for optimization
+            scheduler
         should_save: bool
         new_best: bool
         """
@@ -806,7 +808,14 @@ class SamplingMultiTaskTrainer:
         return metric_infos, this_val_metric, should_save, new_best
 
     def _calculate_validation_performance(
-        self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
+        self,
+        task,
+        task_infos,
+        tasks,
+        batch_size,
+        all_val_metrics,
+        n_examples_overall,
+        print_output=True,
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
@@ -818,7 +827,8 @@ class SamplingMultiTaskTrainer:
         tasks: list of task objects to train on
         batch_size: int, batch size to use for the tasks
         all_val_metrics: dictionary. storing the validation performance
-        n_examples_overall = int, current number of examples the model is validated on
+        n_examples_overall: int, current number of examples the model is validated on
+        print_output: bool, prints one example per validation
 
         Returns
         -------
@@ -845,6 +855,25 @@ class SamplingMultiTaskTrainer:
             with torch.no_grad():
                 out = self._forward(batch, task=task)
             loss = get_output_attribute(out, "loss")
+
+            if print_output:
+                if isinstance(task, Seq2SeqTask):
+                    if batch_num == 1:
+                        voc_src = self._model.vocab.get_index_to_token_vocabulary("tokens")
+                        voc_trg = self._model.vocab.get_index_to_token_vocabulary(
+                            task.name + "_tokens"
+                        )
+                        inputs = batch["inputs"]["words"][0][1:]
+                        gold = batch["targs"]["words"][0][1:]
+                        logits = out["logits"]
+                        output = logits.max(2)[1][0]
+                        input_string, gold_string, output_string = task.get_prediction(
+                            voc_src, voc_trg, inputs, gold, output
+                        )
+                        log.info("\tInput:\t%s", input_string)
+                        log.info("\tGold:\t%s", gold_string)
+                        log.info("\tOutput:\t%s", output_string)
+
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += get_output_attribute(out, "n_exs")
 
@@ -870,24 +899,23 @@ class SamplingMultiTaskTrainer:
         for name, value in task_metrics.items():
             all_val_metrics["%s_%s" % (task.name, name)] = value
         all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+        # compute task contribution to macro and micro averages
+        n_examples_overall += n_examples
         if task.val_metric_decreases and len(tasks) > 1:
             all_val_metrics["micro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
             ) * n_examples
             all_val_metrics["macro_avg"] += (
                 1 - all_val_metrics[task.val_metric] / self._dec_val_scale
-            )
+            ) / len(tasks)
         else:
             # triggers for single-task cases and during MTL when task val metric increases
             all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
-        n_examples_overall += n_examples
+            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric] / len(tasks)
 
         # Reset training progress
         task_info["n_batches_since_val"] = 0
         task_info["loss"] = 0
-        all_val_metrics["micro_avg"] /= n_examples_overall
-        all_val_metrics["macro_avg"] /= len(tasks)
         return n_examples_overall, task_infos, all_val_metrics
 
     def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
@@ -922,7 +950,9 @@ class SamplingMultiTaskTrainer:
             n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(  # noqa
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
-
+        # scale the micro avg contributions w/ total size of validation set.
+        if "micro_avg" in all_val_metrics:
+            all_val_metrics["micro_avg"] /= n_examples_overall
         # Track per task patience
         should_save = periodic_save  # whether to save this validation pass or not.
         # Currently we save every validation in the main training runs.
@@ -1051,6 +1081,7 @@ class SamplingMultiTaskTrainer:
                 "serialization_dir not specified - cannot "
                 "restore a model without a directory path."
             )
+        log.info("Saving checkpoints to: %s", self._serialization_dir)
 
         val_pass = training_state["validation_pass"]
         if new_best:
@@ -1125,8 +1156,6 @@ class SamplingMultiTaskTrainer:
 
         if not self._keep_all_checkpoints:
             self._delete_old_checkpoints(phase, val_pass, task_dir_name)
-
-        log.info("Saved checkpoints to %s", self._serialization_dir)
 
     def _restore_checkpoint(self, phase, tasks=None):
         """

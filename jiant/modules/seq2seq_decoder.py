@@ -16,6 +16,7 @@ from torch.nn.modules.linear import Linear
 from torch.nn.modules.rnn import LSTMCell
 
 from jiant.modules.simple_modules import Pooler
+from jiant.modules.attention import BahdanauAttention
 
 
 class Seq2SeqDecoder(Model):
@@ -37,11 +38,6 @@ class Seq2SeqDecoder(Model):
         scheduled_sampling_ratio: float = 0.0,
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
-
-        # deprecated module
-        log.warning(
-            "DeprecationWarning: modules.Seq2SeqDecoder is deprecated and is no longer maintained"
-        )
 
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
@@ -72,8 +68,18 @@ class Seq2SeqDecoder(Model):
         # Used to get an initial hidden state from the encoder states
         self._sent_pooler = Pooler(project=True, d_inp=input_dim, d_proj=decoder_hidden_size)
 
-        if attention == "bilinear":
-            self._decoder_attention = BilinearAttention(decoder_hidden_size, input_dim)
+        if attention == "Bahdanau":
+            self._decoder_attention = BahdanauAttention(
+                decoder_hidden_size + target_embedding_dim, input_dim
+            )
+            # The output of attention, a weighted average over encoder outputs, will be
+            # concatenated to the input vector of the decoder at each time
+            # step.
+            self._decoder_input_dim = input_dim + target_embedding_dim
+        elif attention == "bilinear":
+            self._decoder_attention = BilinearAttention(
+                decoder_hidden_size + target_embedding_dim, input_dim
+            )
             # The output of attention, a weighted average over encoder outputs, will be
             # concatenated to the input vector of the decoder at each time
             # step.
@@ -182,6 +188,7 @@ class Seq2SeqDecoder(Model):
             target_mask = get_text_field_mask(target_tokens)
             loss = self._get_loss(logits, targets, target_mask)
             output_dict["loss"] = loss
+            output_dict["target_mask"] = target_mask
 
         return output_dict
 
@@ -233,8 +240,9 @@ class Seq2SeqDecoder(Model):
             encoder_outputs_mask = encoder_outputs_mask.float()
             encoder_outputs_mask = encoder_outputs_mask[:, :, 0]
             # (batch_size, input_sequence_length)
+            attention_input = torch.cat((decoder_hidden_state, embedded_input), 1)
             input_weights = self._decoder_attention(
-                decoder_hidden_state, encoder_outputs, encoder_outputs_mask
+                attention_input, encoder_outputs, encoder_outputs_mask
             )
             # (batch_size, input_dim)
             attended_input = weighted_sum(encoder_outputs, input_weights)
