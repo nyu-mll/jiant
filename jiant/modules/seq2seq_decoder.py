@@ -134,7 +134,6 @@ class Seq2SeqDecoder(Model):
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
         target_tokens: Dict[str, torch.LongTensor] = None,
-        beam_size = 1
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
@@ -162,9 +161,6 @@ class Seq2SeqDecoder(Model):
             encoder_outputs, encoder_outputs_mask
         )
 
-        beam = {}
-        max_scores = [0.0] * beam_size
-        
         step_logits = []
 
         for timestep in range(num_decoding_steps):
@@ -189,12 +185,6 @@ class Seq2SeqDecoder(Model):
             # list of (batch_size, 1, num_classes)
             step_logit = output_projections.unsqueeze(1)
             step_logits.append(step_logit)
-            print(torch.max(step_logits[-1], dim=2))
-            exit()
-            # print("\nstep_logits: ")
-            # print(step_logits)
-            # print(step_logits[0].shape)
-            # exit()
 
         # (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
