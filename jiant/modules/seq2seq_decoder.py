@@ -1,6 +1,8 @@
 # This is a slightly modified version of the AllenNLP SimpleSeq2Seq class:
 # https://github.com/allenai/allennlp/blob/master/allennlp/models/encoder_decoders/simple_seq2seq.py  # noqa
 
+# TODO: Include beam search.
+
 import logging as log
 from typing import Dict
 
