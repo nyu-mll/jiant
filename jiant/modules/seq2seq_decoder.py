@@ -144,7 +144,6 @@ class Seq2SeqDecoder(Model):
         encoder_outputs : torch.FloatTensor, [bs, T, h]
         encoder_outputs_mask : torch.LongTensor, [bs, T, 1]
         target_tokens : Dict[str, torch.LongTensor]
-        validate: bool; use this for generation if gold targets should not be used
         """
         batch_size, _, _ = encoder_outputs.size()
 
@@ -199,6 +198,7 @@ class Seq2SeqDecoder(Model):
             loss = self._get_loss(relevant_logits, targets, target_mask)
             output_dict["loss"] = loss
         else:
+            # This is needed in case no gold target sequence is available.
             output_dict["loss"] = torch.tensor([-1.0])
 
         return output_dict
