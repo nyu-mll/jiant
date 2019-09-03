@@ -137,6 +137,26 @@ class Seq2SeqDecoder(Model):
 
         return decoder_hidden, decoder_context
 
+    def take_step(self, last_predictions: torch.Tensor,
+                  state: Dict[str, torch.Tensor]) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        """Take a decoding step. This is called by the beam search class."""
+        
+        decoder_input = self._prepare_decode_step_input(
+            last_predictions, state["decoder_hidden"], state["encoder_outputs"],
+            state["encoder_outputs_mask"])
+        state["decoder_hidden"], state["decoder_context"] = self._decoder_cell(
+            decoder_input, (state["decoder_hidden"], state["decoder_context"]))
+                
+        # output projection
+        proj_input = self._projection_bottleneck(state["decoder_hidden"])
+        # (batch_size, num_classes)
+        output_projections = self._output_projection_layer(proj_input)
+                                                                 
+        # (batch_size, num_classes)
+        step_logit = output_projections
+        
+        return step_logit, state
+            
     def _forward_beam_search(self, state: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Make forward pass during prediction using a beam search."""
         batch_size = state["encoder_outputs_mask"].size()[0]
@@ -200,7 +220,8 @@ class Seq2SeqDecoder(Model):
             "decoder_context": decoder_context,
         }
 
-        self._forward_beam_search(state)
+        output_dict = self._forward_beam_search(state)
+        print(output_dict)
         print("done")
         exit()
 
