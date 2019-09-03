@@ -1,5 +1,5 @@
 # Import task definitions to register their tasks.
-from jiant.tasks import edge_probing, lm, nli_probing, tasks, qa
+from jiant.tasks import edge_probing, lm, nli_probing, qa, seq2seq, tasks
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.
@@ -23,7 +23,6 @@ ALL_GLUE_TASKS = [
     "wnli",
     "glue-diagnostic",
 ]
-
 
 ALL_SUPERGLUE_TASKS = [
     "boolq",
@@ -90,6 +89,8 @@ ALL_COLA_NPI_TASKS = [
     "npi_sup_pr",
 ]
 
+# Seq2seq tasks
+ALL_SEQ2SEQ_TASKS = ["seg_wix"]
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list

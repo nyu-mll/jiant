@@ -1,6 +1,7 @@
 import csv
 import os
 import os.path
+from pkg_resources import resource_filename
 import shutil
 import tempfile
 import unittest
@@ -28,8 +29,8 @@ class TestProprocess(unittest.TestCase):
         self.HOCON3 = """
             pretrain_task s= mnli
             target_tasks = qqp
-            input_module = gpt
-            tokenizer = OpenAI.BPE
+            input_module = openai-gpt
+            tokenizer = openai-gpt
         """
         self.HOCON4 = """
             pretrain_tasks = mnli
@@ -37,7 +38,9 @@ class TestProprocess(unittest.TestCase):
             tokenizer = bert-large-cased
             input_module = bert-base-cased
         """
-        self.DEFAULTS_PATH = "config/defaults.conf"  # To get other required values.
+        self.DEFAULTS_PATH = resource_filename(
+            "jiant", "config/defaults.conf"
+        )  # To get other required values.
         self.params1 = params_from_file(self.DEFAULTS_PATH, self.HOCON1)
 
     def test_get_task_without_loading_data(self):
@@ -50,11 +53,11 @@ class TestProprocess(unittest.TestCase):
         self.params3 = params_from_file(self.DEFAULTS_PATH, self.HOCON3)
         self.params4 = params_from_file(self.DEFAULTS_PATH, self.HOCON4)
         indexer = build_indexers(self.params1)
-        len(indexer) == 1 and list(indexer.keys())[0] == "bert_wpm_pretokenized"
+        len(indexer) == 1 and list(indexer.keys())[0] == "bert_cased"
         indexer = build_indexers(self.params2)
         len(indexer) == 1 and list(indexer.keys())[0] == "words"
         indexer = build_indexers(self.params3)
-        len(indexer) == 1 and list(indexer.keys())[0] == "openai_bpe_pretokenized"
+        len(indexer) == 1 and list(indexer.keys())[0] == "openai_gpt"
         with self.assertRaises(AssertionError) as error:
             # BERT model and tokenizer must be equal, so this should throw an error.
             indexer = build_indexers(self.params4)

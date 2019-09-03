@@ -14,7 +14,7 @@
 #     vocab/
 #   (...)
 #
-# Will create <project_dir>/scores.tsv as output.
+# Will create <project_dir>/scores.tsv and <project_dir>/scalars.tsv as output.
 
 PROJECT_DIR=$1
 
@@ -42,4 +42,7 @@ set -x
 python $JIANT_DIR/probing/analyze_runs.py \
     -i "${all_runs[@]}" -o ${PROJECT_DIR}/scores.tsv \
     --parallel $(( $nparallel > 10 ? 10 : $nparallel ))
+
+python $JIANT_DIR/probing/get_scalar_mix.py \
+    -i "${all_runs[@]}" -o ${PROJECT_DIR}/scalars.tsv
 

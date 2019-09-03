@@ -11,7 +11,7 @@ import pandas as pd
 from jiant import evaluate
 import jiant.tasks.tasks as tasks
 from jiant.models import MultiTaskModel
-from main import evaluate_and_write
+from jiant.__main__ import evaluate_and_write
 
 from jiant.allennlp_mods.numeric_field import NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -89,7 +89,7 @@ class TestWritePreds(unittest.TestCase):
                 },
             ]
         )
-        indexers = {"bert_wpm_pretokenized": SingleIdTokenIndexer("bert-xe-cased")}
+        indexers = {"bert_cased": SingleIdTokenIndexer("bert-xe-cased")}
         self.wic.val_data = [
             Instance(
                 {

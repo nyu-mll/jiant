@@ -10,9 +10,13 @@ First off, let's make sure you've the full repository, including all the git sub
 This project uses submodules to manage some dependencies on other research code, in particular for loading CoVe, GPT, and BERT. To make sure you get these repos when you download `jiant`, add `--recursive` to your `clone` command:
 
 ```
-git clone --branch v1.0.0  --recursive https://github.com/nyu-mll/jiant.git jiant
+git clone --branch v1.1.0  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
-This will download the full repository and load the 0.9 release of `jiant`. For the latest version, delete `--branch v0.9.1`. If you already cloned and just need to get the submodules, you can run:
+This will download the full repository and load the 1.1 release of `jiant`. If you already have `jiant` downloaded locally, you can switch to the 1.1 release with
+```
+git checkout tags/v1.1.0 -b 1.1_master
+```
+This will create a branch called 1.1_master with HEAD at version 1.1. If you already cloned and just need to get the submodules, you can run:
 
 ```
 git submodule update --init --recursive
@@ -39,23 +43,39 @@ You will also need to install dependencies for `nltk` if you do not already have
 python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
 
+And if you want to use GPT, you should also download spaCy packages:
+
+```
+python -m spacy download en
+```
+
+### Notebooks
+
+If you plan to use Jupyter Notebooks with jiant (you should!), make sure that you register a kernel that runs in your conda environment. Do:
+
+```
+ipython kernel install --user --name=jiant
+```
+
+And the next time you start a notebook server, you should see `jiant` as an option under "Kernel -> Change kernel".
+
 ### Optional
 
-If you'll be using GPT, BERT, or other models supplied by `pytorch-pretrained-BERT`, then you may see speed gains from installing NVIDIA apex, following the instructions here: 
+If you'll be using GPT, BERT, or other models supplied by `pytorch-transformers`, then you may see speed gains from installing NVIDIA apex, following the instructions here:
 
 https://github.com/NVIDIA/apex#linux
 
 ## 2. Getting data and setting up our environment
 
  In this tutorial, we will be working with GLUE data.
-The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/tasks) data:
-
+The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/) and [SuperGLUE](https://super.gluebenchmark.com/) tasks:
 
 ```
 python scripts/download_glue_data.py --data_dir data --tasks all
+python scripts/download_superglue_data.py --data_dir data --tasks all
 ```
 
-We also support quite a few other data sources (check [here](https://jiant.info/documentation#/?id=data-sources)  for a list).
+We also support quite a few other data sources (check [here](https://jiant.info/documentation#/?id=data-sources) for a list).
 
 
 Finally, you'll need to set a few environment variables in [user_config_template.sh](https://github.com/nyu-mll/jiant/blob/master/user_config_template.sh), which include:
@@ -94,13 +114,13 @@ Now that we've set up the environment, let's get started!
 ### 3.a) Configuring our experiment
 
 Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch.
-This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy called `config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit.
+This is almost exactly what is specified in `jiant/config/demo.conf`, with one major change. From here, we suggest you to go to [`jiant/config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/jiant/config/demo.conf), make a copy called `jiant/config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit.
 
 ```
-cp config/demo.conf config/tutorial.conf
+cp jiant/config/demo.conf jiant/config/tutorial.conf
 ```
 
-Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file.
+Next, we need to make a configuration file that defines the parameters of our experiment. `jiant/config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `jiant/config/defaults.conf`, which you can do by putting the below at the top of your config file.
 
 ```
 include "defaults.conf"
@@ -108,10 +128,10 @@ include "defaults.conf"
 
 Some important options include:
 
-* `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `config/tutorial.conf`, set  `sent_enc=rnn`.
-* `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
+* `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `jiant/config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `jiant/config/tutorial.conf`, set  `sent_enc=rnn`.
+* `pretrain_tasks`: This is a comma-delimited string of tasks. In `jiant/config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
 * `target_tasks`: This is a comma-delimited string of tasks you want to fine-tune and evaluate on (in this case "sts-b,wnli").
-* `input_module`: This is a string specifying the type of contextualized word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. 
+* `input_module`: This is a string specifying the type of (contextualized) word embedding you want to use. In `jiant/config/demo.conf`, this is already set to `scratch`.
 * `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining. A step is a batch update.
 * `exp_name`, which expects a string of your experiment name.
 * `run_name`, which expects a string of your run name.
@@ -148,11 +168,12 @@ reload_indexing = 0
 reload_vocab = 0
 
 pretrain_tasks = "sst,mrpc"
-target_tasks = "sts-b,wnli"
+target_tasks = "sts-b,commitbank"
 classifier = mlp
 classifier_hid_dim = 32
 max_seq_len = 10
 max_word_v_size = 1000
+pair_attn = 0
 
 input_module = scratch
 d_word = 50
@@ -174,7 +195,6 @@ sts-b += {
     max_vals = 16
     val_interval = 10
 }
-
 ```
 
 Now we get on to the actual experiment running!
@@ -183,7 +203,7 @@ To run the experiment, you can simply run the below command via command line, or
  You can use the `--overrides` flag to override specific variables. For example:
 
 ```sh
-python main.py --config_file config/tutorial.conf \
+python main.py --config_file jiant/config/tutorial.conf \
     --overrides "exp_name = my_exp, run_name = foobar"
 ```
 
@@ -206,22 +226,21 @@ One important thing to notice is that during training, the updates will swap bet
 
 After validating, you will see something like this:
 ```
-05/03 09:54:26 AM: Best result seen so far for sst.
-05/03 09:54:26 AM: Best result seen so far for micro.
-05/03 09:54:26 AM: Best result seen so far for macro.
-05/03 09:54:26 AM: Updating LR scheduler:
-05/03 09:54:26 AM:  Best result seen so far for macro_avg: 0.461
-05/03 09:54:26 AM:  # epochs without improvement: 0
-05/03 09:54:26 AM: mrpc_loss: training: 0.519646 validation: 1.319582
-05/03 09:54:26 AM: sst_loss: training: 0.716894 validation: 0.686724
-05/03 09:54:26 AM: macro_avg: validation: 0.460515
-05/03 09:54:26 AM: micro_avg: validation: 0.373241
-05/03 09:54:26 AM: mrpc_acc_f1: training: 0.704310 validation: 0.748025
-05/03 09:54:26 AM: mrpc_accuracy: training: 0.650000 validation: 0.683824
-                .
-                .
-                .
-05/03 09:54:26 AM: sst_accuracy: training: 0.494444 validation: 0.547018
+07/11 07:40:02 AM: Updating LR scheduler:
+07/11 07:40:02 AM: 	Best result seen so far for macro_avg: 0.271
+07/11 07:40:02 AM: 	# validation passes without improvement: 1
+07/11 07:40:02 AM: sts-b_loss: training: 0.158664 validation: 0.165524
+07/11 07:40:02 AM: macro_avg: validation: 0.179073
+07/11 07:40:02 AM: micro_avg: validation: 0.179073
+07/11 07:40:02 AM: sts-b_corr: training: 0.078465 validation: 0.179073
+07/11 07:40:02 AM: sts-b_pearsonr: training: 0.087550 validation: 0.189559
+07/11 07:40:02 AM: sts-b_spearmanr: training: 0.069380 validation: 0.168587
+07/11 07:40:02 AM: Global learning rate: 0.0003
+07/11 07:40:02 AM: Saved checkpoints to coreference_exp/my_exp/foobar
+07/11 07:40:02 AM: ***** Step 90 / Validation 9 *****
+.
+.
+.
 
 ```
 
@@ -233,23 +252,24 @@ Lastly, we will evaluate on the target tasks, and write the results for test in 
 You should see something like this:
 
 ```
-05/03 09:59:15 AM: Evaluating...
-05/03 09:59:15 AM: Evaluating on: sts-b, split: val
-05/03 09:59:23 AM: Task 'sts-b': sorting predictions by 'idx'
-05/03 09:59:23 AM: Finished evaluating on: sts-b
-05/03 09:59:23 AM: Evaluating on: wnli, split: val
-05/03 09:59:23 AM: Task 'wnli': sorting predictions by 'idx'
-05/03 09:59:23 AM: Finished evaluating on: wnli
-05/03 09:59:23 AM: Writing results for split 'val' to yo_try/jiant-demo/results.tsv
-05/03 09:59:23 AM: micro_avg: 0.168, macro_avg: 0.356, sts-b_corr: 0.149, sts-b_pearsonr: 0.146, sts-b_spearmanr: 0.152, wnli_accuracy: 0.563
-05/03 09:59:23 AM: Done!
+07/11 07:40:04 AM: Evaluating on: commitbank, split: val
+07/11 07:40:04 AM: Task 'commitbank': sorting predictions by 'idx'
+07/11 07:40:04 AM: Finished evaluating on: commitbank
+07/11 07:40:04 AM: Writing results for split 'val' to coreference_exp/my_exp/results.tsv
+07/11 07:40:04 AM: micro_avg: 0.473, macro_avg: 0.473, commitbank_accuracy: 0.679, commitbank_f1: 0.473, commitbank_precision: 0.452, commitbank_recall: 0.496
+07/11 07:40:04 AM: Loaded model state from coreference_exp/my_exp/foobar/sts-b/model_state_target_train_val_10.best.th
+07/11 07:40:04 AM: Evaluating on: sts-b, split: val
+07/11 07:40:06 AM: Task 'sts-b': sorting predictions by 'idx'
+07/11 07:40:06 AM: Finished evaluating on: sts-b
+07/11 07:40:06 AM: Writing results for split 'val' to coreference_exp/my_exp/results.tsv
+07/11 07:40:06 AM: micro_avg: 0.271, macro_avg: 0.271, sts-b_corr: 0.271, sts-b_pearsonr: 0.279, sts-b_spearmanr: 0.263
+07/11 07:40:06 AM: Done!
 ```
 
 After running this experiment, you should have in your run directory:
 
-* a checkpoint of the best model state (based on your scores)
+* a checkpoint of the best model state (based on your scores) for both pretraining and target task training phase. The target task checkpoints will be under a subdirectory of the target tasks in the run directory, including checkpoints for metrics, model states, training states, and task states at each epoch.
 * a `log.log` file which contains all the logs
-* a directory for each of the target_tasks containing the checkpoints of the model, task, and training state of the finetuned BERT models for that task.
 * `params.conf` (a saved version of the parameters used)
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.

@@ -41,7 +41,7 @@ A lot of the following functions may already be written for your task type (espe
 
 
 
-1.  The `load_data` (inheritable) function is for loading your data. This function loads your TSV to a format that can be made into AllenNLP iterators. In this function, you will want to call `load_tsv` from `jiant/utils/data_loaders.py`, which loads and tokenizes the data. Currently, only English tokenization is supported. You can specify the fields to load from as parameters to `load_tsv` (which right now is based on number-based indexing). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/jiant/utils/data_loaders.py) for more documentation on `load_tsv`.  An example is below
+1.  The `load_data` (inheritable) function is for loading your data. This function loads your TSV/JSONL/... to a format that can be made into AllenNLP iterators. In this function, you will want to call `load_tsv` from `jiant/utils/data_loaders.py`, which loads and tokenizes the data. Currently, only English tokenization is supported. You can specify the fields to load from as parameters to `load_tsv` (which right now is based on number-based indexing). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/jiant/utils/data_loaders.py) for more documentation on `load_tsv`.  An example is below
 
 ```python
     def load_data(self, path, max_seq_len):
@@ -70,9 +70,9 @@ A lot of the following functions may already be written for your task type (espe
         d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         return Instance(d)
  ```
-3. `update_metrics` (inheritable) function is a function to update scorers, which are configerable scorers (mostly from AllenNLP) such as F1Measure or BooleanAccuracy that keeps track of task-specific scores. Let us say that we want to only update F1 and ignore accuracy. In that case, you can set self.scorers = [self.f1_scorer], and this will automatically set the inherited update_metrics function to only update the F1 scorer.
+3. `update_metrics` (inheritable) is a function to update scorers, which are configerable scorers (mostly from AllenNLP) such as F1Measure or BooleanAccuracy that keeps track of task-specific scores. Let us say that we want to only update F1 and ignore accuracy. In that case, you can set self.scorers = [self.f1_scorer], and this will automatically set the inherited update_metrics function to only update the F1 scorer.
 
-4. `get_metrics` is a function (inheritable) that returns the metrics from the updated scorers in dictionary form. Since we're only getting F1, we should set the get_metrics function to be:
+4. `get_metrics` (inheritable) is a function that returns the metrics from the updated scorers in dictionary form. Since we're only getting F1, we should set the get_metrics function to be:
 ```python
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -83,13 +83,13 @@ A lot of the following functions may already be written for your task type (espe
 ```python
 self.sentences = self.train_data_text[0] + self.val_data_text[0]
 ```
-6. `process_split` (inheritable) takes in a split of your data and produces an iterable of AllenNLP Instances. An Instance is a wrapper around a dictionary of (field_name, Field) pairs. Fields are objects to help with data processing (indexing, padding, etc.). See [here](https://github.com/nyu-mll/jiant/blob/1ee392e8dfba4a5fc5d0aca06a9f780a6a1b1e1e/jiant/tasks/tasks.py#L338) for an example.
+6. `process_split` (inheritable) takes in a split of your data and produces an iterable of AllenNLP Instances. An Instance is a wrapper around a dictionary of (field_name, Field) pairs. Fields are objects to help with data processing (indexing, padding, etc.). This is handled for us here, since we inherit from `PairClassificationTask`, but if you're writing a task that inherits directly from `Task`, you should look to `PairClassificationTask` for an example of how to implement this method yourself.
 
 7. `count_examples` (inheritable) sets `task.example_counts` (Dict[str:int]): the number of examples per split (train, val, test).
 
 8. `val_metric` (inheritable) is a string variable that is the name of task-specific metric to track during training, e.g. F1 score.
 
-9. `val_metric_decreases`(inheritable) is a boolean for whether or not the objective function should be minimized or maximized. The default is set to False.
+9. `val_metric_decreases` (inheritable) is a boolean for whether or not the objective function should be minimized or maximized. The default is set to False.
 
 
 Your finished task class may look something like this:
@@ -133,7 +133,7 @@ class SomeDataClassificationTask(PairClassificationTask):
         return {'f1': f1}
 ```
 
-Phew! Now, you also have to add the models you're going to use for your task, which lives in [`jiant/models/py`](https://github.com/zphang/jiant/blob/repretrain/jiant/models.py).
+Phew! Now, you also have to add the models you're going to use for your task, which lives in [`jiant/models/py`](https://github.com/nyu-mll/jiant/blob/master/jiant/models.py).
 
 Since our task type is PairClassificationTask, a well supported type of task, we can skip this step. However, if your task type is not well supported (or you want to try a different sort of model), in `jiant/models/models.py`, you will need to change the `build_task_specific_module` function to include a branch for your logic.
 ```python
@@ -168,5 +168,8 @@ Of course, don't forget to define your task-specific module building function!
 ```
 Finally, all you have to do is add the task to either the `pretrain_tasks` or `target_tasks` parameter in the config file, and viola! Your task is added.
 
-If you have any additions or suggested changes to this tutorial, please open an issue on [GitHub](https://github.com/nyu-mll/jiant)!
+# Notes
 
+## `boundary_token_fn`
+
+This method applies boundary tokens (like SOS/EOS) to the edges of your text. It also, for BERT and XLNet, applies tokens like [SEP] that delimit the two halves of a two-part input sequence. So, if you'd like to feeding a two-part input into a BERT/XLNet model as a single sequence, create two token sequences, and feed them to `boundary_token_fn` as two arguments.

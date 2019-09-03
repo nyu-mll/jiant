@@ -32,7 +32,7 @@ from jiant.utils.data_loaders import (
     load_diagnostic_tsv,
     load_span_data,
     load_tsv,
-    process_sentence,
+    tokenize_and_truncate,
     load_pair_nli_jsonl,
 )
 from jiant.utils.tokenizers import get_tokenizer
@@ -68,12 +68,19 @@ def atomic_tokenize(
     with the *first* nonatomic token in the list. """
     for nonatomic_tok in nonatomic_toks:
         sent = sent.replace(nonatomic_tok, atomic_tok)
-    sent = process_sentence(tokenizer_name, sent, max_seq_len)
+    sent = tokenize_and_truncate(tokenizer_name, sent, max_seq_len)
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 
 
-def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
+def process_single_pair_task_split(
+    split,
+    indexers,
+    model_preprocessing_interface,
+    is_pair=True,
+    classification=True,
+    is_symmetrical_pair=False,
+):
     """
     Convert a dataset of sentences into padded sequences of indices. Shared
     across several classes.
@@ -81,33 +88,46 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
         - indexers ()
+        - model_preprocessing_interface: packed information from model that effects the task data
         - is_pair (Bool)
         - classification (Bool)
+        - is_symmetrical_pair (Bool) whether reverse the sentences in a pair will change the result,
+            if this is true, and the model allows uses_mirrored_pair, a mirrored pair will be added
+            to the input
 
     Returns:
         - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
     """
     # check here if using bert to avoid passing model info to tasks
-    is_using_bert = "bert_wpm_pretokenized" in indexers
 
     def _make_instance(input1, input2, labels, idx):
         d = {}
-        d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-        if is_using_bert and is_pair:
-            inp = input1 + input2[1:]  # throw away input2 leading [CLS]
+        d["sent1_str"] = MetadataField(" ".join(input1))
+        if model_preprocessing_interface.model_flags["uses_pair_embedding"] and is_pair:
+            inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
             d["inputs"] = sentence_to_text_field(inp, indexers)
-            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            d["sent2_str"] = MetadataField(" ".join(input2))
+            if (
+                model_preprocessing_interface.model_flags["uses_mirrored_pair"]
+                and is_symmetrical_pair
+            ):
+                inp_m = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                d["inputs_m"] = sentence_to_text_field(inp_m, indexers)
         else:
-            d["input1"] = sentence_to_text_field(input1, indexers)
+            d["input1"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
             if input2:
-                d["input2"] = sentence_to_text_field(input2, indexers)
-                d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+                d["input2"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input2), indexers
+                )
+                d["sent2_str"] = MetadataField(" ".join(input2))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
         else:
             d["labels"] = NumericField(labels)
 
-        d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+        d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
 
         return Instance(d)
 
@@ -249,7 +269,9 @@ class Task(object):
         """
         return len(split_text[0])
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         raise NotImplementedError
 
@@ -294,9 +316,13 @@ class SingleClassificationTask(ClassificationTask):
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        return process_single_pair_task_split(split, indexers, is_pair=False)
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=False
+        )
 
 
 class PairClassificationTask(ClassificationTask):
@@ -316,9 +342,13 @@ class PairClassificationTask(ClassificationTask):
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        return process_single_pair_task_split(split, indexers, is_pair=True)
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=True
+        )
 
 
 class PairRegressionTask(RegressionTask):
@@ -337,9 +367,13 @@ class PairRegressionTask(RegressionTask):
         mse = self.scorer1.get_metric(reset)
         return {"mse": mse}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        return process_single_pair_task_split(split, indexers, is_pair=True, classification=False)
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=True, classification=False
+        )
 
 
 class PairOrdinalRegressionTask(RegressionTask):
@@ -361,9 +395,13 @@ class PairOrdinalRegressionTask(RegressionTask):
         spearmanr = self.scorer2.get_metric(reset)
         return {"1-mse": 1 - mse, "mse": mse, "spearmanr": spearmanr}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        return process_single_pair_task_split(split, indexers, is_pair=True, classification=False)
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=True, classification=False
+        )
 
     def update_metrics(self, logits, labels, tagmask=None):
         self.scorer1(mean_squared_error(logits, labels))  # update average MSE
@@ -715,15 +753,17 @@ class CoLAAnalysisTask(SingleClassificationTask):
         )
         log.info("\tFinished loading CoLA sperate domain.")
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, model_preprocessing_interface):
         def _make_instance(input1, labels, tagids):
             """ from multiple types in one column create multiple fields """
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["input1"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
+            d["sent1_str"] = MetadataField(" ".join(input1))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
-                tagids, label_namespace="tagids", skip_indexing=True, num_labels=len(self.tag_list)
+                tagids, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
             return Instance(d)
 
@@ -827,78 +867,13 @@ class QQPTask(PairClassificationTask):
             "recall": rcl,
         }
 
-
-@register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
-@register_task("mnli-slate", rel_path="MNLI/", genre="slate")
-@register_task("mnli-government", rel_path="MNLI/", genre="government")
-@register_task("mnli-telephone", rel_path="MNLI/", genre="telephone")
-@register_task("mnli-travel", rel_path="MNLI/", genre="travel")
-class MultiNLISingleGenreTask(PairClassificationTask):
-    """ Task class for Multi-Genre Natural Language Inference, Fiction genre."""
-
-    def __init__(self, path, max_seq_len, genre, name, **kw):
-        """MNLI"""
-        super(MultiNLISingleGenreTask, self).__init__(name, n_classes=3, **kw)
-        self.path = path
-        self.max_seq_len = max_seq_len
-        self.genre = genre
-
-        self.train_data_text = None
-        self.val_data_text = None
-        self.test_data_text = None
-
-    def load_data(self):
-        """Process the dataset located at path. We only use the in-genre matche data."""
-        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
-        self.train_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "train.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            label_idx=11,
-            label_fn=targ_map.__getitem__,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=self.genre,
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=True, is_symmetrical_pair=True
         )
-        self.val_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "dev_matched.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            label_idx=11,
-            label_fn=targ_map.__getitem__,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=self.genre,
-        )
-        self.test_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "test_matched.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            has_labels=False,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=self.genre,
-        )
-        self.sentences = (
-            self.train_data_text[0]
-            + self.train_data_text[1]
-            + self.val_data_text[0]
-            + self.val_data_text[1]
-        )
-        log.info("\tFinished loading MNLI " + self.genre + " data.")
-
-    def get_metrics(self, reset=False):
-        """ No F1 """
-        return {"accuracy": self.scorer1.get_metric(reset)}
 
 
 @register_task("mrpc", rel_path="MRPC/")
@@ -969,6 +944,14 @@ class MRPCTask(PairClassificationTask):
             "recall": rcl,
         }
 
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=True, is_symmetrical_pair=True
+        )
+
 
 @register_task("sts-b", rel_path="STS-B/")
 # second copy for different params
@@ -1037,6 +1020,19 @@ class STSBTask(PairRegressionTask):
         spearmanr = self.scorer2.get_metric(reset)
         return {"corr": (pearsonr + spearmanr) / 2, "pearsonr": pearsonr, "spearmanr": spearmanr}
 
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            is_pair=True,
+            classification=False,
+            is_symmetrical_pair=True,
+        )
+
 
 @register_task("snli", rel_path="SNLI/")
 class SNLITask(PairClassificationTask):
@@ -1097,14 +1093,25 @@ class SNLITask(PairClassificationTask):
 @register_task("mnli", rel_path="MNLI/")
 # second copy for different params
 @register_task("mnli-alt", rel_path="MNLI/")
+@register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
+@register_task("mnli-slate", rel_path="MNLI/", genre="slate")
+@register_task("mnli-government", rel_path="MNLI/", genre="government")
+@register_task("mnli-telephone", rel_path="MNLI/", genre="telephone")
+@register_task("mnli-travel", rel_path="MNLI/", genre="travel")
 class MultiNLITask(PairClassificationTask):
-    """ Task class for Multi-Genre Natural Language Inference """
+    """ Task class for Multi-Genre Natural Language Inference. """
 
-    def __init__(self, path, max_seq_len, name, **kw):
-        """MNLI"""
+    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+        """Set up the MNLI task object.
+
+        When genre is set to one of the ten MNLI genres, only examples matching that genre will be
+        loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
+        being empty.
+        """
         super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
+        self.genre = genre
 
         self.train_data_text = None
         self.val_data_text = None
@@ -1122,6 +1129,8 @@ class MultiNLITask(PairClassificationTask):
             label_idx=11,
             label_fn=targ_map.__getitem__,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
 
         # Warning to anyone who edits this: The reference label is column *15*,
@@ -1135,6 +1144,8 @@ class MultiNLITask(PairClassificationTask):
             label_idx=15,
             label_fn=targ_map.__getitem__,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
         val_mismatched_data = load_tsv(
             self._tokenizer_name,
@@ -1145,6 +1156,8 @@ class MultiNLITask(PairClassificationTask):
             label_idx=15,
             label_fn=targ_map.__getitem__,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
@@ -1158,6 +1171,8 @@ class MultiNLITask(PairClassificationTask):
             has_labels=False,
             return_indices=True,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
         te_mismatched_data = load_tsv(
             self._tokenizer_name,
@@ -1168,20 +1183,10 @@ class MultiNLITask(PairClassificationTask):
             has_labels=False,
             return_indices=True,
             skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
         )
-        te_diagnostic_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "diagnostic.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=1,
-            s2_idx=2,
-            has_labels=False,
-            return_indices=True,
-            skip_rows=1,
-        )
-        te_data = [
-            m + mm + d for m, mm, d in zip(te_matched_data, te_mismatched_data, te_diagnostic_data)
-        ]
+        te_data = [m + mm for m, mm in zip(te_matched_data, te_mismatched_data)]
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1193,6 +1198,109 @@ class MultiNLITask(PairClassificationTask):
             + self.val_data_text[1]
         )
         log.info("\tFinished loading MNLI data.")
+
+
+@register_task("mnli-ho", rel_path="MNLI/")
+@register_task("mnli-fiction-ho", rel_path="MNLI/", genre="fiction")
+@register_task("mnli-slate-ho", rel_path="MNLI/", genre="slate")
+@register_task("mnli-government-ho", rel_path="MNLI/", genre="government")
+@register_task("mnli-telephone-ho", rel_path="MNLI/", genre="telephone")
+@register_task("mnli-travel-ho", rel_path="MNLI/", genre="travel")
+class MultiNLIHypothesisOnlyTask(SingleClassificationTask):
+    """ Task class for MultiNLI hypothesis-only classification. """
+
+    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+        """Set up the MNLI-HO task object.
+
+        When genre is set to one of the ten MNLI genres, only examples matching that genre will be
+        loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
+        being empty.
+        """
+        super(MultiNLIHypothesisOnlyTask, self).__init__(name, n_classes=3, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.genre = genre
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+    def load_data(self):
+        """Process the dataset located at path."""
+        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=9,
+            s2_idx=None,
+            label_idx=11,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+
+        # Warning to anyone who edits this: The reference label is column *15*,
+        # not 11 as above.
+        val_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev_matched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=9,
+            s2_idx=None,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        val_mismatched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev_mismatched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=9,
+            s2_idx=None,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        val_data = tuple(val_data)
+
+        te_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test_matched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=9,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        te_mismatched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test_mismatched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=9,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        te_data = [m + mm for m, mm in zip(te_matched_data, te_mismatched_data)]
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        log.info("\tFinished loading MNLI-HO data.")
 
 
 # GLUE diagnostic (3-class NLI), expects TSV
@@ -1330,16 +1438,17 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self._scorer_all_mcc(preds, labels)
         self._scorer_all_acc(logits, labels)
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def create_labels_from_tags(fields_dict, ix_to_tag_dict, tag_arr, tag_group):
             # If there is something in this row then tag_group should be set to
             # 1.
             is_tag_group = 1 if len(tag_arr) != 0 else 0
             fields_dict[tag_group] = LabelField(
-                is_tag_group, label_namespace=tag_group, skip_indexing=True
+                is_tag_group, label_namespace=tag_group + "_tags", skip_indexing=True
             )
             # For every possible tag in the column set 1 if the tag is present for
             # this example, 0 otherwise.
@@ -1348,23 +1457,27 @@ class GLUEDiagnosticTask(PairClassificationTask):
                     continue
                 is_present = 1 if ix in tag_arr else 0
                 fields_dict["%s__%s" % (tag_group, tag)] = LabelField(
-                    is_present, label_namespace="%s__%s" % (tag_group, tag), skip_indexing=True
+                    is_present, label_namespace="%s__%s_tags" % (tag_group, tag), skip_indexing=True
                 )
             return
 
         def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
             """ from multiple types in one column create multiple fields """
             d = {}
-            if is_using_bert:
-                inp = input1 + input2[1:]  # drop the leading [CLS] token
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
-                d["input2"] = sentence_to_text_field(input2, indexers)
+                d["input1"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                )
+                d["input2"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input2), indexers
+                )
             d["labels"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idx", skip_indexing=True)
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            d["idx"] = LabelField(idx, label_namespace="idx_tags", skip_indexing=True)
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            d["sent2_str"] = MetadataField(" ".join(input2))
 
             # adds keys to dict "d" for every possible type in the column
             create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, "lex_sem")
@@ -1407,7 +1520,8 @@ class GLUEDiagnosticTask(PairClassificationTask):
 # SuperGLUE diagnostic (2-class NLI), expects JSONL
 @register_task("broadcoverage-diagnostic", rel_path="RTE/diagnostics")
 class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
-    """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge) diagnostic task """
+    """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge)
+        diagnostic task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         super().__init__(path, max_seq_len, name, n_classes=2, **kw)
@@ -1456,10 +1570,12 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
         targ_map = {"entailment": 1, "not_entailment": 0}
         data = [json.loads(d) for d in open(os.path.join(self.path, "AX-b.jsonl"))]
         sent1s = [
-            process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data
+            tokenize_and_truncate(self._tokenizer_name, d["sentence1"], self.max_seq_len)
+            for d in data
         ]
         sent2s = [
-            process_sentence(self._tokenizer_name, d["sentence2"], self.max_seq_len) for d in data
+            tokenize_and_truncate(self._tokenizer_name, d["sentence2"], self.max_seq_len)
+            for d in data
         ]
         labels = [targ_map[d["label"]] for d in data]
         idxs = [int(d["idx"]) for d in data]
@@ -1552,24 +1668,26 @@ class WinogenderTask(GLUEDiagnosticTask):
         )
         log.info("\tFinished loading winogender (from SuperGLUE formatted data).")
 
-    def process_split(self, split, indexers):
-        is_using_bert = "bert_wpm_pretokenized" in indexers
-
+    def process_split(self, split, indexers, model_preprocessing_interface):
         def _make_instance(input1, input2, labels, idx, pair_id):
             d = {}
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            if is_using_bert:
-                inp = input1 + input2[1:]  # throw away input2 leading [CLS]
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
-                d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+                d["sent2_str"] = MetadataField(" ".join(input2))
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input1"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                )
                 if input2:
-                    d["input2"] = sentence_to_text_field(input2, indexers)
-                    d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+                    d["input2"] = sentence_to_text_field(
+                        model_preprocessing_interface.boundary_token_fn(input2), indexers
+                    )
+                    d["sent2_str"] = MetadataField(" ".join(input2))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
-            d["pair_id"] = LabelField(pair_id, label_namespace="pair_id", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
+            d["pair_id"] = LabelField(pair_id, label_namespace="pair_id_tags", skip_indexing=True)
             return Instance(d)
 
         instances = map(_make_instance, *split)
@@ -1667,10 +1785,14 @@ class RTESuperGLUETask(RTETask):
             sent1s, sent2s, trgs, idxs = [], [], [], []
             for example in data:
                 sent1s.append(
-                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["premise"], self.max_seq_len
+                    )
                 )
                 sent2s.append(
-                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["hypothesis"], self.max_seq_len
+                    )
                 )
                 trg = targ_map[example["label"]] if "label" in example else 0
                 trgs.append(trg)
@@ -1906,13 +2028,19 @@ class Wiki103Classification(PairClassificationTask):
             for sent in self.load_data_for_path(path):
                 yield sent
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process a language modeling split.  Split is a single list of sentences here.  """
 
         def _make_instance(input1, input2, labels):
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["input2"] = sentence_to_text_field(input2, indexers)
+            d["input1"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
+            d["input2"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input2), indexers
+            )
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
@@ -1976,8 +2104,8 @@ class DisSentTask(PairClassificationTask):
                 row = row.strip().split("\t")
                 if len(row) != 3 or not (row[0] and row[1] and row[2]):
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[1], self.max_seq_len)
+                sent1 = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
+                sent2 = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
                 targ = int(row[2])
                 yield (sent1, sent2, targ)
 
@@ -1999,18 +2127,25 @@ class DisSentTask(PairClassificationTask):
             example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def _make_instance(input1, input2, labels):
             d = {}
-            if is_using_bert:
-                inp = input1 + input2[1:]  # drop leading [CLS] token
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(
+                    input1, input2
+                )  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
-                d["input2"] = sentence_to_text_field(input2, indexers)
+                d["input1"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                )
+                d["input2"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input2), indexers
+                )
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
@@ -2123,7 +2258,9 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = None
         self.test_data_text = None
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process a tagging task """
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         targs = [
@@ -2131,7 +2268,7 @@ class CCGTaggingTask(TaggingTask):
             for sent in split[2]
         ]
         mask = [
-            MultiLabelField(mask, label_namespace="indices", skip_indexing=True, num_labels=511)
+            MultiLabelField(mask, label_namespace="idx_tags", skip_indexing=True, num_labels=511)
             for mask in split[3]
         ]
         instances = [
@@ -2148,7 +2285,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             label_fn=lambda t: t.split(" "),
         )
@@ -2160,7 +2296,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             label_fn=lambda t: t.split(" "),
         )
@@ -2172,7 +2307,6 @@ class CCGTaggingTask(TaggingTask):
             s2_idx=None,
             label_idx=2,
             skip_rows=1,
-            col_indices=[0, 1, 2],
             delimiter="\t",
             has_labels=False,
         )
@@ -2263,7 +2397,6 @@ class SpanClassificationTask(Task):
         self._iters_by_split = None
 
         self.label_file = os.path.join(path, label_file)
-        self.all_labels = None
         self.n_classes = None
         self._label_namespace = self.name + "_labels"
 
@@ -2313,19 +2446,10 @@ class SpanClassificationTask(Task):
         # so minus 1 at the end index.
         return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
-    def _pad_tokens(self, tokens):
-        """Pad tokens according to the current tokenization style."""
-        if self.tokenizer_name.startswith("bert-"):
-            # standard padding for BERT; see
-            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
-            return ["[CLS]"] + tokens + ["[SEP]"]
-        else:
-            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
-
-    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+    def make_instance(self, record, idx, indexers, model_preprocessing_interface) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record["text"].split()
-        tokens = self._pad_tokens(tokens)
+        tokens = model_preprocessing_interface.boundary_token_fn(tokens)
         text_field = sentence_to_text_field(tokens, indexers)
 
         example = {}
@@ -2337,27 +2461,20 @@ class SpanClassificationTask(Task):
             example["span" + str(i + 1) + "s"] = ListField(
                 [self._make_span_field(record["target"]["span" + str(i + 1)], text_field, 1)]
             )
-        example["labels"] = ListField(
-            [
-                MultiLabelField(
-                    [str(record["label"])],
-                    label_namespace=self._label_namespace,
-                    skip_indexing=False,
-                )
-            ]
+        example["labels"] = LabelField(
+            record["label"], label_namespace="labels", skip_indexing=True
         )
         return Instance(example)
 
-    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, records, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _map_fn(r, idx):
-            return self.make_instance(r, idx, indexers)
+            return self.make_instance(r, idx, indexers, model_preprocessing_interface)
 
         return map(_map_fn, records, itertools.count())
-
-    def get_all_labels(self) -> List[str]:
-        return self.all_labels
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
@@ -2412,10 +2529,14 @@ class CommitmentTask(PairClassificationTask):
             sent1s, sent2s, targs, idxs = [], [], [], []
             for example in data:
                 sent1s.append(
-                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["premise"], self.max_seq_len
+                    )
                 )
                 sent2s.append(
-                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["hypothesis"], self.max_seq_len
+                    )
                 )
                 trg = targ_map[example["label"]] if "label" in example else 0
                 targs.append(trg)
@@ -2479,12 +2600,12 @@ class WiCTask(PairClassificationTask):
             then concatenate everything together. This allows us to track where in the tokenized
             sequence the marked word is located. """
             sent_parts = sent.split(word)
-            sent_tok1 = process_sentence(self._tokenizer_name, sent_parts[0], self.max_seq_len)
-            sent_tok2 = process_sentence(self._tokenizer_name, sent_parts[1], self.max_seq_len)
-            sent_mid = process_sentence(self._tokenizer_name, word, self.max_seq_len)
-            sent_tok = sent_tok1[:-1] + sent_mid[1:-1] + sent_tok2[1:]
-            start_idx = len(sent_tok1[:-1])
-            end_idx = start_idx + len(sent_mid[1:-1])
+            sent_tok1 = tokenize_and_truncate(self._tokenizer_name, sent_parts[0], self.max_seq_len)
+            sent_tok2 = tokenize_and_truncate(self._tokenizer_name, sent_parts[1], self.max_seq_len)
+            sent_mid = tokenize_and_truncate(self._tokenizer_name, word, self.max_seq_len)
+            sent_tok = sent_tok1 + sent_mid + sent_tok2
+            start_idx = len(sent_tok1)
+            end_idx = start_idx + len(sent_mid)
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
             return sent_tok, start_idx, end_idx
 
@@ -2508,7 +2629,9 @@ class WiCTask(PairClassificationTask):
                     idxs.append(row["idx"])
                     assert (
                         "version" in row and row["version"] == 1.1
-                    ), "WiC version is not v1.1; examples indices are likely incorrect and data is likely pre-tokenized. Please re-download the data from super.gluebenchmark for the correct data."
+                    ), "WiC version is not v1.1; examples indices are likely incorrect and data "
+                    "is likely pre-tokenized. Please re-download the data from "
+                    "super.gluebenchmark.com."
                 return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
@@ -2522,30 +2645,33 @@ class WiCTask(PairClassificationTask):
         )
         log.info("\tFinished loading WiC data.")
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, model_preprocessing_interface):
         """
         Convert a dataset of sentences into padded sequences of indices. Shared
         across several classes.
 
         """
         # check here if using bert to avoid passing model info to tasks
-        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
             d = {}
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            if is_using_bert:
-                inp = input1 + input2[1:]  # throw away input2 leading [CLS]
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            d["sent2_str"] = MetadataField(" ".join(input2))
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
                 idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
-                d["input2"] = sentence_to_text_field(input2, indexers)
+                d["input1"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                )
+                d["input2"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(input2), indexers
+                )
             d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
             d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
 
             return Instance(d)
 
@@ -2605,13 +2731,17 @@ class COPATask(MultipleChoiceTask):
                     else "What happened as a result?"
                 )
                 choices = [
-                    process_sentence(self._tokenizer_name, choice, self.max_seq_len)
+                    tokenize_and_truncate(self._tokenizer_name, choice, self.max_seq_len)
                     for choice in [choice1, choice2]
                 ]
                 targ = example["label"] if "label" in example else 0
-                contexts.append(process_sentence(self._tokenizer_name, context, self.max_seq_len))
+                contexts.append(
+                    tokenize_and_truncate(self._tokenizer_name, context, self.max_seq_len)
+                )
                 choicess.append(choices)
-                questions.append(process_sentence(self._tokenizer_name, question, self.max_seq_len))
+                questions.append(
+                    tokenize_and_truncate(self._tokenizer_name, question, self.max_seq_len)
+                )
                 targs.append(targ)
             return [contexts, choicess, questions, targs]
 
@@ -2626,21 +2756,28 @@ class COPATask(MultipleChoiceTask):
         )
         log.info("\tFinished loading COPA (as QA) data.")
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def _make_instance(context, choices, question, label, idx):
             d = {}
-            d["question_str"] = MetadataField(" ".join(context[1:-1]))
-            if not is_using_bert:
-                d["question"] = sentence_to_text_field(context, indexers)
+            d["question_str"] = MetadataField(" ".join(context))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(context), indexers
+                )
             for choice_idx, choice in enumerate(choices):
-                inp = context + question[1:] + choice[1:] if is_using_bert else choice
+                inp = (
+                    model_preprocessing_interface.boundary_token_fn(context, question + choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
+                )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
-                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(d)
 
         split = list(split)
@@ -2681,13 +2818,13 @@ class SWAGTask(MultipleChoiceTask):
             questions, choicess, targs = [], [], []
             data = pd.read_csv(data_file)
             for ex_idx, ex in data.iterrows():
-                sent1 = process_sentence(self._tokenizer_name, ex["sent1"], self.max_seq_len)
+                sent1 = tokenize_and_truncate(self._tokenizer_name, ex["sent1"], self.max_seq_len)
                 questions.append(sent1)
                 sent2_prefix = ex["sent2"]
                 choices = []
                 for i in range(4):
                     choice = sent2_prefix + " " + ex["ending%d" % i]
-                    choice = process_sentence(self._tokenizer_name, choice, self.max_seq_len)
+                    choice = tokenize_and_truncate(self._tokenizer_name, choice, self.max_seq_len)
                     choices.append(choice)
                 choicess.append(choices)
                 targ = ex["label"] if "label" in ex else 0
@@ -2705,21 +2842,28 @@ class SWAGTask(MultipleChoiceTask):
         )
         log.info("\tFinished loading SWAG data.")
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def _make_instance(question, choices, label, idx):
             d = {}
-            d["question_str"] = MetadataField(" ".join(question[1:-1]))
-            if not is_using_bert:
-                d["question"] = sentence_to_text_field(question, indexers)
+            d["question_str"] = MetadataField(" ".join(question))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                )
             for choice_idx, choice in enumerate(choices):
-                inp = question + choice[1:] if is_using_bert else choice
+                inp = (
+                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
+                )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
-                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(d)
 
         split = list(split)
@@ -2753,33 +2897,17 @@ class WinogradCoreferenceTask(SpanClassificationTask):
                     self.tokenizer_name, filename, has_labels=False
                 )
             else:
-                iters_by_split[split] = load_span_data(self.tokenizer_name, filename)
+                iters_by_split[split] = load_span_data(
+                    self.tokenizer_name, filename, label_fn=lambda x: int(x)
+                )
         self._iters_by_split = iters_by_split
-
-    def get_all_labels(self):
-        return ["False", "True"]
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
 
-        def make_one_hot(batch, depth=2):
-            """
-            Creates a one-hot embedding of dimension 2.
-            Parameters:
-            batch: list of size batch_size of class predictions
-            Returns:
-            one hot encoding of size [batch_size, 2]
-            """
-            ones = torch.sparse.torch.eye(depth)
-            if torch.cuda.is_available():
-                ones = ones.cuda()
-            return ones.index_select(0, batch)
-
-        binary_preds = make_one_hot(logits, depth=2)
-        # Make label_ints a batch_size list of labels
-        label_ints = torch.argmax(labels, dim=1)
-        self.f1_scorer(binary_preds, label_ints)
-        self.acc_scorer(binary_preds.long(), labels.long())
+        self.f1_scorer(logits, labels)  # expects [batch_size, n_classes] for preds
+        self.acc_scorer(preds, labels)  # expects [batch_size, 1] for both
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
@@ -2815,8 +2943,12 @@ class BooleanQuestionTask(PairClassificationTask):
             raw_data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             data = []
             for d in raw_data:
-                question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
-                passage = process_sentence(self._tokenizer_name, d["passage"], self.max_seq_len)
+                question = tokenize_and_truncate(
+                    self._tokenizer_name, d["question"], self.max_seq_len
+                )
+                passage = tokenize_and_truncate(
+                    self._tokenizer_name, d["passage"], self.max_seq_len
+                )
                 new_datum = {"question": question, "passage": passage}
                 answer = d["label"] if "label" in d else False
                 new_datum["label"] = answer
@@ -2832,22 +2964,29 @@ class BooleanQuestionTask(PairClassificationTask):
         ]
         log.info("\tFinished loading BoolQ data.")
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def _make_instance(d, idx):
             new_d = {}
-            new_d["question_str"] = MetadataField(" ".join(d["question"][1:-1]))
-            new_d["passage_str"] = MetadataField(" ".join(d["passage"][1:-1]))
-            if not is_using_bert:
-                new_d["input1"] = sentence_to_text_field(d["passage"], indexers)
-                new_d["input2"] = sentence_to_text_field(d["question"], indexers)
-            else:  # BERT
-                psg_qst = d["passage"][:-1] + d["question"]
+            new_d["question_str"] = MetadataField(" ".join(d["question"]))
+            new_d["passage_str"] = MetadataField(" ".join(d["passage"]))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                new_d["input1"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(d["passage"]), indexers
+                )
+                new_d["input2"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(d["question"]), indexers
+                )
+            else:  # BERT/XLNet
+                psg_qst = model_preprocessing_interface.boundary_token_fn(
+                    d["passage"], d["question"]
+                )
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
-            new_d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            new_d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(new_d)
 
         split = [split, itertools.count()]

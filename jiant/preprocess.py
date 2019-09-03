@@ -27,14 +27,31 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
+from jiant.pytorch_transformers_interface import (
+    input_module_uses_pytorch_transformers,
+    input_module_tokenizer_name,
+)
+from pytorch_transformers import (
+    BertTokenizer,
+    RobertaTokenizer,
+    XLNetTokenizer,
+    OpenAIGPTTokenizer,
+    GPT2Tokenizer,
+    TransfoXLTokenizer,
+    XLMTokenizer,
+)
+
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
     ALL_COLA_NPI_TASKS,
     ALL_GLUE_TASKS,
     ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
+    ALL_SEQ2SEQ_TASKS,
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
+from jiant.tasks.seq2seq import Seq2SeqTask
+from jiant.tasks.tasks import SequenceGenerationTask
 from jiant.utils import config, serialize, utils
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
@@ -106,7 +123,7 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, indexers, vocab, record_file):
+def _index_split(task, split, indexers, vocab, record_file, model_preprocessing_interface):
     """Index instances and stream to disk.
     Args:
         task: Task instance
@@ -114,11 +131,13 @@ def _index_split(task, split, indexers, vocab, record_file):
         indexers: dict of token indexers
         vocab: Vocabulary instance
         record_file: (string) file to write serialized Instances to
+        model_preprocessing_interface: packed information from model that effects the task data, including
+            whether to concatenate sentence pair, and how to mark the sentence boundry
     """
     log_prefix = "\tTask %s (%s)" % (task.name, split)
     log.info("%s: Indexing from scratch.", log_prefix)
     split_text = task.get_split_text(split)
-    instance_iter = task.process_split(split_text, indexers)
+    instance_iter = task.process_split(split_text, indexers, model_preprocessing_interface)
     if hasattr(instance_iter, "__len__"):  # if non-lazy
         log.warn(
             "%s: non-lazy Instance generation. You'll want to refactor "
@@ -189,15 +208,18 @@ def _build_embeddings(args, vocab, emb_file: str):
     log.info("\tBuilding embeddings from scratch.")
     word_v_size, unk_idx = vocab.get_vocab_size("tokens"), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, args.d_word)
-    with io.open(
-        args.word_embs_file, "r", encoding="utf-8", newline="\n", errors="ignore"
-    ) as vec_fh:
-        for line in vec_fh:
-            word, vec = line.split(" ", 1)
-            idx = vocab.get_token_index(word)
-            if idx != unk_idx:
-                embeddings[idx] = np.array(list(map(float, vec.split())))
+
+    if args.word_embs_file:
+        with io.open(
+            args.word_embs_file, "r", encoding="utf-8", newline="\n", errors="ignore"
+        ) as vec_fh:
+            for line in vec_fh:
+                word, vec = line.split(" ", 1)
+                idx = vocab.get_token_index(word)
+                if idx != unk_idx:
+                    embeddings[idx] = np.array(list(map(float, vec.split())))
     embeddings[vocab.get_token_index(vocab._padding_token)] = 0.0
+
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading embeddings")
 
@@ -221,12 +243,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
-    if args.input_module == "gpt":
-        # Add pre-computed BPE vocabulary for OpenAI transformer model.
-        add_openai_bpe_vocab(vocab, "openai_bpe")
-    if args.input_module.startswith("bert"):
-        # Add pre-computed BPE vocabulary for BERT model.
-        add_bert_wpm_vocab(vocab, args.input_module)
+    if input_module_uses_pytorch_transformers(args.input_module):
+        # Add pre-computed vocabulary of corresponding tokenizer for pytorch_transformers models.
+        add_pytorch_transformers_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -235,11 +254,12 @@ def _build_vocab(args, tasks, vocab_path: str):
 
 def build_indexers(args):
     indexers = {}
-    if not args.input_module.startswith("bert") and args.input_module not in ["elmo", "gpt"]:
+    if args.input_module in ["scratch", "glove", "fastText"]:
         indexers["words"] = SingleIdTokenIndexer()
-    if args.input_module == "elmo":
+    elif args.input_module in ["elmo", "elmo-chars-only"]:
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
         assert args.tokenizer in {"", "MosesTokenizer"}
+
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
     if args.cove:
@@ -247,22 +267,18 @@ def build_indexers(args):
             f"CoVe model expects Moses tokenization (MosesTokenizer);"
             " you are using args.tokenizer = {args.tokenizer}"
         )
-    if args.input_module == "gpt":
+
+    if input_module_uses_pytorch_transformers(args.input_module):
         assert (
             not indexers
-        ), "OpenAI transformer is not supported alongside other indexers due to tokenization."
-        assert (
-            args.tokenizer == "OpenAI.BPE"
-        ), "OpenAI transformer uses custom BPE tokenization. Set tokenizer=OpenAI.BPE."
-        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    if args.input_module.startswith("bert"):
-        assert not indexers, "BERT is not supported alongside other indexers due to tokenization."
+        ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
+        "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "BERT models use custom WPM tokenization for "
-            "each model, so tokenizer must match the "
-            "specified BERT model."
+            "pytorch_transformers models use custom tokenization for each model, so tokenizer "
+            "must match the specified model."
         )
-        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
+        tokenizer_name = input_module_tokenizer_name(args.input_module)
+        indexers[tokenizer_name] = SingleIdTokenIndexer(tokenizer_name)
     return indexers
 
 
@@ -305,9 +321,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.input_module not in ["elmo", "gpt", "scratch"] and not args.input_module.startswith(
-        "bert"
-    ):
+    if args.input_module in ["glove", "fastText"]:
         emb_file = os.path.join(args.exp_dir, "embs.pkl")
         if args.reload_vocab or not os.path.exists(emb_file):
             word_embs = _build_embeddings(args, vocab, emb_file)
@@ -315,7 +329,10 @@ def build_tasks(args):
             word_embs = pkl.load(open(emb_file, "rb"))
         log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
-    # 4) Index tasks using vocab (if preprocessed copy not available).
+    # 4) Set up model_preprocessing_interface
+    model_preprocessing_interface = ModelPreprocessingInterface(args)
+
+    # 5) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
     reindex_tasks = parse_task_list_arg(args.reindex_tasks)
@@ -324,6 +341,7 @@ def build_tasks(args):
         'Flag reload_indexing was set, but no tasks are set to reindex (use -o "args.reindex_tasks'
         ' = "task1,task2,..."")',
     )
+
     for task in tasks:
         force_reindex = args.reload_indexing and task.name in reindex_tasks
         for split in ALL_SPLITS:
@@ -338,7 +356,9 @@ def build_tasks(args):
                 if os.path.exists(record_file) and os.path.islink(record_file):
                     os.remove(record_file)
 
-                _index_split(task, split, indexers, vocab, record_file)
+                _index_split(
+                    task, split, indexers, vocab, record_file, model_preprocessing_interface
+                )
 
         # Delete in-memory data - we'll lazy-load from disk later.
         # TODO: delete task.{split}_data_text as well?
@@ -348,7 +368,7 @@ def build_tasks(args):
 
     log.info("\tFinished indexing tasks")
 
-    # 5) Initialize tasks with data iterators.
+    # 6) Initialize tasks with data iterators.
     pretrain_tasks = []
     target_tasks = []
     for task in tasks:
@@ -409,6 +429,8 @@ def _get_task(name, args, data_path, scratch_path):
             # TODO: remove special case, replace with something general
             # to pass custom loader args to task.
             task_kw["probe_path"] = args["nli-prob"].probe_path
+        if name in ALL_SEQ2SEQ_TASKS:
+            task_kw["max_targ_v_size"] = args.max_targ_word_v_size
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(
             task_src_path,
@@ -487,9 +509,13 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        log.info("\tCounting words for task %s.", task.name)
-        for sentence in task.get_sentences():
-            update_vocab_freqs(sentence)
+        log.info("\tCounting units for task %s.", task.name)
+        if isinstance(task, Seq2SeqTask):
+            for src_sent, tgt_sent in task.get_sentences():
+                update_vocab_freqs(src_sent)
+        else:
+            for sentence in task.get_sentences():
+                update_vocab_freqs(sentence)
 
     # This branch is meant for tasks that have *English* target sentences
     # (or more generally, same language source and target sentences)
@@ -548,37 +574,63 @@ def add_task_label_vocab(vocab, task):
     if namespace is None:
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
+
+    if isinstance(task, SequenceGenerationTask):
+        for special in SPECIALS:
+            vocab.add_token_to_namespace(special, namespace)
+
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
 
-def add_bert_wpm_vocab(vocab, bert_model_name):
-    """Add BERT WPM vocabulary for use with pre-tokenized data.
+def add_pytorch_transformers_vocab(vocab, tokenizer_name):
+    """Add vocabulary from tokenizers in pytorch_transformers for use with pre-tokenized data.
 
-    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do
-    anything special so we can just use the standard indexers.
+    These tokenizers have a convert_tokens_to_ids method, but this doesn't do
+    anything special, so we can just use the standard indexers.
     """
-    from pytorch_pretrained_bert import BertTokenizer
+    do_lower_case = "uncased" in tokenizer_name
 
-    do_lower_case = "uncased" in bert_model_name
-    tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=do_lower_case)
-    ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
-    log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name, len(ordered_vocab))
+    if tokenizer_name.startswith("bert-"):
+        tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("roberta-"):
+        tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("xlnet-"):
+        tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("openai-gpt"):
+        tokenizer = OpenAIGPTTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("gpt2"):
+        tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("transfo-xl-"):
+        tokenizer = TransfoXLTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("xlm-"):
+        tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
+
+    if (
+        tokenizer_name.startswith("openai-gpt")
+        or tokenizer_name.startswith("gpt2")
+        or tokenizer_name.startswith("transo-xl-")
+    ):
+        tokenizer.add_special_tokens(
+            {"bos_token": "<start>", "sep_token": "<delim>", "cls_token": "<extract>"}
+        )
+    # TODO: this is another place can be simplified by "model-before-preprocess" reorganization
+    # we can pass tokenizer created in model here, see issue <TBD>
+
+    vocab_size = len(tokenizer)
+    # do not use tokenizer.vocab_size, it does not include newly added token
+    if tokenizer_name.startswith("roberta-"):
+        if tokenizer.convert_ids_to_tokens(vocab_size - 1) is None:
+            vocab_size -= 1
+        else:
+            log.info("Time to delete vocab_size-1 in preprocess.py !!!")
+    # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None, remove
+    # this when they fix the problem
+
+    ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
+    log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
-        vocab.add_token_to_namespace(word, bert_model_name)
-
-
-def add_openai_bpe_vocab(vocab, namespace="openai_bpe"):
-    """Add OpenAI BPE vocabulary for use with pre-tokenized data."""
-    from .openai_transformer_lm import utils as openai_utils
-
-    id_to_wordpiece = openai_utils.reverse_encoder_dict
-    for i in range(len(id_to_wordpiece)):
-        vocab.add_token_to_namespace(id_to_wordpiece[i], namespace)
-    # Add SOS and EOS tokens to *end* of namespace, since this is where the
-    # OpenAI model expects special tokens.
-    vocab.add_token_to_namespace(utils.SOS_TOK, namespace)
-    vocab.add_token_to_namespace(utils.EOS_TOK, namespace)
+        vocab.add_token_to_namespace(word, input_module_tokenizer_name(tokenizer_name))
 
 
 def add_wsj_vocab(vocab, data_dir, namespace="tokens"):
@@ -591,3 +643,70 @@ def add_wsj_vocab(vocab, data_dir, namespace="tokens"):
     for line in wsj_tokens.readlines():
         vocab.add_token_to_namespace(line.strip(), namespace)
     log.info("\tAdded WSJ vocabulary from %s", wsj_tokens)
+
+
+class ModelPreprocessingInterface(object):
+    """ This class holds parts of preprocessing that is model-specific
+    members:
+
+    model_flags: Dict[str, bool], model-specific flags that may be used in task preprocessing
+    boundary_token_fn: (list[str], list[str] (optional) -> list[str]):
+        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
+        token sequence pair for most tasks.
+    lm_boundary_token_fn: (list[str] -> list[str]):
+        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence for
+        language modeling tasks.
+
+    """
+
+    def __init__(self, args):
+        boundary_token_fn = None
+        lm_boundary_token_fn = None
+
+        if args.input_module.startswith("bert-"):
+            from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+
+            boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("roberta-"):
+            from jiant.pytorch_transformers_interface.modules import RobertaEmbedderModule
+
+            boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("xlnet-"):
+            from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+
+            boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("openai-gpt"):
+            from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+
+            boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
+            lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
+        elif args.input_module.startswith("gpt2"):
+            from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+
+            boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
+            lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
+        elif args.input_module.startswith("transfo-xl-"):
+            from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+
+            boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
+            lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
+        elif args.input_module.startswith("xlm-"):
+            from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
+
+            boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
+        else:
+            boundary_token_fn = utils.apply_standard_boundary_tokens
+
+        self.boundary_token_fn = boundary_token_fn
+        if lm_boundary_token_fn is not None:
+            self.lm_boundary_token_fn = lm_boundary_token_fn
+        else:
+            self.lm_boundary_token_fn = boundary_token_fn
+
+        from jiant.models import input_module_uses_pair_embedding, input_module_uses_mirrored_pair
+
+        self.model_flags = {}
+        self.model_flags["uses_pair_embedding"] = input_module_uses_pair_embedding(
+            args.input_module
+        )
+        self.model_flags["uses_mirrored_pair"] = input_module_uses_mirrored_pair(args.input_module)

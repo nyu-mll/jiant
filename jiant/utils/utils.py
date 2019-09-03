@@ -6,6 +6,7 @@ import copy
 import json
 import logging
 import os
+from pkg_resources import resource_filename
 import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
@@ -18,7 +19,7 @@ from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.nn.util import device_mapping, masked_softmax
-from nltk.tokenize.moses import MosesDetokenizer
+from sacremoses import MosesDetokenizer
 from torch.autograd import Variable
 from torch.nn import Dropout, Linear, Parameter, init
 
@@ -31,6 +32,39 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
+
+
+def select_pool_type(args):
+    """
+        Select a sane default sequence pooling type.
+    """
+    if args.pool_type == "auto":
+        pool_type = "max"
+        if args.sent_enc == "none":
+            if (
+                args.input_module.startswith("bert-")
+                or args.input_module.startswith("roberta-")
+                or args.input_module.startswith("xlm-")
+            ):
+                pool_type = "first"
+            elif (
+                args.input_module.startswith("xlnet-")
+                or args.input_module.startswith("openai-gpt")
+                or args.input_module.startswith("gpt2")
+                or args.input_module.startswith("transfo-xl-")
+            ):
+                pool_type = "final"
+    else:
+        pool_type = args.pool_type
+    return pool_type
+
+
+def apply_standard_boundary_tokens(s1, s2=None):
+    """Apply <SOS> and <EOS> to sequences of string-valued tokens.
+    Corresponds to more complex functions used with models like XLNet and BERT.
+    """
+    assert not s2, "apply_standard_boundary_tokens only supports single sequences"
+    return [SOS_TOK] + s1 + [EOS_TOK]
 
 
 def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
@@ -154,10 +188,12 @@ def parse_json_diff(diff):
     actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to
     show deletions in our parameters.
     For example, for jsondiff.replace, the output of jsondiff may be the below:
-    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
+    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256),
+                                   ('max_vals', 8), ('val_interval', 1)])}}
     since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete
     the replace. The output of this function will be:
-    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}
+    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256),
+                         ('max_vals', 8), ('val_interval', 1)])}
     See for more information on jsondiff.
     """
     new_diff = {}
@@ -197,7 +233,7 @@ def select_relevant_print_args(args):
 
     exp_config_file = os.path.join(args.run_dir, "params.conf")
     root_directory = Path(__file__).parents[2]
-    defaults_file = os.path.join(str(root_directory) + "/config/defaults.conf")
+    defaults_file = resource_filename("jiant", "/config/defaults.conf")
     exp_basedir = os.path.dirname(exp_config_file)
     default_basedir = os.path.dirname(defaults_file)
     fd = open(exp_config_file, "r")
@@ -325,9 +361,12 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     return params
 
 
-def get_batch_size(batch):
+def get_batch_size(batch, keyword="input"):
     """ Given a batch with unknown text_fields, get an estimate of batch size """
-    batch_field = batch["inputs"] if "inputs" in batch else batch["input1"]
+    if keyword == "input":
+        batch_field = batch["inputs"] if "inputs" in batch else batch["input1"]
+    else:
+        batch_field = batch[keyword]
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
     return batch_size
@@ -558,3 +597,10 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
+
+
+def delete_all_checkpoints(serialization_dir):
+    common_checkpoints = glob.glob(os.path.join(serialization_dir, "*.th"))
+    task_checkpoints = glob.glob(os.path.join(serialization_dir, "*", "*.th"))
+    for file in common_checkpoints + task_checkpoints:
+        os.remove(file)
