@@ -161,6 +161,8 @@ class Seq2SeqDecoder(Model):
         step_logit = output_projections
         print(step_logit)
         print()
+        print(step_logit.shape)
+        exit()
 
         return step_logit, state
 
