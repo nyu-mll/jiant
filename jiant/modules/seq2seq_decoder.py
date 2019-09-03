@@ -12,7 +12,6 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
 from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.token_embedders import Embedding
-from allennlp.nn.beam_search import BeamSearch
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 from overrides import overrides
 from torch.nn.modules.linear import Linear
@@ -20,7 +19,7 @@ from torch.nn.modules.rnn import LSTMCell
 
 from jiant.modules.simple_modules import Pooler
 from jiant.modules.attention import BahdanauAttention
-
+from jiant.modules.beam_search import BeamSearch
 
 class Seq2SeqDecoder(Model):
     """
