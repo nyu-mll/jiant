@@ -12,6 +12,7 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
 from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.token_embedders import Embedding
+from allennlp.nn.beam_search import BeamSearch
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 from overrides import overrides
 from torch.nn.modules.linear import Linear
@@ -38,6 +39,7 @@ class Seq2SeqDecoder(Model):
         attention: str = "none",
         dropout: float = 0.0,
         scheduled_sampling_ratio: float = 0.0,
+        beam_size = 10
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
 
@@ -105,6 +107,11 @@ class Seq2SeqDecoder(Model):
         self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
+        # At prediction time, we'll use a beam search to find the best target sequence.
+        self._beam_search = BeamSearch(self._end_index, max_steps=max_decoding_steps,
+                                       beam_size=beam_size)
+    
+    
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
         """
         Initialization of the decoder state, based on the encoder output.
