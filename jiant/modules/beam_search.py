@@ -173,7 +173,6 @@ class BeamSearch:
             # shape: (batch_size * beam_size, num_classes)
             class_log_probabilities, state = step(last_predictions, state)
 
-            print(class_log_probabilities)
             # shape: (batch_size * beam_size, num_classes)
             last_predictions_expanded = last_predictions.unsqueeze(-1).expand(
                 batch_size * self.beam_size, num_classes
@@ -190,20 +189,10 @@ class BeamSearch:
                 class_log_probabilities,
             )
 
-            print(cleaned_log_probabilities)
-            print(cleaned_log_probabilities.shape)
-            print(cleaned_log_probabilities[0, :])
-            print("above: cleaned")
             # shape (both): (batch_size * beam_size, per_node_beam_size)
             top_log_probabilities, predicted_classes = torch.topk(
                 cleaned_log_probabilities, self.per_node_beam_size
             )
-
-            print("top_log_probabilities:")
-            print(top_log_probabilities)
-            print(top_log_probabilities.shape)
-            print("predicted classes:")
-            print(predicted_classes)
 
             # Here we expand the last log probabilities to (batch_size * beam_size, per_node_beam_size)
             # so that we can add them to the current log probs for this timestep.
@@ -217,12 +206,6 @@ class BeamSearch:
 
             # shape: (batch_size * beam_size, per_node_beam_size)
             summed_top_log_probabilities = top_log_probabilities + expanded_last_log_probabilities
-            print(expanded_last_log_probabilities)
-            print()
-            print(summed_top_log_probabilities)
-            print()
-            print(self._end_index)
-            exit()
 
             # shape: (batch_size, beam_size * per_node_beam_size)
             reshaped_summed = summed_top_log_probabilities.reshape(

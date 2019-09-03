@@ -126,7 +126,12 @@ class Seq2SeqTask(SequenceGenerationTask):
             relevant_logits = logits.max(2)[1][:, : labels.shape[1]]
             self.scorer2(relevant_logits, labels, tagmask)
         else:
-            predictions = predictions[:, 0, : labels.shape[1]]
+            if labels.shape[1] < predictions.shape[2]:
+                predictions = predictions[:, 0, : labels.shape[1]]
+            else:
+                predictions = predictions[:, 0, :]
+                labels = labels[:, : predictions.shape[1]]
+                tagmask = tagmask[:, : predictions.shape[1]]
             self.scorer2(predictions, labels, tagmask)
         return
 

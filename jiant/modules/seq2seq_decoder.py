@@ -1,8 +1,6 @@
 # This is a slightly modified version of the AllenNLP SimpleSeq2Seq class:
 # https://github.com/allenai/allennlp/blob/master/allennlp/models/encoder_decoders/simple_seq2seq.py  # noqa
 
-# TODO: Include beam search.
-
 import logging as log
 from typing import Dict, Tuple
 
@@ -14,6 +12,7 @@ from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.token_embedders import Embedding
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 from overrides import overrides
+from torch.nn.functional import log_softmax
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.rnn import LSTMCell
 
@@ -159,8 +158,9 @@ class Seq2SeqDecoder(Model):
 
         # (batch_size, num_classes)
         step_logit = output_projections
+        log_probs = log_softmax(step_logit)
 
-        return step_logit, state
+        return log_probs, state
 
     def _forward_beam_search(self, state: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Make forward pass during prediction using a beam search."""
@@ -174,9 +174,6 @@ class Seq2SeqDecoder(Model):
         all_top_k_predictions, log_probabilities = self._beam_search.search(
             start_predictions, state, self.take_step
         )
-
-        print(log_probabilities)
-        exit()
 
         output_dict = {"log_probabilities": log_probabilities, "predictions": all_top_k_predictions}
         return output_dict
