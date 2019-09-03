@@ -160,7 +160,7 @@ class Seq2SeqDecoder(Model):
         # (batch_size, num_classes)
         step_logit = output_projections
         print(step_logit)
-        exit()
+        print()
 
         return step_logit, state
 
@@ -176,6 +176,9 @@ class Seq2SeqDecoder(Model):
         all_top_k_predictions, log_probabilities = self._beam_search.search(
             start_predictions, state, self.take_step
         )
+        
+        print(log_probabilities)
+        exit()
 
         output_dict = {"log_probabilities": log_probabilities, "predictions": all_top_k_predictions}
         return output_dict
