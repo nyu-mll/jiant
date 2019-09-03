@@ -1009,9 +1009,16 @@ class MultiTaskModel(nn.Module):
             # logits: batch_size * seq_len * tgt_voc_size
             target = batch["targs"]["words"][:, 1:].contiguous()
             target_mask = out["target_mask"]
-            logits = out["logits"]
-            task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
 
+            assert "logits" in out or "predictions" in out
+
+            if "logits" in out:
+                logits = out["logits"]
+                task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
+            else:
+                task.update_metrics(
+                    None, target, target_mask[:, 1:].contiguous(), out["predictions"]
+                )
         if predict:
             pass
 
@@ -1274,7 +1281,7 @@ def input_module_uses_pair_embedding(input_module):
 def input_module_uses_mirrored_pair(input_module):
     """
     This function tells whether the input model uses raw pair and mirrored pair simutaneously when
-    running on symmetrical pair tasks, like what GPT do on STS-B 
+    running on symmetrical pair tasks, like what GPT do on STS-B
     """
     return (
         input_module.startswith("openai-gpt")

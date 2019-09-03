@@ -3,6 +3,7 @@ import codecs
 import collections
 import math
 import os
+import torch
 from typing import Iterable, List, Sequence, Type
 
 from allennlp.data import Instance
@@ -118,9 +119,15 @@ class Seq2SeqTask(SequenceGenerationTask):
         acc = self.scorer2.get_metric(reset)
         return {"perplexity": math.exp(avg_nll), "accuracy": acc}
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        relevant_logits = logits.max(2)[1][:, : labels.shape[1]]
-        self.scorer2(relevant_logits, labels, tagmask)
+    def update_metrics(self, logits, labels, tagmask=None, predictions=None):
+        assert logits is not None or predictions is not None
+
+        if logits is not None:
+            relevant_logits = logits.max(2)[1][:, : labels.shape[1]]
+            self.scorer2(relevant_logits, labels, tagmask)
+        else:
+            predictions = predictions[:, 0, : labels.shape[1]]
+            self.scorer2(predictions, labels, tagmask)
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):

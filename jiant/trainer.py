@@ -862,14 +862,18 @@ class SamplingMultiTaskTrainer:
                         )
                         inputs = batch["inputs"]["words"][0][1:]
                         gold = batch["targs"]["words"][0][1:]
-                        logits = out["logits"]
-                        output = logits.max(2)[1][0]
-                        input_string, gold_string, output_string = task.get_prediction(
-                            voc_src, voc_trg, inputs, gold, output
-                        )
-                        log.info("\tInput:\t%s", input_string)
-                        log.info("\tGold:\t%s", gold_string)
-                        log.info("\tOutput:\t%s", output_string)
+                        # logits = out["logits"]
+                        # output = logits.max(2)[1][0]
+
+                        for i in range(out["predictions"].shape[1]):
+                            output = out["predictions"][0][i]
+                            input_string, gold_string, output_string = task.get_prediction(
+                                voc_src, voc_trg, inputs, gold, output
+                            )
+                            if i == 0:
+                                log.info("\tInput:\t%s", input_string)
+                                log.info("\tGold:\t%s", gold_string)
+                            log.info("\tOutput:\t%s", output_string)
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
