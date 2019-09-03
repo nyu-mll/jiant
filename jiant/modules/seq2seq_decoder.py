@@ -39,7 +39,7 @@ class Seq2SeqDecoder(Model):
         attention: str = "none",
         dropout: float = 0.0,
         scheduled_sampling_ratio: float = 0.0,
-        beam_size=10,
+        beam_size=3,
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
 
@@ -159,6 +159,8 @@ class Seq2SeqDecoder(Model):
 
         # (batch_size, num_classes)
         step_logit = output_projections
+        print(step_logit)
+        exit()
 
         return step_logit, state
 
@@ -183,8 +185,7 @@ class Seq2SeqDecoder(Model):
         self,  # type: ignore
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
-        target_tokens: Dict[str, torch.LongTensor] = None,
-        beam_size=3,
+        target_tokens: Dict[str, torch.LongTensor] = None
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
