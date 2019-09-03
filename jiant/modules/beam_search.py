@@ -197,6 +197,12 @@ class BeamSearch:
 
             # shape: (batch_size * beam_size, per_node_beam_size)
             summed_top_log_probabilities = top_log_probabilities + expanded_last_log_probabilities
+            print(expanded_last_log_probabilities)
+            print()
+            print(summed_top_log_probabilities)
+            print()
+            print(self._end_index)
+            exit()
 
             # shape: (batch_size, beam_size * per_node_beam_size)
             reshaped_summed = summed_top_log_probabilities.\
