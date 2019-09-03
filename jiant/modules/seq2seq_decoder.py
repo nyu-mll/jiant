@@ -21,6 +21,7 @@ from jiant.modules.simple_modules import Pooler
 from jiant.modules.attention import BahdanauAttention
 from jiant.modules.beam_search import BeamSearch
 
+
 class Seq2SeqDecoder(Model):
     """
     This is a slightly modified version of AllenNLP SimpleSeq2Seq class
@@ -158,10 +159,6 @@ class Seq2SeqDecoder(Model):
 
         # (batch_size, num_classes)
         step_logit = output_projections
-        print(step_logit)
-        print()
-        print(step_logit.shape)
-        exit()
 
         return step_logit, state
 
@@ -177,7 +174,7 @@ class Seq2SeqDecoder(Model):
         all_top_k_predictions, log_probabilities = self._beam_search.search(
             start_predictions, state, self.take_step
         )
-        
+
         print(log_probabilities)
         exit()
 
@@ -189,7 +186,7 @@ class Seq2SeqDecoder(Model):
         self,  # type: ignore
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
-        target_tokens: Dict[str, torch.LongTensor] = None
+        target_tokens: Dict[str, torch.LongTensor] = None,
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
