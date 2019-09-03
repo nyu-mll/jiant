@@ -39,7 +39,7 @@ class Seq2SeqDecoder(Model):
         attention: str = "none",
         dropout: float = 0.0,
         scheduled_sampling_ratio: float = 0.0,
-        beam_size = 10
+        beam_size=10,
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
 
@@ -108,10 +108,10 @@ class Seq2SeqDecoder(Model):
         self._dropout = torch.nn.Dropout(p=dropout)
 
         # At prediction time, we'll use a beam search to find the best target sequence.
-        self._beam_search = BeamSearch(self._end_index, max_steps=max_decoding_steps,
-                                       beam_size=beam_size)
-    
-    
+        self._beam_search = BeamSearch(
+            self._end_index, max_steps=max_decoding_steps, beam_size=beam_size
+        )
+
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
         """
         Initialization of the decoder state, based on the encoder output.
@@ -140,14 +140,16 @@ class Seq2SeqDecoder(Model):
     def _forward_beam_search(self, state: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Make forward pass during prediction using a beam search."""
         batch_size = state["encoder_outputs_mask"].size()[0]
-        start_predictions = state["encoder_outputs_mask"].new_full((batch_size,), fill_value=self._start_index)
-        print(start_predictions.shape)
-        exit()
+        start_predictions = state["encoder_outputs_mask"].new_full(
+            (batch_size,), fill_value=self._start_index
+        )
+
         # shape (all_top_k_predictions): (batch_size, beam_size, num_decoding_steps)
         # shape (log_probabilities): (batch_size, beam_size)
         all_top_k_predictions, log_probabilities = self._beam_search.search(
-            start_predictions, state, self.take_step)
-            
+            start_predictions, state, self.take_step
+        )
+
         output_dict = {
             "class_log_probabilities": log_probabilities,
             "predictions": all_top_k_predictions,
@@ -160,7 +162,7 @@ class Seq2SeqDecoder(Model):
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
         target_tokens: Dict[str, torch.LongTensor] = None,
-        beam_size = 3
+        beam_size=3,
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
@@ -195,15 +197,13 @@ class Seq2SeqDecoder(Model):
             "encoder_outputs_mask": encoder_outputs_mask,
             "encoder_outputs": encoder_outputs,
             "decoder_hidden": decoder_hidden,
-            "decoder_context": decoder_context
+            "decoder_context": decoder_context,
         }
 
         self._forward_beam_search(state)
         print("done")
         exit()
-        
-        
-        
+
         step_logits = []
 
         for timestep in range(num_decoding_steps):
