@@ -274,11 +274,10 @@ class ReCoRDTask(Task):
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
             placeholder_loc = len(
-                tokenize_and_truncate(self.tokenizer_name, sent_parts[0], self.max_seq_len)
+                tokenize_and_truncate(self.tokenizer_name, sent_parts[0], self.max_seq_len - 1)
             )
-            sent_tok = tokenize_and_truncate(self.tokenizer_name, sent, self.max_seq_len)
-            sent_tok.insert(placeholder_loc, "@placeholder")
-            return sent_tok
+            sent_tok = tokenize_and_truncate(self.tokenizer_name, sent, self.max_seq_len - 1)
+            return sent_tok[:placeholder_loc] + ["@placeholder"] + sent_tok[placeholder_loc:]
 
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
