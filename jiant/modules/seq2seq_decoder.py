@@ -38,7 +38,7 @@ class Seq2SeqDecoder(Model):
         attention: str = "none",
         dropout: float = 0.0,
         scheduled_sampling_ratio: float = 0.0,
-        beam_size=3,
+        beam_size = 10,
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
 

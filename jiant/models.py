@@ -568,6 +568,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
                 "attention": args.s2s["attention"],
                 "dropout": args.dropout,
                 "scheduled_sampling_ratio": 0.0,
+                "beam_size": args.s2s["beam_size"]
             }
         )
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
