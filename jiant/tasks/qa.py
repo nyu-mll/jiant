@@ -274,9 +274,13 @@ class ReCoRDTask(Task):
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
             placeholder_loc = len(
-                tokenize_and_truncate(self.tokenizer_name, sent_parts[0], self.max_seq_len - max_ent_length)
+                tokenize_and_truncate(
+                    self.tokenizer_name, sent_parts[0], self.max_seq_len - max_ent_length
+                )
             )
-            sent_tok = tokenize_and_truncate(self.tokenizer_name, sent, self.max_seq_len - max_ent_length)
+            sent_tok = tokenize_and_truncate(
+                self.tokenizer_name, sent, self.max_seq_len - max_ent_length
+            )
             return sent_tok[:placeholder_loc] + ["@placeholder"] + sent_tok[placeholder_loc:]
 
         examples = []
