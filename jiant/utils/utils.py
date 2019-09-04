@@ -34,7 +34,7 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
-def get_output_attribute(out, attribute_name, cuda_device):
+def get_output_attribute(out, attribute_name, use_cuda):
     """
     This function handles processing/reduction of output for both 
     DataParallel or non-DataParallel situations. 
@@ -46,15 +46,15 @@ def get_output_attribute(out, attribute_name, cuda_device):
     ---------------------
     out: Dictionary, output of model during forward pass, 
     attribute_name: str, 
-    cuda_device: int or list[int], list of GPU ids 
+    use_cuda: bool
     """
-    if isinstance(cuda_device, list):
+    if use_cuda:
         return out[attribute_name].sum()
     else:
         return out[attribute_name]
 
 
-def get_model_attribute(model, attribute_name, cuda_device):
+def get_model_attribute(model, attribute_name, use_cuda):
     """
         Getter function for both CPU and GPU. 
 
@@ -67,7 +67,8 @@ def get_model_attribute(model, attribute_name, cuda_device):
         --------------------
         The attribute object from the model. 
     """
-    if isinstance(cuda_device, list):
+    # maybe we should do (int, list)
+    if use_cuda:
         return getattr(model.module, attribute_name)
     else:
         return getattr(model, attribute_name)
@@ -323,7 +324,7 @@ def select_task_specific_args(exp_args, diff_args):
     return diff_args
 
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
+def load_model_state(model, state_path, skip_task_models=[], strict=True):
     """ Helper function to load a model state
 
     Parameters
@@ -337,7 +338,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     """
-    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    model_state = torch.load(state_path)
 
     assert_for_log(
         not (skip_task_models and strict),

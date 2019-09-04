@@ -14,7 +14,6 @@ import torch
 from allennlp.common import Params  # pylint: disable=import-error
 from allennlp.common.checks import ConfigurationError  # pylint: disable=import-error
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
-from allennlp.nn.util import device_mapping, move_to_device
 from allennlp.training.learning_rate_schedulers import (  # pylint: disable=import-error
     LearningRateScheduler,
 )
@@ -35,7 +34,7 @@ from jiant.utils.utils import (
 )  # pylint: disable=import-error
 
 
-def build_trainer_params(args, task_names, phase="pretrain"):
+def build_trainer_params(args, use_cuda, cuda_device, task_names, phase="pretrain"):
     """ Helper function which extracts trainer parameters from args.
     In particular, we want to search args for task specific training parameters.
     """
@@ -88,12 +87,15 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         if phase == "target_train"
         else args.pretrain_data_fraction,
     )
-
+    params["use_cuda"] = use_cuda
+    params["cuda"] = cuda_device
     return Params(params)
 
 
 def build_trainer(
     args,
+    cuda_device, 
+    use_cuda, 
     task_names,
     model,
     run_dir,
@@ -114,7 +116,7 @@ def build_trainer(
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     """
-    params = build_trainer_params(args, task_names, phase)
+    params = build_trainer_params(args, use_cuda, cuda_device, task_names, phase)
 
     opt_params = {"type": params["optimizer"], "lr": params["lr"]}
     if params["optimizer"] == "adam":
@@ -153,12 +155,14 @@ def build_trainer(
             "max_epochs": params["max_epochs"],
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
+            "use_cuda":params["use_cuda"]
         }
     )
     assert (
         train_type == "SamplingMultiTaskTrainer"
     ), "We currently only support SamplingMultiTaskTrainer"
     if train_type == "SamplingMultiTaskTrainer":
+        import pdb; pdb.set_trace()
         trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
@@ -172,6 +176,7 @@ class SamplingMultiTaskTrainer:
         max_vals=50,
         serialization_dir=None,
         cuda_device=-1,
+        use_cuda=0,
         grad_norm=None,
         grad_clipping=None,
         lr_decay=None,
@@ -227,6 +232,7 @@ class SamplingMultiTaskTrainer:
         self._val_interval = val_interval
         self._serialization_dir = serialization_dir
         self._cuda_device = cuda_device
+        self.use_cuda = use_cuda
         self._grad_norm = grad_norm
         self._grad_clipping = grad_clipping
         self._lr_decay = lr_decay
@@ -240,8 +246,8 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = None
 
         self._log_interval = 10  # seconds
-        if self._cuda_device >= 0:
-            self._model = self._model.cuda(self._cuda_device)
+        if self.use_cuda:
+            self._model = self._model.cuda()
 
         self._TB_dir = None
         if self._serialization_dir is not None:
@@ -328,7 +334,7 @@ class SamplingMultiTaskTrainer:
                 biggest_batch_first=True,
             )
             tr_generator = iterator(task.train_data, num_epochs=None)
-            tr_generator = move_to_device(tr_generator, self._cuda_device)
+            tr_generator = tr_generator
             task_info["iterator"] = iterator
 
             if phase == "pretrain":
@@ -600,7 +606,7 @@ class SamplingMultiTaskTrainer:
                 assert_for_log(
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
-                loss = get_output_attribute(output_dict, "loss")  # optionally scale loss
+                loss = get_output_attribute(output_dict, "loss", self.use_cuda)  # optionally scale loss
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
@@ -644,8 +650,8 @@ class SamplingMultiTaskTrainer:
                 )
                 task_info["last_log"] = time.time()
 
-                if get_model_attribute(self._model, "utilization") is not None:
-                    batch_util = get_model_attribute(self._model, "utilization").get_metric()
+                if get_model_attribute(self._model, "utilization", self.use_cuda) is not None:
+                    batch_util = get_model_attribute(self._model, "utilization", self._cuda_device).get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
@@ -674,8 +680,8 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val,
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
-                if get_model_attribute(self._model, "utilization") is not None:
-                    batch_util = get_model_attribute(self._model, "utilization").get_metric(
+                if get_model_attribute(self._model, "utilization", self.use_cuda) is not None:
+                    batch_util = get_model_attribute(self._model, "utilization", self.use_cuda).get_metric(
                         reset=True
                     )
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
@@ -697,7 +703,7 @@ class SamplingMultiTaskTrainer:
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
-                elmo_params = get_model_attribute(self._model, "get_elmo_mixing_weights")(tasks)
+                elmo_params = get_model_attribute(self._model, "get_elmo_mixing_weights", self.use_cuda)(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
                         log.info("ELMo mixing weights for {}:".format(task_name))
@@ -846,7 +852,7 @@ class SamplingMultiTaskTrainer:
         val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
             task.val_data, num_epochs=1, shuffle=False
         )
-        val_generator = move_to_device(val_generator, self._cuda_device)
+        val_generator = val_generator
         n_val_batches = math.ceil(max_data_points / batch_size)
         all_val_metrics["%s_loss" % task.name] = 0.0
 
@@ -854,7 +860,7 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = get_output_attribute(out, "loss")
+            loss = get_output_attribute(out, "loss", self.use_cuda)
 
             if print_output:
                 if isinstance(task, Seq2SeqTask):
@@ -875,7 +881,7 @@ class SamplingMultiTaskTrainer:
                         log.info("\tOutput:\t%s", output_string)
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-            n_examples += get_output_attribute(out, "n_exs")
+            n_examples += get_output_attribute(out, "n_exs", self.use_cuda)
 
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
@@ -1035,7 +1041,7 @@ class SamplingMultiTaskTrainer:
         return should_stop
 
     def _forward(self, batch, task=None):
-        tensor_batch = move_to_device(batch, self._cuda_device)
+        tensor_batch = batch
         model_out = self._model.forward(task, tensor_batch)
         return model_out
 
@@ -1276,6 +1282,7 @@ class SamplingMultiTaskTrainer:
         max_epochs = params.pop("max_epochs", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
+        use_cuda = params.pop("use_cuda")
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(
@@ -1292,6 +1299,7 @@ class SamplingMultiTaskTrainer:
             keep_all_checkpoints=keep_all_checkpoints,
             val_data_limit=val_data_limit,
             max_epochs=max_epochs,
+            use_cuda=use_cuda, 
             dec_val_scale=dec_val_scale,
             training_data_fraction=training_data_fraction,
         )

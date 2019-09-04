@@ -411,12 +411,30 @@ def parse_task_list_arg(task_list):
             task_names.append(task_name)
     return task_names
 
+
 def parse_cuda_list_arg(cuda_list):
+    """
+    Parse cuda_list settings
+    """
+    result_cuda = []
+    use_cuda = 1
     if cuda_list == "auto":
         cuda_list = list(range(torch.cuda.device_count()))
+        return cuda_list, 1
+
+    if isinstance(cuda_list, list):
+        for device_id in cuda_list.split(","):
+            result_cuda.append(device_id)
+    elif isinstance(cuda_list, int):
+        result_cuda = [cuda_list]
+        if result_cuda[0] < 0:
+            use_cuda = 0
     else:
-        cuda_list = eval(cuda_list)
-    return cuda_list
+        raise EnvironmentError(
+            "Your cuda settings do not match any of the possibilities in defaults.conf"
+        )
+    return result_cuda, use_cuda
+
 
 def _get_task(name, args, data_path, scratch_path):
     """ Build or load a single task. """
