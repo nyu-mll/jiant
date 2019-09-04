@@ -187,7 +187,16 @@ class Seq2SeqDecoder(Model):
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
-        Decoder logic for producing the entire target sequence at train time.
+        Forward pass for the decoder.
+        
+        There are 3 possible modes:
+        1) Training: all metrics are computed given the last gold target tokens at each step
+        2) Validation [no training, but target tokens given]:
+               loss is computed given the gold target tokens;
+               accuracy/BLEU/etc. are computed using predicted tokens, no beam search
+        3) Test [no training, no target tokens given]:
+               loss is NOT computed (the returned loss is 0.0);
+               accuracy/BLEU/etc. are computed using predicted tokens, beam search is used
 
         Parameters
         ----------
@@ -197,9 +206,16 @@ class Seq2SeqDecoder(Model):
         """
         batch_size, _, _ = encoder_outputs.size()
 
-        use_gold = target_tokens is not None and self.training
+        if self.training:
+            assert target_tokens
+            mode = "train"
+        elif target_tokens is not None:
+            assert target_tokens
+            mode = "valid"
+        else:
+            mode = "test"
 
-        if use_gold:
+        if mode == "train" or mode == "valid":
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
             num_decoding_steps = target_sequence_length - 1
@@ -210,7 +226,7 @@ class Seq2SeqDecoder(Model):
             encoder_outputs, encoder_outputs_mask
         )
 
-        if not self.training:
+        if mode == "valid" or mode == "test":
             # state for beam search
             state = {
                 "encoder_outputs_mask": encoder_outputs_mask,
@@ -219,17 +235,18 @@ class Seq2SeqDecoder(Model):
                 "decoder_context": decoder_context,
             }
 
-            output_dict = self._forward_beam_search(state)
+            beam_search_output = self._forward_beam_search(state)
             if target_tokens:
                 target_mask = get_text_field_mask(target_tokens)
-                output_dict["target_mask"] = target_mask
-            return output_dict
+                beam_search_output["target_mask"] = target_mask
+            if mode == "test":
+                return beam_search_output
 
         # The following is for training only.
         step_logits = []
 
         for timestep in range(num_decoding_steps):
-            if use_gold:
+            if mode == "train" or mode == "valid":
                 input_choices = targets[:, timestep]
             elif timestep == 0:
                 input_choices = torch.ones((batch_size,)) * self._start_index
@@ -256,7 +273,7 @@ class Seq2SeqDecoder(Model):
 
         output_dict = {"logits": logits}
 
-        if target_tokens:
+        if mode == "train" or mode == "valid":
             targets = target_tokens["words"]
             target_mask = get_text_field_mask(target_tokens)
             output_dict["target_mask"] = target_mask
@@ -264,6 +281,12 @@ class Seq2SeqDecoder(Model):
             loss = self._get_loss(relevant_logits, targets, target_mask)
             output_dict["loss"] = loss
 
+        print()
+        print(beam_search_output)
+        print()
+        print(output_dict)
+        print()
+        exit()
         return output_dict
 
     def _prepare_decode_step_input(
