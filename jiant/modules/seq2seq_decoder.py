@@ -38,7 +38,7 @@ class Seq2SeqDecoder(Model):
         attention: str = "none",
         dropout: float = 0.0,
         scheduled_sampling_ratio: float = 0.0,
-        beam_size = 10,
+        beam_size=10,
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
 
@@ -107,6 +107,7 @@ class Seq2SeqDecoder(Model):
         self._dropout = torch.nn.Dropout(p=dropout)
 
         # At prediction time, we'll use a beam search to find the best target sequence.
+        self.beam_size = beam_size
         self._beam_search = BeamSearch(
             self._end_index, max_steps=max_decoding_steps, beam_size=beam_size
         )
@@ -188,7 +189,7 @@ class Seq2SeqDecoder(Model):
         # pylint: disable=arguments-differ
         """
         Forward pass for the decoder.
-        
+
         There are 3 possible modes:
         1) Training: all metrics are computed given the last gold target tokens at each step
         2) Validation [no training, but target tokens given]:
@@ -234,24 +235,22 @@ class Seq2SeqDecoder(Model):
                 "decoder_hidden": decoder_hidden,
                 "decoder_context": decoder_context,
             }
-
+            if mode == "valid":
+                self._beam_search.beam_size = 1
             beam_search_output = self._forward_beam_search(state)
             if target_tokens:
                 target_mask = get_text_field_mask(target_tokens)
                 beam_search_output["target_mask"] = target_mask
-            if mode == "test":
+            if mode == "valid":
+                self._beam_search.beam_size = self.beam_size
+            else:
                 return beam_search_output
 
-        # The following is for training only.
+        # The following is for training and validation only.
         step_logits = []
 
         for timestep in range(num_decoding_steps):
-            if mode == "train" or mode == "valid":
-                input_choices = targets[:, timestep]
-            elif timestep == 0:
-                input_choices = torch.ones((batch_size,)) * self._start_index
-            else:
-                input_choices = torch.max(step_logits[-1], dim=2)[1].squeeze(1)
+            input_choices = targets[:, timestep]
             decoder_input = self._prepare_decode_step_input(
                 input_choices, decoder_hidden, encoder_outputs, encoder_outputs_mask
             )
@@ -273,20 +272,17 @@ class Seq2SeqDecoder(Model):
 
         output_dict = {"logits": logits}
 
-        if mode == "train" or mode == "valid":
-            targets = target_tokens["words"]
-            target_mask = get_text_field_mask(target_tokens)
-            output_dict["target_mask"] = target_mask
-            relevant_logits = logits[:, : targets.shape[1] - 1, :].contiguous()
-            loss = self._get_loss(relevant_logits, targets, target_mask)
-            output_dict["loss"] = loss
+        targets = target_tokens["words"]
+        target_mask = get_text_field_mask(target_tokens)
+        output_dict["target_mask"] = target_mask
+        relevant_logits = logits[:, : targets.shape[1] - 1, :].contiguous()
+        loss = self._get_loss(relevant_logits, targets, target_mask)
+        output_dict["loss"] = loss
 
-        print()
-        print(beam_search_output)
-        print()
-        print(output_dict)
-        print()
-        exit()
+        if mode == "valid":
+            output_dict["predictions"] = beam_search_output["predictions"]
+            output_dict["log_probabilities"] = beam_search_output["log_probabilities"]
+
         return output_dict
 
     def _prepare_decode_step_input(
