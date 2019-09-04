@@ -853,6 +853,7 @@ class SamplingMultiTaskTrainer:
                 out = self._forward(batch, task=task)
             if "loss" in out:
                 loss = out["loss"]
+                all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
 
             if print_output:
                 if isinstance(task, Seq2SeqTask):
@@ -876,7 +877,6 @@ class SamplingMultiTaskTrainer:
                                 log.info("\tGold:\t%s", gold_string)
                             log.info("\tOutput:\t%s", output_string)
 
-            all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
 
             # log
