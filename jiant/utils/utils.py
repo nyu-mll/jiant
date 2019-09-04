@@ -34,14 +34,27 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
-def get_output_attribute(out, attribute_name):
-    if torch.cuda.device_count() > 1:
+def get_output_attribute(out, attribute_name, cuda_device):
+    """
+    This function handles processing/reduction of output for both 
+    DataParallel or non-DataParallel situations. 
+    For the case of multiple GPUs, This functil will 
+    sum all values for a certain output attribute in various batches 
+    together.
+
+    Parameters 
+    ---------------------
+    out: Dictionary, output of model during forward pass, 
+    attribute_name: str, 
+    cuda_device: int or list[int], list of GPU ids 
+    """
+    if isinstance(cuda_device, list):
         return out[attribute_name].sum()
     else:
         return out[attribute_name]
 
 
-def get_model_attribute(model, attribute_name):
+def get_model_attribute(model, attribute_name, cuda_device):
     """
         Getter function for both CPU and GPU. 
 
@@ -54,7 +67,7 @@ def get_model_attribute(model, attribute_name):
         --------------------
         The attribute object from the model. 
     """
-    if torch.cuda.device_count() > 1:
+    if isinstance(cuda_device, list):
         return getattr(model.module, attribute_name)
     else:
         return getattr(model, attribute_name)

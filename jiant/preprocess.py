@@ -411,6 +411,12 @@ def parse_task_list_arg(task_list):
             task_names.append(task_name)
     return task_names
 
+def parse_cuda_list_arg(cuda_list):
+    if cuda_list == "auto":
+        cuda_list = list(range(torch.cuda.device_count()))
+    else:
+        cuda_list = eval(cuda_list)
+    return cuda_list
 
 def _get_task(name, args, data_path, scratch_path):
     """ Build or load a single task. """
