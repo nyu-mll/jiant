@@ -211,10 +211,7 @@ class Seq2SeqDecoder(Model):
         )
 
         if not self.training:
-            # TODO: put beam search here
-            # 1) make a state object
-            # 2) make a step function for beam search
-            # State for beam search.
+            # state for beam search
             state = {
                 "encoder_outputs_mask": encoder_outputs_mask,
                 "encoder_outputs": encoder_outputs,
@@ -223,12 +220,12 @@ class Seq2SeqDecoder(Model):
             }
 
             output_dict = self._forward_beam_search(state)
-            output_dict["loss"] = torch.tensor([-1.0])
             if target_tokens:
                 target_mask = get_text_field_mask(target_tokens)
                 output_dict["target_mask"] = target_mask
             return output_dict
 
+        # The following is for training only.
         step_logits = []
 
         for timestep in range(num_decoding_steps):
@@ -266,9 +263,6 @@ class Seq2SeqDecoder(Model):
             relevant_logits = logits[:, : targets.shape[1] - 1, :].contiguous()
             loss = self._get_loss(relevant_logits, targets, target_mask)
             output_dict["loss"] = loss
-        else:
-            # This is needed in case no gold target sequence is available.
-            output_dict["loss"] = torch.tensor([-1.0])
 
         return output_dict
 

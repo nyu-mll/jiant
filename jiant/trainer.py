@@ -661,7 +661,7 @@ class SamplingMultiTaskTrainer:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
-                        # updating loss from trianing.
+                        # Updating loss from training
                         all_tr_metrics["%s_loss" % task.name] = float(
                             task_info["loss"] / n_batches_since_val
                         )
@@ -851,7 +851,8 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = out["loss"]
+            if "loss" in out:
+                loss = out["loss"]
 
             if print_output:
                 if isinstance(task, Seq2SeqTask):
