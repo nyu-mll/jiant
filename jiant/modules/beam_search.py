@@ -1,3 +1,6 @@
+# This is a slightly modified version of the AllenNLP BeamSearch class:
+# https://github.com/allenai/allennlp/blob/master/allennlp/nn/beam_search.py
+
 from typing import List, Callable, Tuple, Dict
 import warnings
 
