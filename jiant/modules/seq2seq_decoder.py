@@ -17,6 +17,7 @@ from torch.nn.modules.rnn import LSTMCell
 
 from jiant.modules.simple_modules import Pooler
 from jiant.modules.attention import BahdanauAttention
+from jiant.utils.utils import SOS_TOK, EOS_TOK, UNK_TOK
 
 
 class Seq2SeqDecoder(Model):
@@ -44,9 +45,9 @@ class Seq2SeqDecoder(Model):
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
-        self._start_index = self.vocab.get_token_index("<SOS>", self._target_namespace)
-        self._end_index = self.vocab.get_token_index("<EOS>", self._target_namespace)
-        self._unk_index = self.vocab.get_token_index("@@UNKNOWN@@", self._target_namespace)
+        self._start_index = self.vocab.get_token_index(SOS_TOK, self._target_namespace)
+        self._end_index = self.vocab.get_token_index(EOS_TOK, self._target_namespace)
+        self._unk_index = self.vocab.get_token_index(UNK_TOK, self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
 
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
