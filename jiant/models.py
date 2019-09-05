@@ -201,7 +201,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         assert_for_log(
             args.skip_embs,
             "skip_embs is false and sent_enc is none, "
-            "which means that your token representations are zero-dimensional. Consider setting skip_embs.",
+            "which means that your token representations are zero-dimensional. "
+            "Consider setting skip_embs.",
         )
         phrase_layer = NullPhraseLayer(rnn_params["input_size"])
         sent_encoder = SentenceEncoder(
@@ -950,7 +951,8 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         if isinstance(task, (MRPCTask, STSBTask, QQPTask)) and self.uses_mirrored_pair:
             # Mirrored pair is a trick used by GPT-like models in similarity tasks
-            # TODO: Wic also falls into this type, although GPT paper didn't expeirment with this task
+            # TODO: Wic also falls into this type, although GPT paper didn't experiment
+            #       with this task
             sent, mask = self.sent_encoder(batch["inputs"], task)
             sent_m, mask_m = self.sent_encoder(batch["inputs_m"], task)
             logits = classifier(sent, mask) + classifier(sent_m, mask_m)

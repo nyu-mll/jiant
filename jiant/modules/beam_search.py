@@ -197,7 +197,7 @@ class BeamSearch:
                 cleaned_log_probabilities, self.per_node_beam_size
             )
 
-            # Here we expand the last log probabilities to (batch_size * beam_size, per_node_beam_size)
+            # We expand the last log probabilities to (batch_size * beam_size, per_node_beam_size)
             # so that we can add them to the current log probs for this timestep.
             # This lets us maintain the log probability of each element on the beam.
             # shape: (batch_size * beam_size, per_node_beam_size)

@@ -348,8 +348,8 @@ class SamplingMultiTaskTrainer:
             opt_params = copy.deepcopy(optimizer_params)
             if "t_total" in optimizer_params:
                 # If we know in advance how many opt steps there will be, set it so the LR scheduler
-                # can use that information. This should be the next validation after we hit the epoch
-                # limit.
+                # can use that information. This should be the next validation after we hit the
+                # epoch limit.
                 if self._max_epochs > 0:
                     max_epochs_in_vals = math.ceil(
                         (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
