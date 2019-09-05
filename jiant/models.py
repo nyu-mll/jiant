@@ -1019,7 +1019,8 @@ class MultiTaskModel(nn.Module):
 
             if "logits" in out:
                 logits = out["logits"]
-                task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
+                task.update_metrics(logits=logits, labels=target,
+                                    tagmask=target_mask[:, 1:].contiguous())
             else:
                 task.update_metrics(
                     None, target, target_mask[:, 1:].contiguous(), out["predictions"]
