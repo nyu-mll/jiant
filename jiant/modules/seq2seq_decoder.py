@@ -251,12 +251,7 @@ class Seq2SeqDecoder(Model):
         step_logits = []
 
         for timestep in range(num_decoding_steps):
-            if use_gold:
-                input_choices = targets[:, timestep]
-            elif timestep == 0:
-                input_choices = torch.ones((batch_size,)) * self._start_index
-            else:
-                input_choices = torch.max(step_logits[-1], dim=2)[1].squeeze(1)
+            input_choices = targets[:, timestep]
             decoder_input = self._prepare_decode_step_input(
                 input_choices, decoder_hidden, encoder_outputs, encoder_outputs_mask
             )

@@ -569,7 +569,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
                 "attention": args.s2s["attention"],
                 "dropout": args.dropout,
                 "scheduled_sampling_ratio": 0.0,
-                "beam_size": args.s2s["beam_size"]
+                "beam_size": args.s2s["beam_size"],
             }
         )
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
@@ -1238,7 +1238,7 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             if isinstance(task, ReCoRDTask):
-                # for ReCoRD, we want the logits to make
+                # For ReCoRD, we want the logits to make
                 # predictions across answer choices
                 # (which are spread across batches)
                 out["preds"] = logits
