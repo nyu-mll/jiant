@@ -864,8 +864,6 @@ class SamplingMultiTaskTrainer:
                         )
                         inputs = batch["inputs"]["words"][0][1:]
                         gold = batch["targs"]["words"][0][1:]
-                        # logits = out["logits"]
-                        # output = logits.max(2)[1][0]
 
                         for i in range(out["predictions"].shape[1]):
                             output = out["predictions"][0][i]

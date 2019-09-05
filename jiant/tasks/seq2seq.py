@@ -127,6 +127,7 @@ class Seq2SeqTask(SequenceGenerationTask):
             relevant_logits = logits.max(dim=2)[1][:, : labels.shape[1]]
             self.scorer2(relevant_logits, labels, tagmask)
         else:
+            # logits is None, predictions is not None
             if labels.shape[1] < predictions.shape[2]:
                 predictions = predictions[:, 0, : labels.shape[1]]
             else:

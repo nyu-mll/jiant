@@ -212,12 +212,11 @@ class Seq2SeqDecoder(Model):
             assert target_tokens
             mode = "train"
         elif target_tokens is not None:
-            assert target_tokens
-            mode = "valid"
+            mode = "validation"
         else:
             mode = "test"
 
-        if mode == "train" or mode == "valid":
+        if mode == "train" or mode == "validation":
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
             num_decoding_steps = target_sequence_length - 1
@@ -228,7 +227,7 @@ class Seq2SeqDecoder(Model):
             encoder_outputs, encoder_outputs_mask
         )
 
-        if mode == "valid" or mode == "test":
+        if mode == "validation" or mode == "test":
             # state for beam search
             state = {
                 "encoder_outputs_mask": encoder_outputs_mask,
@@ -236,13 +235,13 @@ class Seq2SeqDecoder(Model):
                 "decoder_hidden": decoder_hidden,
                 "decoder_context": decoder_context,
             }
-            if mode == "valid":
+            if mode == "validation":
                 self._beam_search.beam_size = 1
             beam_search_output = self._forward_beam_search(state)
             if target_tokens:
                 target_mask = get_text_field_mask(target_tokens)
                 beam_search_output["target_mask"] = target_mask
-            if mode == "valid":
+            if mode == "validation":
                 self._beam_search.beam_size = self.beam_size
             else:
                 return beam_search_output
@@ -280,7 +279,7 @@ class Seq2SeqDecoder(Model):
         loss = self._get_loss(relevant_logits, targets, target_mask)
         output_dict["loss"] = loss
 
-        if mode == "valid":
+        if mode == "validation":
             output_dict["predictions"] = beam_search_output["predictions"]
             output_dict["log_probabilities"] = beam_search_output["log_probabilities"]
 
