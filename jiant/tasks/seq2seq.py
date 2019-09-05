@@ -123,13 +123,15 @@ class Seq2SeqTask(SequenceGenerationTask):
         assert logits is not None or predictions is not None
 
         if logits is not None:
-            relevant_logits = logits.max(2)[1][:, : labels.shape[1]]
+            # Cut logits, since generation is done until max seq length (usually >> target length).
+            relevant_logits = logits.max(dim=2)[1][:, : labels.shape[1]]
             self.scorer2(relevant_logits, labels, tagmask)
         else:
             if labels.shape[1] < predictions.shape[2]:
                 predictions = predictions[:, 0, : labels.shape[1]]
             else:
                 predictions = predictions[:, 0, :]
+                # Cut labels if predictions (without gold target) are shorter.
                 labels = labels[:, : predictions.shape[1]]
                 tagmask = tagmask[:, : predictions.shape[1]]
             self.scorer2(predictions, labels, tagmask)
