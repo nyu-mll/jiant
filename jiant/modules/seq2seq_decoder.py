@@ -17,7 +17,7 @@ from torch.nn.modules.rnn import LSTMCell
 
 from jiant.modules.simple_modules import Pooler
 from jiant.modules.attention import BahdanauAttention
-from jiant.utils.utils import SOS_TOK, EOS_TOK, UNK_TOK
+from jiant.preprocess import SOS_TOK, EOS_TOK, UNK_TOK
 
 
 class Seq2SeqDecoder(Model):
