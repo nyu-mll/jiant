@@ -1046,8 +1046,7 @@ class SamplingMultiTaskTrainer:
         return should_stop
 
     def _forward(self, batch, task=None):
-        tensor_batch = batch
-        model_out = self._model.forward(task, tensor_batch)
+        model_out = self._model.forward(task, batch)
         return model_out
 
     def _description_from_metrics(self, metrics):

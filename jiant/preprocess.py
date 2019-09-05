@@ -412,21 +412,21 @@ def parse_task_list_arg(task_list):
     return task_names
 
 
-def parse_cuda_list_arg(cuda_list):
+def parse_cuda_list_arg(cuda_arg):
     """
-    Parse cuda_list settings
+    Parse GPU settings.
     """
     result_cuda = []
     use_cuda = 1
-    if cuda_list == "auto":
-        cuda_list = list(range(torch.cuda.device_count()))
-        return cuda_list, 1
-    if isinstance(cuda_list, int):
-        result_cuda = [cuda_list]
+    if cuda_arg == "auto":
+        result_cuda = list(range(torch.cuda.device_count()))
+        return result_cuda, use_cuda
+    if isinstance(cuda_arg, int):
+        result_cuda = [cuda_arg]
         if result_cuda[0] < 0:
             use_cuda = 0
-    elif "," in cuda_list:
-        for device_id in cuda_list.split(","):
+    elif len(cuda_arg.split(",")) > 1:
+        for device_id in cuda_arg.split(","):
             result_cuda.append(int(device_id))
     else:
         raise EnvironmentError(

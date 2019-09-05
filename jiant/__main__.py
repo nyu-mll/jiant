@@ -1,5 +1,7 @@
-"""Train a multi-task model using AllenNLP
+"""Main flow for jiant. 
+
 To debug this, run with -m ipdb:
+
     ipdb3 jiant/__main__.py  --config_file ...
 """
 # pylint: disable=no-member
@@ -93,6 +95,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
     1) If load_target_train_checkpoint is used, then load the weights from that checkpoint.
     2) If we did pretraining, then load the best model from pretraining.
     3) Default case: we save untrained encoder weights.
+
     Parameters
     ----------------
     args: Params object
@@ -125,11 +128,13 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     Checks configurations for any obvious logical flaws
     and that necessary parameters are set for each step -
     throws asserts and exits if found.
+
     Parameters
     ----------------
     args: Params object
     pretrain_tasks: list of pretraining Task objects
     target_tasks: list of target task training Task objects
+
     Returns
     ----------------
     None
@@ -319,10 +324,12 @@ def evaluate_and_write(args, model, tasks, splits_to_write, use_cuda):
 def initial_setup(args, cl_args):
     """
     Sets up email hook, creating seed, and cuda settings.
+
     Parameters
     ----------------
     args: Params object
     cl_args: list of arguments
+
     Returns
     ----------------
     tasks: list of Task objects
@@ -442,6 +449,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cu
         Function that reloads model if necessary and extracts trainable parts
         of the model in preparation for target_task training.
         It only reloads model after the first task is trained.
+
         Parameters
         -------------------
         args: config.Param object,
@@ -449,9 +457,11 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cu
         model: MultiTaskModel object,
         strict: bool,
         task: Task object
+
         Returns
         -------------------
         to_train: List of tuples of (name, weight) of trainable parameters
+        
     """
 
     if args.transfer_paradigm == "finetune":
