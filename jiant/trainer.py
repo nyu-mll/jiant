@@ -94,8 +94,8 @@ def build_trainer_params(args, use_cuda, cuda_device, task_names, phase="pretrai
 
 def build_trainer(
     args,
-    cuda_device, 
-    use_cuda, 
+    cuda_device,
+    use_cuda,
     task_names,
     model,
     run_dir,
@@ -155,14 +155,13 @@ def build_trainer(
             "max_epochs": params["max_epochs"],
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
-            "use_cuda":params["use_cuda"]
+            "use_cuda": params["use_cuda"],
         }
     )
     assert (
         train_type == "SamplingMultiTaskTrainer"
     ), "We currently only support SamplingMultiTaskTrainer"
     if train_type == "SamplingMultiTaskTrainer":
-        import pdb; pdb.set_trace()
         trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
@@ -606,7 +605,9 @@ class SamplingMultiTaskTrainer:
                 assert_for_log(
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
-                loss = get_output_attribute(output_dict, "loss", self.use_cuda)  # optionally scale loss
+                loss = get_output_attribute(
+                    output_dict, "loss", self.use_cuda
+                )  # optionally scale loss
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
@@ -651,7 +652,9 @@ class SamplingMultiTaskTrainer:
                 task_info["last_log"] = time.time()
 
                 if get_model_attribute(self._model, "utilization", self.use_cuda) is not None:
-                    batch_util = get_model_attribute(self._model, "utilization", self._cuda_device).get_metric()
+                    batch_util = get_model_attribute(
+                        self._model, "utilization", self._cuda_device
+                    ).get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
@@ -681,9 +684,9 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
                 if get_model_attribute(self._model, "utilization", self.use_cuda) is not None:
-                    batch_util = get_model_attribute(self._model, "utilization", self.use_cuda).get_metric(
-                        reset=True
-                    )
+                    batch_util = get_model_attribute(
+                        self._model, "utilization", self.use_cuda
+                    ).get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
                 # Validate
@@ -703,7 +706,9 @@ class SamplingMultiTaskTrainer:
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
-                elmo_params = get_model_attribute(self._model, "get_elmo_mixing_weights", self.use_cuda)(tasks)
+                elmo_params = get_model_attribute(
+                    self._model, "get_elmo_mixing_weights", self.use_cuda
+                )(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
                         log.info("ELMo mixing weights for {}:".format(task_name))
@@ -1299,7 +1304,7 @@ class SamplingMultiTaskTrainer:
             keep_all_checkpoints=keep_all_checkpoints,
             val_data_limit=val_data_limit,
             max_epochs=max_epochs,
-            use_cuda=use_cuda, 
+            use_cuda=use_cuda,
             dec_val_scale=dec_val_scale,
             training_data_fraction=training_data_fraction,
         )

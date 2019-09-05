@@ -421,14 +421,13 @@ def parse_cuda_list_arg(cuda_list):
     if cuda_list == "auto":
         cuda_list = list(range(torch.cuda.device_count()))
         return cuda_list, 1
-
-    if isinstance(cuda_list, list):
-        for device_id in cuda_list.split(","):
-            result_cuda.append(device_id)
-    elif isinstance(cuda_list, int):
+    if isinstance(cuda_list, int):
         result_cuda = [cuda_list]
         if result_cuda[0] < 0:
             use_cuda = 0
+    elif "," in cuda_list:
+        for device_id in cuda_list.split(","):
+            result_cuda.append(int(device_id))
     else:
         raise EnvironmentError(
             "Your cuda settings do not match any of the possibilities in defaults.conf"
