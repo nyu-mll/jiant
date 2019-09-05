@@ -1019,8 +1019,9 @@ class MultiTaskModel(nn.Module):
 
             if "logits" in out:
                 logits = out["logits"]
-                task.update_metrics(logits=logits, labels=target,
-                                    tagmask=target_mask[:, 1:].contiguous())
+                task.update_metrics(
+                    logits=logits, labels=target, tagmask=target_mask[:, 1:].contiguous()
+                )
             else:
                 task.update_metrics(
                     None, target, target_mask[:, 1:].contiguous(), out["predictions"]
@@ -1058,7 +1059,7 @@ class MultiTaskModel(nn.Module):
             out["logits"] = logits
             targs = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
         if "mask" in batch:
-            # prevent backprop for tags generated for tokenization-introduced tokens
+            # Prevent backprop for tags generated for tokenization-introduced tokens
             # such as word boundaries
             mask = batch["mask"]
             batch_mask = [mask[i][:seq_len] for i in range(b_size)]
