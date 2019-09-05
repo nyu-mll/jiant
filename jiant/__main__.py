@@ -297,15 +297,15 @@ def get_best_checkpoint_path(args, phase, task_name=None):
     return None
 
 
-def evaluate_and_write(args, model, tasks, splits_to_write, cuda_device):
+def evaluate_and_write(args, model, tasks, splits_to_write, use_cuda):
     """ Evaluate a model on dev and/or test, then write predictions """
-    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, cuda_device, "val")
+    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, use_cuda, "val")
     if "val" in splits_to_write:
         evaluate.write_preds(
             tasks, val_preds, args.run_dir, "val", strict_glue_format=args.write_strict_glue_format
         )
     if "test" in splits_to_write:
-        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, cuda_device, "test")
+        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, use_cuda, "test")
         evaluate.write_preds(
             tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
         )
