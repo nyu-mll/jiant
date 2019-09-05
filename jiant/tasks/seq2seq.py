@@ -119,7 +119,8 @@ class Seq2SeqTask(SequenceGenerationTask):
         return {"perplexity": math.exp(avg_nll), "accuracy": acc}
 
     def update_metrics(self, logits, labels, tagmask=None):
-        relevant_logits = logits.max(2)[1][:, : labels.shape[1]]
+        # Cut logits, since generation is done until max seq length (usually >> target length).
+        relevant_logits = logits.max(dim=2)[1][:, : labels.shape[1]]
         self.scorer2(relevant_logits, labels, tagmask)
         return
 
