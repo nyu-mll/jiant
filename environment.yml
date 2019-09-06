@@ -43,4 +43,4 @@ dependencies:
         # directly requires 1.0 to support XLNet and WWM-BERT.
         # This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
         - sacremoses
-        - pytorch-transformers==1.1.0
+        - pytorch-transformers==1.2.0
