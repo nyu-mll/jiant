@@ -358,7 +358,7 @@ def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, 
 
 
 def align_bpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
-    """Alignment fn for BPE tokenizer, used in GPT
+    """Alignment fn for BPE tokenizer, used in GPT and XLM
     """
     eow_tokens = space_tokenize_with_eow(text.lower())
     bpe_tokenizer = get_tokenizer(tokenizer_name)
