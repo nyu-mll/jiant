@@ -319,6 +319,8 @@ def space_tokenize_with_bow(sentence):
 
 
 def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
+    """Aligner fn for Moses tokenizer, used in Transformer-XL
+    """
     MosesTokenizer = get_tokenizer("MosesTokenizer")
     moses_tokens = MosesTokenizer.tokenize(text)
     cleaned_moses_tokens = unescape_moses(moses_tokens)
@@ -327,6 +329,8 @@ def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
 
 
 def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+    """Alignment fn for WPM tokenizer, used in BERT
+    """
     # If using lowercase, do this for the source tokens for better matching.
     do_lower_case = tokenizer_name.endswith("uncased")
     bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else text)
@@ -340,6 +344,8 @@ def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]
 
 
 def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+    """Alignment fn for SentencePiece Tokenizer, used in XLNET
+    """
     bow_tokens = space_tokenize_with_bow(text)
     sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
     sentencepiece_tokens = sentencepiece_tokenizer.tokenize(text)
@@ -352,6 +358,8 @@ def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, 
 
 
 def align_bpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+    """Alignment fn for BPE tokenizer, used in GPT
+    """
     eow_tokens = space_tokenize_with_eow(text.lower())
     bpe_tokenizer = get_tokenizer(tokenizer_name)
     bpe_tokens = bpe_tokenizer.tokenize(text)
@@ -360,6 +368,8 @@ def align_bpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]
 
 
 def align_bytebpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+    """Alignment fn for Byte-level BPE tokenizer, used in GPT-2 and RoBERTa
+    """
     bow_tokens = space_tokenize_with_bow(text)
     bytebpe_tokenizer = get_tokenizer(tokenizer_name)
     bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
@@ -372,6 +382,12 @@ def align_bytebpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[T
 
 
 def get_aligner_fn(tokenizer_name: Text):
+    """Given the tokenzier_name, return the corresponding alignment function.
+    An alignment function modified the tokenized input to make it close to source token,
+    and choose a space tokenizer with its word-boundary at the same side as tokenizer_name,
+    hence the source (from space tokenizer) and target (from tokenizer_name) is sufficiently close.
+    Use TokenAligner to project token index from source to target.
+    """
     if tokenizer_name == "MosesTokenizer" or tokenizer_name.startswith("transfo-xl-"):
         return align_moses
     elif tokenizer_name.startswith("bert-"):
