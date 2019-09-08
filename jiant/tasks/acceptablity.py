@@ -15,7 +15,7 @@ from allennlp.training.metrics import CategoricalAccuracy
 from jiant.allennlp_mods.correlation import Correlation
 from jiant.allennlp_mods.numeric_field import NumericField
 from jiant.utils import utils
-from jiant.utils.data_loaders import load_span_data, load_tsv, tokenize_and_truncate, TagManager
+from jiant.utils.data_loaders import load_span_data, load_tsv, tokenize_and_truncate, TagVocab
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task  # global task registry
 from jiant.metrics.winogender_metrics import GenderParity
@@ -160,7 +160,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.scorer2 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2]
 
-        self.tag_manager = TagManager()
+        self.tag_vocab = TagVocab()
         self.tag_list = None
         self.tag_scorers1 = None
         self.tag_scorers2 = None
@@ -177,7 +177,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             label_idx=2,
             skip_rows=1,
             tag2idx_dict={"Domain": 1},
-            tag_manager=self.tag_manager,
+            tag_vocab=self.tag_vocab,
         )
         val_data = load_tsv(
             tokenizer_name=self._tokenizer_name,
@@ -205,7 +205,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
                 "Determiner": 17,
                 "Violations": 18,
             },
-            tag_manager=self.tag_manager,
+            tag_vocab=self.tag_vocab,
         )
         te_data = load_tsv(
             tokenizer_name=self._tokenizer_name,
@@ -216,14 +216,14 @@ class CoLAAnalysisTask(SingleClassificationTask):
             label_idx=2,
             skip_rows=1,
             tag2idx_dict={"Domain": 1},
-            tag_manager=self.tag_manager,
+            tag_vocab=self.tag_vocab,
         )
         self.train_data_text = tr_data[:1] + tr_data[2:]
         self.val_data_text = val_data[:1] + val_data[2:]
         self.test_data_text = te_data[:1] + te_data[2:]
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         # Create score for each tag from tag-index dict
-        self.tag_list = self.tag_managerget_tag_list()
+        self.tag_list = self.tag_vocabget_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews"
         )
@@ -295,7 +295,7 @@ class NPIClozePairTask(PairClassificationTask):
         self.scorer2 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2]
 
-        self.tag_manager = TagManager()
+        self.tag_vocab = TagVocab()
         self.tag_list = None
         self.tag_scorers1 = None
         self.tag_scorers2 = None
@@ -310,13 +310,13 @@ class NPIClozePairTask(PairClassificationTask):
             s2_idx=2,
             label_idx=3,
             tag2idx_dict={"source": 0, "condition": 4},
-            tag_manager=self.tag_manager,
+            tag_vocab=self.tag_vocab,
         )
         self.val_data_text = self.test_data_text = self.train_data_text
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
         # Create score for each tag from tag-index dict
-        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_list = self.tag_vocab.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews"
         )
@@ -409,7 +409,7 @@ class NPIMinimalPairTask(PairClassificationTask):
         self.scorer3 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2, self.scorer3]
 
-        self.tag_manager = TagManager()
+        self.tag_vocab = TagVocab()
         self.tag_list = None
         self.tag_scorers1 = None
         self.tag_scorers2 = None
@@ -425,11 +425,11 @@ class NPIMinimalPairTask(PairClassificationTask):
             s2_idx=2,
             label_idx=3,
             tag2idx_dict={"source": 0, "condition": 4},
-            tag_manager=self.tag_manager,
+            tag_vocab=self.tag_vocab,
         )
         self.val_data_text = self.test_data_text = self.train_data_text
         # Create score for each tag from tag-index dict
-        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_list = self.tag_vocab.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews"
         )
@@ -521,7 +521,7 @@ class BlimpTask(PairClassificationTask):
         self.scorer1 = CategoricalAccuracy()
         self.scorers = [self.scorer1]
 
-        self.tag_manager = TagManager()
+        self.tag_vocab = TagVocab()
         self.tag_list = None
         self.tag_scorers1 = None
 
@@ -576,7 +576,7 @@ class BlimpOnePrefixLMTask(BlimpTask):
             for tag_type in tag_types:
                 if tag_type in example:
                     tag_str = "%s__%s" % (tag_type, example[tag_type])
-                    tags[-1].append(self.tag_manager(tag_str))
+                    tags[-1].append(self.tag_vocab[tag_str])
             shared_prefixes.append(
                 tokenize_and_truncate(
                     self._tokenizer_name, example["one_prefix_prefix"], self.max_seq_len
@@ -603,7 +603,7 @@ class BlimpOnePrefixLMTask(BlimpTask):
         )
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
-        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_list = self.tag_vocab.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
@@ -682,7 +682,7 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             for tag_type in tag_types:
                 if tag_type in example:
                     tag_str = "%s__%s" % (tag_type, example[tag_type])
-                    tags[-1].append(self.tag_manager(tag_str))
+                    tags[-1].append(self.tag_vocab[tag_str])
             good_prefixes.append(
                 tokenize_and_truncate(
                     self._tokenizer_name, example["two_prefix_prefix_good"], self.max_seq_len
@@ -709,7 +709,7 @@ class BlimpTwoPrefixLMTask(BlimpTask):
         )
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
-        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_list = self.tag_vocab.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
@@ -794,7 +794,7 @@ class BlimpFullSentLMTask(BlimpTask):
             for tag_type in tag_types:
                 if tag_type in example:
                     tag_str = "%s__%s" % (tag_type, example[tag_type])
-                    tags[-1].append(self.tag_manager(tag_str))
+                    tags[-1].append(self.tag_vocab[tag_str])
         self.val_data_text = self.test_data_text = self.train_data_text = (
             sent1s,
             sent2s,
@@ -803,7 +803,7 @@ class BlimpFullSentLMTask(BlimpTask):
         )
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
-        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_list = self.tag_vocab.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )

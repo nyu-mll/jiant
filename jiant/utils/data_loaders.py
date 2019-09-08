@@ -6,12 +6,57 @@ files downloaded in scripts/download_data_glue.py
 import codecs
 import csv
 import json
+import re
 import numpy as np
 import pandas as pd
 from allennlp.data import vocabulary
 
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.utils.retokenize import realign_spans
+
+
+class TagVocab(object):
+    """
+    A class for recording tags in the dataset, and convert them into ids
+    the -2 is because allennlp vocabulary has @@unknown@@ and @@padding@@ in default
+    """
+
+    def __init__(self):
+        self.tag_vocab = vocabulary.Vocabulary(counter=None)
+
+    def __getitem__(self, tag_str):
+        """
+        Convert a tag string to its index, if the that tag does not already exist, a new tag will
+        be added to the end of the vocabulary
+        Args:
+            tag_str: str
+        Returns:
+            tag_id: int, index of the input tag
+        """
+        tag_id = self.tag_vocab.add_token_to_namespace(tag_str) - 2
+        return tag_id
+
+    def get_tag_list(self):
+        """
+        Get the list of all recorded tags in the vocabulary, some tags are modified to fit metric
+        name requirements
+        Returns:
+            tag_list: list of str
+        """
+        tag_id2str = self.tag_vocab.get_index_to_token_vocabulary()
+        tag_list = [
+            re.sub(
+                "_+",
+                "_",
+                tag_id2str[tag_id]
+                .replace(":", "_")
+                .replace(",", "_")
+                .replace(" ", "_")
+                .replace("+", "_"),
+            )
+            for tag_id in range(2, len(tag_id2str))
+        ]
+        return tag_list
 
 
 def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
@@ -116,7 +161,7 @@ def load_tsv(
         has_labels (bool): If False, don't look for labels at position label_idx.
         filter_value (str|None): The value in which we want filter_idx to be equal to.
         filter_idx (int|None): The column index in which to look for filter_value.
-        tag_vocab (allennlp vocabulary): In some datasets, examples are attached to tags, and we
+        tag_vocab (TagVocab object): In some datasets, examples are attached to tags, and we
             need to know the results on examples with certain tags, this is a vocabulary for
             tracking tags in a dataset across splits
         tag2idx_dict (dict<string, int>): The tags form a two-level hierarchy, each fine tag belong
@@ -170,22 +215,18 @@ def load_tsv(
         # If dataset doesn't have labels, for example for test set, then mock labels
         labels = np.zeros(len(rows), dtype=int)
     if tag2idx_dict is not None:
-        # -2 offset to cancel @@unknown@@ and @@padding@@ in vocab
-        def tags_to_tids(coarse_tag, fine_tags):
-            return (
-                []
-                if pd.isna(fine_tags)
-                else (
-                    [tag_vocab.add_token_to_namespace(coarse_tag) - 2]
-                    + [
-                        tag_vocab.add_token_to_namespace("%s__%s" % (coarse_tag, fine_tag)) - 2
-                        for fine_tag in fine_tags.split(";")
-                    ]
-                )
-            )
+
+        def tags_to_tagids(coarse_tag, fine_tags):
+            if pd.isna(fine_tags):
+                return []
+            else:
+                tag_strs = [coarse_tag] + [
+                    "%s_%s" % (coarse_tag, fine_tag) for fine_tag in fine_tags.split(";")
+                ]
+                return list(map(tag_vocab.__getitem__, tag_strs))
 
         tid_temp = [
-            rows[idx].apply(lambda x: tags_to_tids(coarse_tag, x)).tolist()
+            rows[idx].apply(lambda x: tags_to_tagids(coarse_tag, x)).tolist()
             for coarse_tag, idx in tag2idx_dict.items()
         ]
         tagids = [[tid for column in tid_temp for tid in column[idx]] for idx in range(len(rows))]
@@ -275,28 +316,6 @@ def load_diagnostic_tsv(
         "ix_to_logic_dic": ix_to_logic_dic,
         "ix_to_knowledge_dic": ix_to_knowledge_dic,
     }
-
-
-def get_tag_list(tag_vocab):
-    """
-    retrieve tag strings from the tag vocab object
-    Args:
-        tag_vocab: the vocab that contains all tags
-    Returns:
-        tag_list: a list of "coarse__fine" tag strings
-    """
-    # get dictionary from allennlp vocab, neglecting @@unknown@@ and
-    # @@padding@@
-    tid2tag_dict = {
-        key - 2: tag
-        for key, tag in tag_vocab.get_index_to_token_vocabulary().items()
-        if key - 2 >= 0
-    }
-    tag_list = [
-        tid2tag_dict[tid].replace(":", "_").replace(", ", "_").replace(" ", "_").replace("+", "_")
-        for tid in range(len(tid2tag_dict))
-    ]
-    return tag_list
 
 
 def tokenize_and_truncate(tokenizer_name, sent, max_seq_len):
