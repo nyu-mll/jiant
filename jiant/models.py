@@ -1028,12 +1028,10 @@ class MultiTaskModel(nn.Module):
         ).unsqueeze(0)
         sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
         sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
-        target1 = batch["input1"]["token_id"]
-        target2 = batch["input2"]["token_id"]
         lm_pred1 = lm_head(sent_embs1[:, :-1, :])
         lm_pred2 = lm_head(sent_embs2[:, :-1, :])
-        lm_logits1 = torch.gather(lm_pred1, dim=2, index=target1[:, 1:].unsqueeze(2)).squeeze(2)
-        lm_logits2 = torch.gather(lm_pred2, dim=2, index=target2[:, 1:].unsqueeze(2)).squeeze(2)
+        lm_logits1 = torch.gather(lm_pred1, dim=2, index=input1[:, 1:].unsqueeze(2)).squeeze(2)
+        lm_logits2 = torch.gather(lm_pred2, dim=2, index=input2[:, 1:].unsqueeze(2)).squeeze(2)
         logit_mask1 = sent_mask1[:, 1:].squeeze(2)
         logit_mask2 = sent_mask2[:, 1:].squeeze(2)
         if isinstance(task, BlimpOnePrefixLMTask):
