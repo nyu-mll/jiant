@@ -375,8 +375,6 @@ def align_bytebpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[T
     bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
 
     modified_bytebpe_tokens = list(map(process_bytebpe_for_alignment, bytebpe_tokens))
-    if len(modified_bytebpe_tokens) > 0:
-        modified_bytebpe_tokens[0] = "<w>" + modified_bytebpe_tokens[0]
     ta = TokenAligner(bow_tokens, modified_bytebpe_tokens)
     return ta, bytebpe_tokens
 
