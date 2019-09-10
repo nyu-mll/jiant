@@ -1073,6 +1073,8 @@ class MultiTaskModel(nn.Module):
         if isinstance(task, BlimpFullSentLMTask):
             for i in range(out["n_exs"]):
                 output = {
+                    "sent1_str": batch["sent1_str"][i],
+                    "sent2_str": batch["sent2_str"][i],
                     "lm_prob1": pref_logits1[i].tolist(),
                     "lm_prob2": pref_logits2[i].tolist(),
                     "sent_mask1": sent_mask1[:, 1:].squeeze(2)[i].tolist(),
@@ -1095,6 +1097,8 @@ class MultiTaskModel(nn.Module):
             appen_logits2 = torch.sum(lm_logits2 * appen_mask2, dim=1)
             for i in range(out["n_exs"]):
                 output = {
+                    "sent1_str": batch["sent1_str"][i],
+                    "sent2_str": batch["sent2_str"][i],
                     "appen_entropy1": appen_entropy1[i].tolist(),
                     "appen_entropy2": appen_entropy2[i].tolist(),
                     "crit_logits1": pref_logits1[i].tolist(),
@@ -1127,6 +1131,8 @@ class MultiTaskModel(nn.Module):
             pref_logits2 = torch.sum(lm_logits2 * pref_mask2, dim=1)
             for i in range(out["n_exs"]):
                 output = {
+                    "sent1_str": batch["sent1_str"][i],
+                    "sent2_str": batch["sent2_str"][i],
                     "appen_entropy1": appen_entropy1[i].tolist(),
                     "appen_entropy2": appen_entropy2[i].tolist(),
                     "crit_logits1": pref_logits1[i].tolist(),

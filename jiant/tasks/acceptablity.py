@@ -555,7 +555,6 @@ class BlimpOnePrefixLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        tag_types = ["field", "linguistics_term", "UID"]
         sent1s, sent2s, labels, tags = [], [], [], []
         shared_prefixes, good_words, bad_words = [], [], []
         for example in data:
@@ -573,10 +572,9 @@ class BlimpOnePrefixLMTask(BlimpTask):
             )
             labels.append(0)
             tags.append([])
-            for tag_type in tag_types:
-                if tag_type in example:
-                    tag_str = "%s__%s" % (tag_type, example[tag_type])
-                    tags[-1].append(self.tag_vocab[tag_str])
+            if "UID" in example:
+                tag_str = "%s__%s" % ("UID", example["UID"])
+                tags[-1].append(self.tag_vocab[tag_str])
             shared_prefixes.append(
                 tokenize_and_truncate(
                     self._tokenizer_name, example["one_prefix_prefix"], self.max_seq_len
@@ -608,6 +606,7 @@ class BlimpOnePrefixLMTask(BlimpTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
+        log.info("Dataset tags", self.tag_list)
         log.info("\tFinished loading blimp one prefix data.")
         return
 
@@ -661,7 +660,6 @@ class BlimpTwoPrefixLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        tag_types = ["field", "linguistics_term", "UID"]
         sent1s, sent2s, labels, tags = [], [], [], []
         good_prefixes, bad_prefixes, shared_words = [], [], []
         for example in data:
@@ -679,10 +677,9 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             )
             labels.append(0)
             tags.append([])
-            for tag_type in tag_types:
-                if tag_type in example:
-                    tag_str = "%s__%s" % (tag_type, example[tag_type])
-                    tags[-1].append(self.tag_vocab[tag_str])
+            if "UID" in example:
+                tag_str = "%s__%s" % ("UID", example["UID"])
+                tags[-1].append(self.tag_vocab[tag_str])
             good_prefixes.append(
                 tokenize_and_truncate(
                     self._tokenizer_name, example["two_prefix_prefix_good"], self.max_seq_len
@@ -714,6 +711,7 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
+        log.info("Dataset tags", self.tag_list)
         log.info("\tFinished loading blimp two prefix data.")
         return
 
@@ -774,7 +772,6 @@ class BlimpFullSentLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        tag_types = ["field", "linguistics_term", "UID"]
         sent1s, sent2s, labels, tags = [], [], [], []
         for example in data:
             if not example["simple_LM_method"]:
@@ -791,10 +788,9 @@ class BlimpFullSentLMTask(BlimpTask):
             )
             labels.append(0)
             tags.append([])
-            for tag_type in tag_types:
-                if tag_type in example:
-                    tag_str = "%s__%s" % (tag_type, example[tag_type])
-                    tags[-1].append(self.tag_vocab[tag_str])
+            if "UID" in example:
+                tag_str = "%s__%s" % ("UID", example["UID"])
+                tags[-1].append(self.tag_vocab[tag_str])
         self.val_data_text = self.test_data_text = self.train_data_text = (
             sent1s,
             sent2s,
@@ -808,6 +804,7 @@ class BlimpFullSentLMTask(BlimpTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
+        log.info("Dataset tags", self.tag_list)
         log.info("\tFinished loading blimp simple LM data.")
         return
 
