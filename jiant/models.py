@@ -1015,20 +1015,15 @@ class MultiTaskModel(nn.Module):
             target = batch["targs"]["words"][:, 1:].contiguous()
             target_mask = out["target_mask"]
 
-            assert "logits" in out or "predictions" in out
+            assert "predictions" in out
 
-            if "logits" in out:
-                logits = out["logits"]
-                task.update_metrics(
-                    logits=logits, labels=target, tagmask=target_mask[:, 1:].contiguous()
-                )
-            else:
-                task.update_metrics(
-                    logits=None,
-                    labels=target,
-                    tagmask=target_mask[:, 1:].contiguous(),
-                    predictions=out["predictions"],
-                )
+            task.update_metrics(
+                logits=None,
+                labels=target,
+                tagmask=target_mask[:, 1:].contiguous(),
+                predictions=out["predictions"],
+            )
+                
         if predict:
             pass
 
