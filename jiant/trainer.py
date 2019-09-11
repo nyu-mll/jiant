@@ -877,7 +877,7 @@ class SamplingMultiTaskTrainer:
                         )
                         inputs = batch["inputs"]["words"][0][1:]
                         gold = batch["targs"]["words"][0][1:]
-        
+
                         for i in range(out["predictions"].shape[1]):
                             output = out["predictions"][0][i]
                             input_string, gold_string, output_string = task.get_prediction(
@@ -887,7 +887,7 @@ class SamplingMultiTaskTrainer:
                                 log.info("\tInput:\t%s", input_string)
                                 log.info("\tGold:\t%s", gold_string)
                             log.info("\tOutput:\t%s", output_string)
-             n_examples += get_output_attribute(out, "n_exs", self.use_cuda)
+            n_examples += get_output_attribute(out, "n_exs", self.use_cuda)
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()
