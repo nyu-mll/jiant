@@ -227,7 +227,7 @@ class Seq2SeqDecoder(Model):
             "decoder_context": decoder_context,
         }
         if not generate:
-            self._beam_search.beam_size = 2
+            self._beam_search.beam_size = 1
         beam_search_output = self._forward_beam_search(state)
         if target_tokens:
             target_mask = get_text_field_mask(target_tokens)
