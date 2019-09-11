@@ -205,12 +205,11 @@ class Seq2SeqDecoder(Model):
         """
         batch_size, _, _ = encoder_outputs.size()
 
-        if target_tokens is not None:
-            targets = target_tokens["words"]
-            target_sequence_length = targets.size()[1]
-            num_decoding_steps = target_sequence_length - 1
-        else:
-            num_decoding_steps = self._max_decoding_steps
+        num_decoding_steps = (
+            target_tokens["words"].size()[1] - 1
+            if target_tokens is not None
+            else self._max_decoding_steps
+        )
 
         decoder_hidden, decoder_context = self._initalize_hidden_context_states(
             encoder_outputs, encoder_outputs_mask
@@ -235,6 +234,7 @@ class Seq2SeqDecoder(Model):
 
         # The following is only computed if a gold target sequence is given.
         step_logits = []
+        targets = target_tokens["words"]
 
         for timestep in range(num_decoding_steps):
             input_choices = targets[:, timestep]
@@ -256,10 +256,8 @@ class Seq2SeqDecoder(Model):
 
         # (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
-
         output_dict = {"logits": logits}
 
-        targets = target_tokens["words"]
         target_mask = get_text_field_mask(target_tokens)
         output_dict["target_mask"] = target_mask
         relevant_logits = logits[:, : targets.shape[1] - 1, :].contiguous()
