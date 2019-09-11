@@ -101,7 +101,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
     args: Params object
     target_tasks: list of target Task objects
     mdoel: a MultiTaskModel object
-    
+
     Returns
     ----------------
     model_path: str
