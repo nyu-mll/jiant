@@ -184,7 +184,7 @@ class Seq2SeqDecoder(Model):
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
         target_tokens: Dict[str, torch.LongTensor] = None,
-        generate = False
+        generate=False,
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
@@ -226,13 +226,13 @@ class Seq2SeqDecoder(Model):
             "decoder_hidden": decoder_hidden,
             "decoder_context": decoder_context,
         }
-        if generate:
-            self._beam_search.beam_size = 1
+        if not generate:
+            self._beam_search.beam_size = 2
         beam_search_output = self._forward_beam_search(state)
         if target_tokens:
             target_mask = get_text_field_mask(target_tokens)
             beam_search_output["target_mask"] = target_mask
-        if generate:
+        if not generate:
             self._beam_search.beam_size = self.beam_size
         if not target_tokens:  # No gold target sequence available
             return beam_search_output
