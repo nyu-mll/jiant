@@ -201,7 +201,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         assert_for_log(
             args.skip_embs,
             "skip_embs is false and sent_enc is none, "
-            "which means that your token representations are zero-dimensional. Consider setting skip_embs.",
+            "which means that your token representations are zero-dimensional. "
+            "Consider setting skip_embs.",
         )
         phrase_layer = NullPhraseLayer(rnn_params["input_size"])
         sent_encoder = SentenceEncoder(
@@ -568,6 +569,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
                 "attention": args.s2s["attention"],
                 "dropout": args.dropout,
                 "scheduled_sampling_ratio": 0.0,
+                "beam_size": args.s2s["beam_size"],
             }
         )
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
@@ -949,7 +951,8 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         if isinstance(task, (MRPCTask, STSBTask, QQPTask)) and self.uses_mirrored_pair:
             # Mirrored pair is a trick used by GPT-like models in similarity tasks
-            # TODO: Wic also falls into this type, although GPT paper didn't expeirment with this task
+            # TODO: Wic also falls into this type, although GPT paper didn't experiment
+            #       with this task
             sent, mask = self.sent_encoder(batch["inputs"], task)
             sent_m, mask_m = self.sent_encoder(batch["inputs_m"], task)
             logits = classifier(sent, mask) + classifier(sent_m, mask_m)
@@ -1002,18 +1005,24 @@ class MultiTaskModel(nn.Module):
         out["n_exs"] = get_batch_size(batch)
 
         decoder = getattr(self, "%s_decoder" % task.name)
-        out.update(decoder.forward(sent, sent_mask, batch["targs"]))
-        task.scorer1(out["loss"].item())
+        out.update(decoder.forward(sent, sent_mask, batch["targs"], generate=predict))
+        # Loss is not computed during generation.
+        if "loss" in out:
+            task.scorer1(out["loss"].item())
 
         if "targs" in batch:
             # logits: batch_size * seq_len * tgt_voc_size
             target = batch["targs"]["words"][:, 1:].contiguous()
             target_mask = out["target_mask"]
-            logits = out["logits"]
-            task.update_metrics(logits, target, target_mask[:, 1:].contiguous())
 
-        if predict:
-            pass
+            assert "predictions" in out
+
+            task.update_metrics(
+                logits=None,
+                labels=target,
+                tagmask=target_mask[:, 1:].contiguous(),
+                predictions=out["predictions"],
+            )
 
         return out
 
@@ -1045,7 +1054,7 @@ class MultiTaskModel(nn.Module):
             out["logits"] = logits
             targs = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
         if "mask" in batch:
-            # prevent backprop for tags generated for tokenization-introduced tokens
+            # Prevent backprop for tags generated for tokenization-introduced tokens
             # such as word boundaries
             mask = batch["mask"]
             batch_mask = [mask[i][:seq_len] for i in range(b_size)]
@@ -1226,7 +1235,7 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             if isinstance(task, ReCoRDTask):
-                # for ReCoRD, we want the logits to make
+                # For ReCoRD, we want the logits to make
                 # predictions across answer choices
                 # (which are spread across batches)
                 out["preds"] = logits
@@ -1274,7 +1283,7 @@ def input_module_uses_pair_embedding(input_module):
 def input_module_uses_mirrored_pair(input_module):
     """
     This function tells whether the input model uses raw pair and mirrored pair simutaneously when
-    running on symmetrical pair tasks, like what GPT do on STS-B 
+    running on symmetrical pair tasks, like what GPT do on STS-B
     """
     return (
         input_module.startswith("openai-gpt")
