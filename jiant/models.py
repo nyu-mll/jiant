@@ -1024,7 +1024,10 @@ class MultiTaskModel(nn.Module):
                 )
             else:
                 task.update_metrics(
-                    logits=None, labels=target, tagmask=target_mask[:, 1:].contiguous(), out["predictions"]
+                    logits=None,
+                    labels=target,
+                    tagmask=target_mask[:, 1:].contiguous(),
+                    predictions=out["predictions"],
                 )
         if predict:
             pass
