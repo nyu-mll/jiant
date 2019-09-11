@@ -2,7 +2,7 @@
 # https://github.com/allenai/allennlp/blob/master/allennlp/models/encoder_decoders/simple_seq2seq.py  # noqa
 
 import logging as log
-from typing import Dict
+from typing import Dict, Tuple
 
 import torch
 from allennlp.common.util import END_SYMBOL, START_SYMBOL
@@ -10,13 +10,16 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
 from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.token_embedders import Embedding
+from allennlp.nn.beam_search import BeamSearch
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 from overrides import overrides
+from torch.nn.functional import log_softmax
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.rnn import LSTMCell
 
 from jiant.modules.simple_modules import Pooler
 from jiant.modules.attention import BahdanauAttention
+from jiant.preprocess import SOS_TOK, EOS_TOK, UNK_TOK
 
 
 class Seq2SeqDecoder(Model):
@@ -36,6 +39,7 @@ class Seq2SeqDecoder(Model):
         attention: str = "none",
         dropout: float = 0.0,
         scheduled_sampling_ratio: float = 0.0,
+        beam_size=10,
     ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
 
@@ -44,9 +48,9 @@ class Seq2SeqDecoder(Model):
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
-        self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
-        self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
-        self._unk_index = self.vocab.get_token_index("@@UNKNOWN@@", self._target_namespace)
+        self._start_index = self.vocab.get_token_index(SOS_TOK, self._target_namespace)
+        self._end_index = self.vocab.get_token_index(EOS_TOK, self._target_namespace)
+        self._unk_index = self.vocab.get_token_index(UNK_TOK, self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
 
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
@@ -103,6 +107,10 @@ class Seq2SeqDecoder(Model):
         self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
+        # At prediction time, we'll use a beam search to find the best target sequence.
+        self.beam_size = beam_size
+        self._beam_search = BeamSearch(self._end_index, max_steps=max_decoding_steps, beam_size=1)
+
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
         """
         Initialization of the decoder state, based on the encoder output.
@@ -128,38 +136,102 @@ class Seq2SeqDecoder(Model):
 
         return decoder_hidden, decoder_context
 
+    def take_step(
+        self, last_predictions: torch.Tensor, state: Dict[str, torch.Tensor]
+    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        """Take a decoding step. This is called by the beam search class."""
+
+        decoder_input = self._prepare_decode_step_input(
+            last_predictions,
+            state["decoder_hidden"],
+            state["encoder_outputs"],
+            state["encoder_outputs_mask"],
+        )
+        state["decoder_hidden"], state["decoder_context"] = self._decoder_cell(
+            decoder_input, (state["decoder_hidden"], state["decoder_context"])
+        )
+
+        # output projection
+        proj_input = self._projection_bottleneck(state["decoder_hidden"])
+        # (batch_size, num_classes)
+        step_logit = self._output_projection_layer(proj_input)
+
+        log_probs = log_softmax(step_logit)
+
+        return log_probs, state
+
+    def _forward_beam_search(self, state: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        """Make forward pass during prediction using a beam search."""
+        batch_size = state["encoder_outputs_mask"].size()[0]
+        start_predictions = state["encoder_outputs_mask"].new_full(
+            (batch_size,), fill_value=self._start_index
+        )
+
+        # shape (all_top_k_predictions): (batch_size, beam_size, num_decoding_steps)
+        # shape (log_probabilities): (batch_size, beam_size)
+        all_top_k_predictions, log_probabilities = self._beam_search.search(
+            start_predictions, state, self.take_step
+        )
+
+        output_dict = {"log_probabilities": log_probabilities, "predictions": all_top_k_predictions}
+        return output_dict
+
     @overrides
     def forward(
         self,  # type: ignore
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
         target_tokens: Dict[str, torch.LongTensor] = None,
+        generate=False,
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
-        Decoder logic for producing the entire target sequence at train time.
+        Forward pass for the decoder.
+
+        1) Training/validation/test with gold data [if generate is False]:
+               loss is computed given the gold target tokens;
+               accuracy/BLEU/etc. are computied using predicted tokens, NO beam search
+        2) Generation [if generate is True]:
+               loss is NOT computed (the returned loss is 0.0) if no target is given,
+                   otherwise as above
+               accuracy/BLEU/etc. are computed using predicted tokens, beam search is used
 
         Parameters
         ----------
         encoder_outputs : torch.FloatTensor, [bs, T, h]
         encoder_outputs_mask : torch.LongTensor, [bs, T, 1]
         target_tokens : Dict[str, torch.LongTensor]
+        generate: bool; if True, use beam search
         """
-        # TODO: target_tokens is not optional.
         batch_size, _, _ = encoder_outputs.size()
 
-        if target_tokens is not None:
-            targets = target_tokens["words"]
-            target_sequence_length = targets.size()[1]
-            num_decoding_steps = target_sequence_length - 1
-        else:
-            num_decoding_steps = self._max_decoding_steps
+        num_decoding_steps = (
+            target_tokens["words"].size()[1] - 1
+            if target_tokens is not None
+            else self._max_decoding_steps
+        )
 
         decoder_hidden, decoder_context = self._initalize_hidden_context_states(
             encoder_outputs, encoder_outputs_mask
         )
 
+        # First, generate output without teacher forcing (for certain metrics like BLEU).
+        # State for beam search
+        state = {
+            "encoder_outputs_mask": encoder_outputs_mask,
+            "encoder_outputs": encoder_outputs,
+            "decoder_hidden": decoder_hidden,
+            "decoder_context": decoder_context,
+        }
+        if generate:
+            self._beam_search.beam_size = self.beam_size
+        beam_search_output = self._forward_beam_search(state)
+        if not target_tokens:  # No gold target sequence available
+            return beam_search_output
+
+        # The following is only computed if a gold target sequence is given.
         step_logits = []
+        targets = target_tokens["words"]
 
         for timestep in range(num_decoding_steps):
             input_choices = targets[:, timestep]
@@ -181,14 +253,16 @@ class Seq2SeqDecoder(Model):
 
         # (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
-
         output_dict = {"logits": logits}
 
-        if target_tokens:
-            target_mask = get_text_field_mask(target_tokens)
-            loss = self._get_loss(logits, targets, target_mask)
-            output_dict["loss"] = loss
-            output_dict["target_mask"] = target_mask
+        target_mask = get_text_field_mask(target_tokens)
+        output_dict["target_mask"] = target_mask
+        relevant_logits = logits[:, : targets.shape[1] - 1, :].contiguous()
+        loss = self._get_loss(relevant_logits, targets, target_mask)
+        output_dict["loss"] = loss
+
+        output_dict["predictions"] = beam_search_output["predictions"]
+        output_dict["log_probabilities"] = beam_search_output["log_probabilities"]
 
         return output_dict
 
