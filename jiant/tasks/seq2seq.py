@@ -3,7 +3,6 @@ import codecs
 import collections
 import math
 import os
-import torch
 from typing import Iterable, List, Sequence, Type
 
 from allennlp.data import Instance
