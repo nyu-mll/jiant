@@ -226,9 +226,6 @@ class Seq2SeqDecoder(Model):
         if generate:
             self._beam_search.beam_size = self.beam_size
         beam_search_output = self._forward_beam_search(state)
-        if target_tokens:
-            target_mask = get_text_field_mask(target_tokens)
-            beam_search_output["target_mask"] = target_mask
         if not target_tokens:  # No gold target sequence available
             return beam_search_output
 
