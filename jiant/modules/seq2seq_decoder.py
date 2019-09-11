@@ -156,10 +156,8 @@ class Seq2SeqDecoder(Model):
         # output projection
         proj_input = self._projection_bottleneck(state["decoder_hidden"])
         # (batch_size, num_classes)
-        output_projections = self._output_projection_layer(proj_input)
+        step_logit = self._output_projection_layer(proj_input)
 
-        # (batch_size, num_classes)
-        step_logit = output_projections
         log_probs = log_softmax(step_logit)
 
         return log_probs, state
@@ -227,24 +225,24 @@ class Seq2SeqDecoder(Model):
             encoder_outputs, encoder_outputs_mask
         )
 
-        if mode == "validation" or mode == "test":
-            # state for beam search
-            state = {
-                "encoder_outputs_mask": encoder_outputs_mask,
-                "encoder_outputs": encoder_outputs,
-                "decoder_hidden": decoder_hidden,
-                "decoder_context": decoder_context,
-            }
-            if mode == "validation":
-                self._beam_search.beam_size = 1
-            beam_search_output = self._forward_beam_search(state)
-            if target_tokens:
-                target_mask = get_text_field_mask(target_tokens)
-                beam_search_output["target_mask"] = target_mask
-            if mode == "validation":
-                self._beam_search.beam_size = self.beam_size
-            else:
-                return beam_search_output
+        # First, generate output without teacher forcing (for certain metrics like BLEU).
+        # State for beam search
+        state = {
+            "encoder_outputs_mask": encoder_outputs_mask,
+            "encoder_outputs": encoder_outputs,
+            "decoder_hidden": decoder_hidden,
+            "decoder_context": decoder_context,
+        }
+        if mode != "test":
+            self._beam_search.beam_size = 1
+        beam_search_output = self._forward_beam_search(state)
+        if target_tokens:
+            target_mask = get_text_field_mask(target_tokens)
+            beam_search_output["target_mask"] = target_mask
+        if mode != "test":
+            self._beam_search.beam_size = self.beam_size
+        else:  # No gold target sequence available
+            return beam_search_output
 
         # The following is for training and validation only.
         step_logits = []
@@ -279,9 +277,8 @@ class Seq2SeqDecoder(Model):
         loss = self._get_loss(relevant_logits, targets, target_mask)
         output_dict["loss"] = loss
 
-        if mode == "validation":
-            output_dict["predictions"] = beam_search_output["predictions"]
-            output_dict["log_probabilities"] = beam_search_output["log_probabilities"]
+        output_dict["predictions"] = beam_search_output["predictions"]
+        output_dict["log_probabilities"] = beam_search_output["log_probabilities"]
 
         return output_dict
 
