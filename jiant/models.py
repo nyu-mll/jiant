@@ -1005,7 +1005,7 @@ class MultiTaskModel(nn.Module):
         out["n_exs"] = get_batch_size(batch)
 
         decoder = getattr(self, "%s_decoder" % task.name)
-        out.update(decoder.forward(sent, sent_mask, batch["targs"]))
+        out.update(decoder.forward(sent, sent_mask, batch["targs"], generate=predict))
         # Loss is not computed during generation/validation.
         if "loss" in out:
             task.scorer1(out["loss"].item())
@@ -1023,9 +1023,6 @@ class MultiTaskModel(nn.Module):
                 tagmask=target_mask[:, 1:].contiguous(),
                 predictions=out["predictions"],
             )
-                
-        if predict:
-            pass
 
         return out
 

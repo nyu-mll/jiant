@@ -184,6 +184,7 @@ class Seq2SeqDecoder(Model):
         encoder_outputs,  # type: ignore
         encoder_outputs_mask,  # type: ignore
         target_tokens: Dict[str, torch.LongTensor] = None,
+        generate = False
     ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
@@ -201,6 +202,7 @@ class Seq2SeqDecoder(Model):
         encoder_outputs : torch.FloatTensor, [bs, T, h]
         encoder_outputs_mask : torch.LongTensor, [bs, T, 1]
         target_tokens : Dict[str, torch.LongTensor]
+        generate: bool; if True, use beam search
         """
         batch_size, _, _ = encoder_outputs.size()
 
@@ -223,18 +225,18 @@ class Seq2SeqDecoder(Model):
             "decoder_hidden": decoder_hidden,
             "decoder_context": decoder_context,
         }
-        if target_tokens is not None:
+        if generate:
             self._beam_search.beam_size = 1
         beam_search_output = self._forward_beam_search(state)
         if target_tokens:
             target_mask = get_text_field_mask(target_tokens)
             beam_search_output["target_mask"] = target_mask
-        if target_tokens is not None:
+        if generate:
             self._beam_search.beam_size = self.beam_size
-        else:  # No gold target sequence available
+        if not target_tokens:  # No gold target sequence available
             return beam_search_output
 
-        # The following is for training and validation only.
+        # The following is only computed if a gold target sequence is given.
         step_logits = []
 
         for timestep in range(num_decoding_steps):
