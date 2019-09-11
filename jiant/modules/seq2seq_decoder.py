@@ -109,9 +109,7 @@ class Seq2SeqDecoder(Model):
 
         # At prediction time, we'll use a beam search to find the best target sequence.
         self.beam_size = beam_size
-        self._beam_search = BeamSearch(
-            self._end_index, max_steps=max_decoding_steps, beam_size=beam_size
-        )
+        self._beam_search = BeamSearch(self._end_index, max_steps=max_decoding_steps, beam_size=1)
 
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
         """
@@ -226,14 +224,12 @@ class Seq2SeqDecoder(Model):
             "decoder_hidden": decoder_hidden,
             "decoder_context": decoder_context,
         }
-        if not generate:
-            self._beam_search.beam_size = 1
+        if generate:
+            self._beam_search.beam_size = self.beam_size
         beam_search_output = self._forward_beam_search(state)
         if target_tokens:
             target_mask = get_text_field_mask(target_tokens)
             beam_search_output["target_mask"] = target_mask
-        if not generate:
-            self._beam_search.beam_size = self.beam_size
         if not target_tokens:  # No gold target sequence available
             return beam_search_output
 
