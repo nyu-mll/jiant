@@ -190,7 +190,7 @@ class Seq2SeqDecoder(Model):
 
         1) Training/validation/test with gold data [if generate is False]:
                loss is computed given the gold target tokens;
-               accuracy/BLEU/etc. are computed using predicted tokens, no beam search
+               accuracy/BLEU/etc. are computied using predicted tokens, NO beam search
         2) Generation [if generate is True]:
                loss is NOT computed (the returned loss is 0.0) if no target is given,
                    otherwise as above
