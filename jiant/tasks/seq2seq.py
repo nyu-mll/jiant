@@ -118,10 +118,18 @@ class Seq2SeqTask(SequenceGenerationTask):
         acc = self.scorer2.get_metric(reset)
         return {"perplexity": math.exp(avg_nll), "accuracy": acc}
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        # Cut logits, since generation is done until max seq length (usually >> target length).
-        relevant_logits = logits.max(dim=2)[1][:, : labels.shape[1]]
-        self.scorer2(relevant_logits, labels, tagmask)
+    def update_metrics(self, logits, labels, tagmask=None, predictions=None):
+        # This doesn't require logits for now, since loss is updated in another part.
+        assert logits is None and predictions is not None
+
+        if labels.shape[1] < predictions.shape[2]:
+            predictions = predictions[:, 0, : labels.shape[1]]
+        else:
+            predictions = predictions[:, 0, :]
+            # Cut labels if predictions (without gold target) are shorter.
+            labels = labels[:, : predictions.shape[1]]
+            tagmask = tagmask[:, : predictions.shape[1]]
+        self.scorer2(predictions, labels, tagmask)
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
