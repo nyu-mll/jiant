@@ -1006,7 +1006,7 @@ class MultiTaskModel(nn.Module):
 
         decoder = getattr(self, "%s_decoder" % task.name)
         out.update(decoder.forward(sent, sent_mask, batch["targs"], generate=predict))
-        # Loss is not computed during generation/validation.
+        # Loss is not computed during generation.
         if "loss" in out:
             task.scorer1(out["loss"].item())
 
