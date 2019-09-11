@@ -189,12 +189,10 @@ class Seq2SeqDecoder(Model):
         """
         Forward pass for the decoder.
 
-        There are 3 possible modes:
-        1) Training: all metrics are computed given the last gold target tokens at each step
-        2) Validation [no training, but target tokens given]:
+        1) Training/validation/test with gold data [target tokens given]:
                loss is computed given the gold target tokens;
                accuracy/BLEU/etc. are computed using predicted tokens, no beam search
-        3) Test [no training, no target tokens given]:
+        2) Generation [no target tokens given]:
                loss is NOT computed (the returned loss is 0.0);
                accuracy/BLEU/etc. are computed using predicted tokens, beam search is used
 
@@ -206,15 +204,7 @@ class Seq2SeqDecoder(Model):
         """
         batch_size, _, _ = encoder_outputs.size()
 
-        if self.training:
-            assert target_tokens
-            mode = "train"
-        elif target_tokens is not None:
-            mode = "validation"
-        else:
-            mode = "test"
-
-        if mode == "train" or mode == "validation":
+        if target_tokens is not None:
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
             num_decoding_steps = target_sequence_length - 1
@@ -233,13 +223,13 @@ class Seq2SeqDecoder(Model):
             "decoder_hidden": decoder_hidden,
             "decoder_context": decoder_context,
         }
-        if mode != "test":
+        if target_tokens is not None:
             self._beam_search.beam_size = 1
         beam_search_output = self._forward_beam_search(state)
         if target_tokens:
             target_mask = get_text_field_mask(target_tokens)
             beam_search_output["target_mask"] = target_mask
-        if mode != "test":
+        if target_tokens is not None:
             self._beam_search.beam_size = self.beam_size
         else:  # No gold target sequence available
             return beam_search_output
