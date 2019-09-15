@@ -2601,9 +2601,8 @@ class WiCTask(PairClassificationTask):
             sequence the marked word is located. """
             sent_parts = sent.split(word)
             sent_tok1 = tokenize_and_truncate(self._tokenizer_name, sent_parts[0], self.max_seq_len)
-            sent_tok2 = tokenize_and_truncate(self._tokenizer_name, sent_parts[1], self.max_seq_len)
             sent_mid = tokenize_and_truncate(self._tokenizer_name, word, self.max_seq_len)
-            sent_tok = sent_tok1 + sent_mid + sent_tok2
+            sent_tok = tokenize_and_truncate(self._tokenizer_name, sent, self.max_seq_len)
             start_idx = len(sent_tok1)
             end_idx = start_idx + len(sent_mid)
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."

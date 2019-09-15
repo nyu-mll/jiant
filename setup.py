@@ -66,6 +66,8 @@ setuptools.setup(
         "python-Levenshtein==0.12.0",
         "sacremoses",
         "pytorch-transformers==1.2.0",
+        "ftfy",
+        "spacy",
     ],
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
