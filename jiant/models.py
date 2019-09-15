@@ -532,6 +532,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, (NPIClozePairTask, BlimpTask)):
         hid2voc = model.sent_encoder._text_field_embedder.get_pretrained_lm_head()
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
+        model.file = open("%s_%s_peephole.jsonl" % (args.exp_name, args.run_name), "w")
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -816,7 +817,6 @@ class MultiTaskModel(nn.Module):
             and args.transfer_paradigm == "finetune"
         )  # Rough heuristic. TODO: Make this directly user-controllable.
         self.sep_embs_for_skip = args.sep_embs_for_skip
-        self.file = open("%s_%s_peephole.jsonl" % (args.exp_name, args.run_name), "w")
 
     def forward(self, task, batch, predict=False):
         """
@@ -1012,7 +1012,6 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _minimal_pair_preference_forward(self, batch, task, predict):
-        # this only support GPT2 for now
         out = {}
 
         # embed the sentence
@@ -1026,14 +1025,24 @@ class MultiTaskModel(nn.Module):
         scale2 = torch.arange(
             1, input2.size()[1], dtype=torch.long, device=input2.device
         ).unsqueeze(0)
-        sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
-        sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
-        lm_pred1 = lm_head(sent_embs1[:, :-1, :])
-        lm_pred2 = lm_head(sent_embs2[:, :-1, :])
-        lm_logits1 = torch.gather(lm_pred1, dim=2, index=input1[:, 1:].unsqueeze(2)).squeeze(2)
-        lm_logits2 = torch.gather(lm_pred2, dim=2, index=input2[:, 1:].unsqueeze(2)).squeeze(2)
-        logit_mask1 = sent_mask1[:, 1:].squeeze(2)
-        logit_mask2 = sent_mask2[:, 1:].squeeze(2)
+        if isinstance(task, BlimpTask):
+            sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
+            sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
+            lm_pred1 = lm_head(sent_embs1[:, :-1, :])
+            lm_pred2 = lm_head(sent_embs2[:, :-1, :])
+            lm_logits1 = torch.gather(lm_pred1, dim=2, index=input1[:, 1:].unsqueeze(2)).squeeze(2)
+            lm_logits2 = torch.gather(lm_pred2, dim=2, index=input2[:, 1:].unsqueeze(2)).squeeze(2)
+            logit_mask1 = sent_mask1[:, 1:].squeeze(2)
+            logit_mask2 = sent_mask2[:, 1:].squeeze(2)
+        elif isinstance(task, NPIClozePairTask):
+            sent_embs0, sent_mask0 = self.sent_encoder(batch["input0"], task)
+            sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
+            sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
+            lm_pred0 = lm_head(sent_embs0)
+            lm_logits1 = torch.gather(lm_pred0, dim=2, index=input1.unsqueeze(2)).squeeze(2)
+            lm_logits2 = torch.gather(lm_pred0, dim=2, index=input2.unsqueeze(2)).squeeze(2)
+            logit_mask1 = sent_mask1.squeeze(2)
+            logit_mask2 = sent_mask2.squeeze(2)
         if isinstance(task, BlimpOnePrefixLMTask):
             logit_mask1 = logit_mask1 * (
                 (scale1 >= batch["shared_prefix_length"])
