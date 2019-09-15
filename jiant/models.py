@@ -63,7 +63,7 @@ from jiant.tasks.tasks import (
     MRPCTask,
     QQPTask,
 )
-from jiant.tasks.acceptablity import (
+from jiant.tasks.acceptablity_probing import (
     NPIMinimalPairTask,
     NPIClozePairTask,
     BlimpTask,
