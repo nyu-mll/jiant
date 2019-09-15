@@ -168,17 +168,6 @@ class CoLAAnalysisTask(SingleClassificationTask):
     def load_data(self):
         """Load the data"""
         # Load data from tsv
-        tr_data = load_tsv(
-            tokenizer_name=self._tokenizer_name,
-            data_file=os.path.join(self.path, "train_analysis.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=3,
-            s2_idx=None,
-            label_idx=2,
-            skip_rows=1,
-            tag2idx_dict={"Domain": 1},
-            tag_vocab=self.tag_vocab,
-        )
         val_data = load_tsv(
             tokenizer_name=self._tokenizer_name,
             data_file=os.path.join(self.path, "dev_analysis.tsv"),
@@ -207,21 +196,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
             },
             tag_vocab=self.tag_vocab,
         )
-        te_data = load_tsv(
-            tokenizer_name=self._tokenizer_name,
-            data_file=os.path.join(self.path, "test_analysis.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=3,
-            s2_idx=None,
-            label_idx=2,
-            skip_rows=1,
-            tag2idx_dict={"Domain": 1},
-            tag_vocab=self.tag_vocab,
+        self.train_data_text = self.val_data_text = self.text_data_text = (
+            val_data[:1] + val_data[2:]
         )
-        self.train_data_text = tr_data[:1] + tr_data[2:]
-        self.val_data_text = val_data[:1] + val_data[2:]
-        self.test_data_text = te_data[:1] + te_data[2:]
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.sentences = self.val_data_text[0]
         # Create score for each tag from tag-index dict
         self.tag_list = self.tag_vocabget_tag_list()
         self.tag_scorers1 = create_subset_scorers(
