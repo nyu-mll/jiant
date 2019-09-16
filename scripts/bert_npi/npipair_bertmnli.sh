@@ -6,80 +6,80 @@
     
 
 # bertmnli tuned on cola
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola, target_tasks = \"cola,npi_pair_tuned\", use_classifier=\"cola\""
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_cola, target_tasks=\"cola,npi_pair_tuned\", use_classifier=\"cola\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_cola/model_state_cola_best.th\""
 
 
-# bertmnli tuned on cola_npi_sup
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_sup, target_tasks = \"cola_npi_sup,npi_pair_tuned\", use_classifier=\"cola_npi_sup\""
+# bertmnli tuned on npi_sup
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_sup, target_tasks=\"npi_sup,npi_pair_tuned\", use_classifier=\"npi_sup\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_sup/model_state_npi_sup_best.th\""
 
 
-# bertmnli tuned on cola_npi_quessmp
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_quessmp, target_tasks = \"cola_npi_quessmp,npi_pair_tuned\", use_classifier=\"cola_npi_quessmp\""
+# bertmnli tuned on npi_quessmp
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_quessmp, target_tasks=\"npi_quessmp,npi_pair_tuned\", use_classifier=\"npi_quessmp\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_quessmp/model_state_npi_quessmp_best.th\""
 
 
-# bertmnli tuned on cola_npi_ques
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_ques, target_tasks = \"cola_npi_ques,npi_pair_tuned\", use_classifier=\"cola_npi_ques\""
+# bertmnli tuned on npi_ques
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_ques, target_tasks=\"npi_ques,npi_pair_tuned\", use_classifier=\"npi_ques\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_ques/model_state_npi_ques_best.th\""
 
 
-# bertmnli tuned on cola_npi_qnt
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_qnt, target_tasks = \"cola_npi_qnt,npi_pair_tuned\", use_classifier=\"cola_npi_qnt\""
+# bertmnli tuned on npi_qnt
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_qnt, target_tasks=\"npi_qnt,npi_pair_tuned\", use_classifier=\"npi_qnt\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_qnt/model_state_npi_qnt_best.th\""
 
 
-# bertmnli tuned on cola_npi_only
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_only, target_tasks = \"cola_npi_only,npi_pair_tuned\", use_classifier=\"cola_npi_only\""
+# bertmnli tuned on npi_only
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_only, target_tasks=\"npi_only,npi_pair_tuned\", use_classifier=\"npi_only\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_only/model_state_npi_only_best.th\""
 
 
-# bertmnli tuned on cola_npi_negsent
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_negsent, target_tasks = \"cola_npi_negsent,npi_pair_tuned\", use_classifier=\"cola_npi_negsent\""
+# bertmnli tuned on npi_negsent
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_negsent, target_tasks=\"npi_negsent,npi_pair_tuned\", use_classifier=\"npi_negsent\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_negsent/model_state_npi_negsent_best.th\""
 
 
-# bertmnli tuned on cola_npi_negdet
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_negdet, target_tasks = \"cola_npi_negdet,npi_pair_tuned\", use_classifier=\"cola_npi_negdet\""
+# bertmnli tuned on npi_negdet
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_negdet, target_tasks=\"npi_negdet,npi_pair_tuned\", use_classifier=\"npi_negdet\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_negdet/model_state_npi_negdet_best.th\""
 
 
-# bertmnli tuned on cola_npi_cond
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_cond, target_tasks = \"cola_npi_cond,npi_pair_tuned\", use_classifier=\"cola_npi_cond\""
+# bertmnli tuned on npi_cond
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_cond, target_tasks=\"npi_cond,npi_pair_tuned\", use_classifier=\"npi_cond\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_cond/model_state_npi_cond_best.th\""
 
 
-# bertmnli tuned on cola_npi_adv
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_adv, target_tasks = \"cola_npi_adv,npi_pair_tuned\", use_classifier=\"cola_npi_adv\""
+# bertmnli tuned on npi_adv
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_npi_adv, target_tasks=\"npi_adv,npi_pair_tuned\", use_classifier=\"npi_adv\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_npi_adv/model_state_npi_adv_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_sup
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_sup, target_tasks = \"hd_cola_npi_sup,npi_pair_tuned\", use_classifier=\"hd_cola_npi_sup\""
+# bertmnli tuned on hd_npi_sup
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_sup, target_tasks=\"hd_npi_sup,npi_pair_tuned\", use_classifier=\"hd_npi_sup\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_sup/model_state_hd_npi_sup_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_quessmp
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_quessmp, target_tasks = \"hd_cola_npi_quessmp,npi_pair_tuned\", use_classifier=\"hd_cola_npi_quessmp\""
+# bertmnli tuned on hd_npi_quessmp
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_quessmp, target_tasks=\"hd_npi_quessmp,npi_pair_tuned\", use_classifier=\"hd_npi_quessmp\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_quessmp/model_state_hd_npi_quessmp_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_ques
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_ques, target_tasks = \"hd_cola_npi_ques,npi_pair_tuned\", use_classifier=\"hd_cola_npi_ques\""
+# bertmnli tuned on hd_npi_ques
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_ques, target_tasks=\"hd_npi_ques,npi_pair_tuned\", use_classifier=\"hd_npi_ques\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_ques/model_state_hd_npi_ques_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_qnt
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_qnt, target_tasks = \"hd_cola_npi_qnt,npi_pair_tuned\", use_classifier=\"hd_cola_npi_qnt\""
+# bertmnli tuned on hd_npi_qnt
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_qnt, target_tasks=\"hd_npi_qnt,npi_pair_tuned\", use_classifier=\"hd_npi_qnt\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_qnt/model_state_hd_npi_qnt_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_only
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_only, target_tasks = \"hd_cola_npi_only,npi_pair_tuned\", use_classifier=\"hd_cola_npi_only\""
+# bertmnli tuned on hd_npi_only
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_only, target_tasks=\"hd_npi_only,npi_pair_tuned\", use_classifier=\"hd_npi_only\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_only/model_state_hd_npi_only_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_negsent
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_negsent, target_tasks = \"hd_cola_npi_negsent,npi_pair_tuned\", use_classifier=\"hd_cola_npi_negsent\""
+# bertmnli tuned on hd_npi_negsent
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_negsent, target_tasks=\"hd_npi_negsent,npi_pair_tuned\", use_classifier=\"hd_npi_negsent\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_negsent/model_state_hd_npi_negsent_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_negdet
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_negdet, target_tasks = \"hd_cola_npi_negdet,npi_pair_tuned\", use_classifier=\"hd_cola_npi_negdet\""
+# bertmnli tuned on hd_npi_negdet
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_negdet, target_tasks=\"hd_npi_negdet,npi_pair_tuned\", use_classifier=\"hd_npi_negdet\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_negdet/model_state_hd_npi_negdet_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_cond
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_cond, target_tasks = \"hd_cola_npi_cond,npi_pair_tuned\", use_classifier=\"hd_cola_npi_cond\""
+# bertmnli tuned on hd_npi_cond
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_cond, target_tasks=\"hd_npi_cond,npi_pair_tuned\", use_classifier=\"hd_npi_cond\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_cond/model_state_hd_npi_cond_best.th\""
 
 
-# bertmnli tuned on hd_cola_npi_adv
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_adv, target_tasks = \"hd_cola_npi_adv,npi_pair_tuned\", use_classifier=\"hd_cola_npi_adv\""
+# bertmnli tuned on hd_npi_adv
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_hd_npi_adv, target_tasks=\"hd_npi_adv,npi_pair_tuned\", use_classifier=\"hd_npi_adv\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_hd_npi_adv/model_state_hd_npi_adv_best.th\""
 
 
-# bertmnli tuned on all_cola_npi
-python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_all_cola_npi, target_tasks = \"all_cola_npi,npi_pair_tuned\", use_classifier=\"all_cola_npi\""
+# bertmnli tuned on all_npi
+python main.py --config_file "config/spring19_seminar/npipair_bert.conf" --overrides "exp_name=npi_bertmnli, run_name=run_bertmnli_all_npi, target_tasks=\"all_npi,npi_pair_tuned\", use_classifier=\"all_npi\", load_target_train_checkpoint=\"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_all_npi/model_state_all_npi_best.th\""

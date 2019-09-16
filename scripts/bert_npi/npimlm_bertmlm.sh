@@ -6,4 +6,4 @@
 
 
 # bert frozen (masked language modeling)
-python main.py --config_file "jiant/config/bert_npi/npimlm_bert.conf" --override "exp_name = npi_bertmlm, run_name = run_bertmlm"
+python main.py --config_file "jiant/config/bert_npi/npimlm_bert.conf" --override "exp_name=npi_bertmlm, run_name=run_bertmlm"
