@@ -282,7 +282,7 @@ class NPIClozePairTask(PairClassificationTask):
         """Load the data"""
         self.train_data_text = load_tsv(
             self._tokenizer_name,
-            os.path.join(self.path, "acceptability_cloze_pairs.tsv"),
+            os.path.join(self.path, "npi_cloze_pairs.tsv"),
             max_seq_len=self.max_seq_len,
             s1_idx=1,
             s2_idx=2,
@@ -397,7 +397,7 @@ class NPIMinimalPairTask(PairClassificationTask):
         """Load the data"""
         self.train_data_text = load_tsv(
             self._tokenizer_name,
-            os.path.join(self.path, "acceptability_minimal_pairs.tsv"),
+            os.path.join(self.path, "npi_minimal_pairs.tsv"),
             max_seq_len=self.max_seq_len,
             s1_idx=1,
             s2_idx=2,
