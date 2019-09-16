@@ -38,7 +38,7 @@ ALL_SUPERGLUE_TASKS = [
 ]
 
 ALL_DIAGNOSTICS = ["broadcoverage-diagnostic", "winogender-diagnostic", "glue-diagnostic"]
-# Tasks for the spring19_seminar; similar to cola but write predictions differently
+# Tasks for the bert_npi; similar to cola but write predictions differently
 ALL_NPI_TASKS = [
     "npi_sup",
     "npi_quessmp",
