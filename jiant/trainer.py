@@ -24,6 +24,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from jiant.evaluate import evaluate
+from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.utils import config
 from jiant.utils.utils import (
     assert_for_log,
@@ -347,8 +348,8 @@ class SamplingMultiTaskTrainer:
             opt_params = copy.deepcopy(optimizer_params)
             if "t_total" in optimizer_params:
                 # If we know in advance how many opt steps there will be, set it so the LR scheduler
-                # can use that information. This should be the next validation after we hit the epoch
-                # limit.
+                # can use that information. This should be the next validation after we hit the
+                # epoch limit.
                 if self._max_epochs > 0:
                     max_epochs_in_vals = math.ceil(
                         (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
@@ -525,7 +526,8 @@ class SamplingMultiTaskTrainer:
                 )
                 if ckpt_directory is None:
                     log.warning(
-                        "load_model=1 but there is not checkpoint. Starting training without restoring from a checkpoint."
+                        "load_model=1 but there is not checkpoint. \
+                        Starting training without restoring from a checkpoint."
                     )
                 else:
                     n_step, should_stop = self._restore_checkpoint(phase, tasks)
@@ -598,7 +600,6 @@ class SamplingMultiTaskTrainer:
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
                 loss = output_dict["loss"]  # optionally scale loss
-
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
@@ -660,7 +661,7 @@ class SamplingMultiTaskTrainer:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
-                        # updating loss from trianing.
+                        # Updating loss from training
                         all_tr_metrics["%s_loss" % task.name] = float(
                             task_info["loss"] / n_batches_since_val
                         )
@@ -779,7 +780,8 @@ class SamplingMultiTaskTrainer:
         Returns
         ________
         metric_infos: dict storing information about the various metrics
-        this_val_metric: dict, metric information for this validation pass, used for optimization scheduler
+        this_val_metric: dict, metric information for this validation pass, used for optimization
+            scheduler
         should_save: bool
         new_best: bool
         """
@@ -803,7 +805,14 @@ class SamplingMultiTaskTrainer:
         return metric_infos, this_val_metric, should_save, new_best
 
     def _calculate_validation_performance(
-        self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
+        self,
+        task,
+        task_infos,
+        tasks,
+        batch_size,
+        all_val_metrics,
+        n_examples_overall,
+        print_output=True,
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
@@ -815,7 +824,8 @@ class SamplingMultiTaskTrainer:
         tasks: list of task objects to train on
         batch_size: int, batch size to use for the tasks
         all_val_metrics: dictionary. storing the validation performance
-        n_examples_overall = int, current number of examples the model is validated on
+        n_examples_overall: int, current number of examples the model is validated on
+        print_output: bool, prints one example per validation
 
         Returns
         -------
@@ -843,6 +853,27 @@ class SamplingMultiTaskTrainer:
                 out = self._forward(batch, task=task)
             loss = out["loss"]
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+
+            if print_output:
+                if isinstance(task, Seq2SeqTask):
+                    if batch_num == 1:
+                        voc_src = self._model.vocab.get_index_to_token_vocabulary("tokens")
+                        voc_trg = self._model.vocab.get_index_to_token_vocabulary(
+                            task.name + "_tokens"
+                        )
+                        inputs = batch["inputs"]["words"][0][1:]
+                        gold = batch["targs"]["words"][0][1:]
+
+                        for i in range(out["predictions"].shape[1]):
+                            output = out["predictions"][0][i]
+                            input_string, gold_string, output_string = task.get_prediction(
+                                voc_src, voc_trg, inputs, gold, output
+                            )
+                            if i == 0:
+                                log.info("\tInput:\t%s", input_string)
+                                log.info("\tGold:\t%s", gold_string)
+                            log.info("\tOutput:\t%s", output_string)
+
             n_examples += out["n_exs"]
 
             # log
@@ -1049,6 +1080,7 @@ class SamplingMultiTaskTrainer:
                 "serialization_dir not specified - cannot "
                 "restore a model without a directory path."
             )
+        log.info("Saving checkpoints to: %s", self._serialization_dir)
 
         val_pass = training_state["validation_pass"]
         if new_best:
@@ -1123,8 +1155,6 @@ class SamplingMultiTaskTrainer:
 
         if not self._keep_all_checkpoints:
             self._delete_old_checkpoints(phase, val_pass, task_dir_name)
-
-        log.info("Saved checkpoints to %s", self._serialization_dir)
 
     def _restore_checkpoint(self, phase, tasks=None):
         """
