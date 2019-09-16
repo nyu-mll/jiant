@@ -64,7 +64,7 @@ def evaluate(
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS
         + tasks_module.ALL_SUPERGLUE_TASKS
-        + tasks_module.ALL_COLA_NPI_TASKS
+        + tasks_module.ALL_NPI_TASKS
     )
     model.eval()
     iterator = BasicIterator(batch_size)
@@ -158,7 +158,7 @@ def write_preds(
             tasks_module.ALL_NLI_PROBING_TASKS
             + tasks_module.ALL_GLUE_TASKS
             + ["wmt"]
-            + tasks_module.ALL_COLA_NPI_TASKS
+            + tasks_module.ALL_NPI_TASKS
         )
 
         if task.name in glue_style_tasks:

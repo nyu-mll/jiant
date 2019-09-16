@@ -43,7 +43,7 @@ from pytorch_transformers import (
 
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
-    ALL_COLA_NPI_TASKS,
+    ALL_NPI_TASKS,
     ALL_GLUE_TASKS,
     ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
