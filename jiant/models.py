@@ -1019,13 +1019,13 @@ class MultiTaskModel(nn.Module):
         tokenizer_name = list(batch["input1"].keys())[0]
         input1 = batch["input1"][tokenizer_name]
         input2 = batch["input2"][tokenizer_name]
-        scale1 = torch.arange(
-            1, input1.size()[1], dtype=torch.long, device=input1.device
-        ).unsqueeze(0)
-        scale2 = torch.arange(
-            1, input2.size()[1], dtype=torch.long, device=input2.device
-        ).unsqueeze(0)
         if isinstance(task, BlimpTask):
+            scale1 = torch.arange(
+                1, input1.size()[1], dtype=torch.long, device=input1.device
+            ).unsqueeze(0)
+            scale2 = torch.arange(
+                1, input2.size()[1], dtype=torch.long, device=input2.device
+            ).unsqueeze(0)
             sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
             lm_pred1 = lm_head(sent_embs1[:, :-1, :])
@@ -1035,6 +1035,12 @@ class MultiTaskModel(nn.Module):
             logit_mask1 = sent_mask1[:, 1:].squeeze(2)
             logit_mask2 = sent_mask2[:, 1:].squeeze(2)
         elif isinstance(task, NPIClozePairTask):
+            scale1 = torch.arange(
+                0, input1.size()[1], dtype=torch.long, device=input1.device
+            ).unsqueeze(0)
+            scale2 = torch.arange(
+                0, input2.size()[1], dtype=torch.long, device=input2.device
+            ).unsqueeze(0)
             sent_embs0, sent_mask0 = self.sent_encoder(batch["input0"], task)
             sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
