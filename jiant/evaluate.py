@@ -22,7 +22,8 @@ from jiant.tasks.tasks import (
 )
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.utils.utils import get_output_attribute
+from jiant.utils.utils import get_output_attribute, uses_cuda
+
 
 LOG_INTERVAL = 30
 
@@ -44,7 +45,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 
 
 def evaluate(
-    model, tasks: Sequence[tasks_module.Task], batch_size: int, use_cuda, split="val"
+    model, tasks: Sequence[tasks_module.Task], batch_size: int, cuda_device, split="val"
 ) -> Tuple[Dict, pd.DataFrame]:
     """Evaluate on a dataset
     {par,qst,ans}_idx are used for MultiRC and other question answering dataset"""
@@ -85,7 +86,7 @@ def evaluate(
             with torch.no_grad():
                 out = model.forward(task, batch, predict=True)
 
-            n_task_examples += get_output_attribute(out, "n_exs", use_cuda)
+            n_task_examples += get_output_attribute(out, "n_exs", uses_cuda(cuda_device))
             # get predictions
             if "preds" not in out:
                 continue

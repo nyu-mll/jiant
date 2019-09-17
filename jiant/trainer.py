@@ -33,10 +33,11 @@ from jiant.utils.utils import (
     check_for_previous_checkpoints,
     get_output_attribute,
     get_model_attribute,
+    uses_cuda,
 )  # pylint: disable=import-error
 
 
-def build_trainer_params(args, use_cuda, cuda_device, task_names, phase="pretrain"):
+def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
     """ Helper function which extracts trainer parameters from args.
     In particular, we want to search args for task specific training parameters.
     """
@@ -89,7 +90,6 @@ def build_trainer_params(args, use_cuda, cuda_device, task_names, phase="pretrai
         if phase == "target_train"
         else args.pretrain_data_fraction,
     )
-    params["use_cuda"] = use_cuda
     params["cuda"] = cuda_device
     return Params(params)
 
@@ -97,7 +97,6 @@ def build_trainer_params(args, use_cuda, cuda_device, task_names, phase="pretrai
 def build_trainer(
     args,
     cuda_device,
-    use_cuda,
     task_names,
     model,
     run_dir,
@@ -118,7 +117,7 @@ def build_trainer(
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     """
-    params = build_trainer_params(args, use_cuda, cuda_device, task_names, phase)
+    params = build_trainer_params(args, cuda_device, task_names, phase)
 
     opt_params = {"type": params["optimizer"], "lr": params["lr"]}
     if params["optimizer"] == "adam":
@@ -157,7 +156,6 @@ def build_trainer(
             "max_epochs": params["max_epochs"],
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
-            "use_cuda": params["use_cuda"],
         }
     )
     assert (
@@ -177,7 +175,6 @@ class SamplingMultiTaskTrainer:
         max_vals=50,
         serialization_dir=None,
         cuda_device=-1,
-        use_cuda=0,
         grad_norm=None,
         grad_clipping=None,
         lr_decay=None,
@@ -233,7 +230,6 @@ class SamplingMultiTaskTrainer:
         self._val_interval = val_interval
         self._serialization_dir = serialization_dir
         self._cuda_device = cuda_device
-        self.use_cuda = use_cuda
         self._grad_norm = grad_norm
         self._grad_clipping = grad_clipping
         self._lr_decay = lr_decay
@@ -605,7 +601,7 @@ class SamplingMultiTaskTrainer:
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
                 loss = get_output_attribute(
-                    output_dict, "loss", self.use_cuda
+                    output_dict, "loss", uses_cuda(self._cuda_device)
                 )  # optionally scale loss
                 # loss *= scaling_weights[task.name]
                 loss.backward()
@@ -649,7 +645,10 @@ class SamplingMultiTaskTrainer:
                 )
                 task_info["last_log"] = time.time()
 
-                if get_model_attribute(self._model, "utilization", self.use_cuda) is not None:
+                if (
+                    get_model_attribute(self._model, "utilization", uses_cuda(self._cuda_device))
+                    is not None
+                ):
                     batch_util = get_model_attribute(
                         self._model, "utilization", self._cuda_device
                     ).get_metric()
@@ -681,9 +680,12 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val,
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
-                if get_model_attribute(self._model, "utilization", self.use_cuda) is not None:
+                if (
+                    get_model_attribute(self._model, "utilization", uses_cuda(self._cuda_device))
+                    is not None
+                ):
                     batch_util = get_model_attribute(
-                        self._model, "utilization", self.use_cuda
+                        self._model, "utilization", uses_cuda(self._cuda_device)
                     ).get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
@@ -705,7 +707,7 @@ class SamplingMultiTaskTrainer:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
                 elmo_params = get_model_attribute(
-                    self._model, "get_elmo_mixing_weights", self.use_cuda
+                    self._model, "get_elmo_mixing_weights", uses_cuda(self._cuda_device)
                 )(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
@@ -862,7 +864,7 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = get_output_attribute(out, "loss", self.use_cuda)
+            loss = get_output_attribute(out, "loss", uses_cuda(self._cuda_device))
 
             if print_output:
                 if isinstance(task, Seq2SeqTask):
@@ -883,7 +885,7 @@ class SamplingMultiTaskTrainer:
                         log.info("\tOutput:\t%s", output_string)
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-            n_examples += get_output_attribute(out, "n_exs", self.use_cuda)
+            n_examples += get_output_attribute(out, "n_exs", uses_cuda(self._cuda_device))
 
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
@@ -1286,7 +1288,6 @@ class SamplingMultiTaskTrainer:
         max_epochs = params.pop("max_epochs", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
-        use_cuda = params.pop("use_cuda")
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(
@@ -1303,7 +1304,6 @@ class SamplingMultiTaskTrainer:
             keep_all_checkpoints=keep_all_checkpoints,
             val_data_limit=val_data_limit,
             max_epochs=max_epochs,
-            use_cuda=use_cuda,
             dec_val_scale=dec_val_scale,
             training_data_fraction=training_data_fraction,
         )

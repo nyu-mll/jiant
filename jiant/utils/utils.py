@@ -401,7 +401,25 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     return params
 
 
-def get_batch_size(batch, use_cuda, keyword="input"):
+def format_output(obj, cuda_devices):
+    if isinstance(cuda_devices, list) or (isinstance(cuda_devices, int) and cuda_devices >= 0):
+        if isinstance(obj, torch.Tensor) is False:
+            obj = torch.tensor(obj).cuda()
+        return obj.unsqueeze(0)
+    else:
+        return obj
+
+
+def uses_cuda(cuda_devices):
+    use_cuda = 1
+    if isinstance(cuda_devices, list):
+        return use_cuda
+    if isinstance(cuda_devices, int) and cuda_devices >= 0:
+        return use_cuda
+    return 0
+
+
+def get_batch_size(batch, cuda_devices, keyword="input"):
     """ Given a batch with unknown text_fields, get an estimate of batch size """
     if keyword == "input":
         batch_field = batch["inputs"] if "inputs" in batch else batch["input1"]
@@ -409,7 +427,7 @@ def get_batch_size(batch, use_cuda, keyword="input"):
         batch_field = batch[keyword]
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
-    return torch.tensor(batch_size).cuda() if use_cuda else batch_size
+    return format_output(batch_size, cuda_devices)
 
 
 def get_batch_utilization(batch_field, pad_idx=0):

@@ -38,6 +38,7 @@ from jiant.utils.utils import (
     select_pool_type,
     delete_all_checkpoints,
     get_model_attribute,
+    uses_cuda,
 )
 
 
@@ -298,15 +299,15 @@ def get_best_checkpoint_path(args, phase, task_name=None):
     return None
 
 
-def evaluate_and_write(args, model, tasks, splits_to_write, use_cuda):
+def evaluate_and_write(args, model, tasks, splits_to_write, cuda_device):
     """ Evaluate a model on dev and/or test, then write predictions """
-    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, use_cuda, "val")
+    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, cuda_device, "val")
     if "val" in splits_to_write:
         evaluate.write_preds(
             tasks, val_preds, args.run_dir, "val", strict_glue_format=args.write_strict_glue_format
         )
     if "test" in splits_to_write:
-        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, use_cuda, "test")
+        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, cuda_device, "test")
         evaluate.write_preds(
             tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
         )
@@ -438,7 +439,7 @@ def check_arg_name(args):
         )
 
 
-def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cuda, cuda_devices):
+def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_devices):
     """
         Function that reloads model if necessary and extracts trainable parts
         of the model in preparation for target_task training.
@@ -456,7 +457,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cu
     """
 
     if args.transfer_paradigm == "finetune":
-        load_model_state(model, ckpt_path, args.cuda, skip_task_models=[task.name], strict=strict)
+        load_model_state(model, ckpt_path, skip_task_models=[task.name], strict=strict)
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     else:  # args.transfer_paradigm == "frozen":
@@ -475,10 +476,11 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cu
             "they should not be updated! Check sep_embs_for_skip flag or make an issue.",
         )
         # Only train task-specific module
-        pred_module = get_model_attribute(model, "%s_mdl" % task.name, use_cuda)
+
+        pred_module = get_model_attribute(model, "%s_mdl" % task.name, uses_cuda(cuda_devices))
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         to_train += elmo_scalars
-    model = model.cuda() if use_cuda else model
+    model = model.cuda() if uses_cuda(cuda_devices) else model
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model, device_ids=cuda_devices)
     return to_train
@@ -495,7 +497,7 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
-    cuda_device, use_cuda = parse_cuda_list_arg(args.cuda)
+    cuda_device = parse_cuda_list_arg(args.cuda)
     tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
     log.info("\tFinished loading tasks in %.3fs", time.time() - start_time)
     log.info("\t Tasks: {}".format([task.name for task in tasks]))
@@ -503,7 +505,7 @@ def main(cl_arguments):
     # Build model
     log.info("Building model...")
     start_time = time.time()
-    model = build_model(args, vocab, word_embs, tasks, cuda_device, use_cuda)
+    model = build_model(args, vocab, word_embs, tasks, cuda_device)
     log.info("Finished building model in %.3fs", time.time() - start_time)
 
     # Start Tensorboard if requested
@@ -520,7 +522,7 @@ def main(cl_arguments):
             pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
         )
         trainer, _, opt_params, schd_params = build_trainer(
-            args, cuda_device, use_cuda, [], model, args.run_dir, should_decrease, phase="pretrain"
+            args, cuda_device, [], model, args.run_dir, should_decrease, phase="pretrain"
         )
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(
@@ -561,12 +563,11 @@ def main(cl_arguments):
                 continue
 
             params_to_train = load_model_for_target_train_run(
-                args, pre_target_train_path, model, strict, task, use_cuda, cuda_device
+                args, pre_target_train_path, model, strict, task, cuda_device
             )
             trainer, _, opt_params, schd_params = build_trainer(
                 args,
                 cuda_device,
-                use_cuda,
                 [task.name],
                 model,
                 args.run_dir,
@@ -594,16 +595,12 @@ def main(cl_arguments):
         # Evaluate on target_tasks.
         for task in target_tasks:
             # Find the task-specific best checkpoint to evaluate on.
-            task_to_use = get_model_attribute(model, "_get_task_params", use_cuda)(task.name).get(
-                "use_classifier", task.name
-            )
+            task_params = get_model_attribute(model, "_get_task_params", uses_cuda(cuda_device))
+            task_to_use = task_params(task.name).get("use_classifier", task.name)
             ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, skip_task_models=[], strict=strict)
-            model = model.cuda() if use_cuda else model
-            if torch.cuda.device_count() > 1:
-                model = nn.DataParallel(model, device_ids=cuda_device)
-            evaluate_and_write(args, model, [task], splits_to_write, use_cuda)
+            evaluate_and_write(args, model, [task], splits_to_write, uses_cuda(cuda_device))
 
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:
         log.info("Deleting all checkpoints.")
