@@ -311,7 +311,6 @@ class NPIClozePairTask(PairClassificationTask):
             input0: shared part (masked form) of both sentence (only used in BERT)
             input1: sentence1
             input2: sentence2
-            index: which token is different
             labels: whether sentence1 is the correct sentence
             tagmask: which tags this sample has
             """
@@ -331,7 +330,6 @@ class NPIClozePairTask(PairClassificationTask):
                 model_preprocessing_interface.lm_boundary_token_fn(input0), indexers
             )
             d["sent0_str"] = MetadataField(" ".join(input0))
-            d["index"] = IndexField(mask_index, d["input1"])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
                 tagids, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
