@@ -137,7 +137,10 @@ class Seq2SeqTask(SequenceGenerationTask):
             # Cut labels if predictions (without gold target) are shorter.
             labels = labels[:, : predictions.shape[1]]
             tagmask = tagmask[:, : predictions.shape[1]]
-        self.scorer2(predictions, labels, tagmask)
+        if self.name == "seg_wix":
+            self.scorer2(predictions, labels, tagmask)
+        else:  # for MT
+            self.scorer2(predictions, labels)
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
