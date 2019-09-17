@@ -35,7 +35,6 @@ class Seq2SeqTask(SequenceGenerationTask):
             self.val_metric = "%s_accuracy" % self.name
         else:  # for MT
             self.scorer2 = BLEU()  # TODO(Katha): Pass this indices to be ignored
-            self.val_metric = "%s_BLEU" % self.name
         self.scorers.append(self.scorer2)
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
@@ -47,8 +46,8 @@ class Seq2SeqTask(SequenceGenerationTask):
         }
 
         # The following is necessary since word-level tasks (e.g., MT) haven't been tested, yet.
-        if self._tokenizer_name != "SplitChars" and self._tokenizer_name != "dummy_tokenizer_name":
-            raise NotImplementedError("For now, Seq2SeqTask only supports character-level tasks.")
+        # if self._tokenizer_name != "SplitChars" and self._tokenizer_name != "dummy_tokenizer_name":
+        #    raise NotImplementedError("For now, Seq2SeqTask only supports character-level tasks.")
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
@@ -78,7 +77,10 @@ class Seq2SeqTask(SequenceGenerationTask):
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
                 src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
-                tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
+                if self.name == "seg_wix":
+                    tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
+                else:  # for MT
+                    tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
