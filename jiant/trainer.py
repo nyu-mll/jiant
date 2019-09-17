@@ -9,6 +9,7 @@ import random
 import re
 import time
 
+
 import numpy as np
 import torch
 from allennlp.common import Params  # pylint: disable=import-error
@@ -17,6 +18,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import (  # pylint: disable=import-error
     LearningRateScheduler,
 )
+from allennlp.nn.util import device_mapping
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from tensorboardX import SummaryWriter  # pylint: disable=import-error
 from torch.nn.utils.clip_grad import clip_grad_norm_
@@ -245,8 +247,6 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = None
 
         self._log_interval = 10  # seconds
-        if self.use_cuda:
-            self._model = self._model.cuda()
 
         self._TB_dir = None
         if self._serialization_dir is not None:
@@ -333,7 +333,6 @@ class SamplingMultiTaskTrainer:
                 biggest_batch_first=True,
             )
             tr_generator = iterator(task.train_data, num_epochs=None)
-            tr_generator = tr_generator
             task_info["iterator"] = iterator
 
             if phase == "pretrain":
@@ -608,8 +607,7 @@ class SamplingMultiTaskTrainer:
                 loss = get_output_attribute(
                     output_dict, "loss", self.use_cuda
                 )  # optionally scale loss
-                loss *= scaling_weights[task.name]
-
+                # loss *= scaling_weights[task.name]
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
@@ -857,7 +855,6 @@ class SamplingMultiTaskTrainer:
         val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
             task.val_data, num_epochs=1, shuffle=False
         )
-        val_generator = val_generator
         n_val_batches = math.ceil(max_data_points / batch_size)
         all_val_metrics["%s_loss" % task.name] = 0.0
 
@@ -1153,6 +1150,8 @@ class SamplingMultiTaskTrainer:
                 "metric_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
+        # if in DataParallel, we have to make sure that
+        # the model is at device=0 here.
         torch.save(model_state, model_path)
         torch.save(
             training_state,

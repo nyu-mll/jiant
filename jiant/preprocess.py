@@ -52,7 +52,8 @@ from jiant.tasks import (
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask
-from jiant.utils import config, serialize, utils
+from jiant.utils import config, serialize, utils, options
+from jiant.utils.options import parse_task_list_arg, parse_cuda_list_arg
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -395,44 +396,6 @@ def build_tasks(args):
     log.info("\t  Training on %s", ", ".join(pretrain_task_names))
     log.info("\t  Evaluating on %s", ", ".join(target_task_names))
     return pretrain_tasks, target_tasks, vocab, word_embs
-
-
-def parse_task_list_arg(task_list):
-    """Parse task list argument into a list of task names."""
-    task_names = []
-    for task_name in task_list.split(","):
-        if task_name == "glue":
-            task_names.extend(ALL_GLUE_TASKS)
-        elif task_name == "superglue":
-            task_names.extend(ALL_SUPERGLUE_TASKS)
-        elif task_name == "none" or task_name == "":
-            continue
-        else:
-            task_names.append(task_name)
-    return task_names
-
-
-def parse_cuda_list_arg(cuda_list):
-    """
-    Parse cuda_list settings
-    """
-    result_cuda = []
-    use_cuda = 1
-    if cuda_list == "auto":
-        cuda_list = list(range(torch.cuda.device_count()))
-        return cuda_list, 1
-    if isinstance(cuda_list, int):
-        result_cuda = [cuda_list]
-        if result_cuda[0] < 0:
-            use_cuda = 0
-    elif "," in cuda_list:
-        for device_id in cuda_list.split(","):
-            result_cuda.append(int(device_id))
-    else:
-        raise EnvironmentError(
-            "Your cuda settings do not match any of the possibilities in defaults.conf"
-        )
-    return result_cuda, use_cuda
 
 
 def _get_task(name, args, data_path, scratch_path):

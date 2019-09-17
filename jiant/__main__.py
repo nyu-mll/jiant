@@ -19,6 +19,7 @@ import sys
 import time
 import copy
 import torch
+import torch.nn as nn
 
 from jiant import evaluate
 from jiant.models import build_model
@@ -437,7 +438,7 @@ def check_arg_name(args):
         )
 
 
-def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cuda):
+def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cuda, cuda_devices):
     """
         Function that reloads model if necessary and extracts trainable parts
         of the model in preparation for target_task training.
@@ -478,6 +479,8 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, use_cu
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         to_train += elmo_scalars
     model = model.cuda() if use_cuda else model
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model, device_ids=cuda_devices)
     return to_train
 
 
@@ -558,7 +561,7 @@ def main(cl_arguments):
                 continue
 
             params_to_train = load_model_for_target_train_run(
-                args, pre_target_train_path, model, strict, task, use_cuda
+                args, pre_target_train_path, model, strict, task, use_cuda, cuda_device
             )
             trainer, _, opt_params, schd_params = build_trainer(
                 args,
@@ -598,6 +601,8 @@ def main(cl_arguments):
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, skip_task_models=[], strict=strict)
             model = model.cuda() if use_cuda else model
+            if torch.cuda.device_count() > 1:
+                model = nn.DataParallel(model, device_ids=cuda_device)
             evaluate_and_write(args, model, [task], splits_to_write, use_cuda)
 
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:

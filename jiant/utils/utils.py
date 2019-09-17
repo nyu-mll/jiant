@@ -38,7 +38,7 @@ def get_output_attribute(out, attribute_name, use_cuda):
     """
     This function handles processing/reduction of output for both 
     DataParallel or non-DataParallel situations. 
-    For the case of multiple GPUs, This functil will 
+    For the case of multiple GPUs, This function will 
     sum all values for a certain output attribute in various batches 
     together.
 
@@ -401,7 +401,7 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     return params
 
 
-def get_batch_size(batch, keyword="input"):
+def get_batch_size(batch, use_cuda, keyword="input"):
     """ Given a batch with unknown text_fields, get an estimate of batch size """
     if keyword == "input":
         batch_field = batch["inputs"] if "inputs" in batch else batch["input1"]
@@ -409,7 +409,7 @@ def get_batch_size(batch, keyword="input"):
         batch_field = batch[keyword]
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
-    return batch_size
+    return torch.tensor(batch_size).cuda() if use_cuda else batch_size
 
 
 def get_batch_utilization(batch_field, pad_idx=0):
