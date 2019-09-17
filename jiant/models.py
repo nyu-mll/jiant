@@ -1035,12 +1035,6 @@ class MultiTaskModel(nn.Module):
             logit_mask1 = sent_mask1[:, 1:].squeeze(2)
             logit_mask2 = sent_mask2[:, 1:].squeeze(2)
         elif isinstance(task, NPIClozePairTask):
-            scale1 = torch.arange(
-                0, input1.size()[1], dtype=torch.long, device=input1.device
-            ).unsqueeze(0)
-            scale2 = torch.arange(
-                0, input2.size()[1], dtype=torch.long, device=input2.device
-            ).unsqueeze(0)
             sent_embs0, sent_mask0 = self.sent_encoder(batch["input0"], task)
             sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
@@ -1070,8 +1064,8 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, BlimpFullSentLMTask):
             pass
         elif isinstance(task, NPIClozePairTask):
-            logit_mask1 *= (scale1 == batch["index"]).to(torch.float)
-            logit_mask2 *= (scale2 == batch["index"]).to(torch.float)
+            logit_mask1 = logit_mask1 * (input1 != input2).to(torch.float)
+            logit_mask2 = logit_mask2 * (input1 != input2).to(torch.float)
         pref_logits1 = torch.sum(lm_logits1 * logit_mask1, dim=1)
         pref_logits2 = torch.sum(lm_logits2 * logit_mask2, dim=1)
         logits = torch.stack([pref_logits1, pref_logits2], dim=1)
@@ -1179,10 +1173,10 @@ class MultiTaskModel(nn.Module):
         logits2 = classifier(sent_embs2, sent_mask2)
         logits = torch.stack(
             (
-                logits1[:, 0] + logits2[:, 1],
                 logits1[:, 1] + logits2[:, 0],
-                logits1[:, 0] + logits2[:, 0],
+                logits1[:, 0] + logits2[:, 1],
                 logits1[:, 1] + logits2[:, 1],
+                logits1[:, 0] + logits2[:, 0],
             ),
             dim=1,
         )
