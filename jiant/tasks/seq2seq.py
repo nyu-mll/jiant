@@ -8,6 +8,7 @@ from typing import Iterable, List, Sequence, Type
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy
+from allennlp.training.metrics.bleu import BLEU
 
 from jiant.utils.tokenizers import get_tokenizer
 from ..utils.data_loaders import tokenize_and_truncate
@@ -22,15 +23,20 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
+@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=100000)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         """ """
         super().__init__(name, **kw)
-        self.scorer2 = BooleanAccuracy()
+        if name == "seg_wix":
+            self.scorer2 = BooleanAccuracy()
+            self.val_metric = "%s_accuracy" % self.name
+        else:  # for MT
+            self.scorer2 = BLEU()  # TODO(Katha): Pass this indices to be ignored
+            self.val_metric = "%s_BLEU" % self.name
         self.scorers.append(self.scorer2)
-        self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
