@@ -370,7 +370,7 @@ class NPIMinimalPairTask(PairClassificationTask):
     """ Task class for minimal pair acceptability judgement """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(NPIMinimalPairTask, self).__init__(name, **kw)
+        super(NPIMinimalPairTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
 
@@ -404,6 +404,8 @@ class NPIMinimalPairTask(PairClassificationTask):
             tag_vocab=self.tag_vocab,
         )
         self.val_data_text = self.test_data_text = self.train_data_text
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+
         # Create score for each tag from tag-index dict
         self.tag_list = self.tag_vocab.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
