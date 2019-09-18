@@ -3,6 +3,7 @@ import codecs
 import collections
 import math
 import os
+import torch
 from typing import Iterable, List, Sequence, Type
 
 from allennlp.data import Instance
@@ -23,7 +24,7 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
-@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=100000)
+@register_task("wmt14_en_de", rel_path="wmt14/en_de/small/", max_targ_v_size=100000)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
@@ -34,7 +35,20 @@ class Seq2SeqTask(SequenceGenerationTask):
             self.scorer2 = BooleanAccuracy()
             self.val_metric = "%s_accuracy" % self.name
         else:  # for MT
-            self.scorer2 = BLEU()  # TODO(Katha): Pass this indices to be ignored
+            self.scorer2 = BLEU(exclude_indices=set([0, 1, 2, 3]))  # PAD, SOS, EOS, UNK
+        input1 = torch.ones([2, 20], dtype=torch.int32) * 5
+        input2 = torch.ones([2, 20], dtype=torch.int32) * 1
+        input2[1, 1] = 5
+        input2[1, 0] = 5
+        input2[1, 2] = 5
+        print(self.scorer2._exclude_indices)
+        print(input1)
+        print(input2)
+
+        self.scorer2(input1, input2)
+        print(self.scorer2.get_metric(False)["BLEU"])
+        print()
+        exit()
         self.scorers.append(self.scorer2)
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len

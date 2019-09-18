@@ -559,7 +559,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         decoder_params = Params(
             {
                 "input_dim": d_sent,
-                "target_embedding_dim": 300,
+                "target_embedding_dim": args.s2s["d_trg_emb"],
                 "decoder_hidden_size": args.s2s["d_hid_dec"],
                 "output_proj_input_dim": args.s2s["output_proj_input_dim"],
                 "max_decoding_steps": args.max_seq_len,
