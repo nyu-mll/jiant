@@ -397,7 +397,7 @@ class SamplingMultiTaskTrainer:
             scaling_weights = np.log(task_n_train_examples)
         elif "max_power_" in scaling_method:
             scaling_power = float(scaling_method.strip("max_power_"))
-            scaling_weights = task_n_train_examples ** scaling_power
+            scaling_weights = task_n_cs_to_tensorboard_trtrain_examples ** scaling_power
         elif scaling_method == "max_inverse_log":
             scaling_weights = 1 / np.log(task_n_train_examples)
         elif scaling_method == "max_inverse":

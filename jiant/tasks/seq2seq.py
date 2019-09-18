@@ -123,8 +123,13 @@ class Seq2SeqTask(SequenceGenerationTask):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
-        acc = self.scorer2.get_metric(reset)
-        return {"perplexity": math.exp(avg_nll), "accuracy": acc}
+        val_metric = self.scorer2.get_metric(reset)
+        if self.name == "seg_wix":
+            metric_name = "accuracy"
+        else:  # for MT
+            metric_name = "bleu"
+            val_metric = val_metric["BLEU"]
+        return {"perplexity": math.exp(avg_nll), metric_name: val_metric}
 
     def update_metrics(self, logits, labels, tagmask=None, predictions=None):
         # This doesn't require logits for now, since loss is updated in another part.
@@ -144,6 +149,26 @@ class Seq2SeqTask(SequenceGenerationTask):
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
+        if self.name == "seg_wix":
+            return self._get_char_prediction(voc_src, voc_trg, inputs, gold, output)
+        else:  # for MT
+            return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
+
+    def _get_mt_prediction(self, voc_src, voc_trg, inputs, gold, output):
+        tokenizer = get_tokenizer(self._tokenizer_name)
+        input_string = " ".join(
+            tokenizer.detokenize([voc_src[token.item()] for token in inputs])
+        ).split(" <EOS>")[0]
+        gold_string = " ".join(
+            tokenizer.detokenize([voc_trg[token.item()] for token in gold])
+        ).split(" <EOS>")[0]
+        output_string = " ".join(
+            tokenizer.detokenize([voc_trg[token.item()] for token in output])
+        ).split(" <EOS>")[0]
+
+        return input_string, gold_string, output_string
+
+    def _get_char_prediction(self, voc_src, voc_trg, inputs, gold, output):
         tokenizer = get_tokenizer(self._tokenizer_name)
 
         input_string = tokenizer.detokenize([voc_src[token.item()] for token in inputs]).split(
