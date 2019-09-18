@@ -497,7 +497,9 @@ class QASRLTask(SpanPredictionTask):
         """ Yield sentences, used to compute vocabulary. """
         yield from self.sentences
 
-    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(sentence_tokens, question_tokens, answer_span, idx):
@@ -507,12 +509,18 @@ class QASRLTask(SpanPredictionTask):
             d["raw_sentence"] = MetadataField(" ".join(sentence_tokens[1:-1]))
             d["raw_question"] = MetadataField(" ".join(question_tokens[1:-1]))
 
-            if is_using_pytorch_transformers:
-                inp = boundary_token_fn(sentence_tokens, question_tokens)
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(
+                    sentence_tokens, question_tokens
+                )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["sentence"] = sentence_to_text_field(boundary_token_fn(sentence_tokens), indexers)
-                d["question"] = sentence_to_text_field(boundary_token_fn(question_tokens), indexers)
+                d["sentence"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(sentence_tokens), indexers
+                )
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question_tokens), indexers
+                )
 
             d["span_start"] = NumericField(answer_span[0], label_namespace="span_start_labels")
             d["span_end"] = NumericField(answer_span[1], label_namespace="span_end_labels")
