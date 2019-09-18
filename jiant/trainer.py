@@ -350,8 +350,8 @@ class SamplingMultiTaskTrainer:
             opt_params = copy.deepcopy(optimizer_params)
             if "t_total" in optimizer_params:
                 # If we know in advance how many opt steps there will be, set it so the LR scheduler
-                # can use that information. This should be the next validation after we hit the epoch
-                # limit.
+                # can use that information. This should be the next validation after we hit the
+                # epoch limit.
                 if self._max_epochs > 0:
                     max_epochs_in_vals = math.ceil(
                         (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
@@ -668,7 +668,7 @@ class SamplingMultiTaskTrainer:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
-                        # updating loss from trianing.
+                        # Updating loss from training
                         all_tr_metrics["%s_loss" % task.name] = float(
                             task_info["loss"] / n_batches_since_val
                         )
@@ -866,6 +866,8 @@ class SamplingMultiTaskTrainer:
                 out = self._forward(batch, task=task)
             loss = get_output_attribute(out, "loss", uses_cuda(self._cuda_device))
 
+            all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+            n_examples += get_output_attribute(out, "n_exs", uses_cuda(self._cuda_device))
             if print_output:
                 if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
@@ -875,18 +877,16 @@ class SamplingMultiTaskTrainer:
                         )
                         inputs = batch["inputs"]["words"][0][1:]
                         gold = batch["targs"]["words"][0][1:]
-                        logits = out["logits"]
-                        output = logits.max(2)[1][0]
-                        input_string, gold_string, output_string = task.get_prediction(
-                            voc_src, voc_trg, inputs, gold, output
-                        )
-                        log.info("\tInput:\t%s", input_string)
-                        log.info("\tGold:\t%s", gold_string)
-                        log.info("\tOutput:\t%s", output_string)
 
-            all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-            n_examples += get_output_attribute(out, "n_exs", uses_cuda(self._cuda_device))
-
+                        for i in range(out["predictions"].shape[1]):
+                            output = out["predictions"][0][i]
+                            input_string, gold_string, output_string = task.get_prediction(
+                                voc_src, voc_trg, inputs, gold, output
+                            )
+                            if i == 0:
+                                log.info("\tInput:\t%s", input_string)
+                                log.info("\tGold:\t%s", gold_string)
+                            log.info("\tOutput:\t%s", output_string)
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()
@@ -1045,8 +1045,7 @@ class SamplingMultiTaskTrainer:
         return should_stop
 
     def _forward(self, batch, task=None):
-        tensor_batch = batch
-        model_out = self._model.forward(task, tensor_batch)
+        model_out = self._model.forward(task, batch)
         return model_out
 
     def _description_from_metrics(self, metrics):
