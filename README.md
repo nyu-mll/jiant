@@ -65,7 +65,7 @@ For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX) and the
 
 For the [function word probing paper](https://arxiv.org/abs/1904.11544), use [this branch](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper) and refer to the instructions in the [scripts/fwords/](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper/scripts/fwords) directory.
 
-For the [bert NPI paper](https://arxiv.org/abs/1909.02597) use [`blimp-and-npi`](https://github.com/nyu-mll/jiant/tree/blimp-and-npi) branch and see the [scripts/bert_npi](https://github.com/nyu-mll/jiant/tree/blimp-and-npi/scripts/bert_npi) for more details.
+For the [BERT NPI paper](https://arxiv.org/abs/1909.02597) follow the instructions in [scripts/bert_npi](https://github.com/nyu-mll/jiant/tree/blimp-and-npi/scripts/bert_npi) on the [`blimp-and-npi`](https://github.com/nyu-mll/jiant/tree/blimp-and-npi) branch.
 
 ## Getting Help
 
