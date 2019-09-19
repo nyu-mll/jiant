@@ -3,7 +3,7 @@ This branch contains a version of the `jiant` code used in [Investigating BERT's
 
 
 ## Set up jiant 
-Follow the [tutorial](https://github.com/nyu-mll/jiant/blob/master/tutorials/setup_tutorial.md) to set up jiant. 
+Follow the [tutorial](https://github.com/nyu-mll/jiant/blob/master/tutorials/setup_tutorial.md) to set up `jiant`. 
 
 ## Download the dataset
 The NPI dataset, together with the code to generate it, is available [here](https://github.com/alexwarstadt/data_generation). But you can also directly download the [packed dataset](https://drive.google.com/open?id=1qoZNV7BbWbeb2YKVHpnLqomMEHFM3ZAK). Move the data into your `$JIANT_DATA_DIR`.
