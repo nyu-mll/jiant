@@ -57,7 +57,7 @@ If you use `jiant` in academic work, please cite it directly:
 - [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX) ("edge probing")
 - [BERT Rediscovers the Classical NLP Pipeline](https://arxiv.org/abs/1905.05950) ("BERT layer paper")
 - [Probing What Different NLP Tasks Teach Machines about Function Word Comprehension](https://arxiv.org/abs/1904.11544) ("function word probing")
-- [Investigating BERT’s Knowledge of Language: Five Analysis Methods with NPIs](https://arxiv.org/abs/1909.02597) ("bert NPI paper")
+- [Investigating BERT’s Knowledge of Language: Five Analysis Methods with NPIs](https://arxiv.org/abs/1909.02597) ("BERT NPI paper")
 
 To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.org/abs/1812.10860) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
 
