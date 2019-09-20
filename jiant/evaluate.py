@@ -219,7 +219,7 @@ def write_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
         elif isinstance(task, QASRLTask):
-            _write_simple_csv_preds(task, preds_df, pred_dir, split_name)
+            _write_simple_tsv_preds(task, preds_df, pred_dir, split_name)
         else:
             log.warning("Task '%s' not supported by write_preds().", task.name)
             continue
@@ -487,7 +487,7 @@ def _write_rte_preds(
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
 
-def _write_simple_csv_preds(task, preds_df: pd.DataFrame, pred_dir: str, split_name: str):
+def _write_simple_tsv_preds(task, preds_df: pd.DataFrame, pred_dir: str, split_name: str):
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format=False)
     preds_df.to_csv(preds_file, sep="\t")
 
