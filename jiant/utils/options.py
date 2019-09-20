@@ -36,4 +36,6 @@ def parse_cuda_list_arg(cuda_list):
         raise ValueError(
             "Your cuda settings do not match any of the possibilities in defaults.conf"
         )
+    if len(result_cuda) == 1:
+        result_cuda = result_cuda[0]
     return result_cuda
