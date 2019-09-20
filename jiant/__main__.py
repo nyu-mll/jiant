@@ -614,7 +614,7 @@ def main(cl_arguments):
             ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, cuda_device, skip_task_models=[], strict=strict)
-            evaluate_and_write(args, model, [task], splits_to_write, uses_cuda(cuda_device))
+            evaluate_and_write(args, model, [task], splits_to_write, cuda_device)
 
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:
         log.info("Deleting all checkpoints.")
