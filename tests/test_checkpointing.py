@@ -27,7 +27,7 @@ import jiant.tasks.tasks as tasks
 from jiant.__main__ import get_best_checkpoint_path
 
 
-def build_trainer_params(args, use_cuda, cuda_device, task_names, phase="pretrain"):
+def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
     return {
         "lr": 1e-05,
         "val_data_limit": 10,
@@ -50,7 +50,6 @@ def build_trainer_params(args, use_cuda, cuda_device, task_names, phase="pretrai
         "val_interval": 1,
         "cuda": cuda_device,
         "keep_all_checkpoints": 1,
-        "use_cuda": use_cuda,
     }
 
 
@@ -168,11 +167,9 @@ class TestCheckpointing(unittest.TestCase):
             MockModel.use_bert = 1
             model = MockModel()
             cuda_device = -1
-            use_cuda = 0
             pt_trainer, _, _, _ = trainer.build_trainer(
                 self.args,
                 cuda_device,
-                use_cuda,
                 ["wic"],  # here, we use WIC twice to reduce the amount of boiler-plate code
                 model,
                 self.args.run_dir,
@@ -183,7 +180,6 @@ class TestCheckpointing(unittest.TestCase):
             tt_trainer, _, _, _ = trainer.build_trainer(
                 self.args,
                 cuda_device,
-                use_cuda,
                 ["wic"],
                 model,
                 self.args.run_dir,

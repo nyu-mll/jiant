@@ -324,7 +324,7 @@ def select_task_specific_args(exp_args, diff_args):
     return diff_args
 
 
-def load_model_state(model, state_path, skip_task_models=[], strict=True):
+def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
     """ Helper function to load a model state
 
     Parameters
@@ -338,7 +338,7 @@ def load_model_state(model, state_path, skip_task_models=[], strict=True):
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     """
-    model_state = torch.load(state_path)
+    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
 
     assert_for_log(
         not (skip_task_models and strict),
@@ -402,7 +402,14 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
 
 
 def format_output(obj, cuda_devices):
-    if isinstance(cuda_devices, list) or (isinstance(cuda_devices, int) and cuda_devices >= 0):
+    """
+    Format output based on whether model is using DataParallel or not. 
+    DataParallel necessitates objects to be gathered into GPU:0 to have 
+    dimension 0. 
+    This function will be used for scalar outputs of model forwards 
+    such as loss and n_exs.
+    """
+    if isinstance(cuda_devices, list):
         if isinstance(obj, torch.Tensor) is False:
             obj = torch.tensor(obj).cuda()
         return obj.unsqueeze(0)

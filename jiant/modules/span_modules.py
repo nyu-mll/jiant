@@ -115,6 +115,7 @@ class SpanClassifierModule(nn.Module):
             se_projs.append(se_proj)
 
         span_embs = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
+        out["n_exs"] = batch_size
         _kw = dict(sequence_mask=sent_mask.long())
         for i in range(self.num_spans):
             # spans are [batch_size, num_targets, span_modules]

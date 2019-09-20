@@ -1,3 +1,6 @@
+"""
+Functions to do with parsing configs here.
+"""
 import torch
 
 

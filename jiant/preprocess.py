@@ -53,7 +53,7 @@ from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask
 from jiant.utils import config, serialize, utils, options
-from jiant.utils.options import parse_task_list_arg, parse_cuda_list_arg
+from jiant.utils.options import parse_task_list_arg
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"

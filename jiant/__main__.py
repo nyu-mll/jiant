@@ -468,7 +468,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
     """
 
     if args.transfer_paradigm == "finetune":
-        load_model_state(model, ckpt_path, skip_task_models=[task.name], strict=strict)
+        load_model_state(model, ckpt_path, cuda_devices, skip_task_models=[task.name], strict=strict)
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     else:  # args.transfer_paradigm == "frozen":
@@ -492,7 +492,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         to_train += elmo_scalars
     model = model.cuda() if uses_cuda(cuda_devices) else model
-    if torch.cuda.device_count() > 1:
+    if isinstance(cuda_devices, list):
         model = nn.DataParallel(model, device_ids=cuda_devices)
     return to_train
 
@@ -610,7 +610,7 @@ def main(cl_arguments):
             task_to_use = task_params(task.name).get("use_classifier", task.name)
             ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
-            load_model_state(model, ckpt_path, skip_task_models=[], strict=strict)
+            load_model_state(model, ckpt_path, cuda_device, skip_task_models=[], strict=strict)
             evaluate_and_write(args, model, [task], splits_to_write, uses_cuda(cuda_device))
 
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:

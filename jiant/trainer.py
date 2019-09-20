@@ -603,7 +603,7 @@ class SamplingMultiTaskTrainer:
                 loss = get_output_attribute(
                     output_dict, "loss", uses_cuda(self._cuda_device)
                 )  # optionally scale loss
-                # loss *= scaling_weights[task.name]
+                loss *= scaling_weights[task.name]
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
@@ -887,6 +887,9 @@ class SamplingMultiTaskTrainer:
                                 log.info("\tInput:\t%s", input_string)
                                 log.info("\tGold:\t%s", gold_string)
                             log.info("\tOutput:\t%s", output_string)
+            n_examples += get_output_attribute(
+                    output_dict, "n_exs", uses_cuda(self._cuda_device)
+                )
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()
@@ -1151,8 +1154,7 @@ class SamplingMultiTaskTrainer:
                 "metric_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
-        # if in DataParallel, we have to make sure that
-        # the model is at device=0 here.
+
         torch.save(model_state, model_path)
         torch.save(
             training_state,
