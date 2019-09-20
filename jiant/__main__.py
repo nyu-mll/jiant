@@ -29,7 +29,7 @@ from jiant.preprocess import build_tasks
 from jiant import tasks as task_modules
 from jiant.trainer import build_trainer
 from jiant.utils import config, tokenizers
-from jiant.options import parse_cuda_list_arg
+from jiant.utils.options import parse_cuda_list_arg
 from jiant.utils.utils import (
     assert_for_log,
     load_model_state,
