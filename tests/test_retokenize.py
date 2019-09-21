@@ -298,10 +298,10 @@ class TestRetokenize(unittest.TestCase):
 
     def test_bytebpe(self):
         self.tokens = [
-            ["Members", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"],
-            ["I", "Ġlook", "Ġat", "ĠSarah", "'s", "Ġdog", ".", "ĠIt", "Ġwas", "Ġcute", ".", "!"],
+            ["ĠMembers", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"],
+            ["ĠI", "Ġlook", "Ġat", "ĠSarah", "'s", "Ġdog", ".", "ĠIt", "Ġwas", "Ġcute", ".", "!"],
             [
-                "Mr",
+                "ĠMr",
                 ".",
                 "ĠImm",
                 "elt",
@@ -318,7 +318,7 @@ class TestRetokenize(unittest.TestCase):
                 "Ġrules",
                 ".",
             ],
-            ["What", "?"],
+            ["ĠWhat", "?"],
         ]
         self.token_index_tgt = [
             [[0], [1], [2], [3], [4, 5], [6], [7]],
