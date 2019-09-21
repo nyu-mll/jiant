@@ -944,6 +944,12 @@ class MultiTaskModel(nn.Module):
 
         return out
 
+    def _span_forward(self, batch, task, predict):
+        sent_embs, sent_mask = self.sent_encoder(batch["input1"], task)
+        module = getattr(self, "%s_mdl" % task.name)
+        out = module.forward(batch, sent_embs, sent_mask, task, predict)
+        return out
+
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
 
@@ -995,6 +1001,34 @@ class MultiTaskModel(nn.Module):
                 out["preds"] = logits
             else:
                 _, out["preds"] = logits.max(dim=1)
+        return out
+
+    def _seq_gen_forward(self, batch, task, predict):
+        """ For sequence generation tasks """
+        out = {}
+        sent, sent_mask = self.sent_encoder(batch["inputs"], task)
+        out["n_exs"] = get_batch_size(batch, self._cuda_device)
+
+        decoder = getattr(self, "%s_decoder" % task.name)
+        out.update(decoder.forward(sent, sent_mask, batch["targs"], generate=predict))
+        # Loss is not computed during generation.
+        if "loss" in out:
+            task.scorer1(out["loss"].item())
+
+        if "targs" in batch:
+            # logits: batch_size * seq_len * tgt_voc_size
+            target = batch["targs"]["words"][:, 1:].contiguous()
+            target_mask = out["target_mask"]
+
+            assert "predictions" in out
+
+            task.update_metrics(
+                logits=None,
+                labels=target,
+                tagmask=target_mask[:, 1:].contiguous(),
+                predictions=out["predictions"],
+            )
+
         return out
 
     def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
@@ -1116,8 +1150,41 @@ class MultiTaskModel(nn.Module):
                 logit = module(inp, inp_mask)
                 logits.append(logit)
         logits = torch.cat(logits, dim=1)
+        out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device, keyword="choice0")
+        if "label" in batch:
+            labels = batch["label"]
+            out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
+            task.update_metrics(logits, labels)
 
+        if predict:
+            out["preds"] = logits.argmax(dim=-1)
+        return out
+
+    def _lm_only_lr_forward(self, batch, task):
+        """Only left to right pass for LM model - non-bidirectional models.
+           Used for language modeling training only in one direction.
+        Args:
+            batch: indexed input data
+            task: (Task obejct)
+        return:
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim]
+                    is output layer from forward layer
+                - 'loss': size average CE loss
+        """
+
+        out = {}
+        assert_for_log(
+            "targs" in batch and "words" in batch["targs"], "Batch missing target words!"
+        )
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, "tokens")
+        b_size, seq_len = batch["targs"]["words"].size()
+        # pad_idx is the token used to pad till max_seq_len
+        n_pad = batch["targs"]["words"].eq(pad_idx).sum().item()
+        # No of examples: only left to right, every unit in the sequence length is
+        # a training example only once.
+        out["n_exs"] = format_output(b_size * seq_len - n_pad, self._cuda_device)
         sent, mask = self.sent_encoder(batch["input"], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
         hid2voc = getattr(self, "%s_hid2voc" % task.name)

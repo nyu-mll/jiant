@@ -1,5 +1,5 @@
 """
-Functions to do with parsing configs here.
+Functions for parsing configs.
 """
 import torch
 
@@ -27,11 +27,10 @@ def parse_cuda_list_arg(cuda_list):
     if cuda_list == "auto":
         cuda_list = list(range(torch.cuda.device_count()))
         return cuda_list
-    if isinstance(cuda_list, int):
-        result_cuda = [cuda_list]
+    elif isinstance(cuda_list, int):
+        return cuda_list
     elif "," in cuda_list:
-        for device_id in cuda_list.split(","):
-            result_cuda.append(int(device_id))
+        return [int(d) for d in cuda_list.split(",")]
     else:
         raise ValueError(
             "Your cuda settings do not match any of the possibilities in defaults.conf"

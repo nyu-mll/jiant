@@ -410,7 +410,7 @@ def format_output(obj, cuda_devices):
     such as loss and n_exs.
     """
     if isinstance(cuda_devices, list):
-        if isinstance(obj, torch.Tensor) is False:
+        if not isinstance(obj, torch.Tensor):
             obj = torch.tensor(obj).cuda()
         return obj.unsqueeze(0)
     else:
@@ -419,9 +419,7 @@ def format_output(obj, cuda_devices):
 
 def uses_cuda(cuda_devices):
     use_cuda = 1
-    if isinstance(cuda_devices, list):
-        return use_cuda
-    if isinstance(cuda_devices, int) and cuda_devices >= 0:
+    if isinstance(cuda_devices, list) or isinstance(cuda_devices, int) and cuda_devices >= 0:
         return use_cuda
     return 0
 
