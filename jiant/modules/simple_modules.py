@@ -239,24 +239,22 @@ class PairClassifier(nn.Module):
 class TokenProjectionEncoder(nn.Module):
     """ Applies projection to each token representation """
 
-    def __init__(self, d_inp=512, d_proj=512):
+    def __init__(self, d_inp=512):
         super(TokenProjectionEncoder, self).__init__()
-        self.project = nn.Linear(d_inp, d_proj)
-        self.classifier = nn.Linear(d_proj, 1)
+        self.project = nn.Linear(d_inp, 1)
 
     def forward(self, sequence, mask):
-        proj_seq = self.project(sequence)  # linear project each hid state
-        logits = self.classifier(proj_seq).squeeze(-1)
+        logits = self.project(sequence).squeeze(-1)
         return logits
 
 
 class TokenMultiProjectionEncoder(nn.Module):
     """ Applies multiple projections to each token representation """
 
-    def __init__(self, projection_names, d_inp=512, d_proj=512):
+    def __init__(self, projection_names, d_inp=512):
         super(TokenMultiProjectionEncoder, self).__init__()
         self.projections = nn.ModuleDict(
-            {name: TokenProjectionEncoder(d_inp=d_inp, d_proj=d_proj) for name in projection_names}
+            {name: TokenProjectionEncoder(d_inp=d_inp) for name in projection_names}
         )
 
     def forward(self, sequence, mask):

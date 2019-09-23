@@ -530,7 +530,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, SpanPredictionTask):
         module = TokenMultiProjectionEncoder(
-            projection_names=["span_start", "span_end"], d_inp=d_sent, d_proj=task_params["d_proj"]
+            projection_names=["span_start", "span_end"], d_inp=d_sent
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, LanguageModelingParsingTask):
