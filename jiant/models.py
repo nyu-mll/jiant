@@ -952,7 +952,6 @@ class MultiTaskModel(nn.Module):
 
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
-
         classifier = self._get_classifier(task)
         if isinstance(task, (MRPCTask, STSBTask, QQPTask)) and self.uses_mirrored_pair:
             # Mirrored pair is a trick used by GPT-like models in similarity tasks

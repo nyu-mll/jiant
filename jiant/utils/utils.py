@@ -34,7 +34,7 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
-def get_output_attribute(out, attribute_name, use_cuda):
+def get_output_attribute(out, attribute_name, cuda_device):
     """
     This function handles processing/reduction of output for both 
     DataParallel or non-DataParallel situations. 
@@ -46,15 +46,15 @@ def get_output_attribute(out, attribute_name, use_cuda):
     ---------------------
     out: Dictionary, output of model during forward pass, 
     attribute_name: str, 
-    use_cuda: bool
+    cuda_device: list or int
     """
-    if use_cuda:
+    if isinstance(cuda_device, list):
         return out[attribute_name].sum()
     else:
         return out[attribute_name]
 
 
-def get_model_attribute(model, attribute_name, use_cuda):
+def get_model_attribute(model, attribute_name, cuda_device):
     """
         Getter function for both CPU and GPU. 
 
@@ -68,7 +68,7 @@ def get_model_attribute(model, attribute_name, use_cuda):
         The attribute object from the model. 
     """
     # maybe we should do (int, list)
-    if use_cuda:
+    if isinstance(cuda_device, list):
         return getattr(model.module, attribute_name)
     else:
         return getattr(model, attribute_name)

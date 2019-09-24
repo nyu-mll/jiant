@@ -35,6 +35,7 @@ from jiant.utils.utils import (
     get_model_attribute,
     uses_cuda,
 )  # pylint: disable=import-error
+from allennlp.nn.util import move_to_device
 
 
 def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
@@ -645,10 +646,7 @@ class SamplingMultiTaskTrainer:
                 )
                 task_info["last_log"] = time.time()
 
-                if (
-                    get_model_attribute(self._model, "utilization", uses_cuda(self._cuda_device))
-                    is not None
-                ):
+                if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
                     batch_util = get_model_attribute(
                         self._model, "utilization", self._cuda_device
                     ).get_metric()
@@ -680,12 +678,9 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val,
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
-                if (
-                    get_model_attribute(self._model, "utilization", uses_cuda(self._cuda_device))
-                    is not None
-                ):
+                if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
                     batch_util = get_model_attribute(
-                        self._model, "utilization", uses_cuda(self._cuda_device)
+                        self._model, "utilization", sself._cuda_device
                     ).get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
@@ -707,7 +702,7 @@ class SamplingMultiTaskTrainer:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
                 elmo_params = get_model_attribute(
-                    self._model, "get_elmo_mixing_weights", uses_cuda(self._cuda_device)
+                    self._model, "get_elmo_mixing_weights", self._cuda_device
                 )(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
@@ -1046,6 +1041,8 @@ class SamplingMultiTaskTrainer:
         return should_stop
 
     def _forward(self, batch, task=None):
+        if isinstance(self._cuda_device, int) and self._cuda_device >= 0:
+            batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, batch)
         return model_out
 
