@@ -85,7 +85,6 @@ def evaluate(
         for batch_idx, batch in enumerate(generator):
             with torch.no_grad():
                 out = model.forward(task, batch, predict=True)
-
             n_task_examples += get_output_attribute(out, "n_exs", uses_cuda(cuda_device))
             # get predictions
             if "preds" not in out:

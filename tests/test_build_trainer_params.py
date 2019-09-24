@@ -25,15 +25,14 @@ class TestBuildTrainerParams(unittest.TestCase):
         )  # To get other required values.
         params = params_from_file(DEFAULTS_PATH, HOCON)
         cuda_device = -1
-        use_cuda = 0
         self.processed_pretrain_params = build_trainer_params(
-            params, use_cuda, cuda_device, ["mnli", "qqp"], phase="pretrain"
+            params, cuda_device, ["mnli", "qqp"], phase="pretrain"
         )
         self.processed_mnli_target_params = build_trainer_params(
-            params, use_cuda, cuda_device, ["mnli"], phase="target_train"
+            params, cuda_device, ["mnli"], phase="target_train"
         )
         self.processed_qqp_target_params = build_trainer_params(
-            params, use_cuda, cuda_device, ["qqp"], phase="target_train"
+            params, cuda_device, ["qqp"], phase="target_train"
         )
 
     def test_pretrain_task_specific(self):

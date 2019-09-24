@@ -53,7 +53,7 @@ from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask
 from jiant.utils import config, serialize, utils, options
-from jiant.utils.options import parse_task_list_arg, parse_cuda_list_arg
+from jiant.utils.options import parse_task_list_arg
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -605,13 +605,6 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
 
     vocab_size = len(tokenizer)
     # do not use tokenizer.vocab_size, it does not include newly added token
-    if tokenizer_name.startswith("roberta-"):
-        if tokenizer.convert_ids_to_tokens(vocab_size - 1) is None:
-            vocab_size -= 1
-        else:
-            log.info("Time to delete vocab_size-1 in preprocess.py !!!")
-    # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None, remove
-    # this when they fix the problem
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
     log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))

@@ -291,7 +291,7 @@ def build_model(args, vocab, pretrained_embs, tasks, cuda_devices):
     model = MultiTaskModel(args, sent_encoder, vocab, cuda_devices)
     build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
     model = model.cuda() if uses_cuda(cuda_devices) else model
-    if uses_cuda(cuda_devices):
+    if isinstance(cuda_devices, list):
         model = nn.DataParallel(model, device_ids=cuda_devices)
 
     log.info("Model specification:")
@@ -926,12 +926,33 @@ class MultiTaskModel(nn.Module):
             logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
+
+        if "labels" in batch:
+            if batch["labels"].dim() == 0:
+                labels = batch["labels"].unsqueeze(0)
+            elif batch["labels"].dim() == 1:
+                labels = batch["labels"]
+            else:
+                labels = batch["labels"].squeeze(-1)
+            out["loss"] = F.cross_entropy(logits, labels)
+            # task.update_diagnostic_metrics(predicted, labels, batch)
+            task.update_diagnostic_metrics(logits, labels, batch)
+
+        if predict:
+            _, predicted = logits.max(dim=1)
+            out["preds"] = predicted
+
+        return out
+
+    def _span_forward(self, batch, task, predict):
+        sent_embs, sent_mask = self.sent_encoder(batch["input1"], task)
+        module = getattr(self, "%s_mdl" % task.name)
+        out = module.forward(batch, sent_embs, sent_mask, task, predict)
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
 
-        # embed the sentence
         classifier = self._get_classifier(task)
         if isinstance(task, (MRPCTask, STSBTask, QQPTask)) and self.uses_mirrored_pair:
             # Mirrored pair is a trick used by GPT-like models in similarity tasks
@@ -955,6 +976,37 @@ class MultiTaskModel(nn.Module):
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch, self._cuda_device)
+        tagmask = batch.get("tagmask", None)
+        if "labels" in batch:
+            labels = batch["labels"]
+            labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
+            if isinstance(task, RegressionTask):
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
+                out["loss"] = F.mse_loss(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.update_metrics(logits_np, labels_np, tagmask=tagmask)
+            else:
+                out["loss"] = F.cross_entropy(logits, labels)
+                task.update_metrics(logits, labels, tagmask=tagmask)
+        out["loss"] = format_output(out["loss"], self._cuda_device)
+        if predict:
+            if isinstance(task, RegressionTask):
+                if logits.ndimension() > 1:
+                    assert (
+                        logits.ndimension() == 2 and logits[-1] == 1
+                    ), "Invalid regression prediction dimensions!"
+                    logits = logits.squeeze(-1)
+                out["preds"] = logits
+            else:
+                _, out["preds"] = logits.max(dim=1)
+        return out
+
+    def _seq_gen_forward(self, batch, task, predict):
+        """ For sequence generation tasks """
+        out = {}
+        sent, sent_mask = self.sent_encoder(batch["inputs"], task)
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
 
         decoder = getattr(self, "%s_decoder" % task.name)
@@ -1098,8 +1150,41 @@ class MultiTaskModel(nn.Module):
                 logit = module(inp, inp_mask)
                 logits.append(logit)
         logits = torch.cat(logits, dim=1)
+        out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device, keyword="choice0")
+        if "label" in batch:
+            labels = batch["label"]
+            out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
+            task.update_metrics(logits, labels)
 
+        if predict:
+            out["preds"] = logits.argmax(dim=-1)
+        return out
+
+    def _lm_only_lr_forward(self, batch, task):
+        """Only left to right pass for LM model - non-bidirectional models.
+           Used for language modeling training only in one direction.
+        Args:
+            batch: indexed input data
+            task: (Task obejct)
+        return:
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim]
+                    is output layer from forward layer
+                - 'loss': size average CE loss
+        """
+
+        out = {}
+        assert_for_log(
+            "targs" in batch and "words" in batch["targs"], "Batch missing target words!"
+        )
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, "tokens")
+        b_size, seq_len = batch["targs"]["words"].size()
+        # pad_idx is the token used to pad till max_seq_len
+        n_pad = batch["targs"]["words"].eq(pad_idx).sum().item()
+        # No of examples: only left to right, every unit in the sequence length is
+        # a training example only once.
+        out["n_exs"] = format_output(b_size * seq_len - n_pad, self._cuda_device)
         sent, mask = self.sent_encoder(batch["input"], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
