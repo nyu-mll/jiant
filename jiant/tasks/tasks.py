@@ -2449,7 +2449,7 @@ class SpanClassificationTask(Task):
     def make_instance(self, record, idx, indexers, model_preprocessing_interface) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record["text"].split()
-        tokens = model_preprocessing_interface.boundary_token_fn(tokens)
+        tokens, offset = model_preprocessing_interface.boundary_token_fn(tokens, get_offset=True)
         text_field = sentence_to_text_field(tokens, indexers)
 
         example = {}
@@ -2459,7 +2459,7 @@ class SpanClassificationTask(Task):
 
         for i in range(self.num_spans):
             example["span" + str(i + 1) + "s"] = ListField(
-                [self._make_span_field(record["target"]["span" + str(i + 1)], text_field, 1)]
+                [self._make_span_field(record["target"]["span" + str(i + 1)], text_field, offset)]
             )
         example["labels"] = LabelField(
             record["label"], label_namespace="labels", skip_indexing=True
@@ -2601,9 +2601,8 @@ class WiCTask(PairClassificationTask):
             sequence the marked word is located. """
             sent_parts = sent.split(word)
             sent_tok1 = tokenize_and_truncate(self._tokenizer_name, sent_parts[0], self.max_seq_len)
-            sent_tok2 = tokenize_and_truncate(self._tokenizer_name, sent_parts[1], self.max_seq_len)
             sent_mid = tokenize_and_truncate(self._tokenizer_name, word, self.max_seq_len)
-            sent_tok = sent_tok1 + sent_mid + sent_tok2
+            sent_tok = tokenize_and_truncate(self._tokenizer_name, sent, self.max_seq_len)
             start_idx = len(sent_tok1)
             end_idx = start_idx + len(sent_mid)
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
@@ -2658,18 +2657,25 @@ class WiCTask(PairClassificationTask):
             d["sent1_str"] = MetadataField(" ".join(input1))
             d["sent2_str"] = MetadataField(" ".join(input2))
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                inp, offset1, offset2 = model_preprocessing_interface.boundary_token_fn(
+                    input1, input2, get_offset=True
+                )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
-                idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
             else:
-                d["input1"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                inp1, offset1 = model_preprocessing_interface.boundary_token_fn(
+                    input1, get_offset=True
                 )
-                d["input2"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(input2), indexers
+                inp2, offset2 = model_preprocessing_interface.boundary_token_fn(
+                    input2, get_offset=True
                 )
-            d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
-            d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
+                d["input1"] = sentence_to_text_field(inp1, indexers)
+                d["input2"] = sentence_to_text_field(inp2, indexers)
+            d["idx1"] = ListField(
+                [NumericField(i) for i in range(idxs1[0] + offset1, idxs1[1] + offset1)]
+            )
+            d["idx2"] = ListField(
+                [NumericField(i) for i in range(idxs2[0] + offset2, idxs2[1] + offset2)]
+            )
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
 

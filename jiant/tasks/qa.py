@@ -269,14 +269,19 @@ class ReCoRDTask(Task):
     def load_data_for_path(self, path, split):
         """ Load data """
 
-        def tokenize_preserve_placeholder(sent):
+        def tokenize_preserve_placeholder(sent, max_ent_length):
             """ Tokenize questions while preserving @placeholder token """
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
-            sent_parts = [
-                tokenize_and_truncate(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
-            ]
-            return sent_parts[0] + ["@placeholder"] + sent_parts[1]
+            placeholder_loc = len(
+                tokenize_and_truncate(
+                    self.tokenizer_name, sent_parts[0], self.max_seq_len - max_ent_length
+                )
+            )
+            sent_tok = tokenize_and_truncate(
+                self.tokenizer_name, sent, self.max_seq_len - max_ent_length
+            )
+            return sent_tok[:placeholder_loc] + ["@placeholder"] + sent_tok[placeholder_loc:]
 
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
@@ -287,9 +292,10 @@ class ReCoRDTask(Task):
             )
             ent_idxs = item["passage"]["entities"]
             ents = [item["passage"]["text"][idx["start"] : idx["end"] + 1] for idx in ent_idxs]
+            max_ent_length = max([idx["end"] - idx["start"] + 1 for idx in ent_idxs])
             qas = item["qas"]
             for qa in qas:
-                qst = tokenize_preserve_placeholder(qa["query"])
+                qst = tokenize_preserve_placeholder(qa["query"], max_ent_length)
                 qst_id = qa["idx"]
                 if "answers" in qa:
                     anss = [a["text"] for a in qa["answers"]]

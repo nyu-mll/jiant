@@ -42,8 +42,8 @@ If you use `jiant` in academic work, please cite it directly:
 
 ```
 @misc{wang2019jiant,
-    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Jason Phang and Edouard Grave and Najoung Kim and Phu Mon Htut and Thibault F'{e}vry and Berlin Chen and Nikita Nangia and Haokun Liu and Anhad Mohananey and Shikha Bordia and Nicolas Patry and Ellie Pavlick and Samuel R. Bowman},
-    title = {\texttt{jiant} 1.1: A software toolkit for research on general-purpose text understanding models},
+    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Jason Phang and Edouard Grave and Haokun Liu and Najoung Kim and Phu Mon Htut and Thibault F'{e}vry and Berlin Chen and Nikita Nangia and Anhad Mohananey and Katharina Kann and Shikha Bordia and Nicolas Patry and David Benton and Ellie Pavlick and Samuel R. Bowman},
+    title = {\texttt{jiant} 1.2: A software toolkit for research on general-purpose text understanding models},
     howpublished = {\url{http://jiant.info/}},
     year = {2019}
 }
@@ -57,6 +57,7 @@ If you use `jiant` in academic work, please cite it directly:
 - [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX) ("edge probing")
 - [BERT Rediscovers the Classical NLP Pipeline](https://arxiv.org/abs/1905.05950) ("BERT layer paper")
 - [Probing What Different NLP Tasks Teach Machines about Function Word Comprehension](https://arxiv.org/abs/1904.11544) ("function word probing")
+- [Investigating BERT’s Knowledge of Language: Five Analysis Methods with NPIs](https://arxiv.org/abs/1909.02597) ("BERT NPI paper")
 
 To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.org/abs/1812.10860) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
 
@@ -64,6 +65,7 @@ For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX) and the
 
 For the [function word probing paper](https://arxiv.org/abs/1904.11544), use [this branch](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper) and refer to the instructions in the [scripts/fwords/](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper/scripts/fwords) directory.
 
+For the [BERT NPI paper](https://arxiv.org/abs/1909.02597) follow the instructions in [scripts/bert_npi](https://github.com/nyu-mll/jiant/tree/blimp-and-npi/scripts/bert_npi) on the [`blimp-and-npi`](https://github.com/nyu-mll/jiant/tree/blimp-and-npi) branch.
 
 ## Getting Help
 

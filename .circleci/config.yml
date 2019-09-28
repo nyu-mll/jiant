@@ -48,6 +48,7 @@
             command: |
               source venv/bin/activate
               python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
+              python -m spacy download en
               python main.py --config_file jiant/config/demo.conf
               python main.py --config_file jiant/config/demo.conf --overrides "do_pretrain = 0, do_target_task_training = 0, load_model = 1"
         # Step 8: run tests
