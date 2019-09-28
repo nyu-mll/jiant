@@ -2798,11 +2798,13 @@ class COPATask(MultipleChoiceTask):
         return {"accuracy": acc}
 
 
-@register_task("swag", rel_path="SWAG/")
-class SWAGTask(MultipleChoiceTask):
-    """ Task class for Situations with Adversarial Generations.  """
+
+@register_task("SocialQA", rel_path="SocialQA/")
+class SocialQATask(MultipleChoiceTask):
+    """ Task class for Choice of Plausible Alternatives Task.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
+        """ """
         super().__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -2815,54 +2817,61 @@ class SWAGTask(MultipleChoiceTask):
         self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % name
         self.val_metric_decreases = False
-        self.n_choices = 4
+        self.n_choices = 2
 
     def load_data(self):
         """ Process the dataset located at path.  """
 
         def _load_split(data_file):
-            questions, choicess, targs = [], [], []
-            data = pd.read_csv(data_file)
-            for ex_idx, ex in data.iterrows():
-                sent1 = tokenize_and_truncate(self._tokenizer_name, ex["sent1"], self.max_seq_len)
-                questions.append(sent1)
-                sent2_prefix = ex["sent2"]
-                choices = []
-                for i in range(4):
-                    choice = sent2_prefix + " " + ex["ending%d" % i]
-                    choice = tokenize_and_truncate(self._tokenizer_name, choice, self.max_seq_len)
-                    choices.append(choice)
+            contexts, questions, choicess, targs = [], [], [], []
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
+            for example in data:
+                context = example["context"]
+                choice1 = example["answerA"]
+                choice2 = example["answerB"]
+                choice3 = example["answerC"]
+                question = example["question"]
+                choices = [
+                    tokenize_and_truncate(self._tokenizer_name, choice, self.max_seq_len)
+                    for choice in [choice1, choice2, choice3]
+                ]
+                targ = example["correct"] if "correct" in example else 0
+                contexts.append(
+                    tokenize_and_truncate(self._tokenizer_name, context, self.max_seq_len)
+                )
                 choicess.append(choices)
-                targ = ex["label"] if "label" in ex else 0
+                questions.append(
+                    tokenize_and_truncate(self._tokenizer_name, question, self.max_seq_len)
+                )
                 targs.append(targ)
-            return [questions, choicess, targs]
+            return [contexts, choicess, questions, targs]
 
-        self.train_data_text = _load_split(os.path.join(self.path, "train.csv"))
-        self.val_data_text = _load_split(os.path.join(self.path, "val.csv"))
-        self.test_data_text = _load_split(os.path.join(self.path, "test.csv"))
+        self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "test.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.val_data_text[0]
             + [choice for choices in self.train_data_text[1] for choice in choices]
             + [choice for choices in self.val_data_text[1] for choice in choices]
         )
-        log.info("\tFinished loading SWAG data.")
+        log.info("\tFinished loading COPA (as QA) data.")
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
 
-        def _make_instance(question, choices, label, idx):
+        def _make_instance(context, choices, question, label, idx):
             d = {}
-            d["question_str"] = MetadataField(" ".join(question))
+            d["question_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                    model_preprocessing_interface.boundary_token_fn(context), indexers
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    model_preprocessing_interface.boundary_token_fn(context, question + choice)
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
@@ -2873,7 +2882,7 @@ class SWAGTask(MultipleChoiceTask):
             return Instance(d)
 
         split = list(split)
-        if len(split) < 4:
+        if len(split) < 5:
             split.append(itertools.count())
         instances = map(_make_instance, *split)
         return instances

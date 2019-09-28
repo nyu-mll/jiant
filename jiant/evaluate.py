@@ -83,6 +83,7 @@ def evaluate(
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False)
         for batch_idx, batch in enumerate(generator):
+            import pdb; pdb.set_trace()
             with torch.no_grad():
                 out = model.forward(task, batch, predict=True)
             n_task_examples += get_output_attribute(out, "n_exs", uses_cuda(cuda_device))

@@ -18,7 +18,7 @@ import jsondiff
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
-from allennlp.nn.util import device_mapping, masked_softmax
+from allennlp.nn.util import masked_softmax
 from sacremoses import MosesDetokenizer
 from torch.autograd import Variable
 from torch.nn import Dropout, Linear, Parameter, init
@@ -338,7 +338,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     """
-    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    model_state = torch.load(state_path)
 
     assert_for_log(
         not (skip_task_models and strict),
@@ -418,10 +418,8 @@ def format_output(obj, cuda_devices):
 
 
 def uses_cuda(cuda_devices):
-    use_cuda = 1
-    if isinstance(cuda_devices, list) or isinstance(cuda_devices, int) and cuda_devices >= 0:
-        return use_cuda
-    return 0
+    return isinstance(cuda_devices, list) or isinstance(cuda_devices, int) and cuda_devices >= 0:
+
 
 
 def get_batch_size(batch, cuda_devices, keyword="input"):
