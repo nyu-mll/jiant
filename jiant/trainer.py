@@ -652,7 +652,7 @@ class SamplingMultiTaskTrainer:
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
-            if n_step % val_interval == 0:
+            if n_step % validation_interval == 0:
                 # Dump and log all of our current info
                 n_val = int(n_step / validation_interval)
                 log.info("***** Step %d / Validation %d *****", n_step, n_val)
