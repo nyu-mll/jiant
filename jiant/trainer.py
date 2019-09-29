@@ -518,7 +518,7 @@ class SamplingMultiTaskTrainer:
         self._scheduler = scheduler
 
         # define these here b/c they might get overridden on load
-
+        start = time.time()
         n_step, should_stop = 0, False
         if self._serialization_dir is not None:
             # Resume from serialization path
@@ -602,7 +602,7 @@ class SamplingMultiTaskTrainer:
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
                 loss = get_output_attribute(
-                    output_dict, "loss", uses_cuda(self._cuda_device)
+                    output_dict, "loss", self._cuda_device
                 )  # optionally scale loss
                 loss *= scaling_weights[task.name]
                 loss.backward()
@@ -654,7 +654,6 @@ class SamplingMultiTaskTrainer:
 
             # Validation
             if n_step % validation_interval == 0:
-
                 # Dump and log all of our current info
                 n_val = int(n_step / validation_interval)
                 log.info("***** Step %d / Validation %d *****", n_step, n_val)
@@ -859,10 +858,10 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = get_output_attribute(out, "loss", uses_cuda(self._cuda_device))
+            loss = get_output_attribute(out, "loss", self._cuda_device)
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-            n_examples += get_output_attribute(out, "n_exs", uses_cuda(self._cuda_device))
+            n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
             if print_output:
                 if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
@@ -882,7 +881,7 @@ class SamplingMultiTaskTrainer:
                                 log.info("\tInput:\t%s", input_string)
                                 log.info("\tGold:\t%s", gold_string)
                             log.info("\tOutput:\t%s", output_string)
-            n_examples += get_output_attribute(out, "n_exs", uses_cuda(self._cuda_device))
+            n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()

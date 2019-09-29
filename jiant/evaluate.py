@@ -9,6 +9,7 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 
 import pandas as pd
 import torch
+from allennlp.nn.util import move_to_device
 from allennlp.data.iterators import BasicIterator
 from jiant import tasks as tasks_module
 from jiant.tasks.tasks import (
@@ -84,6 +85,8 @@ def evaluate(
         generator = iterator(dataset, num_epochs=1, shuffle=False)
         for batch_idx, batch in enumerate(generator):
             with torch.no_grad():
+                if isinstance(cuda_device, int):
+                    batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
             n_task_examples += get_output_attribute(out, "n_exs", uses_cuda(cuda_device))
             # get predictions

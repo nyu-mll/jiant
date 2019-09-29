@@ -338,7 +338,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     """
-    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    model_state = torch.load(state_path)
 
     assert_for_log(
         not (skip_task_models and strict),
