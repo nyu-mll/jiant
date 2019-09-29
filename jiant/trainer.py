@@ -518,7 +518,6 @@ class SamplingMultiTaskTrainer:
         self._scheduler = scheduler
 
         # define these here b/c they might get overridden on load
-        start = time.time()
         n_step, should_stop = 0, False
         if self._serialization_dir is not None:
             # Resume from serialization path
@@ -653,7 +652,7 @@ class SamplingMultiTaskTrainer:
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
-            if n_step % validation_interval == 0:
+            if n_step % val_interval == 0:
                 # Dump and log all of our current info
                 n_val = int(n_step / validation_interval)
                 log.info("***** Step %d / Validation %d *****", n_step, n_val)
