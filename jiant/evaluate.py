@@ -23,7 +23,7 @@ from jiant.tasks.tasks import (
 )
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.utils.utils import get_output_attribute, uses_cuda
+from jiant.utils.utils import get_output_attribute
 
 
 LOG_INTERVAL = 30
@@ -88,7 +88,7 @@ def evaluate(
                 if isinstance(cuda_device, int):
                     batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
-            n_task_examples += get_output_attribute(out, "n_exs", uses_cuda(cuda_device))
+            n_task_examples += get_output_attribute(out, "n_exs", cuda_device)
             # get predictions
             if "preds" not in out:
                 continue
