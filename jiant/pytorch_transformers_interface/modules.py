@@ -561,7 +561,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.crit
         for i in range(len(model_with_lm_head.crit.out_layers) - 1):
-            lm_head.out_layers[i].weight = self.model.word_emb.emb_layers[i].weights
+            lm_head.out_layers[i].weight = self.model.word_emb.emb_layers[i].weight
         lm_head.out_layers[-1].weight = nn.Parameter(
             self.model.word_emb.emb_layers[-1].weight[: lm_head.out_layers[-1].weight.size()[0]]
         )
