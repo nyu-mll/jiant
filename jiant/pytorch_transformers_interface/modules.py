@@ -121,6 +121,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
                 ids.size()[-1] <= self.max_pos
             ), "input length exceeds position embedding capacity, reduce max_seq_len"
 
+        sent[self.tokenizer_required] = ids
         return ids, input_mask
 
     def prepare_output(self, lex_seq, hidden_states, input_mask):
