@@ -113,10 +113,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
             ids = (ids - 2) * valid_mask + self._pad_id * pad_mask + self._unk_id * unk_mask
         else:
             ids = (ids - 2) * valid_mask + self._pad_id * pad_mask
-
-        assert (
-            ids >= 0
-        ).all(), "out-of-vocabulary token found in the input, but _unk_id of pytorch_transformers model is not specified"
+            assert (
+                unk_mask == 0
+            ).all(), "out-of-vocabulary token found in the input, but _unk_id of pytorch_transformers model is not specified"
         if self.max_pos is not None:
             assert (
                 ids.size()[-1] <= self.max_pos
