@@ -208,8 +208,7 @@ python main.py --config_file jiant/config/tutorial.conf \
 ```
 
 will run the demo config, but write output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
-Note that cuda=0 means that if you're using a multi-GPU machine, jiant by default utilizes all GPUs using 
-DataParallel. Refer to the documentation on the settings for the cuda variable in jiant/config/defaults.conf.
+Note that cuda=-1 means that we do not use GPU. Jiant uses DataParallel to help with memory constraints, which may be useful if you are running on a multi-GPU machine. Refer to the documentation on the settings for the cuda variable in jiant/config/defaults.conf.
 
 ### 3.b) Understanding the output logs
 
