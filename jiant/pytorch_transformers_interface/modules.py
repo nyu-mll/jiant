@@ -9,7 +9,7 @@ from allennlp.modules import scalar_mix
 
 import pytorch_transformers
 
-from jiant.preprocess import parse_task_list_arg
+from jiant.utils.options import parse_task_list_arg
 from jiant.utils import utils
 from jiant.pytorch_transformers_interface import input_module_tokenizer_name
 

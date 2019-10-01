@@ -106,7 +106,6 @@ class SpanClassifierModule(nn.Module):
         """
         out = {}
         batch_size = sent_embs.shape[0]
-        out["n_inputs"] = batch_size
 
         # Apply projection CNN layer for each span of the input sentence
         sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
