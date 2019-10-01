@@ -159,7 +159,7 @@ include "defaults.conf"  // relative path to this file
 exp_name = jiant-demo
 run_name = mtl-sst-mrpc
 
-cuda = 0
+cuda = -1
 random_seed = 42
 
 load_model = 0
@@ -208,7 +208,8 @@ python main.py --config_file jiant/config/tutorial.conf \
 ```
 
 will run the demo config, but write output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
-
+Note that cuda=0 means that if you're using a multi-GPU machine, jiant by default utilizes all GPUs using 
+DataParallel. Refer to the documentation on the settings for the cuda variable in jiant/config/defaults.conf.
 
 ### 3.b) Understanding the output logs
 
