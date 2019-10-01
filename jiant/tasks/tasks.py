@@ -3034,8 +3034,9 @@ class AlphaNLITask(MultipleChoiceTask):
         self.path = path
         self.max_seq_len = max_seq_len
 
-        self.train_data = None
-        self.val_data = None
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
 
         self.scorer1 = CategoricalAccuracy()
         self.scorers = [self.scorer1]
@@ -3067,23 +3068,24 @@ class AlphaNLITask(MultipleChoiceTask):
                 labels = [int(i) - 1 for i in f.read().split()]  # -1 to get {0, 1} labels
             return [obs1, hyp1, hyp2, obs2, labels]
 
-        self.train_data = _load_split(
+        self.train_data_text = _load_split(
             inputs_file=os.path.join(self.path, "train.jsonl"),
             labels_file=os.path.join(self.path, "train-labels.lst"),
         )
-        self.val_data = _load_split(
+        self.val_data_text = _load_split(
             inputs_file=os.path.join(self.path, "dev.jsonl"),
             labels_file=os.path.join(self.path, "dev-labels.lst"),
         )
+        self.test_data_text = [], [], [], [], []
         self.sentences = (
-            self.train_data[0]
-            + self.train_data[1]
-            + self.train_data[2]
-            + self.train_data[3]
-            + self.val_data[0]
-            + self.val_data[1]
-            + self.val_data[2]
-            + self.val_data[3]
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.train_data_text[2]
+            + self.train_data_text[3]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
+            + self.val_data_text[2]
+            + self.val_data_text[3]
         )
         log.info("\tFinished loading aNLI data.")
 
@@ -3119,7 +3121,7 @@ class AlphaNLITask(MultipleChoiceTask):
             return Instance(d)
 
         split = list(split)
-        if len(split) < 5:
+        if len(split) < 6:
             split.append(itertools.count())
         instances = map(_make_instance, *split)
         return instances
