@@ -2700,7 +2700,6 @@ class MultipleChoiceTask(Task):
     pass
 
 
-
 @register_task("SocialQA", rel_path="SocialQA/")
 class SocialQATask(MultipleChoiceTask):
     """ Task class for Choice of Plausible Alternatives Task.  """
