@@ -2701,7 +2701,7 @@ class MultipleChoiceTask(Task):
 
 
 @register_task("SocialQA", rel_path="SocialQA/")
-class SocialQATask(MultipleChoiceTask):
+class SociallQATask(MultipleChoiceTask):
     """ Task class for Choice of Plausible Alternatives Task.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
@@ -2718,7 +2718,12 @@ class SocialQATask(MultipleChoiceTask):
         self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % name
         self.val_metric_decreases = False
-        self.n_choices = 2
+        self.n_choices = 3
+        self._label_namespace = self.name + "_tags"
+
+
+    def get_all_labels(self):
+        return ["A", "B", "C", "D"]
 
     def load_data(self):
         """ Process the dataset located at path.  """
@@ -2747,22 +2752,21 @@ class SocialQATask(MultipleChoiceTask):
                 targs.append(targ)
             return [contexts, choices, questions, targs]
 
-        self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = _load_split(os.path.join(self.path, "test.jsonl"))
+        self.train_data_text = _load_split(os.path.join(self.path, "socialIQa_v1.4_trn.jsonl"))
+        self.val_data_text = _load_split(os.path.join(self.path, "socialIQa_v1.4_dev.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "socialIQa_v1.4_tst.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.val_data_text[0]
             + [choice for choices in self.train_data_text[1] for choice in choices]
             + [choice for choices in self.val_data_text[1] for choice in choices]
         )
-        log.info("\tFinished loading COPA (as QA) data.")
+        log.info("\tFinished loading SociallQA data.")
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
-
         def _make_instance(context, choices, question, label, idx):
             d = {}
             d["question_str"] = MetadataField(" ".join(context))
@@ -2778,7 +2782,7 @@ class SocialQATask(MultipleChoiceTask):
                 )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
-            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["label"] = LabelField(label, label_namespace=self._label_namespace)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(d)
 
