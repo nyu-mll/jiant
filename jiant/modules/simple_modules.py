@@ -234,3 +234,28 @@ class PairClassifier(nn.Module):
         pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)
         return logits
+
+
+class TokenProjectionEncoder(nn.Module):
+    """ Applies projection to each token representation """
+
+    def __init__(self, d_inp=512):
+        super(TokenProjectionEncoder, self).__init__()
+        self.project = nn.Linear(d_inp, 1)
+
+    def forward(self, sequence, mask):
+        logits = self.project(sequence).squeeze(-1)
+        return logits
+
+
+class TokenMultiProjectionEncoder(nn.Module):
+    """ Applies multiple projections to each token representation """
+
+    def __init__(self, projection_names, d_inp=512):
+        super(TokenMultiProjectionEncoder, self).__init__()
+        self.projections = nn.ModuleDict(
+            {name: TokenProjectionEncoder(d_inp=d_inp) for name in projection_names}
+        )
+
+    def forward(self, sequence, mask):
+        return {name: projection(sequence, mask) for name, projection in self.projections.items()}

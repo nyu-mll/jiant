@@ -24,14 +24,15 @@ class TestBuildTrainerParams(unittest.TestCase):
             "jiant", "config/defaults.conf"
         )  # To get other required values.
         params = params_from_file(DEFAULTS_PATH, HOCON)
+        cuda_device = -1
         self.processed_pretrain_params = build_trainer_params(
-            params, ["mnli", "qqp"], phase="pretrain"
+            params, cuda_device, ["mnli", "qqp"], phase="pretrain"
         )
         self.processed_mnli_target_params = build_trainer_params(
-            params, ["mnli"], phase="target_train"
+            params, cuda_device, ["mnli"], phase="target_train"
         )
         self.processed_qqp_target_params = build_trainer_params(
-            params, ["qqp"], phase="target_train"
+            params, cuda_device, ["qqp"], phase="target_train"
         )
 
     def test_pretrain_task_specific(self):

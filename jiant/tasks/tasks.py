@@ -2793,6 +2793,13 @@ class SocialQATask(MultipleChoiceTask):
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
 
+      
+class SpanPredictionTask(Task):
+    """ Generic task class for predicting a span """
+
+    n_classes = 2
+
+
 
 @register_task("copa", rel_path="COPA/")
 class COPATask(MultipleChoiceTask):
