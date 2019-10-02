@@ -509,6 +509,18 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
+class TransfoXLLMHeadWrapper(nn.Module):
+    # TODO: add docstring
+    def __init__(self, lm_head):
+        self.lm_head = lm_head
+
+    def forward(self, hidden):
+        batch_size, seq_length, _ = list(hidden.size())
+        return self.lm_head(hidden.view(batch_size * seq_length, -1)).view(
+            batch_size, seq_length, -1
+        )
+
+
 class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for Transformer-XL module to fit into jiant APIs.
     Check PytorchTransformersEmbedderModule for function definitions """
@@ -568,7 +580,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         for i, tie_proj in enumerate(model_with_lm_head.config.tie_projs):
             if tie_proj:
                 lm_head.out_projs[i] = self.model.word_emb.emb_projs[i]
-        return lm_head
+        return TransfoXLLMHeadWrapper(lm_head)
 
 
 class XLMEmbedderModule(PytorchTransformersEmbedderModule):
