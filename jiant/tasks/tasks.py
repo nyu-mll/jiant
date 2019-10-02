@@ -2700,6 +2700,101 @@ class MultipleChoiceTask(Task):
     pass
 
 
+
+@register_task("SocialQA", rel_path="SocialQA/")
+class SocialQATask(MultipleChoiceTask):
+    """ Task class for Choice of Plausible Alternatives Task.  """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        """ """
+        super().__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+        self.n_choices = 2
+
+    def load_data(self):
+        """ Process the dataset located at path.  """
+
+        def _load_split(data_file):
+            contexts, questions, choices, targs = [], [], [], []
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
+            for example in data:
+                context = example["context"]
+                choice1 = example["answerA"]
+                choice2 = example["answerB"]
+                choice3 = example["answerC"]
+                question = example["question"]
+                choice = [
+                    tokenize_and_truncate(self._tokenizer_name, choice, self.max_seq_len)
+                    for choice in [choice1, choice2, choice3]
+                ]
+                targ = example["correct"] if "correct" in example else 0
+                contexts.append(
+                    tokenize_and_truncate(self._tokenizer_name, context, self.max_seq_len)
+                )
+                choices.append(choice)
+                questions.append(
+                    tokenize_and_truncate(self._tokenizer_name, question, self.max_seq_len)
+                )
+                targs.append(targ)
+            return [contexts, choices, questions, targs]
+
+        self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "test.jsonl"))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.val_data_text[0]
+            + [choice for choices in self.train_data_text[1] for choice in choices]
+            + [choice for choices in self.val_data_text[1] for choice in choices]
+        )
+        log.info("\tFinished loading COPA (as QA) data.")
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AlleNNLP Instances. """
+
+        def _make_instance(context, choices, question, label, idx):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(context))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(context), indexers
+                )
+            for choice_idx, choice in enumerate(choices):
+                inp = (
+                    model_preprocessing_interface.boundary_token_fn(context, question + choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
+                )
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
+            return Instance(d)
+
+        split = list(split)
+        if len(split) < 5:
+            split.append(itertools.count())
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.scorer1.get_metric(reset)
+        return {"accuracy": acc}
+
+
 @register_task("copa", rel_path="COPA/")
 class COPATask(MultipleChoiceTask):
     """ Task class for Choice of Plausible Alternatives Task.  """
