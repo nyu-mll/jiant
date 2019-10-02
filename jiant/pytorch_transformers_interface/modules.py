@@ -512,11 +512,12 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 class TransfoXLLMHeadWrapper(nn.Module):
     # TODO: add docstring
     def __init__(self, lm_head):
+        super(TransfoXLLMHeadWrapper, self).__init__()
         self.lm_head = lm_head
 
     def forward(self, hidden):
         batch_size, seq_length, _ = list(hidden.size())
-        return self.lm_head(hidden.view(batch_size * seq_length, -1)).view(
+        return self.lm_head(hidden.contiguous().view(batch_size * seq_length, -1)).view(
             batch_size, seq_length, -1
         )
 
