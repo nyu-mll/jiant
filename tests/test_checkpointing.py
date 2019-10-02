@@ -21,14 +21,13 @@ from allennlp.common.params import Params
 from allennlp.training.optimizers import Optimizer
 from jiant.allennlp_mods.numeric_field import NumericField
 
-from jiant import evaluate
 import jiant.trainer as trainer
 from jiant.models import MultiTaskModel
 import jiant.tasks.tasks as tasks
-from jiant.__main__ import evaluate_and_write, get_best_checkpoint_path
+from jiant.__main__ import get_best_checkpoint_path
 
 
-def build_trainer_params(args, task_names, phase="pretrain"):
+def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
     return {
         "lr": 1e-05,
         "val_data_limit": 10,
@@ -49,7 +48,7 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "dec_val_scale": 4,
         "training_data_fraction": 1,
         "val_interval": 1,
-        "cuda": -1,
+        "cuda": cuda_device,
         "keep_all_checkpoints": 1,
     }
 
@@ -167,8 +166,10 @@ class TestCheckpointing(unittest.TestCase):
             MockModel.return_value.named_parameters.return_value = [("model1", MockParams(True))]
             MockModel.use_bert = 1
             model = MockModel()
+            cuda_device = -1
             pt_trainer, _, _, _ = trainer.build_trainer(
                 self.args,
+                cuda_device,
                 ["wic"],  # here, we use WIC twice to reduce the amount of boiler-plate code
                 model,
                 self.args.run_dir,
@@ -178,6 +179,7 @@ class TestCheckpointing(unittest.TestCase):
 
             tt_trainer, _, _, _ = trainer.build_trainer(
                 self.args,
+                cuda_device,
                 ["wic"],
                 model,
                 self.args.run_dir,

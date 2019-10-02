@@ -9,15 +9,16 @@ import random
 import re
 import time
 
+
 import numpy as np
 import torch
 from allennlp.common import Params  # pylint: disable=import-error
 from allennlp.common.checks import ConfigurationError  # pylint: disable=import-error
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
-from allennlp.nn.util import device_mapping, move_to_device
 from allennlp.training.learning_rate_schedulers import (  # pylint: disable=import-error
     LearningRateScheduler,
 )
+from allennlp.nn.util import device_mapping
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from tensorboardX import SummaryWriter  # pylint: disable=import-error
 from torch.nn.utils.clip_grad import clip_grad_norm_
@@ -30,10 +31,14 @@ from jiant.utils.utils import (
     assert_for_log,
     find_last_checkpoint_epoch,
     check_for_previous_checkpoints,
+    get_output_attribute,
+    get_model_attribute,
+    uses_cuda,
 )  # pylint: disable=import-error
+from allennlp.nn.util import move_to_device
 
 
-def build_trainer_params(args, task_names, phase="pretrain"):
+def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
     """ Helper function which extracts trainer parameters from args.
     In particular, we want to search args for task specific training parameters.
     """
@@ -86,12 +91,13 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         if phase == "target_train"
         else args.pretrain_data_fraction,
     )
-
+    params["cuda"] = cuda_device
     return Params(params)
 
 
 def build_trainer(
     args,
+    cuda_device,
     task_names,
     model,
     run_dir,
@@ -112,7 +118,7 @@ def build_trainer(
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     """
-    params = build_trainer_params(args, task_names, phase)
+    params = build_trainer_params(args, cuda_device, task_names, phase)
 
     opt_params = {"type": params["optimizer"], "lr": params["lr"]}
     if params["optimizer"] == "adam":
@@ -238,8 +244,6 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = None
 
         self._log_interval = 10  # seconds
-        if self._cuda_device >= 0:
-            self._model = self._model.cuda(self._cuda_device)
 
         self._TB_dir = None
         if self._serialization_dir is not None:
@@ -326,7 +330,6 @@ class SamplingMultiTaskTrainer:
                 biggest_batch_first=True,
             )
             tr_generator = iterator(task.train_data, num_epochs=None)
-            tr_generator = move_to_device(tr_generator, self._cuda_device)
             task_info["iterator"] = iterator
 
             if phase == "pretrain":
@@ -509,14 +512,12 @@ class SamplingMultiTaskTrainer:
             else:
                 val_limit = self._max_vals
             optimizer_params["t_total"] = val_limit * self._val_interval
-
         optimizer = Optimizer.from_params(train_params, optimizer_params)
         scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
         self._optimizer = optimizer
         self._scheduler = scheduler
 
         # define these here b/c they might get overridden on load
-
         n_step, should_stop = 0, False
         if self._serialization_dir is not None:
             # Resume from serialization path
@@ -599,9 +600,10 @@ class SamplingMultiTaskTrainer:
                 assert_for_log(
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
-                loss = output_dict["loss"]  # optionally scale loss
+                loss = get_output_attribute(
+                    output_dict, "loss", self._cuda_device
+                )  # optionally scale loss
                 loss *= scaling_weights[task.name]
-
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
@@ -643,13 +645,14 @@ class SamplingMultiTaskTrainer:
                 )
                 task_info["last_log"] = time.time()
 
-                if self._model.utilization is not None:
-                    batch_util = self._model.utilization.get_metric()
+                if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
+                    batch_util = get_model_attribute(
+                        self._model, "utilization", self._cuda_device
+                    ).get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
             if n_step % validation_interval == 0:
-
                 # Dump and log all of our current info
                 n_val = int(n_step / validation_interval)
                 log.info("***** Step %d / Validation %d *****", n_step, n_val)
@@ -673,8 +676,10 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val,
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
-                if self._model.utilization is not None:
-                    batch_util = self._model.utilization.get_metric(reset=True)
+                if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
+                    batch_util = get_model_attribute(
+                        self._model, "utilization", sself._cuda_device
+                    ).get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
                 # Validate
@@ -694,7 +699,9 @@ class SamplingMultiTaskTrainer:
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
-                elmo_params = self._model.get_elmo_mixing_weights(tasks)
+                elmo_params = get_model_attribute(
+                    self._model, "get_elmo_mixing_weights", self._cuda_device
+                )(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
                         log.info("ELMo mixing weights for {}:".format(task_name))
@@ -843,7 +850,6 @@ class SamplingMultiTaskTrainer:
         val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
             task.val_data, num_epochs=1, shuffle=False
         )
-        val_generator = move_to_device(val_generator, self._cuda_device)
         n_val_batches = math.ceil(max_data_points / batch_size)
         all_val_metrics["%s_loss" % task.name] = 0.0
 
@@ -851,9 +857,10 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = out["loss"]
-            all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+            loss = get_output_attribute(out, "loss", self._cuda_device)
 
+            all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+            n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
             if print_output:
                 if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
@@ -873,9 +880,7 @@ class SamplingMultiTaskTrainer:
                                 log.info("\tInput:\t%s", input_string)
                                 log.info("\tGold:\t%s", gold_string)
                             log.info("\tOutput:\t%s", output_string)
-
-            n_examples += out["n_exs"]
-
+            n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()
@@ -1034,8 +1039,9 @@ class SamplingMultiTaskTrainer:
         return should_stop
 
     def _forward(self, batch, task=None):
-        tensor_batch = move_to_device(batch, self._cuda_device)
-        model_out = self._model.forward(task, tensor_batch)
+        if isinstance(self._cuda_device, int) and self._cuda_device >= 0:
+            batch = move_to_device(batch, self._cuda_device)
+        model_out = self._model.forward(task, batch)
         return model_out
 
     def _description_from_metrics(self, metrics):
@@ -1141,6 +1147,7 @@ class SamplingMultiTaskTrainer:
                 "metric_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
+
         torch.save(model_state, model_path)
         torch.save(
             training_state,

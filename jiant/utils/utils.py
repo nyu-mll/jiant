@@ -34,6 +34,46 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
+def get_output_attribute(out, attribute_name, cuda_device):
+    """
+    This function handles processing/reduction of output for both 
+    DataParallel or non-DataParallel situations. 
+    For the case of multiple GPUs, This function will 
+    sum all values for a certain output attribute in various batches 
+    together.
+
+    Parameters 
+    ---------------------
+    out: Dictionary, output of model during forward pass, 
+    attribute_name: str, 
+    cuda_device: list or int
+    """
+    if isinstance(cuda_device, list):
+        return out[attribute_name].sum()
+    else:
+        return out[attribute_name]
+
+
+def get_model_attribute(model, attribute_name, cuda_device):
+    """
+        Getter function for both CPU and GPU. 
+
+        Parameters
+        ____________________
+        model: MultiTaskModel object, 
+        attribute_name: str
+
+        Returns
+        --------------------
+        The attribute object from the model. 
+    """
+    # maybe we should do (int, list)
+    if isinstance(cuda_device, list):
+        return getattr(model.module, attribute_name)
+    else:
+        return getattr(model, attribute_name)
+
+
 def select_pool_type(args):
     """
         Select a sane default sequence pooling type.
@@ -298,7 +338,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     """
-    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    model_state = torch.load(state_path)
 
     assert_for_log(
         not (skip_task_models and strict),
@@ -361,7 +401,30 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     return params
 
 
-def get_batch_size(batch, keyword="input"):
+def format_output(obj, cuda_devices):
+    """
+    Format output based on whether model is using DataParallel or not. 
+    DataParallel necessitates objects to be gathered into GPU:0 to have 
+    dimension 0. 
+    This function will be used for scalar outputs of model forwards 
+    such as loss and n_exs.
+    """
+    if isinstance(cuda_devices, list):
+        if not isinstance(obj, torch.Tensor):
+            obj = torch.tensor(obj).cuda()
+        return obj.unsqueeze(0)
+    else:
+        return obj
+
+
+def uses_cuda(cuda_devices):
+    use_cuda = 1
+    if isinstance(cuda_devices, list) or isinstance(cuda_devices, int) and cuda_devices >= 0:
+        return use_cuda
+    return 0
+
+
+def get_batch_size(batch, cuda_devices, keyword="input"):
     """ Given a batch with unknown text_fields, get an estimate of batch size """
     if keyword == "input":
         batch_field = batch["inputs"] if "inputs" in batch else batch["input1"]
@@ -369,7 +432,7 @@ def get_batch_size(batch, keyword="input"):
         batch_field = batch[keyword]
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
-    return batch_size
+    return format_output(batch_size, cuda_devices)
 
 
 def get_batch_utilization(batch_field, pad_idx=0):

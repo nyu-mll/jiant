@@ -259,7 +259,7 @@ class TestWritePreds(unittest.TestCase):
             MockModel.return_value.forward = model_forward
             MockModel.use_bert = 1
             model = MockModel()
-            evaluate_and_write(self.args, model, [self.wic], splits_to_write="val")
+            evaluate_and_write(self.args, model, [self.wic], splits_to_write="val", cuda_device=-1)
 
     def tear_down(self):
         shutil.rmtree(self.temp_dir)
