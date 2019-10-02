@@ -2823,7 +2823,7 @@ class SocialQATask(MultipleChoiceTask):
         """ Process the dataset located at path.  """
 
         def _load_split(data_file):
-            contexts, questions, choicess, targs = [], [], [], []
+            contexts, questions, choices, targs = [], [], [], []
             data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
             for example in data:
                 context = example["context"]
@@ -2831,7 +2831,7 @@ class SocialQATask(MultipleChoiceTask):
                 choice2 = example["answerB"]
                 choice3 = example["answerC"]
                 question = example["question"]
-                choices = [
+                choice = [
                     tokenize_and_truncate(self._tokenizer_name, choice, self.max_seq_len)
                     for choice in [choice1, choice2, choice3]
                 ]
@@ -2839,12 +2839,12 @@ class SocialQATask(MultipleChoiceTask):
                 contexts.append(
                     tokenize_and_truncate(self._tokenizer_name, context, self.max_seq_len)
                 )
-                choicess.append(choices)
+                choices.append(choice)
                 questions.append(
                     tokenize_and_truncate(self._tokenizer_name, question, self.max_seq_len)
                 )
                 targs.append(targ)
-            return [contexts, choicess, questions, targs]
+            return [contexts, choices, questions, targs]
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
         self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
