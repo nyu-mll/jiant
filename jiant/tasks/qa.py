@@ -4,18 +4,23 @@ import re
 import json
 import string
 import collections
+import gzip
+import random
 from typing import Iterable, Sequence, Type
 
 import torch
 from allennlp.training.metrics import Average, F1Measure
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
+from jiant.allennlp_mods.numeric_field import NumericField
+from jiant.allennlp_mods.span_metrics import SpanF1Measure
 
 from jiant.utils.data_loaders import tokenize_and_truncate
 
-from jiant.tasks.tasks import Task
+from jiant.tasks.tasks import Task, SpanPredictionTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
+from ..utils.retokenize import get_aligner_fn
 
 
 def normalize_answer(s):
@@ -441,3 +446,165 @@ class ReCoRDTask(Task):
             self._score_tracker = collections.defaultdict(list)
 
         return {"f1": f1, "em": em, "avg": (f1 + em) / 2}
+
+
+@register_task("qasrl", rel_path="QASRL/")
+class QASRLTask(SpanPredictionTask):
+    def __init__(self, path, max_seq_len, name, **kw):
+        """QA-SRL (Question-Answer Driven Semantic Role Labeling)
+        See http://qasrl.org/
+        Download, unzip, and rename the "qasrl-v2" folder to "QASRL"
+        """
+        super(QASRLTask, self).__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data = None
+        self.val_data = None
+        self.test_data = None
+
+        self.f1_scorer = SpanF1Measure()
+        self.val_metric = "%s_f1" % self.name
+        self.val_metric_decreases = False
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        f1 = self.f1_scorer.get_metric(reset)
+        return {"f1": f1}
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        self.f1_scorer(
+            pred_start=logits["span_start"],
+            pred_end=logits["span_end"],
+            gold_start=labels["span_start"],
+            gold_end=labels["span_end"],
+        )
+
+    def load_data(self):
+        self.train_data = self._load_file(os.path.join(self.path, "orig", "train.jsonl.gz"))
+
+        self.val_data = self._load_file(os.path.join(self.path, "orig", "dev.jsonl.gz"))
+        self._shuffle_data(self.val_data)
+
+        self.test_data = self._load_file(os.path.join(self.path, "orig", "test.jsonl.gz"))
+        self.sentences = []
+
+        self.sentences = (
+            self.train_data[0] + self.train_data[1] + self.val_data[0] + self.val_data[1]
+        )
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """ Yield sentences, used to compute vocabulary. """
+        yield from self.sentences
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
+
+        def _make_instance(sentence_tokens, question_tokens, answer_span, idx):
+            d = dict()
+
+            # For human-readability
+            d["raw_sentence"] = MetadataField(" ".join(sentence_tokens[1:-1]))
+            d["raw_question"] = MetadataField(" ".join(question_tokens[1:-1]))
+
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(
+                    sentence_tokens, question_tokens
+                )
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["sentence"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(sentence_tokens), indexers
+                )
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question_tokens), indexers
+                )
+
+            d["span_start"] = NumericField(answer_span[0], label_namespace="span_start_labels")
+            d["span_end"] = NumericField(answer_span[1], label_namespace="span_end_labels")
+            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            return Instance(d)
+
+        split = list(split)
+        instances = map(_make_instance, *split)
+        return instances
+
+    def _load_file(self, path):
+        example_list = []
+        aligner_fn = get_aligner_fn(self.tokenizer_name)
+        with gzip.open(path) as f:
+            lines = f.read().splitlines()
+            for line in lines:
+                datum = self.preprocess_qasrl_datum(json.loads(line))
+                sentence_tokens = datum["sentence_tokens"]
+                # " ".join because retokenizer functions assume space-delimited input tokens
+                aligner, processed_sentence_tokens = aligner_fn(" ".join(sentence_tokens))
+                for entry in datum["entries"]:
+                    for question, answer_list in entry["questions"].items():
+                        for answer in answer_list:
+                            for answer_span in answer:
+                                projected_answer_span = aligner.project_span(*answer_span["span"])
+                                # Adjust for [CLS] / <SOS> token
+                                adjusted_answer_span = (
+                                    projected_answer_span[0] + 1,
+                                    projected_answer_span[1] + 1,
+                                )
+                                example_list.append(
+                                    {
+                                        "sentence_tokens": self._process_sentence(
+                                            processed_sentence_tokens
+                                        ),
+                                        "question_tokens": self._process_sentence(question),
+                                        "answer_span": adjusted_answer_span,
+                                        "idx": len(example_list),
+                                    }
+                                )
+        return [
+            [example[k] for example in example_list]
+            for k in ["sentence_tokens", "question_tokens", "answer_span", "idx"]
+        ]
+
+    @classmethod
+    def _shuffle_data(cls, data, seed=1234):
+        # Shuffle validation data to ensure diversity in periodic validation with val_data_limit
+        indices = list(range(len(data[0])))
+        random.Random(seed).shuffle(indices)
+        return [[sub_data[i] for i in indices] for sub_data in data]
+
+    def _process_sentence(self, sent):
+        return tokenize_and_truncate(
+            tokenizer_name=self.tokenizer_name, sent=sent, max_seq_len=self.max_seq_len
+        )
+
+    def get_split_text(self, split: str):
+        return getattr(self, "%s_data" % split)
+
+    @classmethod
+    def preprocess_qasrl_datum(cls, datum):
+        """ Extract relevant fields """
+        return {
+            "sentence_tokens": datum["sentenceTokens"],
+            "entries": [
+                {
+                    "verb": verb_entry["verbInflectedForms"]["stem"],
+                    "verb_idx": verb_idx,
+                    "questions": {
+                        question: [
+                            [
+                                {
+                                    "tokens": datum["sentenceTokens"][span[0] : span[1] + 1],
+                                    "span": span,
+                                }
+                                for span in answer_judgment["spans"]
+                            ]
+                            for answer_judgment in q_data["answerJudgments"]
+                            if answer_judgment["isValid"]
+                        ]
+                        for question, q_data in verb_entry["questionLabels"].items()
+                    },
+                }
+                for verb_idx, verb_entry in datum["verbEntries"].items()
+            ],
+        }

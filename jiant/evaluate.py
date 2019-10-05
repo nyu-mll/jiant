@@ -9,8 +9,8 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 
 import pandas as pd
 import torch
-from allennlp.data.iterators import BasicIterator
 from allennlp.nn.util import move_to_device
+from allennlp.data.iterators import BasicIterator
 from jiant import tasks as tasks_module
 from jiant.tasks.tasks import (
     BooleanQuestionTask,
@@ -21,11 +21,26 @@ from jiant.tasks.tasks import (
     WinogradCoreferenceTask,
     GLUEDiagnosticTask,
 )
-from jiant.tasks.qa import MultiRCTask, ReCoRDTask
+from jiant.tasks.qa import MultiRCTask, ReCoRDTask, QASRLTask
 from jiant.tasks.edge_probing import EdgeProbingTask
+from jiant.utils.utils import get_output_attribute
 
 
 LOG_INTERVAL = 30
+
+
+def _format_preds(preds):
+    if isinstance(preds, (list, torch.Tensor)):
+        preds = _coerce_list(preds)
+        assert isinstance(preds, list), "Convert predictions to list!"
+        cols = {"preds": preds}
+    elif isinstance(preds, dict):
+        cols = {}
+        for k, v in preds.items():
+            cols[f"preds_{k}"] = _coerce_list(v)
+    else:
+        raise TypeError(type(preds))
+    return cols
 
 
 def _coerce_list(preds) -> List:
@@ -45,7 +60,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 
 
 def evaluate(
-    model, tasks: Sequence[tasks_module.Task], batch_size: int, cuda_device: int, split="val"
+    model, tasks: Sequence[tasks_module.Task], batch_size: int, cuda_device, split="val"
 ) -> Tuple[Dict, pd.DataFrame]:
     """Evaluate on a dataset
     {par,qst,ans}_idx are used for MultiRC and other question answering dataset"""
@@ -84,16 +99,14 @@ def evaluate(
         generator = iterator(dataset, num_epochs=1, shuffle=False)
         for batch_idx, batch in enumerate(generator):
             with torch.no_grad():
-                batch = move_to_device(batch, cuda_device)
+                if isinstance(cuda_device, int):
+                    batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
-
-            n_task_examples += out["n_exs"]
+            n_task_examples += get_output_attribute(out, "n_exs", cuda_device)
             # get predictions
             if "preds" not in out:
                 continue
-            preds = _coerce_list(out["preds"])
-            assert isinstance(preds, list), "Convert predictions to list!"
-            cols = {"preds": preds}
+            cols = _format_preds(out["preds"])
             if task.name in IDX_REQUIRED_TASK_NAMES:
                 assert "idx" in batch, f"'idx' field missing from batches " "for task {task.name}!"
             for field in FIELDS_TO_EXPORT:
@@ -206,6 +219,8 @@ def write_preds(
             _write_diagnostics_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
+        elif isinstance(task, QASRLTask):
+            _write_simple_tsv_preds(task, preds_df, pred_dir, split_name)
         else:
             log.warning("Task '%s' not supported by write_preds().", task.name)
             continue
@@ -471,6 +486,11 @@ def _write_rte_preds(
             else:
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+
+def _write_simple_tsv_preds(task, preds_df: pd.DataFrame, pred_dir: str, split_name: str):
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format=False)
+    preds_df.to_csv(preds_file, sep="\t")
 
 
 def _write_diagnostics_preds(
