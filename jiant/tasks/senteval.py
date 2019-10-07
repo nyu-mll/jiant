@@ -328,10 +328,6 @@ class SentevalWordContentTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
-        import pdb
-
-        pdb.set_trace()
-
 
 @register_task("senteval-tree-depth", rel_path="tree_depth")
 class SentevalTreeDepthTask(SingleClassificationTask):
@@ -374,9 +370,6 @@ class SentevalTreeDepthTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
-        import pdb
-
-        pdb.set_trace()
 
 
 @register_task("senteval-top-constituents", rel_path="top_constituents/")
