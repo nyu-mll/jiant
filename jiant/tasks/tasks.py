@@ -3027,7 +3027,12 @@ class BooleanQuestionTask(PairClassificationTask):
 
 @register_task("anli", rel_path="aNLI")
 class AlphaNLITask(MultipleChoiceTask):
-    """ Task class for Abductive Natural Language Inference. """
+    """
+    Task class for Abductive Natural Language Inference.
+
+    Paper: https://arxiv.org/abs/1908.05739
+    Website: https://leaderboard.allenai.org/anli/submissions/get-started
+    """
 
     def __init__(self, path, max_seq_len, name, **kw):
         super().__init__(name, **kw)
@@ -3076,7 +3081,9 @@ class AlphaNLITask(MultipleChoiceTask):
             inputs_file=os.path.join(self.path, "dev.jsonl"),
             labels_file=os.path.join(self.path, "dev-labels.lst"),
         )
-        self.test_data_text = [], [], [], [], []
+
+        log.warning("aNLI has no public test set, so we reuse the dev set as a stand-in")
+        self.test_data_text = self.val_data_text
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
