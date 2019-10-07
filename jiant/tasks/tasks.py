@@ -2700,7 +2700,7 @@ class MultipleChoiceTask(Task):
     pass
 
 
-@register_task("SocialQA", rel_path="SocialQA/")
+@register_task("SociallQA", rel_path="SociallQA/")
 class SociallQATask(MultipleChoiceTask):
     """ Task class for Choice of Plausible Alternatives Task.  """
 
@@ -2720,7 +2720,6 @@ class SociallQATask(MultipleChoiceTask):
         self.val_metric_decreases = False
         self.n_choices = 3
         self._label_namespace = self.name + "_tags"
-
 
     def get_all_labels(self):
         return ["A", "B", "C", "D"]
@@ -2767,6 +2766,7 @@ class SociallQATask(MultipleChoiceTask):
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
+
         def _make_instance(context, choices, question, label, idx):
             d = {}
             d["question_str"] = MetadataField(" ".join(context))
