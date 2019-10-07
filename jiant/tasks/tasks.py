@@ -2708,7 +2708,6 @@ class SociallQATask(MultipleChoiceTask):
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
