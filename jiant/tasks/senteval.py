@@ -1,5 +1,6 @@
-"""
-Tasks from Senteval: https://github.com/facebookresearch/SentEval/tree/master/data/probing
+""" 
+Set of tasks from Senteval
+Paper: https://arxiv.org/abs/1805.01070
 """
 import collections
 import itertools
@@ -40,7 +41,7 @@ from jiant.utils.data_loaders import (
 )
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task  # global task registry
-from jiant.tasks.tasks import SingleClassificationTask
+from jiant.tasks.tasks import SingleClassificationTask, process_single_pair_task_split
 
 
 @register_task("senteval-sentence-length", rel_path="sentence_length/")
@@ -84,7 +85,6 @@ class SentevalSentenceLengthTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-
 @register_task("senteval-bigram-shift", rel_path="bigram_shift/")
 class SentevalBigramShiftTask(SingleClassificationTask):
     """ Sentene length task from Senteval.  """
@@ -104,20 +104,26 @@ class SentevalBigramShiftTask(SingleClassificationTask):
 
     def get_sentences(self):
         return self.sentences
-       
+
     def process_split(self, split, indexers, model_preprocessing_interface):
         return process_single_pair_task_split(
-            split, indexers, model_preprocessing_interface, is_pair=False, skip_indexing=False
-            )
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -129,10 +135,10 @@ class SentevalBigramShiftTask(SingleClassificationTask):
             sentences.extend(split_data[0])
         self.sentences = sentences
 
-        
+
 @register_task("senteval-past-present", rel_path="past_present/")
 class SentevalPastPresentTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+    """ Past Present Task  """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
@@ -149,6 +155,16 @@ class SentevalPastPresentTask(SingleClassificationTask):
 
     def get_sentences(self):
         return self.sentences
+
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
 
     def load_data(self):
         """ Load data """
@@ -173,11 +189,11 @@ class SentevalPastPresentTask(SingleClassificationTask):
 
 @register_task("senteval-odd-man-out", rel_path="odd_man_out/")
 class SentevalOddManOutTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+    """ Odd man out task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalOddManOutTask, self).__init__(name, n_classes=6, **kw)
+        super(SentevalOddManOutTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -186,7 +202,17 @@ class SentevalOddManOutTask(SingleClassificationTask):
         self.test_data_text = None
 
     def get_all_labels(self):
-        return [str(x) for x in list(range(6))]
+        return ["C", "O"]
+
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
 
     def get_sentences(self):
         return self.sentences
@@ -214,11 +240,11 @@ class SentevalOddManOutTask(SingleClassificationTask):
 
 @register_task("senteval-coordination-inversion", rel_path="coordination_inversion/")
 class SentevalCoordinationInversionTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+    """ Coordination Inversion task.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalCoordinationInversionTask, self).__init__(name, n_classes=6, **kw)
+        super(SentevalCoordinationInversionTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -227,10 +253,20 @@ class SentevalCoordinationInversionTask(SingleClassificationTask):
         self.test_data_text = None
 
     def get_all_labels(self):
-        return [str(x) for x in list(range(6))]
+        return ["O", "I"]
 
     def get_sentences(self):
         return self.sentences
+
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
 
     def load_data(self):
         """ Load data """
@@ -255,10 +291,9 @@ class SentevalCoordinationInversionTask(SingleClassificationTask):
 
 @register_task("senteval-word-content", rel_path="word_content")
 class SentevalWordContentTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+    """ Word Content Task  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SentevalWordContentTask, self).__init__(name, n_classes=1000, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -268,7 +303,7 @@ class SentevalWordContentTask(SingleClassificationTask):
         self.test_data_text = None
 
     def get_all_labels(self):
-        return [str(x) for x in list(range(1000))]
+        return list(set(self.labels))
 
     def get_sentences(self):
         return self.sentences
@@ -281,6 +316,7 @@ class SentevalWordContentTask(SingleClassificationTask):
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
+            self.labels.append(rows["1"].tolist())
             return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
@@ -292,15 +328,18 @@ class SentevalWordContentTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
+        import pdb
+
+        pdb.set_trace()
 
 
 @register_task("senteval-tree-depth", rel_path="tree_depth")
-class SentevalWordContentTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+class SentevalTreeDepthTask(SingleClassificationTask):
+    """ Tree Depth Task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalWordContentTask, self).__init__(name, n_classes=8, **kw)
+        super(SentevalTreeDepthTask, self).__init__(name, n_classes=8, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -319,25 +358,30 @@ class SentevalWordContentTask(SingleClassificationTask):
 
         def load_json(data_file):
             rows = pd.read_csv(data_file, encoding="ISO-8859-1")
-            rows["s1"] = rows["2"].apply(
+            labels = rows["1"].apply(lambda x: int(x.split("\t")[0]))
+            labels = labels.apply(lambda x: x - 5)
+            s1 = rows["1"].apply(lambda x: x.split("\t")[1])
+            s1 = s1.apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
-            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
+            return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
         self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
-
         sentences = []
         for split in ["train", "val", "test"]:
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
+        import pdb
+
+        pdb.set_trace()
 
 
 @register_task("senteval-top-constituents", rel_path="top_constituents/")
 class SentevalTopConstituentsTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+    """ Top Constituents task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
@@ -350,7 +394,17 @@ class SentevalTopConstituentsTask(SingleClassificationTask):
         self.test_data_text = None
 
     def get_all_labels(self):
-        return [str(x) for x in list(range(20))]
+        return self.labels
+
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
 
     def get_sentences(self):
         return self.sentences
@@ -360,10 +414,13 @@ class SentevalTopConstituentsTask(SingleClassificationTask):
 
         def load_json(data_file):
             rows = pd.read_csv(data_file, encoding="ISO-8859-1")
-            rows["s1"] = rows["2"].apply(
+            labels = rows["1"].apply(lambda x: str(x.split("\t")[0]))
+            self.labels = list(set(labels.tolist()))
+            s1 = rows["1"].apply(lambda x: x.split("\t")[1])
+            s1 = s1.apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
-            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
+            return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -378,10 +435,9 @@ class SentevalTopConstituentsTask(SingleClassificationTask):
 
 @register_task("senteval-subj-number", rel_path="subj_number")
 class SentevalSubjNumberTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+    """ Subjective number task  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SentevalSubjNumberTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -393,6 +449,16 @@ class SentevalSubjNumberTask(SingleClassificationTask):
     def get_all_labels(self):
         return ["NN", "NNS"]
 
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
+
     def get_sentences(self):
         return self.sentences
 
@@ -401,10 +467,12 @@ class SentevalSubjNumberTask(SingleClassificationTask):
 
         def load_json(data_file):
             rows = pd.read_csv(data_file, encoding="ISO-8859-1")
-            rows["s1"] = rows["2"].apply(
+            labels = rows["1"].apply(lambda x: str(x.split("\t")[0]))
+            s1 = rows["1"].apply(lambda x: x.split("\t")[1])
+            s1 = s1.apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
-            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
+            return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -418,12 +486,11 @@ class SentevalSubjNumberTask(SingleClassificationTask):
 
 
 @register_task("senteval-obj-number", rel_path="obj_number")
-class SentevalSubjNumberTask(SingleClassificationTask):
-    """ Sentene length task from Senteval.  """
+class SentevalObjNumberTask(SingleClassificationTask):
+    """ Objective number task """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
-        super(SentevalSubjNumberTask, self).__init__(name, n_classes=2, **kw)
+        super(SentevalObjNumberTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -434,6 +501,16 @@ class SentevalSubjNumberTask(SingleClassificationTask):
     def get_all_labels(self):
         return ["NN", "NNS"]
 
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
+
     def get_sentences(self):
         return self.sentences
 
@@ -442,10 +519,12 @@ class SentevalSubjNumberTask(SingleClassificationTask):
 
         def load_json(data_file):
             rows = pd.read_csv(data_file, encoding="ISO-8859-1")
-            rows["s1"] = rows["2"].apply(
+            labels = rows["1"].apply(lambda x: str(x.split("\t")[0]))
+            s1 = rows["1"].apply(lambda x: x.split("\t")[1])
+            s1 = s1.apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
-            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
+            return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))

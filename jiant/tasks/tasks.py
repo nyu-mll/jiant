@@ -72,14 +72,16 @@ def atomic_tokenize(
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 
+
 def process_single_pair_task_split(
     split,
     indexers,
     model_preprocessing_interface,
     is_pair=True,
     classification=True,
+    label_namespace="labels",
     is_symmetrical_pair=False,
-    skip_indexing=True
+    skip_indexing=True,
 ):
     """
     Convert a dataset of sentences into padded sequences of indices. Shared
@@ -123,7 +125,9 @@ def process_single_pair_task_split(
                 )
                 d["sent2_str"] = MetadataField(" ".join(input2))
         if classification:
-            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=skip_indexing)
+            d["labels"] = LabelField(
+                labels, label_namespace=label_namespace, skip_indexing=skip_indexing
+            )
         else:
             d["labels"] = NumericField(labels)
 
