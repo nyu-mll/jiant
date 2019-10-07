@@ -42,7 +42,6 @@ from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task  # global task registry
 
 
-
 @register_task("senteval-sentence-length", rel_path="sentence_length/")
 class SentevalSentenceLengthTask(SingleClassificationTask):
     """ Sentene length task from Senteval.  """
@@ -65,12 +64,13 @@ class SentevalSentenceLengthTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -81,7 +81,6 @@ class SentevalSentenceLengthTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
-
 
 
 @register_task("senteval-bigram-shift", rel_path="bigram_shift/")
@@ -106,12 +105,13 @@ class SentevalBigramShiftTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -122,7 +122,7 @@ class SentevalBigramShiftTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
-        
+
 
 @register_task("senteval-past-present", rel_path="past_present/")
 class SentevalPastPresentTask(SingleClassificationTask):
@@ -146,12 +146,13 @@ class SentevalPastPresentTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -162,7 +163,6 @@ class SentevalPastPresentTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
-        
 
 
 @register_task("senteval-odd-man-out", rel_path="odd_man_out/")
@@ -187,12 +187,13 @@ class SentevalOddManOutTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -203,7 +204,6 @@ class SentevalOddManOutTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
-
 
 
 @register_task("senteval-coordination-inversion", rel_path="coordination_inversion/")
@@ -228,12 +228,13 @@ class SentevalCoordinationInversionTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -244,6 +245,7 @@ class SentevalCoordinationInversionTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
+
 
 @register_task("senteval-word-content", rel_path="word_content")
 class SentevalWordContentTask(SingleClassificationTask):
@@ -267,12 +269,13 @@ class SentevalWordContentTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -283,6 +286,7 @@ class SentevalWordContentTask(SingleClassificationTask):
             split_data = getattr(self, "%s_data_text" % split)
             sentences.extend(split_data[0])
         self.sentences = sentences
+
 
 @register_task("senteval-tree-depth", rel_path="tree_depth")
 class SentevalWordContentTask(SingleClassificationTask):
@@ -306,12 +310,13 @@ class SentevalWordContentTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -346,12 +351,13 @@ class SentevalTopConstituentsTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -363,13 +369,14 @@ class SentevalTopConstituentsTask(SingleClassificationTask):
             sentences.extend(split_data[0])
         self.sentences = sentences
 
+
 @register_task("senteval-subj-number", rel_path="subj_number")
 class SentevalSubjNumberTask(SingleClassificationTask):
     """ Sentene length task from Senteval.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super( SentevalSubjNumberTask, self).__init__(name, n_classes=2, **kw)
+        super(SentevalSubjNumberTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -385,12 +392,13 @@ class SentevalSubjNumberTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -409,7 +417,7 @@ class SentevalSubjNumberTask(SingleClassificationTask):
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super( SentevalSubjNumberTask, self).__init__(name, n_classes=2, **kw)
+        super(SentevalSubjNumberTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -425,12 +433,13 @@ class SentevalSubjNumberTask(SingleClassificationTask):
 
     def load_data(self):
         """ Load data """
+
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
-            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
-                    self._tokenizer_name, x, self.max_seq_len
-                ))
-            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows["s1"] = rows["2"].apply(
+                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
+            )
+            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
