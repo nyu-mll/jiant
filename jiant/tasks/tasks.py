@@ -2702,7 +2702,10 @@ class MultipleChoiceTask(Task):
 
 @register_task("SociallQA", rel_path="SociallQA/")
 class SociallQATask(MultipleChoiceTask):
-    """ Task class for Choice of Plausible Alternatives Task.  """
+    """ Task class for SociallQA.
+    Paper: https://homes.cs.washington.edu/~msap/pdfs/sap2019socialIQa.pdf
+    Website: https://maartensap.github.io/social-iqa/
+    """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
