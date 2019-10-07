@@ -83,6 +83,7 @@ class SentevalSentenceLengthTask(SingleClassificationTask):
         self.sentences = sentences
 
 
+
 @register_task("senteval-bigram-shift", rel_path="bigram_shift/")
 class SentevalBigramShiftTask(SingleClassificationTask):
     """ Sentene length task from Senteval.  """
@@ -98,20 +99,24 @@ class SentevalBigramShiftTask(SingleClassificationTask):
         self.test_data_text = None
 
     def get_all_labels(self):
-        return [str(x) for x in list(range(2))]
+        return ["I", "O"]
 
     def get_sentences(self):
         return self.sentences
+       
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split, indexers, model_preprocessing_interface, is_pair=False, skip_indexing=False
+            )
 
     def load_data(self):
         """ Load data """
-
         def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
-            rows["s1"] = rows["2"].apply(
-                lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
-            )
-            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
+            rows = pd.read_csv(data_file, encoding = "ISO-8859-1")
+            rows["s1"] = rows['2'].apply(lambda x: tokenize_and_truncate(
+                    self._tokenizer_name, x, self.max_seq_len
+                ))
+            return rows['s1'].tolist(), [], rows['1'].tolist(), list(range(len(rows)))
 
         self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
         self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
@@ -123,7 +128,7 @@ class SentevalBigramShiftTask(SingleClassificationTask):
             sentences.extend(split_data[0])
         self.sentences = sentences
 
-
+        
 @register_task("senteval-past-present", rel_path="past_present/")
 class SentevalPastPresentTask(SingleClassificationTask):
     """ Sentene length task from Senteval.  """
