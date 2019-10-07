@@ -40,6 +40,7 @@ from jiant.utils.data_loaders import (
 )
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task  # global task registry
+from jiant.tasks.tasks import SingleClassificationTask
 
 
 @register_task("senteval-sentence-length", rel_path="sentence_length/")
