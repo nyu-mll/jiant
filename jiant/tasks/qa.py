@@ -694,7 +694,7 @@ class CommonsenseQATask(MultipleChoiceTask):
                 )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
-            d["label"] = LabelField(label, label_namespace=self._label_namespace)
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
             d["id_str"] = MetadataField(id_str)
             return Instance(d)
 

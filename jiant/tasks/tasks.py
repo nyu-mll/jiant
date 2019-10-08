@@ -2914,27 +2914,29 @@ class HellaSwagTask(MultipleChoiceTask):
 
         def _load_split(data_file):
             questions, choicess, targs, idxs = [], [], [], []
-            data = pd.read_csv(data_file)
-            for ex_idx, ex in data.iterrows():
-                sent1 = tokenize_and_truncate(self._tokenizer_name, ex["ctx_a"], self.max_seq_len)
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
+            for example in data:
+                sent1 = tokenize_and_truncate(
+                    self._tokenizer_name, example["ctx_a"], self.max_seq_len
+                )
                 questions.append(sent1)
-                sent2_prefix = ex["ctx_b"]
+                sent2_prefix = example["ctx_b"]
                 choices = [
                     tokenize_and_truncate(
                         self._tokenizer_name, sent2_prefix + " " + ending, self.max_seq_len
                     )
-                    for ending in ex["endings"]
+                    for ending in example["endings"]
                 ]
                 choicess.append(choices)
-                targ = ex["label"] if "label" in ex else 0
-                idx = ex["ind"]
+                targ = example["label"] if "label" in example else 0
+                idx = example["ind"]
                 targs.append(targ)
                 idxs.append(idx)
             return [questions, choicess, targs, idxs]
 
-        self.train_data_text = _load_split(os.path.join(self.path, "train.csv"))
-        self.val_data_text = _load_split(os.path.join(self.path, "val.csv"))
-        self.test_data_text = _load_split(os.path.join(self.path, "test.csv"))
+        self.train_data_text = _load_split(os.path.join(self.path, "hellaswag_train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(self.path, "hellaswag_val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "hellaswag_test.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.val_data_text[0]
