@@ -584,7 +584,7 @@ class BlimpOnePrefixLMTask(BlimpTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("Dataset tags", self.tag_list.__str__())
+        log.info("Dataset tags %s" % self.tag_list.__str__())
         log.info("\tFinished loading blimp one prefix data.")
         return
 
@@ -689,7 +689,7 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("Dataset tags", self.tag_list.__str__())
+        log.info("Dataset tags %s" % self.tag_list.__str__())
         log.info("\tFinished loading blimp two prefix data.")
         return
 
@@ -782,7 +782,7 @@ class BlimpFullSentLMTask(BlimpTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("Dataset tags", self.tag_list.__str__())
+        log.info("Dataset tags %s" % self.tag_list.__str__())
         log.info("\tFinished loading blimp simple LM data.")
         return
 
