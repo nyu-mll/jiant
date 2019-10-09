@@ -1,5 +1,6 @@
 """Task definitions for question answering tasks."""
 import os
+import pandas as pd
 import re
 import json
 import string
@@ -17,7 +18,7 @@ from jiant.allennlp_mods.span_metrics import SpanF1Measure
 
 from jiant.utils.data_loaders import tokenize_and_truncate
 
-from jiant.tasks.tasks import Task, SpanPredictionTask
+from jiant.tasks.tasks import Task, SpanPredictionTask, TaggingTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
 from ..utils.retokenize import get_aligner_fn
@@ -608,3 +609,168 @@ class QASRLTask(SpanPredictionTask):
                 for verb_idx, verb_entry in datum["verbEntries"].items()
             ],
         }
+
+
+@register_task("qamr", rel_path="QAMR/")
+class QAMRTask(TaggingTask):
+    """ Question-Answer Meaning Representation (QAMR)
+        https://github.com/uwnlp/qamr
+    """
+
+    def __init__(self, path, max_seq_len, name="qamr", **kw):
+        """ There are 1363 supertags in CCGBank without introduced token. """
+        self.path = path
+        super().__init__(name, 2, **kw)
+        self.max_seq_len = max_seq_len
+
+        self.train_data = None
+        self.val_data = None
+        self.test_data = None
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """ Yield sentences, used to compute vocabulary. """
+        yield from self.sentences
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        def _make_instance(passage_tokens, question_tokens, answer_span, idx):
+            d = dict()
+
+            # For human-readability
+            d["raw_passage"] = MetadataField(" ".join(passage_tokens[1:-1]))
+            d["raw_question"] = MetadataField(" ".join(question_tokens[1:-1]))
+
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(
+                    passage_tokens, question_tokens
+                )
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["passage"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(passage_tokens), indexers
+                )
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question_tokens), indexers
+                )
+
+            raise NotImplementedError("list of 0/1s based on projected spans")
+            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            return Instance(d)
+
+        split = list(split)
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_split_text(self, split: str):
+        return getattr(self, "%s_data" % split)
+
+    @classmethod
+    def load_tsv(cls, path):
+        return pd.read_csv(
+            path,
+            sep="\t",
+            error_bad_lines=False,
+            header=None,
+            keep_default_na=False,
+            encoding="utf-8",
+        )
+
+    @classmethod
+    def load_tsv_dataset(cls, path, wiki_dict):
+        df = pd.read_csv(
+            path,
+            sep="\t",
+            header=None,
+            names=[
+                "sent_id",
+                "target_ids",
+                "worker_id",
+                "qa_index",
+                "qa_word",
+                "question",
+                "answer",
+                "response1",
+                "response2",
+            ],
+        )
+        df["sent"] = df["sent_id"].apply(wiki_dict.get)
+        return df
+
+    def process_dataset(self, data_df):
+        example_list = []
+        aligner_fn = get_aligner_fn(self.tokenizer_name)
+        for i, row in data_df.iterrows():
+            single_indices = sorted([int(i) for i in row["answer"].split()])
+            index_spans = self.collapse_contiguous_indices(single_indices)
+            aligner, processed_sentence_tokens = aligner_fn(row["sent"])
+            projected_index_spans = [aligner.project_span(*span) for span in index_spans]
+            example_list.append(
+                {
+                    "passage": self._process_sentence(row["sent"]),
+                    "question": self._process_sentence(row["question"]),
+                    "answer_spans": projected_index_spans,
+                }
+            )
+        return [
+            [example[k] for example in example_list] for k in ["passage", "question", "answer_span"]
+        ]
+
+    def _process_sentence(self, sent):
+        return tokenize_and_truncate(
+            tokenizer_name=self.tokenizer_name, sent=sent, max_seq_len=self.max_seq_len
+        )
+
+    @classmethod
+    def load_wiki_dict(cls, path):
+        wiki_df = pd.read_csv(path, sep="\t", names=["sent_id", "text"])
+        wiki_dict = {row["sent_id"]: row["text"] for _, row in wiki_df.iterrows()}
+        return wiki_dict
+
+    def load_data(self):
+        wiki_dict = self.load_wiki_dict(os.path.join("/qamr/data/wiki-sentences.tsv"))
+        self.train_data = self.process_dataset(
+            self.load_tsv_dataset(
+                path=os.path.join(self.path, "qamr/data/filtered/train.tsv"), wiki_dict=wiki_dict
+            )
+        )
+        self.val_data = self.process_dataset(
+            self.load_tsv_dataset(
+                path=os.path.join(self.path, "qamr/data/filtered/dev.tsv"), wiki_dict=wiki_dict
+            )
+        )
+        self.test_data = self.process_dataset(
+            self.load_tsv_dataset(
+                path=os.path.join(self.path, "qamr/data/filtered/test.tsv"), wiki_dict=wiki_dict
+            )
+        )
+
+        self.train_data_text = list(tr_data) + [masks[0]]
+        self.val_data_text = list(val_data) + [masks[1]]
+        self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+
+    @staticmethod
+    def collapse_contiguous_indices(ls):
+        """
+        [2, 3, 4, 5, 6, 7, 8] -> [(2, 9)]
+        [1, 2, 4, 5] -> [(1, 3), (4, 6)]
+        """
+        if not ls:
+            return []
+        output = []
+        start = None
+        prev = None
+        for n in ls:
+            if start is None:
+                start = n
+                prev = n
+            elif n == prev + 1:
+                prev += 1
+                continue
+            else:
+                output.append((start, prev + 1))  # exclusive
+                start = n
+                prev = n
+        output.append((start, prev + 1))  # exclusive
+        return output
