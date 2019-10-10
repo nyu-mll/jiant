@@ -2700,11 +2700,11 @@ class MultipleChoiceTask(Task):
     pass
 
 
-@register_task("SociallQA", rel_path="SociallQA/")
-class SociallQATask(MultipleChoiceTask):
-    """ Task class for SociallQA.
+@register_task("SocialIQA", rel_path="SocialIQA/")
+class SocialIQATask(MultipleChoiceTask):
+    """ Task class for SocialIQA.
     Paper: https://homes.cs.washington.edu/~msap/pdfs/sap2019socialIQa.pdf
-    Website: https://maartensap.github.io/social-iqa/
+    Website and data: https://maartensap.github.io/social-iqa/
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
@@ -2762,7 +2762,7 @@ class SociallQATask(MultipleChoiceTask):
             + [choice for choices in self.train_data_text[1] for choice in choices]
             + [choice for choices in self.val_data_text[1] for choice in choices]
         )
-        log.info("\tFinished loading SociallQA data.")
+        log.info("\tFinished loading SocialIQA data.")
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
