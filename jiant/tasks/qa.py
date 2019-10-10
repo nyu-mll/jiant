@@ -641,11 +641,11 @@ class CommonsenseQATask(MultipleChoiceTask):
             data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
             for example in data:
                 this_question = tokenize_and_truncate(
-                    self._tokenizer_name, example["question"]["stem"], self.max_seq_len
+                    self._tokenizer_name, "Q: "+example["question"]["stem"], self.max_seq_len
                 )
                 this_choices_dict = {
                     a_choice["label"]: tokenize_and_truncate(
-                        self._tokenizer_name, a_choice["text"], self.max_seq_len
+                        self._tokenizer_name, "A:" + a_choice["text"], self.max_seq_len
                     )
                     for a_choice in example["question"]["choices"]
                 }
