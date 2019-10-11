@@ -3023,3 +3023,48 @@ class BooleanQuestionTask(PairClassificationTask):
         for split in splits:
             st = self.get_split_text(split)
             self.example_counts[split] = len(st)
+
+
+@register_task("scitail", rel_path="SciTailV1.1/")
+class SciTailTask(PairClassificationTask):
+    """ Task class for SciTail http://data.allenai.org/scitail/ """
+    
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+
+    def load_data(self):
+        """Load the data"""
+        """ Process the datasets located at path. """
+        targ_map = {"not_entailment": 0, "entailment": 1}
+        self.train_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "scitail_1.0_train.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+        )
+        self.val_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "scitail_1.0_dev.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+        )
+        self.test_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "scitail_1.0_test.tsv"),
+            max_seq_len=self.max_seq_len,
+            return_indices=True,
+        )
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
+        )
+        log.info("\tFinished loading SciTail") 
