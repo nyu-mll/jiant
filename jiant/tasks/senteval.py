@@ -329,6 +329,7 @@ class SentevalWordContentTask(SingleClassificationTask):
             sentences.extend(split_data[0])
         self.sentences = sentences
 
+
 @register_task("senteval-tree-depth", rel_path="tree_depth")
 class SentevalTreeDepthTask(SingleClassificationTask):
     """ Tree Depth Task """
