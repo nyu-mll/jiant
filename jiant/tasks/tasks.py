@@ -3025,7 +3025,7 @@ class BooleanQuestionTask(PairClassificationTask):
             self.example_counts[split] = len(st)
 
 
-@register_task("scitail", rel_path="SciTailV1.1/")
+@register_task("scitail", rel_path="SciTailV1.1/tsv_format/")
 class SciTailTask(PairClassificationTask):
     """ Task class for SciTail http://data.allenai.org/scitail/ """
     
@@ -3042,7 +3042,7 @@ class SciTailTask(PairClassificationTask):
     def load_data(self):
         """Load the data"""
         """ Process the datasets located at path. """
-        targ_map = {"not_entailment": 0, "entailment": 1}
+        targ_map = {"neutral": 0, "entails": 1}
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "scitail_1.0_train.tsv"),
@@ -3059,6 +3059,7 @@ class SciTailTask(PairClassificationTask):
             self._tokenizer_name,
             os.path.join(self.path, "scitail_1.0_test.tsv"),
             max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
             return_indices=True,
         )
         self.sentences = (
