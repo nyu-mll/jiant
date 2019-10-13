@@ -964,7 +964,7 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch["inputs"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits_dict = module.forward(sent_embs, sent_mask)
-        out = {"logits": logits_dict, "n_exs": get_batch_size(batch)}
+        out = {"logits": logits_dict, "n_exs": get_batch_size(batch, self._cuda_device)}
         if "span_start" in batch:
             out["start_loss"] = F.cross_entropy(
                 input=logits_dict["span_start"], target=batch["span_start"].long().squeeze(dim=1)
@@ -974,8 +974,9 @@ class MultiTaskModel(nn.Module):
             )
             out["loss"] = (out["start_loss"] + out["end_loss"]) / 2
             task.update_metrics(
-                logits=logits_dict,
-                labels={"span_start": batch["span_start"], "span_end": batch["span_end"]},
+                tokens=batch["raw_passage"],
+                logits_dict=logits_dict,
+                gold_str_list=batch["answer_str"],
             )
 
         if predict:

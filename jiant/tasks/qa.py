@@ -7,14 +7,20 @@ import string
 import collections
 import gzip
 import random
-from typing import Iterable, Sequence, Type
+from typing import Iterable, Sequence, Type, Dict
 
 import torch
 from allennlp.training.metrics import Average, F1Measure
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
 from jiant.allennlp_mods.numeric_field import NumericField
-from jiant.allennlp_mods.span_metrics import SpanF1Measure
+from jiant.allennlp_mods.span_metrics import (
+    metric_max_over_ground_truths,
+    f1_score,
+    exact_match_score,
+    F1SpanMetric,
+    ExactMatchSpanMetric,
+)
 
 from jiant.utils.data_loaders import tokenize_and_truncate
 
@@ -22,57 +28,6 @@ from jiant.tasks.tasks import Task, SpanPredictionTask, TaggingTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
 from ..utils.retokenize import get_aligner_fn
-
-
-def normalize_answer(s):
-    """Lower text and remove punctuation, articles and extra whitespace.
-    From official ReCoRD eval script """
-
-    def remove_articles(text):
-        return re.sub(r"\b(a|an|the)\b", " ", text)
-
-    def white_space_fix(text):
-        return " ".join(text.split())
-
-    def remove_punc(text):
-        exclude = set(string.punctuation)
-        return "".join(ch for ch in text if ch not in exclude)
-
-    def lower(text):
-        return text.lower()
-
-    return white_space_fix(remove_articles(remove_punc(lower(s))))
-
-
-def f1_score(prediction, ground_truth):
-    """ Compute normalized token level F1
-    From official ReCoRD eval script """
-    prediction_tokens = normalize_answer(prediction).split()
-    ground_truth_tokens = normalize_answer(ground_truth).split()
-    common = collections.Counter(prediction_tokens) & collections.Counter(ground_truth_tokens)
-    num_same = sum(common.values())
-    if num_same == 0:
-        return 0
-    precision = 1.0 * num_same / len(prediction_tokens)
-    recall = 1.0 * num_same / len(ground_truth_tokens)
-    f1 = (2 * precision * recall) / (precision + recall)
-    return f1
-
-
-def exact_match_score(prediction, ground_truth):
-    """ Compute normalized exact match
-    From official ReCoRD eval script """
-    return normalize_answer(prediction) == normalize_answer(ground_truth)
-
-
-def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
-    """ Compute max metric between prediction and each ground truth.
-    From official ReCoRD eval script """
-    scores_for_ground_truths = []
-    for ground_truth in ground_truths:
-        score = metric_fn(prediction, ground_truth)
-        scores_for_ground_truths.append(score)
-    return max(scores_for_ground_truths)
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -417,7 +372,7 @@ class ReCoRDTask(Task):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
 
-        # Load asnwers, used for computing metrics
+        # Load answers, used for computing metrics
         if self._answers is None:
             self._load_answers()
 
@@ -488,7 +443,6 @@ class QASRLTask(SpanPredictionTask):
         self._shuffle_data(self.val_data)
 
         self.test_data = self._load_file(os.path.join(self.path, "orig", "test.jsonl.gz"))
-        self.sentences = []
 
         self.sentences = (
             self.train_data[0] + self.train_data[1] + self.val_data[0] + self.val_data[1]
@@ -612,7 +566,7 @@ class QASRLTask(SpanPredictionTask):
 
 
 @register_task("qamr", rel_path="QAMR/")
-class QAMRTask(TaggingTask):
+class QAMRTask(SpanPredictionTask):
     """ Question-Answer Meaning Representation (QAMR)
         https://github.com/uwnlp/qamr
     """
@@ -620,12 +574,29 @@ class QAMRTask(TaggingTask):
     def __init__(self, path, max_seq_len, name="qamr", **kw):
         """ There are 1363 supertags in CCGBank without introduced token. """
         self.path = path
-        super().__init__(name, 2, **kw)
+        super(QAMRTask, self).__init__(name, **kw)
         self.max_seq_len = max_seq_len
 
         self.train_data = None
         self.val_data = None
         self.test_data = None
+
+        self.f1_metric = F1SpanMetric()
+        self.em_metric = ExactMatchSpanMetric()
+
+        self.val_metric = "%s_avg" % self.name
+        self.val_metric_decreases = False
+
+    def update_metrics(self, tokens, logits_dict, gold_str_list, tagmask=None):
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(tokens=tokens, logits_dict=logits_dict, gold_str_list=gold_str_list)
+        self.em_metric(tokens=tokens, logits_dict=logits_dict, gold_str_list=gold_str_list)
+
+    def get_metrics(self, reset: bool = False) -> Dict:
+        f1 = self.f1_metric.get_metric(reset)
+        em = self.em_metric.get_metric(reset)
+        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        return collected_metrics
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
@@ -634,12 +605,12 @@ class QAMRTask(TaggingTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        def _make_instance(passage_tokens, question_tokens, answer_span, idx):
+        def _make_instance(passage_tokens, question_tokens, answer_span, answer_str):
             d = dict()
 
             # For human-readability
-            d["raw_passage"] = MetadataField(" ".join(passage_tokens[1:-1]))
-            d["raw_question"] = MetadataField(" ".join(question_tokens[1:-1]))
+            d["raw_passage"] = MetadataField(" ".join(passage_tokens))
+            d["raw_question"] = MetadataField(" ".join(question_tokens))
 
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp = model_preprocessing_interface.boundary_token_fn(
@@ -654,8 +625,9 @@ class QAMRTask(TaggingTask):
                     model_preprocessing_interface.boundary_token_fn(question_tokens), indexers
                 )
 
-            raise NotImplementedError("list of 0/1s based on projected spans")
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["span_start"] = NumericField(answer_span[0], label_namespace="span_start_labels")
+            d["span_end"] = NumericField(answer_span[1], label_namespace="span_end_labels")
+            d["answer_str"] = MetadataField(answer_str)
             return Instance(d)
 
         split = list(split)
@@ -664,17 +636,6 @@ class QAMRTask(TaggingTask):
 
     def get_split_text(self, split: str):
         return getattr(self, "%s_data" % split)
-
-    @classmethod
-    def load_tsv(cls, path):
-        return pd.read_csv(
-            path,
-            sep="\t",
-            error_bad_lines=False,
-            header=None,
-            keep_default_na=False,
-            encoding="utf-8",
-        )
 
     @classmethod
     def load_tsv_dataset(cls, path, wiki_dict):
@@ -701,19 +662,23 @@ class QAMRTask(TaggingTask):
         example_list = []
         aligner_fn = get_aligner_fn(self.tokenizer_name)
         for i, row in data_df.iterrows():
-            single_indices = sorted([int(i) for i in row["answer"].split()])
-            index_spans = self.collapse_contiguous_indices(single_indices)
+            single_indices = [int(i) for i in row["answer"].split()]
+            answer_span = min(single_indices), max(single_indices) + 1  # Exclusive
             aligner, processed_sentence_tokens = aligner_fn(row["sent"])
-            projected_index_spans = [aligner.project_span(*span) for span in index_spans]
+            projected_answer_span = aligner.project_span(*answer_span)
+            adjusted_answer_span = (projected_answer_span[0] + 1, projected_answer_span[1] + 1)
+            answer_str = " ".join(row["sent"].split()[answer_span[0] : answer_span[1] + 1])
             example_list.append(
                 {
                     "passage": self._process_sentence(row["sent"]),
                     "question": self._process_sentence(row["question"]),
-                    "answer_spans": projected_index_spans,
+                    "answer_span": adjusted_answer_span,
+                    "answer_str": answer_str,
                 }
             )
         return [
-            [example[k] for example in example_list] for k in ["passage", "question", "answer_span"]
+            [example[k] for example in example_list]
+            for k in ["passage", "question", "answer_span", "answer_str"]
         ]
 
     def _process_sentence(self, sent):
@@ -728,7 +693,7 @@ class QAMRTask(TaggingTask):
         return wiki_dict
 
     def load_data(self):
-        wiki_dict = self.load_wiki_dict(os.path.join("/qamr/data/wiki-sentences.tsv"))
+        wiki_dict = self.load_wiki_dict(os.path.join(self.path, "qamr/data/wiki-sentences.tsv"))
         self.train_data = self.process_dataset(
             self.load_tsv_dataset(
                 path=os.path.join(self.path, "qamr/data/filtered/train.tsv"), wiki_dict=wiki_dict
@@ -745,10 +710,9 @@ class QAMRTask(TaggingTask):
             )
         )
 
-        self.train_data_text = list(tr_data) + [masks[0]]
-        self.val_data_text = list(val_data) + [masks[1]]
-        self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.sentences = (
+            self.train_data[0] + self.train_data[1] + self.val_data[0] + self.val_data[1]
+        )
 
     @staticmethod
     def collapse_contiguous_indices(ls):
