@@ -69,6 +69,7 @@ class SentevalSentenceLengthTask(SingleClassificationTask):
 
         def load_json(data_file):
             rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+            rows = rows.sample(frac=1, axis=0).reset_index(drop=True)
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
