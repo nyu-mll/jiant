@@ -1,5 +1,5 @@
 """ 
-Set of tasks from Senteval
+Set of probing tasks that were added to Senteval.
 Paper: https://arxiv.org/abs/1805.01070
 """
 import collections
@@ -44,7 +44,7 @@ from jiant.tasks.registry import register_task  # global task registry
 from jiant.tasks.tasks import SingleClassificationTask, process_single_pair_task_split
 
 
-@register_task("senteval-sentence-length", rel_path="sentence_length/")
+@register_task("senteval-probing-sentence-length", rel_path="sentence_length/")
 class SentevalSentenceLengthTask(SingleClassificationTask):
     """ Sentene length task from Senteval.  """
 
@@ -86,7 +86,7 @@ class SentevalSentenceLengthTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-bigram-shift", rel_path="bigram_shift/")
+@register_task("senteval-probing-bigram-shift", rel_path="bigram_shift/")
 class SentevalBigramShiftTask(SingleClassificationTask):
     """ Sentene length task from Senteval.  """
 
@@ -137,7 +137,7 @@ class SentevalBigramShiftTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-past-present", rel_path="past_present/")
+@register_task("senteval-probing-past-present", rel_path="past_present/")
 class SentevalPastPresentTask(SingleClassificationTask):
     """ Past Present Task  """
 
@@ -188,7 +188,7 @@ class SentevalPastPresentTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-odd-man-out", rel_path="odd_man_out/")
+@register_task("senteval-probing-odd-man-out", rel_path="odd_man_out/")
 class SentevalOddManOutTask(SingleClassificationTask):
     """ Odd man out task """
 
@@ -239,7 +239,7 @@ class SentevalOddManOutTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-coordination-inversion", rel_path="coordination_inversion/")
+@register_task("senteval-probing-coordination-inversion", rel_path="coordination_inversion/")
 class SentevalCoordinationInversionTask(SingleClassificationTask):
     """ Coordination Inversion task.  """
 
@@ -290,7 +290,7 @@ class SentevalCoordinationInversionTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-word-content", rel_path="word_content")
+@register_task("senteval-probing-word-content", rel_path="word_content")
 class SentevalWordContentTask(SingleClassificationTask):
     """ Word Content Task  """
 
@@ -331,7 +331,7 @@ class SentevalWordContentTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-tree-depth", rel_path="tree_depth")
+@register_task("senteval-probing-tree-depth", rel_path="tree_depth")
 class SentevalTreeDepthTask(SingleClassificationTask):
     """ Tree Depth Task """
 
@@ -374,7 +374,7 @@ class SentevalTreeDepthTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-top-constituents", rel_path="top_constituents/")
+@register_task("senteval-probing-top-constituents", rel_path="top_constituents/")
 class SentevalTopConstituentsTask(SingleClassificationTask):
     """ Top Constituents task """
 
@@ -428,7 +428,7 @@ class SentevalTopConstituentsTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-subj-number", rel_path="subj_number")
+@register_task("senteval-probing-subj-number", rel_path="subj_number")
 class SentevalSubjNumberTask(SingleClassificationTask):
     """ Subjective number task  """
 
@@ -480,7 +480,7 @@ class SentevalSubjNumberTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-obj-number", rel_path="obj_number")
+@register_task("senteval-probing-obj-number", rel_path="obj_number")
 class SentevalObjNumberTask(SingleClassificationTask):
     """ Objective number task """
 
