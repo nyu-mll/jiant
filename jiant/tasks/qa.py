@@ -23,11 +23,12 @@ from jiant.allennlp_mods.span_metrics import (
 )
 
 from jiant.utils.data_loaders import tokenize_and_truncate
+from jiant.utils.tokenizers import MosesTokenizer
 
 from jiant.tasks.tasks import Task, SpanPredictionTask, TaggingTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
-from ..utils.retokenize import get_aligner_fn
+from ..utils.retokenize import get_aligner_fn, space_tokenize_with_spans, find_space_token_span
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -605,33 +606,37 @@ class QAMRTask(SpanPredictionTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        def _make_instance(passage_tokens, question_tokens, answer_span, answer_str):
+        def _make_instance(example):
             d = dict()
 
             # For human-readability
-            d["raw_passage"] = MetadataField(" ".join(passage_tokens))
-            d["raw_question"] = MetadataField(" ".join(question_tokens))
+            d["raw_passage"] = MetadataField(" ".join(example["passage"]))
+            d["raw_question"] = MetadataField(" ".join(example["question"]))
 
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(
-                    passage_tokens, question_tokens
+                inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
+                    example["passage"], example["question"], get_offset=True
                 )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["passage"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(passage_tokens), indexers
+                    model_preprocessing_interface.boundary_token_fn(example["passage"]), indexers
                 )
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(question_tokens), indexers
+                    model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
                 )
-
-            d["span_start"] = NumericField(answer_span[0], label_namespace="span_start_labels")
-            d["span_end"] = NumericField(answer_span[1], label_namespace="span_end_labels")
-            d["answer_str"] = MetadataField(answer_str)
+                start_offset = 0
+            d["span_start"] = NumericField(
+                example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
+            )
+            d["span_end"] = NumericField(
+                example["answer_span"][1] + start_offset, label_namespace="span_end_labels"
+            )
+            d["start_offset"] = NumericField(start_offset, label_namespace="start_offset")
+            d["answer_str"] = MetadataField(example["answer_str"])
             return Instance(d)
 
-        split = list(split)
-        instances = map(_make_instance, *split)
+        instances = map(_make_instance, split)
         return instances
 
     def get_split_text(self, split: str):
@@ -660,26 +665,37 @@ class QAMRTask(SpanPredictionTask):
 
     def process_dataset(self, data_df):
         example_list = []
-        aligner_fn = get_aligner_fn(self.tokenizer_name)
+        moses = MosesTokenizer()
+        aligner_fn = get_aligner_fn("bert-large-cased")
         for i, row in data_df.iterrows():
-            single_indices = [int(i) for i in row["answer"].split()]
-            answer_span = min(single_indices), max(single_indices) + 1  # Exclusive
-            aligner, processed_sentence_tokens = aligner_fn(row["sent"])
-            projected_answer_span = aligner.project_span(*answer_span)
-            adjusted_answer_span = (projected_answer_span[0] + 1, projected_answer_span[1] + 1)
-            answer_str = " ".join(row["sent"].split()[answer_span[0] : answer_span[1] + 1])
+            tokens = row["sent"].split()
+            answer_idxs = list(map(int, row["answer"].split()))
+            ans_tok_start, ans_tok_end = min(answer_idxs), max(answer_idxs) + 1  # Exclusive
+            detok_sent = moses.detokenize_ptb(tokens)
+
+            ans_char_start = len(moses.detokenize_ptb(tokens[:ans_tok_start]))
+            ans_char_end = len(moses.detokenize_ptb(tokens[:ans_tok_end]))
+            answer_str = detok_sent[ans_char_start:ans_char_end].strip()
+
+            space_tokens_with_spans = space_tokenize_with_spans(detok_sent)
+            ans_space_token_span = find_space_token_span(
+                space_tokens_with_spans=space_tokens_with_spans,
+                char_start=ans_char_start,
+                char_end=ans_char_end,
+            )
+            aligner, processed_sentence_tokens = aligner_fn(detok_sent)
+            answer_token_span = aligner.project_span(*ans_space_token_span)
+
             example_list.append(
                 {
                     "passage": self._process_sentence(row["sent"]),
                     "question": self._process_sentence(row["question"]),
-                    "answer_span": adjusted_answer_span,
                     "answer_str": answer_str,
+                    "answer_span": answer_token_span,
+                    "space_tokens_with_spans": space_tokens_with_spans,
                 }
             )
-        return [
-            [example[k] for example in example_list]
-            for k in ["passage", "question", "answer_span", "answer_str"]
-        ]
+        return example_list
 
     def _process_sentence(self, sent):
         return tokenize_and_truncate(
@@ -711,7 +727,10 @@ class QAMRTask(SpanPredictionTask):
         )
 
         self.sentences = (
-            self.train_data[0] + self.train_data[1] + self.val_data[0] + self.val_data[1]
+            [example["passage"] for example in self.train_data]
+            + [example["question"] for example in self.train_data]
+            + [example["passage"] for example in self.val_data]
+            + [example["question"] for example in self.val_data]
         )
 
     @staticmethod

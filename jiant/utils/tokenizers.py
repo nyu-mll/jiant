@@ -121,6 +121,16 @@ def get_tokenizer(tokenizer_name):
 
 
 def bert_get_tokenized_string_span_map(text, b_tokens, verbose=False):
+    """
+    Given a string, an a BERT tokenization of the string, returns list of
+        [
+            bert_token,
+            start char index of token in string,
+            (exclusive) end char index of token in string,
+        ]
+    There is some fuzziness around assignment of spaces (particularly because of UNK tokens)
+      but the spans should be contiguous.
+    """
     b_token_char_indices = []
     text_i = 0
     for b_token in b_tokens:
