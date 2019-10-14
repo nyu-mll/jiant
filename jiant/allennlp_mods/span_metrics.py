@@ -66,17 +66,15 @@ class GenericSpanMetric(Metric):
     def metric_func(self, prediction, ground_truth):
         raise NotImplementedError
 
-    def __call__(self, tokens: List, logits_dict: Dict, gold_str_list: List[str]):
-        batch_size = len(tokens)
-        metric_ls = []
-        for i in range(batch_size):
-            pred_span_start = logits_dict["span_start"][i, :].argmax().item()
-            pred_span_end = logits_dict["span_end"][i, :].argmax().item()
-            pred_str = " ".join(tokens[i][pred_span_start : pred_span_end + 1])
-            metric_ls.append(self.metric_func(prediction=pred_str, ground_truth=gold_str_list[i]))
+    def __call__(self, pred_str_list: List[str], gold_str_list: List[str]):
+        # Breaking API here. Should we make Metric more general?
+        metric_ls = [
+            self.metric_func(prediction=pred_str, ground_truth=gold_str)
+            for pred_str, gold_str in zip(pred_str_list, gold_str_list)
+        ]
 
         self._metric_total += sum(metric_ls)
-        self._count += batch_size
+        self._count += len(metric_ls)
 
     def get_metric(self, reset: bool = False):
         metric = self._metric_total / self._count
