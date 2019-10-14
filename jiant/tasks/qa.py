@@ -502,9 +502,8 @@ class QASRLTask(SpanPredictionTask):
         aligner_fn = get_aligner_fn(self.tokenizer_name)
         with gzip.open(path) as f:
             lines = f.read().splitlines()
-            import tqdm
 
-            for line in tqdm.tqdm(lines[:1000]):
+            for line in lines:
                 datum = self.preprocess_qasrl_datum(json.loads(line))
                 for entry in datum["entries"]:
                     for question, answer_list in entry["questions"].items():
