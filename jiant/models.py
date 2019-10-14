@@ -964,14 +964,16 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch["inputs"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits_dict = module.forward(sent_embs, sent_mask)
-        out = {"logits": logits_dict, "n_exs": get_batch_size(batch, self._cuda_device)}
-
-        out["start_loss"] = F.cross_entropy(
-            input=logits_dict["span_start"], target=batch["span_start"].long().squeeze(dim=1)
-        )
-        out["end_loss"] = F.cross_entropy(
-            input=logits_dict["span_end"], target=batch["span_end"].long().squeeze(dim=1)
-        )
+        out = {
+            "logits": logits_dict,
+            "n_exs": get_batch_size(batch, self._cuda_device),
+            "start_loss": F.cross_entropy(
+                input=logits_dict["span_start"], target=batch["span_start"].long().squeeze(dim=1)
+            ),
+            "end_loss": F.cross_entropy(
+                input=logits_dict["span_end"], target=batch["span_end"].long().squeeze(dim=1)
+            ),
+        }
         out["loss"] = (out["start_loss"] + out["end_loss"]) / 2
 
         # Form string predictions
