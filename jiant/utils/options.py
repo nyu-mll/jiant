@@ -2,6 +2,7 @@
 Functions for parsing configs.
 """
 import torch
+import logging as log
 
 
 def parse_task_list_arg(task_list):
@@ -19,22 +20,25 @@ def parse_task_list_arg(task_list):
     return task_names
 
 
-def parse_cuda_list_arg(cuda_list):
+def parse_cuda_list_arg(cuda_arg):
     """
     Parse cuda_list settings
     """
     result_cuda = []
-    if cuda_list == "auto":
+    if cuda_arg == "auto":
         result_cuda = list(range(torch.cuda.device_count()))
         if len(result_cuda) == 1:
             result_cuda = result_cuda[0]
-        return result_cuda
-    elif isinstance(cuda_list, int):
-        return cuda_list
-    elif "," in cuda_list:
-        return [int(d) for d in cuda_list.split(",")]
+    elif isinstance(cuda_arg, int):
+        result_cuda = cuda_arg
+    elif "," in cuda_arg:
+        result_cuda = [int(d) for d in cuda_arg.split(",")]
     else:
         raise ValueError(
             "Your cuda settings do not match any of the possibilities in defaults.conf"
         )
-    return cuda_list
+    if torch.cuda.device_count() == 0:
+        # If there are no cuda devices available, default to -1.
+        log.info("CUDA devices not found, defaulting to cuda=-1")
+        result_cuda = -1
+    return result_cuda
