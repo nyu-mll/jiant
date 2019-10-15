@@ -1,10 +1,12 @@
-# for all of these, just split into actual train, test slits.
+# Splits senteval probing task into a train-val-test split
+# Usage:
+#     python preprocess_senteval_probing.py --senteval_probing_path={path/to/senteval/probing/data} 
 import os
 import argparse
 import pandas as pd
 
 
-def parse_senteval(args):
+def parse_senteval_probing(args):
     files = [x for x in os.listdir(args.senteval_path) if "txt" in x]
     for file in files:
         file_pd = pd.read_fwf(os.path.join(args.senteval_path, file), header=None)
@@ -26,7 +28,7 @@ def parse_senteval(args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--senteval_path", type=str, help="path to original Senteval files")
+parser.add_argument("--senteval_probing_path", type=str, help="path to original Senteval files")
 
 args = parser.parse_args()
 parse_senteval(args)
