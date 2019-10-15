@@ -7,7 +7,6 @@ import itertools
 import json
 import logging as log
 import os
-from typing import Any, Dict, Iterable, List, Sequence, Type
 
 import numpy as np
 import pandas as pd
@@ -15,31 +14,9 @@ import torch
 
 
 # Fields for instance processing
-from allennlp.data import Instance, Token, vocabulary
-from allennlp.data.fields import (
-  LabelField,
-  ListField,
-  MetadataField,
-  MultiLabelField,
-  SpanField,
-  TextField,
-)
-from allennlp.data.token_indexers import SingleIdTokenIndexer
-from allennlp.training.metrics import Average, BooleanAccuracy, CategoricalAccuracy, F1Measure
-from sklearn.metrics import mean_squared_error
-
-from jiant.allennlp_mods.correlation import Correlation
-from jiant.allennlp_mods.numeric_field import NumericField
-from jiant.utils import utils
 from jiant.utils.data_loaders import (
-  get_tag_list,
-  load_diagnostic_tsv,
-  load_span_data,
-  load_tsv,
   tokenize_and_truncate,
-  load_pair_nli_jsonl,
 )
-from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task# global task registry
 from jiant.tasks.tasks import SingleClassificationTask, process_single_pair_task_split
 
