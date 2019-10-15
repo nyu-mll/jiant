@@ -1,6 +1,6 @@
 # Splits senteval probing task into a train-val-test split
 # Usage:
-#     python preprocess_senteval_probing.py --senteval_probing_path={path/to/senteval/probing/data} 
+#     python preprocess_senteval_probing.py --senteval_probing_path={path/to/senteval/probing/data}
 import os
 import argparse
 import pandas as pd
