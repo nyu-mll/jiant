@@ -31,4 +31,4 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--senteval_probing_path", type=str, help="path to original Senteval files")
 
 args = parser.parse_args()
-parse_senteval(args)
+parse_senteval_probing(args)
