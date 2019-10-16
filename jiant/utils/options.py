@@ -29,6 +29,8 @@ def parse_cuda_list_arg(cuda_arg):
         result_cuda = list(range(torch.cuda.device_count()))
         if len(result_cuda) == 1:
             result_cuda = result_cuda[0]
+        elif len(result_cuda) == 0:
+            result_cuda = -1
     elif isinstance(cuda_arg, int):
         result_cuda = cuda_arg
     elif "," in cuda_arg:
@@ -37,8 +39,6 @@ def parse_cuda_list_arg(cuda_arg):
         raise ValueError(
             "Your cuda settings do not match any of the possibilities in defaults.conf"
         )
-    if torch.cuda.device_count() == 0:
-        # If there are no cuda devices available, default to -1.
-        log.info("CUDA devices not found, defaulting to cuda=-1")
-        result_cuda = -1
+    if torch.cuda.device_count() == 0 and not (isinstance(result_cuda, int) and result_cuda == -1):
+        raise ValueError("You specified usage of CUDA but CUDA devices not found.")
     return result_cuda
