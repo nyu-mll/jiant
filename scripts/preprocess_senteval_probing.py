@@ -1,6 +1,8 @@
-# Splits senteval probing task into a train-val-test split
-# Usage:
-#     python preprocess_senteval_probing.py --senteval_probing_path={path/to/senteval/probing/data}
+"""
+ Splits senteval probing task into a train-val-test split
+ Usage:
+     python preprocess_senteval_probing.py --senteval_probing_path={path/to/senteval/probing/data}
+"""
 import os
 import argparse
 import pandas as pd
@@ -22,9 +24,6 @@ def parse_senteval_probing(args):
         files_test = file_pd[file_pd[0] == "te"]
         task_name = file.split(".")[0]
         files_test.to_csv(os.path.join(args.senteval_path, task_name, "test.tsv"))
-    import pdb
-
-    pdb.set_trace()
 
 
 parser = argparse.ArgumentParser()
