@@ -1,5 +1,5 @@
 """ 
-Set of probing tasks that were added to SentevalProbing.
+Set of probing tasks that were added to Senteval Probing.
 Paper: https://arxiv.org/abs/1805.01070
 """
 import collections
@@ -19,13 +19,13 @@ from jiant.tasks.registry import register_task  # global task registry
 from jiant.tasks.tasks import SingleClassificationTask, process_single_pair_task_split
 
 
-@register_task("senteval-probing-sentence-length", rel_path="sentence_length/")
-class SentevalProbingSentenceLengthTask(SingleClassificationTask):
+@register_task("se-probing-sentence-length", rel_path="sentence_length/")
+class SEProbingSentenceLengthTask(SingleClassificationTask):
     """ Sentence length task   """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalProbingSentenceLengthTask, self).__init__(name, n_classes=7, **kw)
+        super(SEProbingSentenceLengthTask, self).__init__(name, n_classes=7, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -61,13 +61,13 @@ class SentevalProbingSentenceLengthTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-bigram-shift", rel_path="bigram_shift/")
-class SentevalProbingBigramShiftTask(SingleClassificationTask):
+@register_task("se-probing-bigram-shift", rel_path="bigram_shift/")
+class SEProbingBigramShiftTask(SingleClassificationTask):
     """  Bigram shift task   """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalProbingBigramShiftTask, self).__init__(name, n_classes=2, **kw)
+        super(SEProbingBigramShiftTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -112,13 +112,13 @@ class SentevalProbingBigramShiftTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-past-present", rel_path="past_present/")
-class SentevalProbingPastPresentTask(SingleClassificationTask):
+@register_task("se-probing-past-present", rel_path="past_present/")
+class SEProbingPastPresentTask(SingleClassificationTask):
     """ Past Present Task  """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalProbingPastPresentTask, self).__init__(name, n_classes=2, **kw)
+        super(SEProbingPastPresentTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -163,13 +163,13 @@ class SentevalProbingPastPresentTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-odd-man-out", rel_path="odd_man_out/")
-class SentevalProbingOddManOutTask(SingleClassificationTask):
+@register_task("se-probing-odd-man-out", rel_path="odd_man_out/")
+class SEProbingOddManOutTask(SingleClassificationTask):
     """ Odd man out task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalProbingOddManOutTask, self).__init__(name, n_classes=2, **kw)
+        super(SEProbingOddManOutTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -214,13 +214,13 @@ class SentevalProbingOddManOutTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-coordination-inversion", rel_path="coordination_inversion/")
-class SentevalProbingCoordinationInversionTask(SingleClassificationTask):
+@register_task("se-probing-coordination-inversion", rel_path="coordination_inversion/")
+class SEProbingCoordinationInversionTask(SingleClassificationTask):
     """ Coordination Inversion task.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalProbingCoordinationInversionTask, self).__init__(name, n_classes=2, **kw)
+        super(SEProbingCoordinationInversionTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -265,12 +265,12 @@ class SentevalProbingCoordinationInversionTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-word-content", rel_path="word_content")
-class SentevalProbingWordContentTask(SingleClassificationTask):
+@register_task("se-probing-word-content", rel_path="word_content")
+class SEProbingWordContentTask(SingleClassificationTask):
     """ Word Content Task  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(SentevalProbingWordContentTask, self).__init__(name, n_classes=1000, **kw)
+        super(SEProbingWordContentTask, self).__init__(name, n_classes=1000, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -306,13 +306,13 @@ class SentevalProbingWordContentTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-tree-depth", rel_path="tree_depth")
-class SentevalProbingTreeDepthTask(SingleClassificationTask):
+@register_task("se-probing-tree-depth", rel_path="tree_depth")
+class SEProbingTreeDepthTask(SingleClassificationTask):
     """ Tree Depth Task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalProbingTreeDepthTask, self).__init__(name, n_classes=8, **kw)
+        super(SEProbingTreeDepthTask, self).__init__(name, n_classes=8, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -349,13 +349,13 @@ class SentevalProbingTreeDepthTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-top-constituents", rel_path="top_constituents/")
-class SentevalProbingTopConstituentsTask(SingleClassificationTask):
+@register_task("se-probing-top-constituents", rel_path="top_constituents/")
+class SEProbingTopConstituentsTask(SingleClassificationTask):
     """ Top Constituents task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
-        super(SentevalProbingTopConstituentsTask, self).__init__(name, n_classes=20, **kw)
+        super(SEProbingTopConstituentsTask, self).__init__(name, n_classes=20, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -403,12 +403,12 @@ class SentevalProbingTopConstituentsTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-subj-number", rel_path="subj_number")
-class SentevalProbingSubjNumberTask(SingleClassificationTask):
+@register_task("se-probing-subj-number", rel_path="subj_number")
+class SEProbingSubjNumberTask(SingleClassificationTask):
     """ Subjective number task """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(SentevalProbingSubjNumberTask, self).__init__(name, n_classes=2, **kw)
+        super(SEProbingSubjNumberTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
@@ -455,12 +455,12 @@ class SentevalProbingSubjNumberTask(SingleClassificationTask):
         self.sentences = sentences
 
 
-@register_task("senteval-probing-obj-number", rel_path="obj_number")
-class SentevalProbingObjNumberTask(SingleClassificationTask):
+@register_task("se-probing-obj-number", rel_path="obj_number")
+class SEProbingObjNumberTask(SingleClassificationTask):
     """ Objective number task """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(SentevalProbingObjNumberTask, self).__init__(name, n_classes=2, **kw)
+        super(SEProbingObjNumberTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tags"
