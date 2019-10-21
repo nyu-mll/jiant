@@ -1128,18 +1128,18 @@ class MultiTaskModel(nn.Module):
             appen_mask2 = sent_mask2[:, 1:].squeeze(2) * (
                 scale2 >= batch["bad_prefix_length"] + batch["shared_word_length"]
             ).to(torch.float)
-            pref_mask1 = sent_mask1[:, 1:].squeeze(2) * (scale1 < batch["good_prefix_length"]).to(
+            prefix_mask1 = sent_mask1[:, 1:].squeeze(2) * (scale1 < batch["good_prefix_length"]).to(
                 torch.float
             )
-            pref_mask2 = sent_mask2[:, 1:].squeeze(2) * (scale2 < batch["bad_prefix_length"]).to(
+            prefix_mask2 = sent_mask2[:, 1:].squeeze(2) * (scale2 < batch["bad_prefix_length"]).to(
                 torch.float
             )
             appen_entropy1 = (entropy1 * appen_mask1).sum(dim=1)
             appen_entropy2 = (entropy2 * appen_mask2).sum(dim=1)
             appen_logits1 = torch.sum(lm_logits1 * appen_mask1, dim=1)
             appen_logits2 = torch.sum(lm_logits2 * appen_mask2, dim=1)
-            pref_logits1 = torch.sum(lm_logits1 * pref_mask1, dim=1)
-            pref_logits2 = torch.sum(lm_logits2 * pref_mask2, dim=1)
+            prefix_logits1 = torch.sum(lm_logits1 * prefix_mask1, dim=1)
+            prefix_logits2 = torch.sum(lm_logits2 * prefix_mask2, dim=1)
             for i in range(out["n_exs"]):
                 output = {
                     "sent1_str": batch["sent1_str"][i],
@@ -1150,8 +1150,8 @@ class MultiTaskModel(nn.Module):
                     "crit_logits2": pref_logits2[i].tolist(),
                     "appen_logits1": appen_logits1[i].tolist(),
                     "appen_logits2": appen_logits2[i].tolist(),
-                    "pref_logits1": pref_logits1[i].tolist(),
-                    "pref_logits2": pref_logits2[i].tolist(),
+                    "pref_logits1": prefix_logits1[i].tolist(),
+                    "pref_logits2": prefix_logits2[i].tolist(),
                     "pairID": batch["pairID"][i],
                     "UID": batch["UID"][i],
                 }
