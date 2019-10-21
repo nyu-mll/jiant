@@ -42,17 +42,17 @@ class SEProbingSentenceLengthTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             rows = rows.sample(frac=1, axis=0).reset_index(drop=True)
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
             return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -94,16 +94,16 @@ class SEProbingBigramShiftTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
             return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -145,16 +145,16 @@ class SEProbingPastPresentTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
             return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -196,16 +196,16 @@ class SEProbingOddManOutTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
             return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -247,16 +247,16 @@ class SEProbingCoordinationInversionTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
             return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -287,17 +287,17 @@ class SEProbingWordContentTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             rows["s1"] = rows["2"].apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
             self.labels.append(rows["1"].tolist())
             return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -329,8 +329,8 @@ class SEProbingTreeDepthTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             labels = rows["1"].apply(lambda x: int(x.split("\t")[0]))
             labels = labels.apply(lambda x: x - 5)
             s1 = rows["1"].apply(lambda x: x.split("\t")[1])
@@ -339,9 +339,9 @@ class SEProbingTreeDepthTask(SingleClassificationTask):
             )
             return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
         sentences = []
         for split in ["train", "val", "test"]:
             split_data = getattr(self, "%s_data_text" % split)
@@ -382,8 +382,8 @@ class SEProbingTopConstituentsTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             labels = rows["1"].apply(lambda x: str(x.split("\t")[0]))
             self.labels = list(set(labels.tolist()))
             s1 = rows["1"].apply(lambda x: x.split("\t")[1])
@@ -392,9 +392,9 @@ class SEProbingTopConstituentsTask(SingleClassificationTask):
             )
             return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -405,7 +405,7 @@ class SEProbingTopConstituentsTask(SingleClassificationTask):
 
 @register_task("se-probing-subj-number", rel_path="subj_number")
 class SEProbingSubjNumberTask(SingleClassificationTask):
-    """ Subjective number task """
+    """ Subject number task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         super(SEProbingSubjNumberTask, self).__init__(name, n_classes=2, **kw)
@@ -435,8 +435,8 @@ class SEProbingSubjNumberTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             labels = rows["1"].apply(lambda x: str(x.split("\t")[0]))
             s1 = rows["1"].apply(lambda x: x.split("\t")[1])
             s1 = s1.apply(
@@ -444,9 +444,9 @@ class SEProbingSubjNumberTask(SingleClassificationTask):
             )
             return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
@@ -457,7 +457,7 @@ class SEProbingSubjNumberTask(SingleClassificationTask):
 
 @register_task("se-probing-obj-number", rel_path="obj_number")
 class SEProbingObjNumberTask(SingleClassificationTask):
-    """ Objective number task """
+    """ Object number task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         super(SEProbingObjNumberTask, self).__init__(name, n_classes=2, **kw)
@@ -487,8 +487,8 @@ class SEProbingObjNumberTask(SingleClassificationTask):
     def load_data(self):
         """ Load data """
 
-        def load_json(data_file):
-            rows = pd.read_csv(data_file, encoding="ISO-8859-1")
+        def load_csv(data_file):
+            rows = pd.read_csv(data_file, encoding="utf-8")
             labels = rows["1"].apply(lambda x: str(x.split("\t")[0]))
             s1 = rows["1"].apply(lambda x: x.split("\t")[1])
             s1 = s1.apply(
@@ -496,9 +496,9 @@ class SEProbingObjNumberTask(SingleClassificationTask):
             )
             return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
-        self.train_data_text = load_json(os.path.join(self.path, "train.tsv"))
-        self.val_data_text = load_json(os.path.join(self.path, "val.tsv"))
-        self.test_data_text = load_json(os.path.join(self.path, "test.tsv"))
+        self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
+        self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
