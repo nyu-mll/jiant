@@ -533,7 +533,7 @@ class BlimpOnePrefixLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        sent1s, sent2s, labels, tags = [], [], [], []
+        sent1s, sent2s, labels, tags, pairIDs, UIDs = [], [], [], [], [], [] 
         shared_prefixes, good_words, bad_words = [], [], []
         for example in data:
             if not example["one_prefix_method"]:
@@ -568,6 +568,8 @@ class BlimpOnePrefixLMTask(BlimpTask):
                     self._tokenizer_name, example["one_prefix_word_bad"], self.max_seq_len
                 )
             )
+            pairIDs.append(example["pairID"])
+            UIDs.append(example["UID"])
         self.val_data_text = self.test_data_text = self.train_data_text = (
             sent1s,
             sent2s,
@@ -576,6 +578,8 @@ class BlimpOnePrefixLMTask(BlimpTask):
             shared_prefixes,
             good_words,
             bad_words,
+            pairIDs,
+            UIDs,
         )
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
@@ -589,7 +593,7 @@ class BlimpOnePrefixLMTask(BlimpTask):
         return
 
     def process_split(self, split, indexers, model_preprocessing_interface):
-        def _make_instance(sent1, sent2, label, tags, shared_prefix, good_word, bad_word):
+        def _make_instance(sent1, sent2, label, tags, shared_prefix, good_word, bad_word, pairID, UID):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
             sent2: sentence2, the bad one
@@ -598,6 +602,8 @@ class BlimpOnePrefixLMTask(BlimpTask):
             good_word: tokens of the following word in good sentence
             bad_word: tokens of the following word in bad sentence
             tagmask: which tags this sample has
+            pairID: index of the pair
+            UID: which paradigm it belongs to
             """
             d = {}
             input1 = model_preprocessing_interface.lm_boundary_token_fn(sent1)
@@ -619,6 +625,8 @@ class BlimpOnePrefixLMTask(BlimpTask):
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
+            d["pairID"] = MetadataField(pairID)
+            d["UID"] = MetadataField(UID)
             return Instance(d)
 
         instances = map(_make_instance, *split)
@@ -638,7 +646,7 @@ class BlimpTwoPrefixLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        sent1s, sent2s, labels, tags = [], [], [], []
+        sent1s, sent2s, labels, tags, pairIDs, UIDs = [], [], [], [], [], []
         good_prefixes, bad_prefixes, shared_words = [], [], []
         for example in data:
             if not example["two_prefix_method"]:
@@ -673,6 +681,8 @@ class BlimpTwoPrefixLMTask(BlimpTask):
                     self._tokenizer_name, example["two_prefix_word"], self.max_seq_len
                 )
             )
+            pairIDs.append(example["pairID"])
+            UIDs.append(example["UID"])
         self.val_data_text = self.test_data_text = self.train_data_text = (
             sent1s,
             sent2s,
@@ -681,6 +691,8 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             good_prefixes,
             bad_prefixes,
             shared_words,
+            pairIDs,
+            UIDs,
         )
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
@@ -694,7 +706,9 @@ class BlimpTwoPrefixLMTask(BlimpTask):
         return
 
     def process_split(self, split, indexers, model_preprocessing_interface):
-        def _make_instance(sent1, sent2, label, tags, good_prefix, bad_prefix, shared_word):
+        def _make_instance(
+            sent1, sent2, label, tags, good_prefix, bad_prefix, shared_word, pairID, UID
+        ):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
             sent2: sentence2, the bad one
@@ -703,6 +717,8 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             bad_prefix_length: length of prefix of the bad sentence
             shared_word_length: number of tokens forming the shared word following the prefixes
             tagmask: which tags this sample has
+            pairID: index of the pair
+            UID: which paradigm it belongs to
             """
             d = {}
             input1 = model_preprocessing_interface.lm_boundary_token_fn(sent1)
@@ -731,6 +747,8 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
+            d["pairID"] = MetadataField(pairID)
+            d["UID"] = MetadataField(UID)
             return Instance(d)
 
         instances = map(_make_instance, *split)
@@ -750,7 +768,7 @@ class BlimpFullSentLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        sent1s, sent2s, labels, tags = [], [], [], []
+        sent1s, sent2s, labels, tags, pairIDs, UIDs = [], [], [], [], [], []
         for example in data:
             if not example["simple_LM_method"]:
                 continue
@@ -769,11 +787,15 @@ class BlimpFullSentLMTask(BlimpTask):
             if "UID" in example:
                 tag_str = "%s__%s" % ("UID", example["UID"])
                 tags[-1].append(self.tag_vocab[tag_str])
+            pairIDs.append(example["pairID"])
+            UIDs.append(example["UID"])
         self.val_data_text = self.test_data_text = self.train_data_text = (
             sent1s,
             sent2s,
             labels,
             tags,
+            pairIDs,
+            UIDs,
         )
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
@@ -787,12 +809,14 @@ class BlimpFullSentLMTask(BlimpTask):
         return
 
     def process_split(self, split, indexers, model_preprocessing_interface):
-        def _make_instance(sent1, sent2, label, tags):
+        def _make_instance(sent1, sent2, label, tags, pairID, UID):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
             sent2: sentence2, the bad one
             label: always 0
             tagmask: which tags this sample has
+            pairID: index of the pair
+            UID: which paradigm it belongs to
             """
             d = {}
             d["input1"] = sentence_to_text_field(
@@ -807,6 +831,8 @@ class BlimpFullSentLMTask(BlimpTask):
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
+            d["pairID"] = MetadataField(pairID)
+            d["UID"] = MetadataField(UID)
             return Instance(d)
 
         instances = map(_make_instance, *split)

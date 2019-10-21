@@ -532,7 +532,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, (NPIClozePairTask, BlimpTask)):
         hid2voc = model.sent_encoder._text_field_embedder.get_pretrained_lm_head()
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-        model.file = open("%s_%s_peephole.jsonl" % (args.exp_name, args.run_name), "w")
+        model.file = open("%s_%s.jsonl" % (args.exp_name, args.run_name), "w")
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -1088,7 +1088,8 @@ class MultiTaskModel(nn.Module):
                     "lm_prob2": pref_logits2[i].tolist(),
                     "sent_mask1": sent_mask1[:, 1:].squeeze(2)[i].tolist(),
                     "sent_mask2": sent_mask2[:, 1:].squeeze(2)[i].tolist(),
-                    "tag": batch["tagmask"][i].tolist(),
+                    "pairID": batch["pairID"][i],
+                    "UID": batch["UID"][i],
                 }
                 self.file.write(json.dumps(output) + "\n")
         elif isinstance(task, BlimpOnePrefixLMTask):
@@ -1114,7 +1115,8 @@ class MultiTaskModel(nn.Module):
                     "crit_logits2": pref_logits2[i].tolist(),
                     "appen_logits1": appen_logits1[i].tolist(),
                     "appen_logits2": appen_logits2[i].tolist(),
-                    "tag": batch["tagmask"][i].tolist(),
+                    "pairID": batch["pairID"][i],
+                    "UID": batch["UID"][i],
                 }
                 self.file.write(json.dumps(output) + "\n")
         elif isinstance(task, BlimpTwoPrefixLMTask):
@@ -1150,7 +1152,8 @@ class MultiTaskModel(nn.Module):
                     "appen_logits2": appen_logits2[i].tolist(),
                     "pref_logits1": pref_logits1[i].tolist(),
                     "pref_logits2": pref_logits2[i].tolist(),
-                    "tag": batch["tagmask"][i].tolist(),
+                    "pairID": batch["pairID"][i],
+                    "UID": batch["UID"][i],
                 }
                 self.file.write(json.dumps(output) + "\n")
 
