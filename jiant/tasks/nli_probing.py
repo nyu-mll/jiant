@@ -102,11 +102,25 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         log.info("\tFinished loading NLI-alt probing data.")
 
 
-@register_task("nli-prob-prep", rel_path="NLI-Prob/")
-@register_task("nli-prob-negation", rel_path="NLI-Prob/")
-@register_task("nli-prob-spatial", rel_path="NLI-Prob/")
-@register_task("nli-prob-quant", rel_path="NLI-Prob/")
-@register_task("nli-prob-comp", rel_path="NLI-Prob/")
+@register_task("nli-prob-prep", rel_path="NLI-Prob/", s1_idx=8, s2_idx=9, label_idx=0, skip_rows=1)
+@register_task(
+    "nli-prob-negation", rel_path="NLI-Prob/", s1_idx=8, s2_idx=9, label_idx=0, skip_rows=1
+)
+@register_task(
+    "nli-prob-spatial",
+    rel_path="NLI-Prob/",
+    idx_idx=0,
+    s1_idx=9,
+    s2_idx=10,
+    label_idx=0,
+    skip_rows=1,
+)
+@register_task(
+    "nli-prob-quant", rel_path="NLI-Prob/", idx_idx=0, s1_idx=9, s2_idx=10, label_idx=0, skip_rows=1
+)
+@register_task(
+    "nli-prob-comp", rel_path="NLI-Prob/", idx_idx=0, s1_idx=9, s2_idx=10, label_idx=0, skip_rows=1
+)
 class NLIProbingTask(PairClassificationTask):
     """ Task class for NLI-type Probing Task
     This probing task only have evaluation set, need to share classifier with NLI-type task.
