@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import re
 import json
-import string
+import logging as log
 import collections
 import gzip
 import random
@@ -500,6 +500,7 @@ class QASRLTask(SpanPredictionTask):
         example_list = []
         moses = MosesTokenizer()
         aligner_fn = get_aligner_fn(self.tokenizer_name)
+        failed = 0
         with gzip.open(path) as f:
             lines = f.read().splitlines()
 
@@ -513,13 +514,17 @@ class QASRLTask(SpanPredictionTask):
                                     answer_span["span"][0],
                                     answer_span["span"][1] + 1,  # exclusive
                                 )
-                                remapped_result = remap_ptb_passage_and_answer_spans(
-                                    ptb_tokens=datum["sentence_tokens"],
-                                    answer_span=answer_tok_span,
-                                    moses=moses,
-                                    # We can move the aligned outside the loop, actually
-                                    aligner_fn=aligner_fn,
-                                )
+                                try:
+                                    remapped_result = remap_ptb_passage_and_answer_spans(
+                                        ptb_tokens=datum["sentence_tokens"],
+                                        answer_span=answer_tok_span,
+                                        moses=moses,
+                                        # We can move the aligned outside the loop, actually
+                                        aligner_fn=aligner_fn,
+                                    )
+                                except ValueError:
+                                    failed += 1
+                                    continue
                                 example_list.append(
                                     {
                                         "passage": self._process_sentence(
@@ -534,6 +539,9 @@ class QASRLTask(SpanPredictionTask):
                                         ],
                                     }
                                 )
+
+        if failed:
+            log.info("FAILED ({}): {}".format(failed, path))
 
         if shuffle:
             random.Random(1234).shuffle(example_list)
