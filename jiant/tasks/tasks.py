@@ -79,7 +79,9 @@ def process_single_pair_task_split(
     model_preprocessing_interface,
     is_pair=True,
     classification=True,
+    label_namespace="labels",
     is_symmetrical_pair=False,
+    skip_indexing=True,
 ):
     """
     Convert a dataset of sentences into padded sequences of indices. Shared
@@ -123,7 +125,9 @@ def process_single_pair_task_split(
                 )
                 d["sent2_str"] = MetadataField(" ".join(input2))
         if classification:
-            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
+            d["labels"] = LabelField(
+                labels, label_namespace=label_namespace, skip_indexing=skip_indexing
+            )
         else:
             d["labels"] = NumericField(labels)
 
