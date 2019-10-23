@@ -614,7 +614,7 @@ class QAMRTask(SpanPredictionTask):
     def get_metrics(self, reset: bool = False) -> Dict:
         f1 = self.f1_metric.get_metric(reset)
         em = self.em_metric.get_metric(reset)
-        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        collected_metrics = {"f1": f1, "em": em, "avg": (f1 + em) / 2}
         return collected_metrics
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
