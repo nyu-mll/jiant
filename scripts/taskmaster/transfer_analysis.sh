@@ -1,6 +1,13 @@
-# intermediate_trian this_one 
-# target_train intermediate_train target_task
-
+# Usage:
+# First, pretrain on the intermediate tasks and save the file. 
+# run first_intermediate_exp <intermediate_task_name>
+# for example, <intermediate_task_name> mnli
+# Then, for each of the target tasks and/or probing tasks, run 
+# run_intermediate_to_target_task <intemeidate_task> <target_task> <directory_to_jiant>
+# for example, run_intermediate_to_target_task  mnli copa /beegfs/yp913/jiant/transfer_analysis
+# IMPORTANT!! Make sure the configs for your task is correct in config/taskmaster/base_roberta.conf
+# to look at ways to easily specify task-specific configs for your task, look at 
+# glue-small-tasks-tmpl-2 in defaults.conf
 
 function run_exp() {
     # Helper function to invoke main.py.
@@ -11,26 +18,26 @@ function run_exp() {
     OVERRIDES=$2
     declare -a args
     args+=( --config_file "${CONFIG_FILE}" )
-    args+=( -o "${OVERRIDES}" --remote_log )
+    args+=( -o "${OVERRIDES}" ) 
     python main.py "${args[@]}"
 }
 
 function first_intermediate_exp() {
     # Initial intermdiate task pretraining.
     # Usage: first_intermediate_task <intermediate_task_name>
-    OVERRIDES="exp_name=robert-large, run_name=$1"
-    OVERRIDES+=", target_tasks=$1, do_pretrain=0, do_target_task_training=1, input_module=roberta-large"
+    OVERRIDES="exp_name=roberta-large, run_name=$1"
+    OVERRIDES+=", target_tasks=$1, do_pretrain=0, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}"
 }
 
 function run_intermediate_to_target_task() {
     # Using a pretrained intermediate task, finetune on a target task. 
     # This function can also be used to finetune on a probing task as well. 
-    # Usage: run_intermediate_to_target_task <intemeidate_task> <target_task> <directory_to_jiant>
+    # Usage: run_intermediate_to_target_task <intemeidate_task> <target_task> <directory_to_project_dir>
     OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1,"
-    OVERRIDES+="input_module=roberta-large"
-    OVERRIDES+="do_pretrain=0, do_target_task_training=1, "
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.th, pretrain_tasks=\"\","
+    OVERRIDES+="input_module=roberta-large,"
+    OVERRIDES+="do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}"
 }
 
