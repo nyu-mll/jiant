@@ -3040,8 +3040,7 @@ class SciTailTask(PairClassificationTask):
 
 
     def load_data(self):
-        """Load the data"""
-        """ Process the datasets located at path. """
+        """Process and load Scitail data"""
         targ_map = {"neutral": 0, "entails": 1}
         self.train_data_text = load_tsv(
             self._tokenizer_name,
