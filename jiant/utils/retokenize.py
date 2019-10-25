@@ -19,7 +19,7 @@ from scipy import sparse
 # install with: pip install python-Levenshtein
 from Levenshtein.StringMatcher import StringMatcher
 
-from jiant.utils.tokenizers import get_tokenizer
+from jiant.utils.tokenizers import get_tokenizer, Tokenizer
 from jiant.utils.utils import unescape_moses
 
 
@@ -328,13 +328,13 @@ def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
     return ta, moses_tokens
 
 
-def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_wpm(
+    text: Text, wpm_tokenizer: Tokenizer, do_lower_case: bool
+) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for WPM tokenizer, used in BERT
     """
     # If using lowercase, do this for the source tokens for better matching.
-    do_lower_case = tokenizer_name.endswith("uncased")
     bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else text)
-    wpm_tokenizer = get_tokenizer(tokenizer_name)
     wpm_tokens = wpm_tokenizer.tokenize(text)
 
     # Align using <w> markers for stability w.r.t. word boundaries.
@@ -343,11 +343,12 @@ def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]
     return ta, wpm_tokens
 
 
-def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_sentencepiece(
+    text: Text, sentencepiece_tokenizer: Tokenizer
+) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for SentencePiece Tokenizer, used in XLNET
     """
     bow_tokens = space_tokenize_with_bow(text)
-    sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
     sentencepiece_tokens = sentencepiece_tokenizer.tokenize(text)
 
     modified_sentencepiece_tokens = list(
@@ -357,21 +358,19 @@ def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, 
     return ta, sentencepiece_tokens
 
 
-def align_bpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_bpe(text: Text, bpe_tokenizer: Tokenizer) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for BPE tokenizer, used in GPT and XLM
     """
     eow_tokens = space_tokenize_with_eow(text.lower())
-    bpe_tokenizer = get_tokenizer(tokenizer_name)
     bpe_tokens = bpe_tokenizer.tokenize(text)
     ta = TokenAligner(eow_tokens, bpe_tokens)
     return ta, bpe_tokens
 
 
-def align_bytebpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_bytebpe(text: Text, bytebpe_tokenizer: Tokenizer) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for Byte-level BPE tokenizer, used in GPT-2 and RoBERTa
     """
     bow_tokens = space_tokenize_with_bow(text)
-    bytebpe_tokenizer = get_tokenizer(tokenizer_name)
     bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
 
     modified_bytebpe_tokens = list(map(process_bytebpe_for_alignment, bytebpe_tokens))
@@ -389,12 +388,21 @@ def get_aligner_fn(tokenizer_name: Text):
     if tokenizer_name == "MosesTokenizer" or tokenizer_name.startswith("transfo-xl-"):
         return align_moses
     elif tokenizer_name.startswith("bert-"):
-        return functools.partial(align_wpm, tokenizer_name=tokenizer_name)
+        do_lower_case = tokenizer_name.endswith("uncased")
+        wpm_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(
+            align_wpm, wpm_tokenizer=wpm_tokenizer, do_lower_case=do_lower_case
+        )
     elif tokenizer_name.startswith("openai-gpt") or tokenizer_name.startswith("xlm-mlm-en-"):
-        return functools.partial(align_bpe, tokenizer_name=tokenizer_name)
+        bpe_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(align_bpe, bpe_tokenizer=bpe_tokenizer)
     elif tokenizer_name.startswith("xlnet-"):
-        return functools.partial(align_sentencepiece, tokenizer_name=tokenizer_name)
+        sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(
+            align_sentencepiece, sentencepiece_tokenizer=sentencepiece_tokenizer
+        )
     elif tokenizer_name.startswith("roberta-") or tokenizer_name.startswith("gpt2"):
-        return functools.partial(align_bytebpe, tokenizer_name=tokenizer_name)
+        bytebpe_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(align_bytebpe, bytebpe_tokenizer=bytebpe_tokenizer)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")

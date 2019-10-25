@@ -1204,7 +1204,7 @@ class SamplingMultiTaskTrainer:
             self._serialization_dir, task_directory, "_".join(["metric", suffix])
         )
 
-        model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
+        model_state = torch.load(model_path)
 
         for name, param in self._model.named_parameters():
             if param.requires_grad and name not in model_state:
