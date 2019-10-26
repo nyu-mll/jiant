@@ -81,7 +81,6 @@ class MultiRCTask(Task):
     See paper at https://cogcomp.org/multirc/ """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.scorer1 = F1Measure(positive_label=1)
         self.scorer2 = Average()  # to delete
@@ -248,7 +247,6 @@ class ReCoRDTask(Task):
     See paper at https://sheng-z.github.io/ReCoRD-explorer """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
@@ -615,7 +613,6 @@ class CommonsenseQATask(MultipleChoiceTask):
     """ Task class for CommonsenseQA Task.  """
 
     def __init__(self, path, max_seq_len, name, easy=False, **kw):
-        """ """
         super().__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len

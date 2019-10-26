@@ -449,7 +449,6 @@ class SSTTask(SingleClassificationTask):
     """ Task class for Stanford Sentiment Treebank.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SSTTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -549,7 +548,6 @@ class CoLANPITask(SingleClassificationTask):
        Note: Used for an NYU seminar, data not yet public"""
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(CoLANPITask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -610,7 +608,6 @@ class CoLATask(SingleClassificationTask):
     """Class for Warstdadt acceptability task"""
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(CoLATask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -964,7 +961,6 @@ class STSBTask(PairRegressionTask):
     """ Task class for Sentence Textual Similarity Benchmark.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(STSBTask, self).__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -1724,7 +1720,6 @@ class RTETask(PairClassificationTask):
     """ Task class for Recognizing Textual Entailment 1, 2, 3, 5 """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -2815,7 +2810,6 @@ class COPATask(MultipleChoiceTask):
     """ Task class for Choice of Plausible Alternatives Task.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
