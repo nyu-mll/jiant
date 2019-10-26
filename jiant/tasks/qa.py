@@ -647,9 +647,7 @@ class CommonsenseQATask(MultipleChoiceTask):
                     for a_choice in example["question"]["choices"]
                 }
                 multiple_choices = [choices_dict[label] for label in self.choice_idx2label]
-                targ = (
-                    self.label2choice_idx[example["answerKey"]] if "answerKey" in example else 0
-                )
+                targ = self.label2choice_idx[example["answerKey"]] if "answerKey" in example else 0
                 id_str = example["id"]
                 questions.append(question)
                 choices.append(multiple_choices)
