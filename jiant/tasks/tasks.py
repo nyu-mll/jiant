@@ -2771,7 +2771,7 @@ class SocialIQATask(MultipleChoiceTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AlleNNLP Instances. """
+        """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(context, choices, question, label, idx):
             d = {}
@@ -2875,7 +2875,7 @@ class COPATask(MultipleChoiceTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AlleNNLP Instances. """
+        """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(context, choices, question, label, idx):
             d = {}
@@ -2961,7 +2961,7 @@ class SWAGTask(MultipleChoiceTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AlleNNLP Instances. """
+        """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(question, choices, label, idx):
             d = {}
@@ -3052,7 +3052,7 @@ class HellaSwagTask(MultipleChoiceTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AlleNNLP Instances. """
+        """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(question, choices, label, idx):
             d = {}
@@ -3172,7 +3172,7 @@ class BooleanQuestionTask(PairClassificationTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AlleNNLP Instances. """
+        """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(d, idx):
             new_d = {}
