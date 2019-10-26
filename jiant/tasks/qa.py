@@ -637,24 +637,24 @@ class CommonsenseQATask(MultipleChoiceTask):
             questions, choices, targs, id_str = [], [], [], []
             data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
             for example in data:
-                this_question = tokenize_and_truncate(
+                example_question = tokenize_and_truncate(
                     self._tokenizer_name, "Q:" + example["question"]["stem"], self.max_seq_len
                 )
-                this_choices_dict = {
+                example_choices_dict = {
                     a_choice["label"]: tokenize_and_truncate(
                         self._tokenizer_name, "A:" + a_choice["text"], self.max_seq_len
                     )
                     for a_choice in example["question"]["choices"]
                 }
-                this_choices = [this_choices_dict[label] for label in self.choice_idx2label]
-                this_targ = (
+                example_choices = [example_choices_dict[label] for label in self.choice_idx2label]
+                example_targ = (
                     self.label2choice_idx[example["answerKey"]] if "answerKey" in example else 0
                 )
-                this_id_str = example["id"]
-                questions.append(this_question)
-                choices.append(this_choices)
-                targs.append(this_targ)
-                id_str.append(this_id_str)
+                example_id_str = example["id"]
+                questions.append(example_question)
+                choices.append(example_choices)
+                targs.append(example_targ)
+                id_str.append(example_id_str)
             return [questions, choices, targs, id_str]
 
         train_file = "train_rand_split_EASY.jsonl" if self.easy else "train_rand_split.jsonl"
