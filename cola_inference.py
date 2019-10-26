@@ -46,11 +46,14 @@ from allennlp.nn.util import move_to_device
 from tqdm import tqdm
 
 from jiant.models import build_model
-from jiant.preprocess import build_indexers, build_tasks
+from jiant.preprocess import build_indexers, build_tasks, ModelPreprocessingInterface
 from jiant.tasks.tasks import tokenize_and_truncate, sentence_to_text_field
 from jiant.utils import config
 from jiant.utils.data_loaders import load_tsv
-from jiant.utils.utils import check_arg_name, load_model_state, select_pool_type
+from jiant.utils.utils import load_model_state, select_pool_type
+from jiant.utils.options import parse_cuda_list_arg
+from jiant.utils.tokenizers import select_tokenizer
+from jiant.__main__ import check_arg_name
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
@@ -140,7 +143,7 @@ def main(cl_arguments):
             args.cuda = -1
 
     if args.tokenizer == "auto":
-        args.tokenizer = tokenizers.select_tokenizer(args)
+        args.tokenizer = select_tokenizer(args)
     if args.pool_type == "auto":
         args.pool_type = select_pool_type(args)
 
@@ -149,7 +152,8 @@ def main(cl_arguments):
     tasks = sorted(set(target_tasks), key=lambda x: x.name)
 
     # Build or load model #
-    model = build_model(args, vocab, word_embs, tasks)
+    cuda_device = parse_cuda_list_arg(args.cuda)
+    model = build_model(args, vocab, word_embs, tasks, cuda_device)
     log.info("Loading existing model from %s...", cl_args.model_file_path)
     load_model_state(model, cl_args.model_file_path, args.cuda, [], strict=False)
 
@@ -158,16 +162,18 @@ def main(cl_arguments):
     vocab = Vocabulary.from_files(os.path.join(args.exp_dir, "vocab"))
     indexers = build_indexers(args)
     task = take_one(tasks)
+    model_preprocessing_interface = ModelPreprocessingInterface(args)
 
     # Run Inference #
     if cl_args.inference_mode == "repl":
         assert cl_args.input_path is None
         assert cl_args.output_path is None
         print("Running REPL for task: {}".format(task.name))
-        run_repl(model, vocab, indexers, task, args)
+        run_repl(model, model_preprocessing_interface, vocab, indexers, task, args)
     elif cl_args.inference_mode == "corpus":
         run_corpus_inference(
             model,
+            model_preprocessing_interface,
             vocab,
             indexers,
             task,
@@ -181,7 +187,7 @@ def main(cl_arguments):
         raise KeyError(cl_args.inference_mode)
 
 
-def run_repl(model, vocab, indexers, task, args):
+def run_repl(model, model_preprocessing_interface, vocab, indexers, task, args):
     """ Run REPL """
     print("Input CTRL-C or enter 'QUIT' to terminate.")
     while True:
@@ -195,7 +201,9 @@ def run_repl(model, vocab, indexers, task, args):
                 tokenizer_name=task.tokenizer_name, sent=input_string, max_seq_len=args.max_seq_len
             )
             print("TOKENS:", " ".join("[{}]".format(tok) for tok in tokens))
-            field = sentence_to_text_field(tokens, indexers)
+            field = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(tokens), indexers
+            )
             field.index(vocab)
             batch = Batch([Instance({"input1": field})]).as_tensor_dict()
             batch = move_to_device(batch, args.cuda)
@@ -217,13 +225,22 @@ def run_repl(model, vocab, indexers, task, args):
 
 
 def run_corpus_inference(
-    model, vocab, indexers, task, args, input_path, input_format, output_path, eval_output_path
+    model,
+    model_preprocessing_interface,
+    vocab,
+    indexers,
+    task,
+    args,
+    input_path,
+    input_format,
+    output_path,
+    eval_output_path,
 ):
     """ Run inference on corpus """
     tokens, labels = load_cola_data(input_path, task, input_format, args.max_seq_len)
     logit_batches = []
     for tokens_batch in tqdm(list(batchify(tokens, args.batch_size))):
-        batch, _ = prepare_batch(tokens_batch, vocab, indexers, args)
+        batch, _ = prepare_batch(model_preprocessing_interface, tokens_batch, vocab, indexers, args)
         with torch.no_grad():
             out = model.forward(task, batch, predict=True)
             logit_batches.append(out["logits"].cpu().numpy())
@@ -263,12 +280,14 @@ def batchify(ls, batch_size):
         i += batch_size
 
 
-def prepare_batch(tokens_batch, vocab, indexers, args):
+def prepare_batch(model_preprocessing_interface, tokens_batch, vocab, indexers, args):
     """ Do preprocessing for batch """
     instance_ls = []
     token_ls = []
     for tokens in tokens_batch:
-        field = sentence_to_text_field(tokens, indexers)
+        field = sentence_to_text_field(
+            model_preprocessing_interface.boundary_token_fn(tokens), indexers
+        )
         field.index(vocab)
         instance_ls.append(Instance({"input1": field}))
         token_ls.append(tokens)
