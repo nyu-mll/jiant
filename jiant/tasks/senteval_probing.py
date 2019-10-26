@@ -24,7 +24,6 @@ class SEProbingSentenceLengthTask(SingleClassificationTask):
     """ Sentence length task   """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SEProbingSentenceLengthTask, self).__init__(name, n_classes=7, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -66,7 +65,6 @@ class SEProbingBigramShiftTask(SingleClassificationTask):
     """  Bigram shift task   """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SEProbingBigramShiftTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -117,7 +115,6 @@ class SEProbingPastPresentTask(SingleClassificationTask):
     """ Past Present Task  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SEProbingPastPresentTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -168,7 +165,6 @@ class SEProbingOddManOutTask(SingleClassificationTask):
     """ Odd man out task """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SEProbingOddManOutTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -219,7 +215,6 @@ class SEProbingCoordinationInversionTask(SingleClassificationTask):
     """ Coordination Inversion task.  """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SEProbingCoordinationInversionTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -311,7 +306,6 @@ class SEProbingTreeDepthTask(SingleClassificationTask):
     """ Tree Depth Task """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SEProbingTreeDepthTask, self).__init__(name, n_classes=8, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
@@ -354,7 +348,6 @@ class SEProbingTopConstituentsTask(SingleClassificationTask):
     """ Top Constituents task """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super(SEProbingTopConstituentsTask, self).__init__(name, n_classes=20, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
