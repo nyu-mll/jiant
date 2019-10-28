@@ -26,7 +26,7 @@ function first_intermediate_exp() {
     # Initial intermdiate task pretraining.
     # Usage: first_intermediate_task <intermediate_task_name>
     OVERRIDES="exp_name=roberta-large, run_name=$1"
-    OVERRIDES+=", target_tasks=$1, do_pretrain=0, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}"
 }
 
@@ -35,9 +35,9 @@ function run_intermediate_to_target_task() {
     # This function can also be used to finetune on a probing task as well. 
     # Usage: run_intermediate_to_target_task <intemeidate_task> <target_task> <directory_to_project_dir>
     OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\","
+    OVERRIDES+=", target_tasks=\"\", load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=$2,"
     OVERRIDES+="input_module=roberta-large,"
-    OVERRIDES+="do_pretrain=0, do_target_task_training=1"
+    OVERRIDES+="do_pretrain=1, do_target_task_training=0"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}"
 }
 
