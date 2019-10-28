@@ -648,11 +648,11 @@ class CommonsenseQATask(MultipleChoiceTask):
                 }
                 multiple_choices = [choices_dict[label] for label in self.choice_idx2label]
                 targ = self.label2choice_idx[example["answerKey"]] if "answerKey" in example else 0
-                id_str = example["id"]
+                example_id = example["id"]
                 questions.append(question)
                 choices.append(multiple_choices)
                 targs.append(targ)
-                id_str.append(id_str)
+                id_str.append(example_id)
             return [questions, choices, targs, id_str]
 
         train_file = "train_rand_split_EASY.jsonl" if self.easy else "train_rand_split.jsonl"
