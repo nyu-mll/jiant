@@ -41,3 +41,12 @@ function run_intermediate_to_target_task() {
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}"
 }
 
+function run_intermediate_to_edgeprobing() {
+    # Using a pretrained intermediate task, finetune on an edge probing task.
+    # Usage: run_intermediate_to_target_task <intemeidate_task> <edge_probing task> <directory_to_project_dir>
+    OVERRIDES="exp_name=$1, run_name=$2"
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\","
+    OVERRIDES+="input_module=roberta-large,"
+    OVERRIDES+="do_pretrain=0, do_target_task_training=1"
+    run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}"
+}
