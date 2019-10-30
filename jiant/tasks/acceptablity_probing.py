@@ -22,44 +22,53 @@ class AcceptabilityProbingTask(SingleClassificationTask):
     acceptability-eos tests that of EOS
     """
 
-    def __init__(self, path, max_seq_len, name, fold_no=1):
-        super(AcceptabilityProbingTask, self).__init__(name, max_seq_len)
-        self.load_data(path, max_seq_len, fold_no)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+    def __init__(self, path, max_seq_len, name, fold_no=1, **kw):
+        super(AcceptabilityProbingTask, self).__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
         self.val_metric = "%s_acc_f1" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
+        self.fold_no = fold_no
 
-    def load_data(self, path, max_seq_len, fold_no):
+    def load_data(self):
+        fold_no = self.fold_no
         tr_data = load_tsv(
-            os.path.join(path, "fold{}/train.tsv".format(fold_no)),
-            max_seq_len,
+            self._tokenizer_name,
+            os.path.join(self.path, "fold{}/train.tsv".format(fold_no)),
+            self.max_seq_len,
             s1_idx=1,
             s2_idx=None,
-            targ_idx=2,
+            label_idx=2,
+            label_fn=lambda label_str: {"acceptable": 1, "unacceptable": 0}[label_str],
             skip_rows=0,
         )
         val_data = load_tsv(
-            os.path.join(path, "fold{}/dev.tsv".format(fold_no)),
-            max_seq_len,
+            self.tokenizer_name,
+            os.path.join(self.path, "fold{}/dev.tsv".format(fold_no)),
+            self.max_seq_len,
             s1_idx=1,
             s2_idx=None,
-            targ_idx=2,
+            label_idx=2,
+            label_fn=lambda label_str: {"acceptable": 1, "unacceptable": 0}[label_str],
             skip_rows=0,
         )
         te_data = load_tsv(
-            os.path.join(path, "fold{}/test.tsv".format(fold_no)),
-            max_seq_len,
+            self.tokenizer_name,
+            os.path.join(self.path, "fold{}/test.tsv".format(fold_no)),
+            self.max_seq_len,
             s1_idx=1,
             s2_idx=None,
-            targ_idx=2,
+            label_idx=2,
+            label_fn=lambda label_str: {"acceptable": 1, "unacceptable": 0}[label_str],
             skip_rows=0,
         )
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
         log.info(
             "\tFinished loading acceptability probing {} data (fold{}).".format(self.name, fold_no)
         )
