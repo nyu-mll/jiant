@@ -102,13 +102,25 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         log.info("\tFinished loading NLI-alt probing data.")
 
 
-@register_task("nli-prob-prep", rel_path="NLI-Prob/", s1_idx=8, s2_idx=9, label_idx=0, skip_rows=1)
 @register_task(
-    "nli-prob-negation", rel_path="NLI-Prob/", s1_idx=8, s2_idx=9, label_idx=0, skip_rows=1
+    "nli-prob-prep",
+    rel_path="FunctionWordsProbing/nli-prep/",
+    s1_idx=8,
+    s2_idx=9,
+    label_idx=0,
+    skip_rows=1,
+)
+@register_task(
+    "nli-prob-negation",
+    rel_path="FunctionWordsProbing/nli-negation/",
+    s1_idx=8,
+    s2_idx=9,
+    label_idx=0,
+    skip_rows=1,
 )
 @register_task(
     "nli-prob-spatial",
-    rel_path="NLI-Prob/",
+    rel_path="FunctionWordsProbing/nli-spatial/",
     idx_idx=0,
     s1_idx=9,
     s2_idx=10,
@@ -116,10 +128,22 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
     skip_rows=1,
 )
 @register_task(
-    "nli-prob-quant", rel_path="NLI-Prob/", idx_idx=0, s1_idx=9, s2_idx=10, label_idx=0, skip_rows=1
+    "nli-prob-quant",
+    rel_path="FunctionWordsProbing/nli-quant/",
+    idx_idx=0,
+    s1_idx=9,
+    s2_idx=10,
+    label_idx=0,
+    skip_rows=1,
 )
 @register_task(
-    "nli-prob-comp", rel_path="NLI-Prob/", idx_idx=0, s1_idx=9, s2_idx=10, label_idx=0, skip_rows=1
+    "nli-prob-comp",
+    rel_path="FunctionWordsProbing/nli-comp/",
+    idx_idx=0,
+    s1_idx=9,
+    s2_idx=10,
+    label_idx=0,
+    skip_rows=1,
 )
 class NLIProbingTask(PairClassificationTask):
     """ Task class for NLI-type Probing Task

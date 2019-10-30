@@ -8,10 +8,10 @@ from jiant.tasks.tasks import SingleClassificationTask
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure
 
 
-@register_task("acceptability-def", "definiteness/")
-@register_task("acceptability-conj", "coordinating-conjunctions/")
-@register_task("acceptability-wh", "whwords/")
-@register_task("acceptability-eos", "eos/")
+@register_task("acceptability-def", "FunctionWordsProbing/definiteness/")
+@register_task("acceptability-conj", "FunctionWordsProbing/coordinating-conjunctions/")
+@register_task("acceptability-wh", "FunctionWordsProbing/whwords/")
+@register_task("acceptability-eos", "FunctionWordsProbing/eos/")
 class AcceptabilityProbingTask(SingleClassificationTask):
     """ Task class for A-type Probing Task
     This probing task only have evaluation set, need to share classifier with NLI-type task.
