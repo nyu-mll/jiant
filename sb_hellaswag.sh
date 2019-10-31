@@ -13,4 +13,4 @@
 
 source activate jiant
 
-python main.py --config_file jiant/config/taskmaster/base_roberta.conf -o "exp_name=roberta-large, run_name=hellaswag, target_tasks=, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=hellaswag"
+python main.py --config_file jiant/config/taskmaster/base_roberta.conf -o "exp_name=roberta-large, run_name=hellaswag, target_tasks=, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=hellaswag,lr_patience=1,run_name=lrpatience1"
