@@ -789,6 +789,8 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, aligner_f
     ans_tok_start, ans_tok_end = answer_span[0], answer_span[1]  # Exclusive
     # We convert the PTB-tokenized answer to char-indices.
     ans_char_start = len(moses.detokenize_ptb(ptb_tokens[:ans_tok_start]))
+    while detok_sent[ans_char_start] == " ":
+        ans_char_start += 1
     ans_char_end = len(moses.detokenize_ptb(ptb_tokens[:ans_tok_end]))
     answer_str = detok_sent[ans_char_start:ans_char_end].strip()
 

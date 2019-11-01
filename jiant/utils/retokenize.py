@@ -414,6 +414,6 @@ def space_tokenize_with_spans(text):
 
 def find_space_token_span(space_tokens_with_spans, char_start, char_end):
     starts, ends = transpose_list_of_lists(space_tokens_with_spans)[1:]
-    tok_start = (np.array(starts) < char_start).argmin()
+    tok_start = np.clip((np.array(starts) > char_start).argmax() - 1, 0, None)
     tok_end = (np.array(ends) > (char_end - 1)).argmax() + 1
     return tok_start, tok_end
