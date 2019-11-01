@@ -39,9 +39,22 @@ function run_exp() {
     python main.py "${args[@]}"
 }
 
+function hyperparameter_sweep() {
+    # Do hyerparameter tuning search for the parameters
+    # Usage: hyperparameter_sweep <task>
+    OVERRIDES="exp_name=roberta-large"
+    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    for i in 0 1 2 3 4 5 6 7
+    do
+        EXP_OVERRIDES="${OVERRIDES}, run_name=$1config$i"
+        run_exp "jiant/config/taskmaster/base_roberta.conf" "${EXP_OVERRIDES}" $i
+    done
+
+}
+
 function first_intermediate_exp() {
     # Initial intermdiate task pretraining.
-    # Usage: first_intermediate_task <intermediate_task_name>
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number>
     OVERRIDES="exp_name=roberta-large, run_name=$1"
     OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${3}
@@ -50,7 +63,7 @@ function first_intermediate_exp() {
 function run_intermediate_to_target_task() {
     # Using a pretrained intermediate task, finetune on a target task. 
     # This function can also be used to finetune on a probing task as well. 
-    # Usage: run_intermediate_to_target_task <intemeidate_task> <target_task> <directory_to_project_dir>
+    # Usage: run_intermediate_to_target_task <intemeidate_task> <target_task> <directory_to_project_dir> <config_number>
     OVERRIDES="exp_name=$1, run_name=$2"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=$2,"
     OVERRIDES+="input_module=roberta-large,"
