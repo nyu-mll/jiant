@@ -16,6 +16,23 @@ function run_exp() {
     # Usage: run_exp <config_file> <overrides>
     CONFIG_FILE=$1
     OVERRIDES=$2
+    if [ $3 == 0 ]; then
+        OVERRIDES+=", lr=2e-5, dropout=0.2"
+    elif [ $3 == 1 ]; then
+        OVERRIDES+=", lr=2e-5, dropout=0.1"
+    elif [ $3 == 2 ]; then
+        OVERRIDES+=", lr=1e-5, dropout=0.2"
+    elif [ $3 == 3 ]; then
+        OVERRIDES+=", lr=1e-5, dropout=0.1"
+    elif [ $3 == 4 ]; then
+        OVERRIDES+=", lr=5e-6, dropout=0.2"
+    elif [ $3 == 5 ]; then
+        OVERRIDES+=", lr=5e-6, dropout=0.1"
+    elif [ $3 == 6 ]; then
+        OVERRIDES+=", lr=3e-6, dropout=0.2"
+    elif [ $3 == 7 ]; then
+        OVERRIDES+=", lr=3e-6, dropout=0.1"
+    fi
     declare -a args
     args+=( --config_file "${CONFIG_FILE}" )
     args+=( -o "${OVERRIDES}" ) 
@@ -27,7 +44,7 @@ function first_intermediate_exp() {
     # Usage: first_intermediate_task <intermediate_task_name>
     OVERRIDES="exp_name=roberta-large, run_name=$1"
     OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
-    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${3}
 }
 
 function run_intermediate_to_target_task() {
@@ -38,7 +55,7 @@ function run_intermediate_to_target_task() {
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=$2,"
     OVERRIDES+="input_module=roberta-large,"
     OVERRIDES+="do_pretrain=0, do_target_task_training=1"
-    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4}
 }
 
 function run_intermediate_to_edgeprobing() {
@@ -48,5 +65,5 @@ function run_intermediate_to_edgeprobing() {
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\","
     OVERRIDES+="input_module=roberta-large,"
     OVERRIDES+="do_pretrain=0, do_target_task_training=1"
-    run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}"
+    run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4}
 }
