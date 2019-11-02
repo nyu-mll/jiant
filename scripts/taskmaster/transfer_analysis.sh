@@ -43,7 +43,7 @@ function hyperparameter_sweep() {
     # Do hyerparameter tuning search for the parameters
     # Usage: hyperparameter_sweep <task>
     OVERRIDES="exp_name=roberta-large"
-    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, reload_vocab=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     for i in 0 1 2 3 4 5 6 7
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1config$i"
