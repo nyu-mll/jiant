@@ -26,11 +26,11 @@ class AcceptabilityProbingTask(SingleClassificationTask):
         super(AcceptabilityProbingTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
+        self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
+        self.fold_no = fold_no
         self.val_metric = "%s_acc_f1" % self.name
         self.val_metric_decreases = False
-        self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = F1Measure(1)
-        self.fold_no = fold_no
 
     def load_data(self):
         fold_no = self.fold_no
