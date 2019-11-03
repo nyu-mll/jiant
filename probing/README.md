@@ -178,3 +178,22 @@ python jiant/probing/retokenize_edge_data.py -t "bert-large-uncased" $TASK_DIR/*
 ```
 
 This will save retokenized versions alongside the original files.
+
+## Data Statistics
+
+Appendix B of the edge probing paper is wrong in several entries. This table contains the exact counts for the number of examples, tokens, and targets (train/dev/test) for each task.
+
+| Task | Labels | Examples | Tokens | Total Targets |
+| ---- |:------:|:--------:|:------:|:-------:|
+| Part-of-Speech | 48 |115812/15680/12217 | 2200865/304701/230118 | 2070382/290013/212121 |
+| Constituents | 30 |115812/15680/12217 | 2200865/304701/230118 | 1851590/255133/190535 |
+| Dependencies | 49 |12522/2000/2075 | 203919/25110/25049 | 203919/25110/25049 |
+| Entites | 18 |115812/15680/12217 | 2200865/304701/230118 | 128738/20354/12586 |
+| SRL (all) | 66 |253070/35297/26715 | 6619740/934744/711746 | 598983/83362/61716 |
+|  _Core roles_ | 6 |253070/35297/26715 | 6619740/934744/711746 | 411469/57237/41735 |
+|  _Non-core roles_ | 21 |253070/35297/26715 | 6619740/934744/711746 | 170220/23754/18290 |
+| OntoNotes coref. | 2 |115812/15680/12217 | 2200865/304701/230118 | 207830/26333/27800 |
+| SPR1 | 18 |3843/518/551 | 81255/10692/11955 | 7611/1071/1055 |
+| SPR2 | 20 |2226/291/276 | 46969/5592/4929 | 4925/630/582 |
+| Winograd coref. | 2 |958/223/518 | 14384/4331/7952 | 1787/379/949 |
+| Rel. (SemEval) | 19 |6851/1149/2717 | 117232/20361/46873 | 6851/1149/2717 |
