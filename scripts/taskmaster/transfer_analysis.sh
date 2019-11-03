@@ -41,9 +41,9 @@ function run_exp() {
 
 function hyperparameter_sweep() {
     # Do hyerparameter tuning search for the parameters
-    # Usage: hyperparameter_sweep <task>
+    # Usage: hyperparameter_sweep <task> <batch_size>
     OVERRIDES="exp_name=roberta-large"
-    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, reload_vocab=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES+=", target_tasks=$1, do_pretrain=0, batch_size=$2, reload_vocab=1, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
     for i in 0 1 2 3 4 5 6 7
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1config$i"
@@ -79,4 +79,17 @@ function run_intermediate_to_edgeprobing() {
     OVERRIDES+="input_module=roberta-large,"
     OVERRIDES+="do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4}
+}
+
+function hyperparameter_sweep_mix() {
+    # Do hyerparameter tuning search for the parameters
+    # Usage: hyperparameter_sweep <task> <batch_size>
+    OVERRIDES="exp_name=roberta-large"
+    OVERRIDES+=", target_tasks=$1, do_pretrain=0, batch_size=$2, reload_vocab=1, transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix,do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
+    for i in 0 1 2 3 4 5 6 7
+    do  
+        EXP_OVERRIDES="${OVERRIDES}, run_name=$1configmix$i"
+        run_exp "jiant/config/taskmaster/base_roberta.conf" "${EXP_OVERRIDES}" $i
+    done
+
 }
