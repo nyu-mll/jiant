@@ -2247,7 +2247,8 @@ class CCGTaggingTask(TaggingTask):
         self.path = path
         super().__init__(name, 1363, **kw)
         self.INTRODUCED_TOKEN = "1363"
-        from pytorch_transformers_interface import input_module_uses_pytorch_transformers
+        from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+
         self.subword_tokenization = input_module_uses_pytorch_transformers(self._tokenizer_name)
         self.max_seq_len = max_seq_len
         if self.subword_tokenization:
@@ -2262,7 +2263,10 @@ class CCGTaggingTask(TaggingTask):
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
         """ Process a tagging task """
-        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+        inputs = [
+            sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(sent), indexers)
+            for sent in split[0]
+        ]
         targs = [
             TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
             for sent in split[2]
