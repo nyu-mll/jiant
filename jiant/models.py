@@ -1110,7 +1110,9 @@ class MultiTaskModel(nn.Module):
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
-        out["loss"] = format_output(F.cross_entropy(logits, targs, ignore_index=pad_idx))
+        out["loss"] = format_output(
+            F.cross_entropy(logits, targs, ignore_index=pad_idx), self._cuda_device
+        )
         task.scorer1(logits, targs)
         return out
 
