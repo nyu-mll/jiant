@@ -746,15 +746,15 @@ class CosmosQATask(MultipleChoiceTask):
 
         contexts, choices, targs, id_str = [], [], [], []
         for record in records:
-            context = tokenize_and_truncate(
-                    self._tokenizer_name, record["context"], self.max_seq_len
-                )
-
             question = record["question"]
             
             ans_choices = [record["answer"+str(i)] for i in range(self.n_choices)]
             qa_tok_choices = [tokenize_and_truncate(self._tokenizer_name, question + ' '+ ans_choices[i], 
-                        self.max_seq_len) for i in range(len(ans_choices))] 
+                        self.max_seq_len) for i in range(len(ans_choices))]
+            max_ans_len = max([len(tok) for tok in qa_tok_choices])
+            context = tokenize_and_truncate(
+                    self._tokenizer_name, record["context"], self.max_seq_len-max_ans_len
+                ) 
             targ = int(record["label"]) if "label" in record else 0
             idx = record["id"]
             contexts.append(context)

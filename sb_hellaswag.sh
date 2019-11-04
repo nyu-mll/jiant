@@ -3,9 +3,8 @@
 #SBATCH --output=/scratch/pmh330/jiant-outputs/cosmosqa-%j.out
 #SBATCH --error=/scratch/pmh330/jiant-outputs/cosmosqa-%j.err
 #SBATCH --time=48:00:00
-#SBATCH --gres=gpu:1
-#SBATCH --mem=80GB
-#SBATCH --signal=USR1@600
+#SBATCH --gres=gpu:p40:1
+#SBATCH --mem=24000
 #SBATCH --mail-user=pmh330@nyu.edu
 #SBATCH --mail-type=END,FAIL
 #SBATCH --nodes=1
