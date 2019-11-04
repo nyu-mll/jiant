@@ -272,7 +272,7 @@ class SEProbingWordContentTask(SingleClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
-        self.labels = [] 
+        self.labels = []
         self.load_data()
 
     def get_all_labels(self):

@@ -31,4 +31,3 @@ parser.add_argument("--senteval_probing_path", type=str, help="path to original 
 
 args = parser.parse_args()
 parse_senteval_probing(args)
-
