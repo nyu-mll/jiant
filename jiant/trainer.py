@@ -678,7 +678,7 @@ class SamplingMultiTaskTrainer:
                     )
                 if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
                     batch_util = get_model_attribute(
-                        self._model, "utilization", sself._cuda_device
+                        self._model, "utilization", self._cuda_device
                     ).get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
@@ -1204,7 +1204,7 @@ class SamplingMultiTaskTrainer:
             self._serialization_dir, task_directory, "_".join(["metric", suffix])
         )
 
-        model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
+        model_state = torch.load(model_path)
 
         for name, param in self._model.named_parameters():
             if param.requires_grad and name not in model_state:

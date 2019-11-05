@@ -54,7 +54,6 @@ class AttnPairEncoder(Model):
         initializer(self)
 
     def forward(self, s1, s2, s1_mask, s2_mask):  # pylint: disable=arguments-differ
-        """ """
         # Similarity matrix
         # Shape: (batch_size, s2_length, s1_length)
         similarity_mat = self._matrix_attention(s2, s1)

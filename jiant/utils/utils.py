@@ -418,10 +418,7 @@ def format_output(obj, cuda_devices):
 
 
 def uses_cuda(cuda_devices):
-    use_cuda = 1
-    if isinstance(cuda_devices, list) or isinstance(cuda_devices, int) and cuda_devices >= 0:
-        return use_cuda
-    return 0
+    return isinstance(cuda_devices, list) or (isinstance(cuda_devices, int) and cuda_devices >= 0)
 
 
 def get_batch_size(batch, cuda_devices, keyword="input"):

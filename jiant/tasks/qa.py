@@ -1,16 +1,15 @@
 """Task definitions for question answering tasks."""
 import os
 import pandas as pd
-import re
 import json
-import logging as log
 import collections
 import gzip
 import random
 from typing import Iterable, Sequence, Type, Dict
 
 import torch
-from allennlp.training.metrics import Average, F1Measure
+import logging as log
+from allennlp.training.metrics import Average, F1Measure, CategoricalAccuracy
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
 from jiant.allennlp_mods.numeric_field import NumericField
@@ -25,7 +24,7 @@ from jiant.allennlp_mods.span_metrics import (
 from jiant.utils.data_loaders import tokenize_and_truncate
 from jiant.utils.tokenizers import MosesTokenizer
 
-from jiant.tasks.tasks import Task, SpanPredictionTask, TaggingTask
+from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask, TaggingTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
 from ..utils.retokenize import get_aligner_fn, space_tokenize_with_spans, find_space_token_span
@@ -37,7 +36,6 @@ class MultiRCTask(Task):
     See paper at https://cogcomp.org/multirc/ """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.scorer1 = F1Measure(positive_label=1)
         self.scorer2 = Average()  # to delete
@@ -204,7 +202,6 @@ class ReCoRDTask(Task):
     See paper at https://sheng-z.github.io/ReCoRD-explorer """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
@@ -824,3 +821,99 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, aligner_f
         "answer_str": answer_str,
         "space_processed_token_map": space_processed_token_map,
     }
+
+
+@register_task("commonsenseqa", rel_path="CommonsenseQA/")
+@register_task("commonsenseqa-easy", rel_path="CommonsenseQA/", easy=True)
+class CommonsenseQATask(MultipleChoiceTask):
+    """ Task class for CommonsenseQA Task.  """
+
+    def __init__(self, path, max_seq_len, name, easy=False, **kw):
+        super().__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.easy = easy
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+        self.n_choices = 5
+        self.label2choice_idx = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
+        self.choice_idx2label = ["A", "B", "C", "D", "E"]
+
+    def load_data(self):
+        """ Process the dataset located at path.  """
+
+        def _load_split(data_file):
+            questions, choices, targs, id_str = [], [], [], []
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
+            for example in data:
+                question = tokenize_and_truncate(
+                    self._tokenizer_name, "Q:" + example["question"]["stem"], self.max_seq_len
+                )
+                choices_dict = {
+                    a_choice["label"]: tokenize_and_truncate(
+                        self._tokenizer_name, "A:" + a_choice["text"], self.max_seq_len
+                    )
+                    for a_choice in example["question"]["choices"]
+                }
+                multiple_choices = [choices_dict[label] for label in self.choice_idx2label]
+                targ = self.label2choice_idx[example["answerKey"]] if "answerKey" in example else 0
+                example_id = example["id"]
+                questions.append(question)
+                choices.append(multiple_choices)
+                targs.append(targ)
+                id_str.append(example_id)
+            return [questions, choices, targs, id_str]
+
+        train_file = "train_rand_split_EASY.jsonl" if self.easy else "train_rand_split.jsonl"
+        val_file = "dev_rand_split_EASY.jsonl" if self.easy else "dev_rand_split.jsonl"
+        test_file = "test_rand_split_no_answers.jsonl"
+        self.train_data_text = _load_split(os.path.join(self.path, train_file))
+        self.val_data_text = _load_split(os.path.join(self.path, val_file))
+        self.test_data_text = _load_split(os.path.join(self.path, test_file))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.val_data_text[0]
+            + [choice for choices in self.train_data_text[1] for choice in choices]
+            + [choice for choices in self.val_data_text[1] for choice in choices]
+        )
+        log.info("\tFinished loading CommonsenseQA data.")
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+
+        def _make_instance(question, choices, label, id_str):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(question))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                )
+            for choice_idx, choice in enumerate(choices):
+                inp = (
+                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
+                )
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["id_str"] = MetadataField(id_str)
+            return Instance(d)
+
+        split = list(split)
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.scorer1.get_metric(reset)
+        return {"accuracy": acc}
