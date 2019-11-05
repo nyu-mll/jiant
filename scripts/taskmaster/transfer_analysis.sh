@@ -39,6 +39,10 @@ function run_exp() {
     python main.py "${args[@]}"
 }
 
+#########################################
+# Hyperparameter tuning experiments
+#########################################
+
 function hyperparameter_sweep() {
     # Do hyerparameter tuning search for the parameters
     # Usage: hyperparameter_sweep <task> <batch_size>
@@ -50,35 +54,6 @@ function hyperparameter_sweep() {
         run_exp "jiant/config/taskmaster/base_roberta.conf" "${EXP_OVERRIDES}" $i
     done
 
-}
-
-function first_intermediate_exp() {
-    # Initial intermdiate task pretraining.
-    # Usage: first_intermediate_task <intermediate_task_name> <config_number>
-    OVERRIDES="exp_name=roberta-large, run_name=$1"
-    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
-    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${3}
-}
-
-function run_intermediate_to_target_task() {
-    # Using a pretrained intermediate task, finetune on a target task. 
-    # This function can also be used to finetune on a probing task as well. 
-    # Usage: run_intermediate_to_target_task <intemeidate_task> <target_task> <directory_to_project_dir> <config_number>
-    OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=$2,"
-    OVERRIDES+="input_module=roberta-large,"
-    OVERRIDES+="do_pretrain=0, do_target_task_training=1"
-    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4}
-}
-
-function run_intermediate_to_edgeprobing() {
-    # Using a pretrained intermediate task, finetune on an edge probing task.
-    # Usage: run_intermediate_to_target_task <intemeidate_task> <edge_probing task> <directory_to_project_dir>
-    OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\","
-    OVERRIDES+="input_module=roberta-large,"
-    OVERRIDES+="do_pretrain=0, do_target_task_training=1"
-    run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4}
 }
 
 function hyperparameter_sweep_mix() {
@@ -93,3 +68,37 @@ function hyperparameter_sweep_mix() {
     done
 
 }
+
+#########################################
+# Functions relating to main experiments
+#########################################
+
+function first_intermediate_exp() {
+    # Initial intermdiate task pretraining.
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size>
+    OVERRIDES="exp_name=roberta-large, run_name=$1, batch_size=$3"
+    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2}
+}
+
+function run_intermediate_to_target_task() {
+    # Using a pretrained intermediate task, finetune on a target task. 
+    # This function can also be used to finetune on a probing task as well. 
+    # Usage: run_intermediate_to_target_task <intemediate_task> <target_task> <directory_to_project_dir> <config_number> <batch_size>
+    OVERRIDES="exp_name=$1, run_name=$2"
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=$2,"
+    OVERRIDES+="input_module=roberta-large, batch_size=$5"
+    OVERRIDES+="do_pretrain=0, do_target_task_training=1"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4}
+}
+
+function run_intermediate_to_edgeprobing() {
+    # Using a pretrained intermediate task, finetune on an edge probing task.
+    # Usage: run_intermediate_to_target_task <intemeidate_task> <edge_probing task> <directory_to_project_dir> <batch_size> 
+    OVERRIDES="exp_name=$1, run_name=$2"
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\","
+    OVERRIDES+="input_module=roberta-large, batch_size=$5"
+    OVERRIDES+="do_pretrain=0, do_target_task_training=1"
+    run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4}
+}
+
