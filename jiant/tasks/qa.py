@@ -724,7 +724,6 @@ class CosmosQATask(MultipleChoiceTask):
         self.val_metric_decreases = False
         self.n_choices = 4
 
-
     def load_data(self):
         """ Process the dataset located at path.  """
         self.train_data_text = self._load_csv(os.path.join(self.path, "train.csv"))
@@ -737,24 +736,29 @@ class CosmosQATask(MultipleChoiceTask):
             + [choice for choices in self.val_data_text[1] for choice in choices]
         )
         log.info("\tFinished loading CosmosQA data.")
- 
+
     def _load_csv(self, input_file):
         import csv
-        with open(input_file, 'r') as csv_file:
+
+        with open(input_file, "r") as csv_file:
             reader = csv.DictReader(csv_file)
             records = [record for record in reader]
 
         contexts, choices, targs, id_str = [], [], [], []
         for record in records:
             question = record["question"]
-            
-            ans_choices = [record["answer"+str(i)] for i in range(self.n_choices)]
-            qa_tok_choices = [tokenize_and_truncate(self._tokenizer_name, question + ' '+ ans_choices[i], 
-                        self.max_seq_len) for i in range(len(ans_choices))]
+
+            ans_choices = [record["answer" + str(i)] for i in range(self.n_choices)]
+            qa_tok_choices = [
+                tokenize_and_truncate(
+                    self._tokenizer_name, question + " " + ans_choices[i], self.max_seq_len
+                )
+                for i in range(len(ans_choices))
+            ]
             max_ans_len = max([len(tok) for tok in qa_tok_choices])
             context = tokenize_and_truncate(
-                    self._tokenizer_name, record["context"], self.max_seq_len-max_ans_len
-                ) 
+                self._tokenizer_name, record["context"], self.max_seq_len - max_ans_len
+            )
             targ = int(record["label"]) if "label" in record else 0
             idx = record["id"]
             contexts.append(context)
@@ -762,14 +766,14 @@ class CosmosQATask(MultipleChoiceTask):
             targs.append(targ)
             id_str.append(idx)
         return [contexts, choices, targs, id_str]
-  
+
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(context, choices, label, id_str):
-            d = {}     
+            d = {}
             d["context_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["context"] = sentence_to_text_field(
@@ -777,9 +781,9 @@ class CosmosQATask(MultipleChoiceTask):
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                        model_preprocessing_interface.boundary_token_fn(context, choice)
-                        if model_preprocessing_interface.model_flags["uses_pair_embedding"]
-                        else model_preprocessing_interface.boundary_token_fn(choice)
+                    model_preprocessing_interface.boundary_token_fn(context, choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
                 )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
