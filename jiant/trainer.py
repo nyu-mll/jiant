@@ -955,7 +955,7 @@ class SamplingMultiTaskTrainer:
                 n_examples_overall,
                 task_infos,
                 all_val_metrics,
-            ) = self._calculate_validation_performance(  # noqa
+            ) = self._calculate_validation_performance(
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
         # scale the micro avg contributions w/ total size of validation set.

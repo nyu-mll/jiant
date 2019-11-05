@@ -503,7 +503,7 @@ class SEProbingObjNumberTask(SingleClassificationTask):
 
         self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
         self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
-        self.test_data_text = load_csv(os.path.join(self.path, "test.csv?"))
+        self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
 
         sentences = []
         for split in ["train", "val", "test"]:
