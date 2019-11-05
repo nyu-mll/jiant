@@ -272,6 +272,7 @@ class SEProbingWordContentTask(SingleClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.labels = []
 
     def get_all_labels(self):
         return list(set(self.labels))
@@ -279,21 +280,32 @@ class SEProbingWordContentTask(SingleClassificationTask):
     def get_sentences(self):
         return self.sentences
 
+    def process_split(self, split, indexers, model_preprocessing_interface):
+        return process_single_pair_task_split(
+            split,
+            indexers,
+            model_preprocessing_interface,
+            label_namespace=self._label_namespace,
+            is_pair=False,
+            skip_indexing=False,
+        )
+
     def load_data(self):
         """ Load data """
 
         def load_csv(data_file):
             rows = pd.read_csv(data_file, encoding="utf-8")
-            rows["s1"] = rows["2"].apply(
+            labels = rows["1"].apply(lambda x: x.split("\t")[0])
+            s1 = rows["1"].apply(lambda x: x.split("\t")[1])
+            s1 = s1.apply(
                 lambda x: tokenize_and_truncate(self._tokenizer_name, x, self.max_seq_len)
             )
-            self.labels.append(rows["1"].tolist())
-            return rows["s1"].tolist(), [], rows["1"].tolist(), list(range(len(rows)))
+            self.labels = list(set(labels.tolist()))
+            return s1.tolist(), [], labels.tolist(), list(range(len(rows)))
 
         self.train_data_text = load_csv(os.path.join(self.path, "train.csv"))
         self.val_data_text = load_csv(os.path.join(self.path, "val.csv"))
         self.test_data_text = load_csv(os.path.join(self.path, "test.csv"))
-
         sentences = []
         for split in ["train", "val", "test"]:
             split_data = getattr(self, "%s_data_text" % split)

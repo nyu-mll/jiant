@@ -678,7 +678,7 @@ class SamplingMultiTaskTrainer:
                     )
                 if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
                     batch_util = get_model_attribute(
-                        self._model, "utilization", sself._cuda_device
+                        self._model, "utilization", self._cuda_device
                     ).get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
@@ -951,7 +951,11 @@ class SamplingMultiTaskTrainer:
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(  # noqa
+            (
+                n_examples_overall,
+                task_infos,
+                all_val_metrics,
+            ) = self._calculate_validation_performance(
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
         # scale the micro avg contributions w/ total size of validation set.
