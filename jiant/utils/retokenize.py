@@ -99,7 +99,7 @@ def create_tokenization_alignment(
     tokens: Sequence[str], tokenizer_name: str
 ) -> Sequence[Tuple[str, str]]:
     """
-    Builds alignment mapping between space tokenization andtokenization of 
+    Builds alignment mapping between space tokenization and tokenization of 
     choice. 
     Parameters
     -----------------------
