@@ -24,10 +24,14 @@ from jiant.allennlp_mods.span_metrics import (
 from jiant.utils.data_loaders import tokenize_and_truncate
 from jiant.utils.tokenizers import MosesTokenizer
 
-from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask, TaggingTask
+from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
-from ..utils.retokenize import get_aligner_fn, space_tokenize_with_spans, find_space_token_span
+from ..utils.retokenize import (
+    space_tokenize_with_spans,
+    find_space_token_span,
+    create_tokenization_alignment,
+)
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -496,7 +500,6 @@ class QASRLTask(SpanPredictionTask):
     def _load_file(self, path, shuffle=False):
         example_list = []
         moses = MosesTokenizer()
-        aligner_fn = get_aligner_fn(self.tokenizer_name)
         failed = 0
         with gzip.open(path) as f:
             lines = f.read().splitlines()
@@ -517,7 +520,7 @@ class QASRLTask(SpanPredictionTask):
                                         answer_span=answer_tok_span,
                                         moses=moses,
                                         # We can move the aligned outside the loop, actually
-                                        aligner_fn=aligner_fn,
+                                        tokenizer_name=self.tokenizer_name,
                                     )
                                 except ValueError:
                                     failed += 1
@@ -683,7 +686,6 @@ class QAMRTask(SpanPredictionTask):
     def process_dataset(self, data_df, shuffle=False):
         example_list = []
         moses = MosesTokenizer()
-        aligner_fn = get_aligner_fn(self.tokenizer_name)
         for i, row in data_df.iterrows():
             # Answer indices are a space-limited list of numbers.
             # We simply take the min/max of the indices
@@ -694,7 +696,7 @@ class QAMRTask(SpanPredictionTask):
                 ptb_tokens=row["sent"].split(),
                 answer_span=(ans_tok_start, ans_tok_end),
                 moses=moses,
-                aligner_fn=aligner_fn,
+                tokenizer_name=self.tokenizer_name,
             )
             example_list.append(
                 {
@@ -775,8 +777,11 @@ class QAMRTask(SpanPredictionTask):
         return output
 
 
-def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, aligner_fn):
+def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer_name):
     # Start with PTB tokenized tokens
+    # The answer_span is also in ptb_token space. We first want to detokenize, and convert everything to
+    #   space-tokenization space.
+
     # Detokenize the passage. Everything we do will be based on the detokenized input,
     #   INCLUDING evaluation.
     detok_sent = moses.detokenize_ptb(ptb_tokens)
@@ -801,23 +806,25 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, aligner_f
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-    aligner, processed_sentence_tokens = aligner_fn(detok_sent)
-    answer_token_span = aligner.project_span(*ans_space_token_span)
+    space_to_actual_token_map = create_tokenization_alignment(
+        tokens=detok_sent.split(), tokenizer_name=tokenizer_name
+    )
 
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
     space_processed_token_map = []
-    for space_token_i, (space_token, char_start, char_end) in enumerate(space_tokens_with_spans):
-        processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
-        for p_token_i in range(*processed_token_span):
-            space_processed_token_map.append(
-                (processed_sentence_tokens[p_token_i], space_token, space_token_i)
-            )
+    for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
+        for actual_token in actual_token_ls:
+            space_processed_token_map.append((actual_token, space_token, i))
+    ans_actual_token_span = (
+        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
+        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
+    )
 
     return {
         "detok_sent": detok_sent,
-        "answer_token_span": answer_token_span,
+        "answer_token_span": ans_actual_token_span,
         "answer_str": answer_str,
         "space_processed_token_map": space_processed_token_map,
     }
