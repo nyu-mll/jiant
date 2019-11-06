@@ -2262,23 +2262,22 @@ class CCGTaggingTask(TaggingTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process a tagging task """
-        inputs = [
-            sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(sent), indexers)
-            for sent in split[0]
-        ]
-        targs = [
-            TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
-            for sent in split[2]
-        ]
-        mask = [
-            MultiLabelField(mask, label_namespace="idx_tags", skip_indexing=True, num_labels=511)
-            for mask in split[3]
-        ]
-        instances = [
-            Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)
-        ]
-        return instances
+        """ Process a CCG tagging task """
+        import IPython
+
+        def _make_instance(input1, input2, target, mask):
+            d = {}
+            d["inputs"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
+            d["targs"] = sentence_to_text_field(target, self.target_indexer)
+            d["mask"] = MultiLabelField(
+                mask, label_namespace="idx_tags", skip_indexing=True, num_labels=511
+            )
+            return Instance(d)
+
+        for sent1, sent2, target, mask in split:
+            yield _make_instance(sent1, sent2, target, mask)
 
     def load_data(self):
         tr_data = load_tsv(
