@@ -9,7 +9,7 @@ import random
 import re
 import time
 
-
+https://github.com/nyu-mll/jiant/pull/949/conflict?name=jiant%252Ftrainer.py&ancestor_oid=1100a10f68b456fa024cb86511c8ed5af22796a6&base_oid=47710580fadb19c9669aebb5039eb4c565eb28ac&head_oid=948f17eb1bd22c106e54f8df244da5510959b5e9
 import numpy as np
 import torch
 from allennlp.common import Params  # pylint: disable=import-error
@@ -955,7 +955,7 @@ class SamplingMultiTaskTrainer:
                 n_examples_overall,
                 task_infos,
                 all_val_metrics,
-            ) = self._calculate_validation_performance(  # noqa
+            ) = self._calculate_validation_performance(
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
         # scale the micro avg contributions w/ total size of validation set.
