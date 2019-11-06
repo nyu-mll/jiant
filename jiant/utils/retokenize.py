@@ -101,10 +101,16 @@ def create_tokenization_alignment(
     """
     Builds alignment mapping between space tokenization and tokenization of 
     choice. 
+    
+    Example:
+        Input: ['Larger', 'than', 'life.']
+        Output: [('Larger', ['ĠL', 'arger']), ('than', ['Ġthan']), ('life.', ['Ġlife', '.'])]
+
     Parameters
     -----------------------
         tokens: list[(str)]. list of tokens, 
         tokenizer_name: str
+
     Returns
     -----------------------
         tokenization_mapping: list[(str, str)], list of tuples with (orig_token, tokenized_token).
