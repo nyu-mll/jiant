@@ -2263,7 +2263,6 @@ class CCGTaggingTask(TaggingTask):
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
         """ Process a CCG tagging task """
-        import IPython
 
         def _make_instance(input1, input2, target, mask):
             d = {}
@@ -2276,8 +2275,11 @@ class CCGTaggingTask(TaggingTask):
             )
             return Instance(d)
 
-        for sent1, sent2, target, mask in split:
-            yield _make_instance(sent1, sent2, target, mask)
+        split = list(split)
+        split[1] = itertools.repeat(None)
+
+        instances = map(_make_instance, *split)
+        return instances
 
     def load_data(self):
         tr_data = load_tsv(
