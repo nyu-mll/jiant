@@ -1,6 +1,6 @@
 target=${1:-/scratch/zp489/share/nlutransfer/}
 recurse_mode=${2:-recurse}
-user_list=(sb6065 kk120 hl3236 yp883 zp489 yp913 asw462 xz2448 pmh)
+user_list=(sb6065 kk120 hl3236 yp883 zp489 yp913 asw462 xz2448 pmh330 cv50)
 
 if [[ $recurse_mode == "recurse" ]]; then
     for user in ${user_list[*]}; do
