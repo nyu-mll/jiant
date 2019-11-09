@@ -427,6 +427,10 @@ class QASRLTask(SpanPredictionTask):
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
 
+    def count_examples(self, splits=["train", "val", "test"]):
+        """ Count examples in the dataset. """
+        pass
+
     def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
         """ A batch of logits+answer strings and the questions they go with """
         self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
@@ -454,6 +458,11 @@ class QASRLTask(SpanPredictionTask):
             + [example["passage"] for example in self.val_data]
             + [example["question"] for example in self.val_data]
         )
+        self.example_counts = {
+            "train": len(self.train_data),
+            "val": len(self.val_data),
+            "test": len(self.test_data),
+        }
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
@@ -750,6 +759,11 @@ class QAMRTask(SpanPredictionTask):
             + [example["passage"] for example in self.val_data]
             + [example["question"] for example in self.val_data]
         )
+        self.example_counts = {
+            "train": len(self.train_data),
+            "val": len(self.val_data),
+            "test": len(self.test_data),
+        }
 
     @staticmethod
     def collapse_contiguous_indices(ls):
