@@ -95,6 +95,35 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]], n_chars: int) -> Ma
     return sparse.csr_matrix((data, (ridxs, cidxs)), shape=(len(spans), n_chars))
 
 
+def create_tokenization_alignment(
+    tokens: Sequence[str], tokenizer_name: str
+) -> Sequence[Tuple[str, str]]:
+    """
+    Builds alignment mapping between space tokenization and tokenization of 
+    choice. 
+    
+    Example:
+        Input: ['Larger', 'than', 'life.']
+        Output: [('Larger', ['ĠL', 'arger']), ('than', ['Ġthan']), ('life.', ['Ġlife', '.'])]
+
+    Parameters
+    -----------------------
+        tokens: list[(str)]. list of tokens, 
+        tokenizer_name: str
+
+    Returns
+    -----------------------
+        tokenization_mapping: list[(str, str)], list of tuples with (orig_token, tokenized_token).
+
+    """
+    tokenizer = get_tokenizer(tokenizer_name)
+    tokenization_mapping = []
+    for tok in tokens:
+        aligned_tok = tokenizer.tokenize(tok)
+        tokenization_mapping.append((tok, aligned_tok))
+    return tokenization_mapping
+
+
 def realign_spans(record, tokenizer_name):
     """
     Builds the indices alignment while also tokenizing the input
