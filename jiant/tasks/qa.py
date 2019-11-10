@@ -799,3 +799,204 @@ class CosmosQATask(MultipleChoiceTask):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
+
+
+@register_task("squad", rel_path="SQuAD/")
+class SQuADTask(SpanPredictionTask):
+    """
+       SQuAD Question Answering Task
+    """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(SQuADTask, self).__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data = None
+        self.val_data = None
+        self.test_data = None
+
+        self.f1_metric = F1SpanMetric()
+        self.em_metric = ExactMatchSpanMetric()
+
+        self.val_metric = "%s_avg" % self.name
+        self.val_metric_decreases = False
+
+    def get_metrics(self, reset: bool = False) -> Dict:
+        f1 = self.f1_metric.get_metric(reset)
+        em = self.em_metric.get_metric(reset)
+        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        return collected_metrics
+
+    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+
+    def load_data(self):
+        self.train_data = self._load_squad_data(os.path.join(self.path, "train-v2.0.json"))
+        self.val_data = self._load_squad_data(os.path.join(self.path, "dev-v2.0.json"))
+        self.test_data = copy.deepcopy(
+            self.val_data[0:10]
+        )  # self._load_squad_data(os.path.join(self.path, "test-v2.0.json"))
+        self.sentences = (
+            [example["passage"] for example in self.train_data]
+            + [example["question"] for example in self.train_data]
+            + [example["passage"] for example in self.val_data]
+            + [example["question"] for example in self.val_data]
+        )
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """ Yield sentences, used to compute vocabulary. """
+        yield from self.sentences
+
+    def get_split_text(self, split: str):
+        return getattr(self, "%s_data" % split)
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        def _make_instance(example):
+            d = dict()
+
+            # For human-readability
+            d["raw_passage"] = MetadataField(" ".join(example["passage"]))
+            d["raw_question"] = MetadataField(" ".join(example["question"]))
+
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
+                    example["passage"], example["question"], get_offset=True
+                )
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["passage"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(example["passage"]), indexers
+                )
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
+                )
+                start_offset = 0
+            d["span_start"] = NumericField(
+                example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
+            )
+            d["span_end"] = NumericField(
+                example["answer_span"][1] + start_offset, label_namespace="span_end_labels"
+            )
+            d["start_offset"] = MetadataField(start_offset)
+            d["passage_str"] = MetadataField(example["passage_str"])
+            d["answer_str"] = MetadataField(example["answer_str"])
+            d["space_processed_token_map"] = MetadataField(example["space_processed_token_map"])
+            return Instance(d)
+
+        instances = map(_make_instance, split)
+        return instances
+
+    def _load_squad_data(self, path, shuffle=False):
+        def is_whitespace(c):
+            if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
+                return True
+            return False
+
+        example_list = []
+        moses = MosesTokenizer()
+        aligner_fn = get_aligner_fn(self.tokenizer_name)
+
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)["data"]
+        skipped = 0
+        for ex in data:
+            for paragraph in ex["paragraphs"]:
+                passage = paragraph["context"]
+                doc_tokens = []
+                char_to_word_offset = []
+                prev_is_whitespace = True
+
+                for qa in paragraph["qas"]:
+                    qas_id = qa["id"]
+                    question = qa["question"]
+                    start_position = None
+                    end_position = None
+                    orig_answer_text = None
+                    is_impossible = False
+
+                    if "is_impossible" in qa:
+                        is_impossible = qa["is_impossible"]
+
+                    if is_impossible:
+                        continue
+                        start_position = -1
+                        end_position = -1
+                        orig_answer_text = ""
+                    else:
+                        try:
+                            answer = qa["answers"][0]
+                        except:
+                            print("qa['answers']: ", qa)
+                        orig_answer_text = answer["text"]
+                        answer_offset = answer["answer_start"]
+                        answer_length = len(orig_answer_text)
+                        start_position = answer_offset
+                        end_position = answer_offset + answer_length - 1
+
+                    remapped_result = squad_map_passage_and_answer(
+                        sentence=passage,
+                        answer_span=(start_position, end_position),
+                        moses=moses,
+                        aligner_fn=aligner_fn,
+                    )
+                    if remapped_result["answer_token_span"][1] >= self.max_seq_len:
+                        skipped += 1
+                        continue  # skipe for now
+                    example_list.append(
+                        {
+                            "passage": self._process_sentence(remapped_result["detok_sent"]),
+                            "question": self._process_sentence(question),
+                            "answer_span": remapped_result["answer_token_span"],
+                            "passage_str": remapped_result["detok_sent"],
+                            "answer_str": remapped_result["answer_str"],
+                            "space_processed_token_map": remapped_result[
+                                "space_processed_token_map"
+                            ],
+                        }
+                    )
+        return example_list
+
+    def _process_sentence(self, sent):
+        return tokenize_and_truncate(
+            tokenizer_name=self.tokenizer_name, sent=sent, max_seq_len=self.max_seq_len
+        )
+
+
+def squad_map_passage_and_answer(sentence, answer_span, moses, aligner_fn):
+    # We space-tokenize, with the accompanying char-indices.
+    # We use the char-indices to map the answers to space-tokens.
+    ans_char_start, ans_char_end = answer_span
+    while sentence[ans_char_start] == " ":
+        ans_char_start += 1
+    answer_str = sentence[ans_char_start:ans_char_end].strip()
+    space_tokens_with_spans = space_tokenize_with_spans(sentence)
+    ans_space_token_span = find_space_token_span(
+        space_tokens_with_spans=space_tokens_with_spans,
+        char_start=ans_char_start,
+        char_end=ans_char_end,
+    )
+    # We project the space-tokenized answer to processed-tokens (e.g. BERT).
+    # The latter is used for training/predicting.
+    aligner, processed_sentence_tokens = aligner_fn(sentence)
+    answer_token_span = aligner.project_span(*ans_space_token_span)
+    # space_processed_token_map is a list of tuples
+    #   (space_token, processed_token (e.g. BERT), space_token_index)
+    # We will need this to map from token predictions to str spans
+    space_processed_token_map = []
+    for space_token_i, (space_token, char_start, char_end) in enumerate(space_tokens_with_spans):
+        processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
+        for p_token_i in range(*processed_token_span):
+            space_processed_token_map.append(
+                (processed_sentence_tokens[p_token_i], space_token, space_token_i)
+            )
+    return {
+        "detok_sent": sentence,
+        "answer_token_span": answer_token_span,
+        "answer_str": answer_str,
+        "space_processed_token_map": space_processed_token_map,
+    }
