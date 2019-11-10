@@ -73,6 +73,21 @@ class MosesTokenizer(Tokenizer):
         """
         return [self._detokenizer.unescape_xml(t) for t in tokens]
 
+    def detokenize_ptb(self, tokens):
+        # Not a perfect detokenizer, but a "good-enough" stand in.
+        rep_dict = {
+            "-LSB-": "[",
+            "-RSB-": "]",
+            "-LRB-": "(",
+            "-RRB-": ")",
+            "-LCB-": "{",
+            "-RCB-": "}",
+            "``": '"',
+            "''": '"',
+        }
+        str1 = self._detokenizer.detokenize(replace_list(tokens, rep_dict))
+        return str1
+
 
 @functools.lru_cache(maxsize=8, typed=False)
 def get_tokenizer(tokenizer_name):
@@ -103,3 +118,59 @@ def get_tokenizer(tokenizer_name):
     else:
         tokenizer = None
     return tokenizer
+
+
+def bert_get_tokenized_string_span_map(text, b_tokens, verbose=False):
+    """
+    Given a string, an a BERT tokenization of the string, returns list of
+        [
+            bert_token,
+            start char index of token in string,
+            (exclusive) end char index of token in string,
+        ]
+    There is some fuzziness around assignment of spaces (particularly because of UNK tokens)
+      but the spans should be contiguous.
+    """
+    b_token_char_indices = []
+    text_i = 0
+    for b_token in b_tokens:
+        stripped_b_token = b_token.replace("##", "")
+        if b_token == "[UNK]":
+            continue
+
+        found_char_i = text[text_i:].find(stripped_b_token)
+        b_token_char_indices.append(text_i + found_char_i)
+        text_i += len(stripped_b_token) + found_char_i
+    b_token_char_indices.append(len(text))
+
+    result = []
+    b_token_char_indices_i = -1
+    end = 0
+    for i, b_token in enumerate(b_tokens):
+        prev_end = end
+
+        if b_token == "[UNK]":
+            start = prev_end
+        else:
+            b_token_char_indices_i += 1
+            start = b_token_char_indices[b_token_char_indices_i]
+
+        if i == len(b_tokens) - 1:
+            end = len(text)
+        elif b_token == "[UNK]":
+            end = b_token_char_indices[b_token_char_indices_i + 1]
+        elif b_token != "[UNK]" and b_tokens[i + 1] != "[UNK]":
+            end = b_token_char_indices[b_token_char_indices_i + 1]
+        elif b_tokens[i + 1] == "[UNK]":
+            end = start + len(b_token)
+        else:
+            raise RuntimeError()
+
+        if verbose:
+            print(b_token, start, end, repr(text[start:end]))
+        result.append((b_token, start, end))
+    return result
+
+
+def replace_list(ls, d):
+    return [d.get(elem, elem) for elem in ls]

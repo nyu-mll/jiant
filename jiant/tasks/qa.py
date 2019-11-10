@@ -1,78 +1,35 @@
 """Task definitions for question answering tasks."""
 import os
+import pandas as pd
 import re
 import json
 import string
 import collections
 import gzip
 import random
-from typing import Iterable, Sequence, Type
+from typing import Iterable, Sequence, Type, Dict
+import copy
 
 import torch
-import logging as log
-from allennlp.training.metrics import Average, F1Measure, CategoricalAccuracy
+from allennlp.training.metrics import Average, F1Measure
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
 from jiant.allennlp_mods.numeric_field import NumericField
-from jiant.allennlp_mods.span_metrics import SpanF1Measure
+from jiant.allennlp_mods.span_metrics import (
+    metric_max_over_ground_truths,
+    f1_score,
+    exact_match_score,
+    F1SpanMetric,
+    ExactMatchSpanMetric,
+)
 
 from jiant.utils.data_loaders import tokenize_and_truncate
+from jiant.utils.tokenizers import MosesTokenizer
 
-from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask
+from jiant.tasks.tasks import Task, SpanPredictionTask, TaggingTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
-from ..utils.retokenize import get_aligner_fn
-
-
-def normalize_answer(s):
-    """Lower text and remove punctuation, articles and extra whitespace.
-    From official ReCoRD eval script """
-
-    def remove_articles(text):
-        return re.sub(r"\b(a|an|the)\b", " ", text)
-
-    def white_space_fix(text):
-        return " ".join(text.split())
-
-    def remove_punc(text):
-        exclude = set(string.punctuation)
-        return "".join(ch for ch in text if ch not in exclude)
-
-    def lower(text):
-        return text.lower()
-
-    return white_space_fix(remove_articles(remove_punc(lower(s))))
-
-
-def f1_score(prediction, ground_truth):
-    """ Compute normalized token level F1
-    From official ReCoRD eval script """
-    prediction_tokens = normalize_answer(prediction).split()
-    ground_truth_tokens = normalize_answer(ground_truth).split()
-    common = collections.Counter(prediction_tokens) & collections.Counter(ground_truth_tokens)
-    num_same = sum(common.values())
-    if num_same == 0:
-        return 0
-    precision = 1.0 * num_same / len(prediction_tokens)
-    recall = 1.0 * num_same / len(ground_truth_tokens)
-    f1 = (2 * precision * recall) / (precision + recall)
-    return f1
-
-
-def exact_match_score(prediction, ground_truth):
-    """ Compute normalized exact match
-    From official ReCoRD eval script """
-    return normalize_answer(prediction) == normalize_answer(ground_truth)
-
-
-def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
-    """ Compute max metric between prediction and each ground truth.
-    From official ReCoRD eval script """
-    scores_for_ground_truths = []
-    for ground_truth in ground_truths:
-        score = metric_fn(prediction, ground_truth)
-        scores_for_ground_truths.append(score)
-    return max(scores_for_ground_truths)
+from ..utils.retokenize import get_aligner_fn, space_tokenize_with_spans, find_space_token_span
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -81,6 +38,7 @@ class MultiRCTask(Task):
     See paper at https://cogcomp.org/multirc/ """
 
     def __init__(self, path, max_seq_len, name, **kw):
+        """ """
         super().__init__(name, **kw)
         self.scorer1 = F1Measure(positive_label=1)
         self.scorer2 = Average()  # to delete
@@ -247,6 +205,7 @@ class ReCoRDTask(Task):
     See paper at https://sheng-z.github.io/ReCoRD-explorer """
 
     def __init__(self, path, max_seq_len, name, **kw):
+        """ """
         super().__init__(name, **kw)
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
@@ -415,7 +374,7 @@ class ReCoRDTask(Task):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
 
-        # Load asnwers, used for computing metrics
+        # Load answers, used for computing metrics
         if self._answers is None:
             self._load_answers()
 
@@ -462,34 +421,38 @@ class QASRLTask(SpanPredictionTask):
         self.val_data = None
         self.test_data = None
 
-        self.f1_scorer = SpanF1Measure()
-        self.val_metric = "%s_f1" % self.name
+        self.f1_metric = F1SpanMetric()
+        self.em_metric = ExactMatchSpanMetric()
+
+        self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
 
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-        f1 = self.f1_scorer.get_metric(reset)
-        return {"f1": f1}
+    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        self.f1_scorer(
-            pred_start=logits["span_start"],
-            pred_end=logits["span_end"],
-            gold_start=labels["span_start"],
-            gold_end=labels["span_end"],
-        )
+    def get_metrics(self, reset: bool = False) -> Dict:
+        f1 = self.f1_metric.get_metric(reset)
+        em = self.em_metric.get_metric(reset)
+        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        return collected_metrics
 
     def load_data(self):
         self.train_data = self._load_file(os.path.join(self.path, "orig", "train.jsonl.gz"))
 
-        self.val_data = self._load_file(os.path.join(self.path, "orig", "dev.jsonl.gz"))
-        self._shuffle_data(self.val_data)
+        # Shuffle val_data to ensure diversity in periodic validation with val_data_limit
+        self.val_data = self._load_file(
+            os.path.join(self.path, "orig", "dev.jsonl.gz"), shuffle=True
+        )
 
         self.test_data = self._load_file(os.path.join(self.path, "orig", "test.jsonl.gz"))
-        self.sentences = []
 
         self.sentences = (
-            self.train_data[0] + self.train_data[1] + self.val_data[0] + self.val_data[1]
+            [example["passage"] for example in self.train_data]
+            + [example["question"] for example in self.train_data]
+            + [example["passage"] for example in self.val_data]
+            + [example["question"] for example in self.val_data]
         )
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -499,76 +462,83 @@ class QASRLTask(SpanPredictionTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        def _make_instance(sentence_tokens, question_tokens, answer_span, idx):
+        def _make_instance(example):
             d = dict()
 
             # For human-readability
-            d["raw_sentence"] = MetadataField(" ".join(sentence_tokens[1:-1]))
-            d["raw_question"] = MetadataField(" ".join(question_tokens[1:-1]))
+            d["raw_passage"] = MetadataField(" ".join(example["passage"]))
+            d["raw_question"] = MetadataField(" ".join(example["question"]))
 
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(
-                    sentence_tokens, question_tokens
+                inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
+                    example["passage"], example["question"], get_offset=True
                 )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["sentence"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(sentence_tokens), indexers
+                d["passage"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(example["passage"]), indexers
                 )
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(question_tokens), indexers
+                    model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
                 )
-
-            d["span_start"] = NumericField(answer_span[0], label_namespace="span_start_labels")
-            d["span_end"] = NumericField(answer_span[1], label_namespace="span_end_labels")
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+                start_offset = 0
+            d["span_start"] = NumericField(
+                example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
+            )
+            d["span_end"] = NumericField(
+                example["answer_span"][1] + start_offset, label_namespace="span_end_labels"
+            )
+            d["start_offset"] = MetadataField(start_offset)
+            d["passage_str"] = MetadataField(example["passage_str"])
+            d["answer_str"] = MetadataField(example["answer_str"])
+            d["space_processed_token_map"] = MetadataField(example["space_processed_token_map"])
             return Instance(d)
 
-        split = list(split)
-        instances = map(_make_instance, *split)
+        instances = map(_make_instance, split)
         return instances
 
-    def _load_file(self, path):
+    def _load_file(self, path, shuffle=False):
         example_list = []
+        moses = MosesTokenizer()
         aligner_fn = get_aligner_fn(self.tokenizer_name)
         with gzip.open(path) as f:
             lines = f.read().splitlines()
+
             for line in lines:
                 datum = self.preprocess_qasrl_datum(json.loads(line))
-                sentence_tokens = datum["sentence_tokens"]
-                # " ".join because retokenizer functions assume space-delimited input tokens
-                aligner, processed_sentence_tokens = aligner_fn(" ".join(sentence_tokens))
                 for entry in datum["entries"]:
                     for question, answer_list in entry["questions"].items():
                         for answer in answer_list:
                             for answer_span in answer:
-                                projected_answer_span = aligner.project_span(*answer_span["span"])
-                                # Adjust for [CLS] / <SOS> token
-                                adjusted_answer_span = (
-                                    projected_answer_span[0] + 1,
-                                    projected_answer_span[1] + 1,
+                                answer_tok_span = (
+                                    answer_span["span"][0],
+                                    answer_span["span"][1] + 1,  # exclusive
+                                )
+                                remapped_result = remap_ptb_passage_and_answer_spans(
+                                    ptb_tokens=datum["sentence_tokens"],
+                                    answer_span=answer_tok_span,
+                                    moses=moses,
+                                    # We can move the aligned outside the loop, actually
+                                    aligner_fn=aligner_fn,
                                 )
                                 example_list.append(
                                     {
-                                        "sentence_tokens": self._process_sentence(
-                                            processed_sentence_tokens
+                                        "passage": self._process_sentence(
+                                            remapped_result["detok_sent"]
                                         ),
-                                        "question_tokens": self._process_sentence(question),
-                                        "answer_span": adjusted_answer_span,
-                                        "idx": len(example_list),
+                                        "question": self._process_sentence(question),
+                                        "answer_span": remapped_result["answer_token_span"],
+                                        "passage_str": remapped_result["detok_sent"],
+                                        "answer_str": remapped_result["answer_str"],
+                                        "space_processed_token_map": remapped_result[
+                                            "space_processed_token_map"
+                                        ],
                                     }
                                 )
-        return [
-            [example[k] for example in example_list]
-            for k in ["sentence_tokens", "question_tokens", "answer_span", "idx"]
-        ]
 
-    @classmethod
-    def _shuffle_data(cls, data, seed=1234):
-        # Shuffle validation data to ensure diversity in periodic validation with val_data_limit
-        indices = list(range(len(data[0])))
-        random.Random(seed).shuffle(indices)
-        return [[sub_data[i] for i in indices] for sub_data in data]
+        if shuffle:
+            random.Random(1234).shuffle(example_list)
+        return example_list
 
     def _process_sentence(self, sent):
         return tokenize_and_truncate(
@@ -607,197 +577,444 @@ class QASRLTask(SpanPredictionTask):
         }
 
 
-@register_task("commonsenseqa", rel_path="CommonsenseQA/")
-@register_task("commonsenseqa-easy", rel_path="CommonsenseQA/", easy=True)
-class CommonsenseQATask(MultipleChoiceTask):
-    """ Task class for CommonsenseQA Task.  """
+@register_task("qamr", rel_path="QAMR/")
+class QAMRTask(SpanPredictionTask):
+    """ Question-Answer Meaning Representation (QAMR)
+        https://github.com/uwnlp/qamr
+    """
 
-    def __init__(self, path, max_seq_len, name, easy=False, **kw):
-        super().__init__(name, **kw)
+    def __init__(self, path, max_seq_len, name="qamr", **kw):
+        """ There are 1363 supertags in CCGBank without introduced token. """
         self.path = path
+        super(QAMRTask, self).__init__(name, **kw)
         self.max_seq_len = max_seq_len
 
-        self.easy = easy
-        self.train_data_text = None
-        self.val_data_text = None
-        self.test_data_text = None
+        self.train_data = None
+        self.val_data = None
+        self.test_data = None
 
-        self.scorer1 = CategoricalAccuracy()
-        self.scorers = [self.scorer1]
-        self.val_metric = "%s_accuracy" % name
+        self.f1_metric = F1SpanMetric()
+        self.em_metric = ExactMatchSpanMetric()
+
+        self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
-        self.n_choices = 5
-        self.label2choice_idx = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
-        self.choice_idx2label = ["A", "B", "C", "D", "E"]
 
-    def load_data(self):
-        """ Process the dataset located at path.  """
+    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
-        def _load_split(data_file):
-            questions, choices, targs, id_str = [], [], [], []
-            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
-            for example in data:
-                question = tokenize_and_truncate(
-                    self._tokenizer_name, "Q:" + example["question"]["stem"], self.max_seq_len
-                )
-                choices_dict = {
-                    a_choice["label"]: tokenize_and_truncate(
-                        self._tokenizer_name, "A:" + a_choice["text"], self.max_seq_len
-                    )
-                    for a_choice in example["question"]["choices"]
-                }
-                multiple_choices = [choices_dict[label] for label in self.choice_idx2label]
-                targ = self.label2choice_idx[example["answerKey"]] if "answerKey" in example else 0
-                example_id = example["id"]
-                questions.append(question)
-                choices.append(multiple_choices)
-                targs.append(targ)
-                id_str.append(example_id)
-            return [questions, choices, targs, id_str]
+    def get_metrics(self, reset: bool = False) -> Dict:
+        f1 = self.f1_metric.get_metric(reset)
+        em = self.em_metric.get_metric(reset)
+        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        return collected_metrics
 
-        train_file = "train_rand_split_EASY.jsonl" if self.easy else "train_rand_split.jsonl"
-        val_file = "dev_rand_split_EASY.jsonl" if self.easy else "dev_rand_split.jsonl"
-        test_file = "test_rand_split_no_answers.jsonl"
-        self.train_data_text = _load_split(os.path.join(self.path, train_file))
-        self.val_data_text = _load_split(os.path.join(self.path, val_file))
-        self.test_data_text = _load_split(os.path.join(self.path, test_file))
-        self.sentences = (
-            self.train_data_text[0]
-            + self.val_data_text[0]
-            + [choice for choices in self.train_data_text[1] for choice in choices]
-            + [choice for choices in self.val_data_text[1] for choice in choices]
-        )
-        log.info("\tFinished loading CommonsenseQA data.")
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """ Yield sentences, used to compute vocabulary. """
+        yield from self.sentences
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AllenNLP Instances. """
+        def _make_instance(example):
+            d = dict()
 
-        def _make_instance(question, choices, label, id_str):
-            d = {}
-            d["question_str"] = MetadataField(" ".join(question))
-            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+            # For human-readability
+            d["raw_passage"] = MetadataField(" ".join(example["passage"]))
+            d["raw_question"] = MetadataField(" ".join(example["question"]))
+
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
+                    example["passage"], example["question"], get_offset=True
+                )
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["passage"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(example["passage"]), indexers
+                )
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                    model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
                 )
-            for choice_idx, choice in enumerate(choices):
-                inp = (
-                    model_preprocessing_interface.boundary_token_fn(question, choice)
-                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
-                    else model_preprocessing_interface.boundary_token_fn(choice)
-                )
-                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
-                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
-            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["id_str"] = MetadataField(id_str)
+                start_offset = 0
+            d["span_start"] = NumericField(
+                example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
+            )
+            d["span_end"] = NumericField(
+                example["answer_span"][1] + start_offset, label_namespace="span_end_labels"
+            )
+            d["start_offset"] = MetadataField(start_offset)
+            d["passage_str"] = MetadataField(example["passage_str"])
+            d["answer_str"] = MetadataField(example["answer_str"])
+            d["space_processed_token_map"] = MetadataField(example["space_processed_token_map"])
             return Instance(d)
 
-        split = list(split)
-        instances = map(_make_instance, *split)
+        instances = map(_make_instance, split)
         return instances
 
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-        acc = self.scorer1.get_metric(reset)
-        return {"accuracy": acc}
+    def get_split_text(self, split: str):
+        return getattr(self, "%s_data" % split)
+
+    @classmethod
+    def load_tsv_dataset(cls, path, wiki_dict):
+        df = pd.read_csv(
+            path,
+            sep="\t",
+            header=None,
+            names=[
+                "sent_id",
+                "target_ids",
+                "worker_id",
+                "qa_index",
+                "qa_word",
+                "question",
+                "answer",
+                "response1",
+                "response2",
+            ],
+        )
+        df["sent"] = df["sent_id"].apply(wiki_dict.get)
+        return df
+
+    def process_dataset(self, data_df, shuffle=False):
+        example_list = []
+        moses = MosesTokenizer()
+        aligner_fn = get_aligner_fn(self.tokenizer_name)
+        for i, row in data_df.iterrows():
+            # Answer indices are a space-limited list of numbers.
+            # We simply take the min/max of the indices
+            answer_idxs = list(map(int, row["answer"].split()))
+            ans_tok_start, ans_tok_end = min(answer_idxs), max(answer_idxs) + 1  # Exclusive
+
+            remapped_result = remap_ptb_passage_and_answer_spans(
+                ptb_tokens=row["sent"].split(),
+                answer_span=(ans_tok_start, ans_tok_end),
+                moses=moses,
+                aligner_fn=aligner_fn,
+            )
+            example_list.append(
+                {
+                    "passage": self._process_sentence(remapped_result["detok_sent"]),
+                    "question": self._process_sentence(row["question"]),
+                    "answer_span": remapped_result["answer_token_span"],
+                    "passage_str": remapped_result["detok_sent"],
+                    "answer_str": remapped_result["answer_str"],
+                    "space_processed_token_map": remapped_result["space_processed_token_map"],
+                }
+            )
+
+        if shuffle:
+            random.Random(12345).shuffle(example_list)
+
+        return example_list
+
+    def _process_sentence(self, sent):
+        return tokenize_and_truncate(
+            tokenizer_name=self.tokenizer_name, sent=sent, max_seq_len=self.max_seq_len
+        )
+
+    @classmethod
+    def load_wiki_dict(cls, path):
+        wiki_df = pd.read_csv(path, sep="\t", names=["sent_id", "text"])
+        wiki_dict = {row["sent_id"]: row["text"] for _, row in wiki_df.iterrows()}
+        return wiki_dict
+
+    def load_data(self):
+        wiki_dict = self.load_wiki_dict(os.path.join(self.path, "qamr/data/wiki-sentences.tsv"))
+        self.train_data = self.process_dataset(
+            self.load_tsv_dataset(
+                path=os.path.join(self.path, "qamr/data/filtered/train.tsv"), wiki_dict=wiki_dict
+            )
+        )
+        self.val_data = self.process_dataset(
+            self.load_tsv_dataset(
+                path=os.path.join(self.path, "qamr/data/filtered/dev.tsv"), wiki_dict=wiki_dict
+            ),
+            shuffle=True,
+        )
+        self.test_data = self.process_dataset(
+            self.load_tsv_dataset(
+                path=os.path.join(self.path, "qamr/data/filtered/test.tsv"), wiki_dict=wiki_dict
+            )
+        )
+
+        self.sentences = (
+            [example["passage"] for example in self.train_data]
+            + [example["question"] for example in self.train_data]
+            + [example["passage"] for example in self.val_data]
+            + [example["question"] for example in self.val_data]
+        )
+
+    @staticmethod
+    def collapse_contiguous_indices(ls):
+        """
+        [2, 3, 4, 5, 6, 7, 8] -> [(2, 9)]
+        [1, 2, 4, 5] -> [(1, 3), (4, 6)]
+        """
+        if not ls:
+            return []
+        output = []
+        start = None
+        prev = None
+        for n in ls:
+            if start is None:
+                start = n
+                prev = n
+            elif n == prev + 1:
+                prev += 1
+                continue
+            else:
+                output.append((start, prev + 1))  # exclusive
+                start = n
+                prev = n
+        output.append((start, prev + 1))  # exclusive
+        return output
 
 
-@register_task("cosmosqa", rel_path="cosmosqa/")
-class CosmosQATask(MultipleChoiceTask):
-    """ Task class for CosmosQA Task. 
-        adaptation of preprocessing from
-        https://github.com/wilburOne/cosmosqa """
+def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, aligner_fn):
+    # Start with PTB tokenized tokens
+    # Detokenize the passage. Everything we do will be based on the detokenized input,
+    #   INCLUDING evaluation.
+    detok_sent = moses.detokenize_ptb(ptb_tokens)
+
+    # Answer indices are a space-limited list of numbers.
+    # We simply take the min/max of the indices
+    ans_tok_start, ans_tok_end = answer_span[0], answer_span[1]  # Exclusive
+    # We convert the PTB-tokenized answer to char-indices.
+    ans_char_start = len(moses.detokenize_ptb(ptb_tokens[:ans_tok_start]))
+    while detok_sent[ans_char_start] == " ":
+        ans_char_start += 1
+    ans_char_end = len(moses.detokenize_ptb(ptb_tokens[:ans_tok_end]))
+    answer_str = detok_sent[ans_char_start:ans_char_end].strip()
+
+    # We space-tokenize, with the accompanying char-indices.
+    # We use the char-indices to map the answers to space-tokens.
+    space_tokens_with_spans = space_tokenize_with_spans(detok_sent)
+    ans_space_token_span = find_space_token_span(
+        space_tokens_with_spans=space_tokens_with_spans,
+        char_start=ans_char_start,
+        char_end=ans_char_end,
+    )
+    # We project the space-tokenized answer to processed-tokens (e.g. BERT).
+    # The latter is used for training/predicting.
+    aligner, processed_sentence_tokens = aligner_fn(detok_sent)
+    answer_token_span = aligner.project_span(*ans_space_token_span)
+
+    # space_processed_token_map is a list of tuples
+    #   (space_token, processed_token (e.g. BERT), space_token_index)
+    # We will need this to map from token predictions to str spans
+    space_processed_token_map = []
+    for space_token_i, (space_token, char_start, char_end) in enumerate(space_tokens_with_spans):
+        processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
+        for p_token_i in range(*processed_token_span):
+            space_processed_token_map.append(
+                (processed_sentence_tokens[p_token_i], space_token, space_token_i)
+            )
+
+    return {
+        "detok_sent": detok_sent,
+        "answer_token_span": answer_token_span,
+        "answer_str": answer_str,
+        "space_processed_token_map": space_processed_token_map,
+    }
+
+
+@register_task("squad", rel_path="SQuAD/")
+class SQuADTask(SpanPredictionTask):
+    """
+       SQuAD Question Answering Task
+    """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super().__init__(name, **kw)
+        super(SQuADTask, self).__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
 
-        self.train_data_text = None
-        self.val_data_text = None
-        self.test_data_text = None
+        self.train_data = None
+        self.val_data = None
+        self.test_data = None
 
-        self.scorer1 = CategoricalAccuracy()
-        self.scorers = [self.scorer1]
-        self.val_metric = "%s_accuracy" % name
+        self.f1_metric = F1SpanMetric()
+        self.em_metric = ExactMatchSpanMetric()
+
+        self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
-        self.n_choices = 4
+
+    def get_metrics(self, reset: bool = False) -> Dict:
+        f1 = self.f1_metric.get_metric(reset)
+        em = self.em_metric.get_metric(reset)
+        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        return collected_metrics
+
+    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
     def load_data(self):
-        """ Process the dataset located at path.  """
-        self.train_data_text = self._load_csv(os.path.join(self.path, "train.csv"))
-        self.val_data_text = self._load_csv(os.path.join(self.path, "valid.csv"))
-        self.test_data_text = self._load_csv(os.path.join(self.path, "test_no_label.csv"))
+        self.train_data = self._load_squad_data(os.path.join(self.path, "train-v2.0.json"))
+        self.val_data = self._load_squad_data(os.path.join(self.path, "dev-v2.0.json"))
+        self.test_data = copy.deepcopy(
+            self.val_data[0:10]
+        )  # self._load_squad_data(os.path.join(self.path, "test-v2.0.json"))
         self.sentences = (
-            self.train_data_text[0]
-            + self.val_data_text[0]
-            + [choice for choices in self.train_data_text[1] for choice in choices]
-            + [choice for choices in self.val_data_text[1] for choice in choices]
+            [example["passage"] for example in self.train_data]
+            + [example["question"] for example in self.train_data]
+            + [example["passage"] for example in self.val_data]
+            + [example["question"] for example in self.val_data]
         )
-        log.info("\tFinished loading CosmosQA data.")
 
-    def _load_csv(self, input_file):
-        import csv
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """ Yield sentences, used to compute vocabulary. """
+        yield from self.sentences
 
-        with open(input_file, "r") as csv_file:
-            reader = csv.DictReader(csv_file)
-            records = [record for record in reader]
-
-        contexts, choices, targs, id_str = [], [], [], []
-        for record in records:
-            question = record["question"]
-
-            ans_choices = [record["answer" + str(i)] for i in range(self.n_choices)]
-            qa_tok_choices = [
-                tokenize_and_truncate(
-                    self._tokenizer_name, question + " " + ans_choices[i], self.max_seq_len
-                )
-                for i in range(len(ans_choices))
-            ]
-            max_ans_len = max([len(tok) for tok in qa_tok_choices])
-            context = tokenize_and_truncate(
-                self._tokenizer_name, record["context"], self.max_seq_len - max_ans_len
-            )
-            targ = int(record["label"]) if "label" in record else 0
-            idx = record["id"]
-            contexts.append(context)
-            choices.append(qa_tok_choices)
-            targs.append(targ)
-            id_str.append(idx)
-        return [contexts, choices, targs, id_str]
+    def get_split_text(self, split: str):
+        return getattr(self, "%s_data" % split)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AllenNLP Instances. """
+        def _make_instance(example):
+            d = dict()
 
-        def _make_instance(context, choices, label, id_str):
-            d = {}
-            d["context_str"] = MetadataField(" ".join(context))
-            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                d["context"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(context), indexers
+            # For human-readability
+            d["raw_passage"] = MetadataField(" ".join(example["passage"]))
+            d["raw_question"] = MetadataField(" ".join(example["question"]))
+
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
+                    example["passage"], example["question"], get_offset=True
                 )
-            for choice_idx, choice in enumerate(choices):
-                inp = (
-                    model_preprocessing_interface.boundary_token_fn(context, choice)
-                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
-                    else model_preprocessing_interface.boundary_token_fn(choice)
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["passage"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(example["passage"]), indexers
                 )
-                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
-                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
-            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["id_str"] = MetadataField(id_str)
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
+                )
+                start_offset = 0
+            d["span_start"] = NumericField(
+                example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
+            )
+            d["span_end"] = NumericField(
+                example["answer_span"][1] + start_offset, label_namespace="span_end_labels"
+            )
+            d["start_offset"] = MetadataField(start_offset)
+            d["passage_str"] = MetadataField(example["passage_str"])
+            d["answer_str"] = MetadataField(example["answer_str"])
+            d["space_processed_token_map"] = MetadataField(example["space_processed_token_map"])
             return Instance(d)
 
-        split = list(split)
-        instances = map(_make_instance, *split)
+        instances = map(_make_instance, split)
         return instances
 
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-        acc = self.scorer1.get_metric(reset)
-        return {"accuracy": acc}
+    def _load_squad_data(self, path, shuffle=False):
+        def is_whitespace(c):
+            if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
+                return True
+            return False
+
+        example_list = []
+        moses = MosesTokenizer()
+        aligner_fn = get_aligner_fn(self.tokenizer_name)
+
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)["data"]
+        skipped = 0
+        for ex in data:
+            for paragraph in ex["paragraphs"]:
+                passage = paragraph["context"]
+                doc_tokens = []
+                char_to_word_offset = []
+                prev_is_whitespace = True
+
+                for qa in paragraph["qas"]:
+                    qas_id = qa["id"]
+                    question = qa["question"]
+                    start_position = None
+                    end_position = None
+                    orig_answer_text = None
+                    is_impossible = False
+
+                    if "is_impossible" in qa:
+                        is_impossible = qa["is_impossible"]
+
+                    if is_impossible:
+                        continue
+                        start_position = -1
+                        end_position = -1
+                        orig_answer_text = ""
+                    else:
+                        try:
+                            answer = qa["answers"][0]
+                        except:
+                            print("qa['answers']: ", qa)
+                        orig_answer_text = answer["text"]
+                        answer_offset = answer["answer_start"]
+                        answer_length = len(orig_answer_text)
+                        start_position = answer_offset
+                        end_position = answer_offset + answer_length - 1
+
+                    remapped_result = squad_map_passage_and_answer(
+                        sentence=passage,
+                        answer_span=(start_position, end_position),
+                        moses=moses,
+                        aligner_fn=aligner_fn,
+                    )
+                    if remapped_result["answer_token_span"][1] >= self.max_seq_len:
+                        skipped += 1
+                        continue  # skipe for now
+                    example_list.append(
+                        {
+                            "passage": self._process_sentence(remapped_result["detok_sent"]),
+                            "question": self._process_sentence(question),
+                            "answer_span": remapped_result["answer_token_span"],
+                            "passage_str": remapped_result["detok_sent"],
+                            "answer_str": remapped_result["answer_str"],
+                            "space_processed_token_map": remapped_result[
+                                "space_processed_token_map"
+                            ],
+                        }
+                    )
+        return example_list
+
+    def _process_sentence(self, sent):
+        return tokenize_and_truncate(
+            tokenizer_name=self.tokenizer_name, sent=sent, max_seq_len=self.max_seq_len
+        )
 
 
+def squad_map_passage_and_answer(sentence, answer_span, moses, aligner_fn):
+    # We space-tokenize, with the accompanying char-indices.
+    # We use the char-indices to map the answers to space-tokens.
+    ans_char_start, ans_char_end = answer_span
+    while sentence[ans_char_start] == " ":
+        ans_char_start += 1
+    answer_str = sentence[ans_char_start:ans_char_end].strip()
+    space_tokens_with_spans = space_tokenize_with_spans(sentence)
+    ans_space_token_span = find_space_token_span(
+        space_tokens_with_spans=space_tokens_with_spans,
+        char_start=ans_char_start,
+        char_end=ans_char_end,
+    )
+    # We project the space-tokenized answer to processed-tokens (e.g. BERT).
+    # The latter is used for training/predicting.
+    aligner, processed_sentence_tokens = aligner_fn(sentence)
+    answer_token_span = aligner.project_span(*ans_space_token_span)
+    # space_processed_token_map is a list of tuples
+    #   (space_token, processed_token (e.g. BERT), space_token_index)
+    # We will need this to map from token predictions to str spans
+    space_processed_token_map = []
+    for space_token_i, (space_token, char_start, char_end) in enumerate(space_tokens_with_spans):
+        processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
+        for p_token_i in range(*processed_token_span):
+            space_processed_token_map.append(
+                (processed_sentence_tokens[p_token_i], space_token, space_token_i)
+            )
+    return {
+        "detok_sent": sentence,
+        "answer_token_span": answer_token_span,
+        "answer_str": answer_str,
+        "space_processed_token_map": space_processed_token_map,
+    }
