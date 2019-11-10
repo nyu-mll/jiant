@@ -954,7 +954,7 @@ class SQuADTask(SpanPredictionTask):
                         answer_offset = answer["answer_start"]
                         answer_length = len(orig_answer_text)
                         start_position = answer_offset
-                        end_position = answer_offset + answer_length - 1
+                        end_position = answer_offset + answer_length 
 
                     remapped_result = squad_map_passage_and_answer(
                         sentence=passage,
@@ -962,7 +962,7 @@ class SQuADTask(SpanPredictionTask):
                         moses=moses,
                         aligner_fn=aligner_fn,
                     )
-                    if remapped_result["answer_token_span"][1] >= self.max_seq_len:
+                    if remapped_result is None or (remapped_result["answer_token_span"][1] >= self.max_seq_len):
                         skipped += 1
                         continue  # skipe for now
                     example_list.append(
@@ -977,6 +977,7 @@ class SQuADTask(SpanPredictionTask):
                             ],
                         }
                     )
+        print("total skipped: ", skipped)
         return example_list
 
     def _process_sentence(self, sent):
@@ -1000,14 +1001,21 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, aligner_fn):
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-    aligner, processed_sentence_tokens = aligner_fn(sentence)
-    answer_token_span = aligner.project_span(*ans_space_token_span)
+
+    try:
+        aligner, processed_sentence_tokens = aligner_fn(sentence)
+        answer_token_span = aligner.project_span(*ans_space_token_span)
+    except:
+        return None
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
     space_processed_token_map = []
     for space_token_i, (space_token, char_start, char_end) in enumerate(space_tokens_with_spans):
-        processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
+        try:
+            processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
+        except:
+            return None
         for p_token_i in range(*processed_token_span):
             space_processed_token_map.append(
                 (processed_sentence_tokens[p_token_i], space_token, space_token_i)
