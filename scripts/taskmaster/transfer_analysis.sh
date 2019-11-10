@@ -40,6 +40,8 @@ function run_exp() {
     declare -a args
     args+=( --config_file "${CONFIG_FILE}" )
     args+=( -o "${OVERRIDES}" )
+    #echo "${OVERRIDES}"
+    #echo "${CONFIG_FILE}"
     sbatch sb_hellaswag.sh "${CONFIG_FILE}" "${OVERRIDES}"
     #python main.py "${args[@]}"
 }
