@@ -1103,9 +1103,7 @@ class MultiTaskModel(nn.Module):
         if "mask" in batch:
             # Prevent backprop for tags generated for tokenization-introduced tokens
             # such as word boundaries
-            mask = batch["mask"]
-            batch_mask = [mask[i][:seq_len] for i in range(b_size)]
-            batch_mask = torch.stack(batch_mask)
+            batch_mask = batch["mask"][:, :seq_len]
             keep_idxs = torch.nonzero(batch_mask.view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
