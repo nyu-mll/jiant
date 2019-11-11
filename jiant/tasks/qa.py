@@ -1,9 +1,7 @@
 """Task definitions for question answering tasks."""
 import os
 import pandas as pd
-import re
 import json
-import string
 import collections
 import gzip
 import random
@@ -11,7 +9,8 @@ from typing import Iterable, Sequence, Type, Dict
 import copy
 
 import torch
-from allennlp.training.metrics import Average, F1Measure
+import logging as log
+from allennlp.training.metrics import Average, F1Measure, CategoricalAccuracy
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
 from jiant.allennlp_mods.numeric_field import NumericField
@@ -26,10 +25,14 @@ from jiant.allennlp_mods.span_metrics import (
 from jiant.utils.data_loaders import tokenize_and_truncate
 from jiant.utils.tokenizers import MosesTokenizer
 
-from jiant.tasks.tasks import Task, SpanPredictionTask, TaggingTask
+from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
-from ..utils.retokenize import get_aligner_fn, space_tokenize_with_spans, find_space_token_span
+from ..utils.retokenize import (
+    space_tokenize_with_spans,
+    find_space_token_span,
+    create_tokenization_alignment,
+)
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -38,7 +41,6 @@ class MultiRCTask(Task):
     See paper at https://cogcomp.org/multirc/ """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.scorer1 = F1Measure(positive_label=1)
         self.scorer2 = Average()  # to delete
@@ -205,7 +207,6 @@ class ReCoRDTask(Task):
     See paper at https://sheng-z.github.io/ReCoRD-explorer """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        """ """
         super().__init__(name, **kw)
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
@@ -427,6 +428,10 @@ class QASRLTask(SpanPredictionTask):
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
 
+    def count_examples(self, splits=["train", "val", "test"]):
+        """ Count examples in the dataset. """
+        pass
+
     def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
         """ A batch of logits+answer strings and the questions they go with """
         self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
@@ -435,7 +440,7 @@ class QASRLTask(SpanPredictionTask):
     def get_metrics(self, reset: bool = False) -> Dict:
         f1 = self.f1_metric.get_metric(reset)
         em = self.em_metric.get_metric(reset)
-        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        collected_metrics = {"f1": f1, "em": em, "avg": (f1 + em) / 2}
         return collected_metrics
 
     def load_data(self):
@@ -454,6 +459,11 @@ class QASRLTask(SpanPredictionTask):
             + [example["passage"] for example in self.val_data]
             + [example["question"] for example in self.val_data]
         )
+        self.example_counts = {
+            "train": len(self.train_data),
+            "val": len(self.val_data),
+            "test": len(self.test_data),
+        }
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
@@ -500,7 +510,7 @@ class QASRLTask(SpanPredictionTask):
     def _load_file(self, path, shuffle=False):
         example_list = []
         moses = MosesTokenizer()
-        aligner_fn = get_aligner_fn(self.tokenizer_name)
+        failed = 0
         with gzip.open(path) as f:
             lines = f.read().splitlines()
 
@@ -514,13 +524,17 @@ class QASRLTask(SpanPredictionTask):
                                     answer_span["span"][0],
                                     answer_span["span"][1] + 1,  # exclusive
                                 )
-                                remapped_result = remap_ptb_passage_and_answer_spans(
-                                    ptb_tokens=datum["sentence_tokens"],
-                                    answer_span=answer_tok_span,
-                                    moses=moses,
-                                    # We can move the aligned outside the loop, actually
-                                    aligner_fn=aligner_fn,
-                                )
+                                try:
+                                    remapped_result = remap_ptb_passage_and_answer_spans(
+                                        ptb_tokens=datum["sentence_tokens"],
+                                        answer_span=answer_tok_span,
+                                        moses=moses,
+                                        # We can move the aligned outside the loop, actually
+                                        tokenizer_name=self.tokenizer_name,
+                                    )
+                                except ValueError:
+                                    failed += 1
+                                    continue
                                 example_list.append(
                                     {
                                         "passage": self._process_sentence(
@@ -535,6 +549,9 @@ class QASRLTask(SpanPredictionTask):
                                         ],
                                     }
                                 )
+
+        if failed:
+            log.info("FAILED ({}): {}".format(failed, path))
 
         if shuffle:
             random.Random(1234).shuffle(example_list)
@@ -607,7 +624,7 @@ class QAMRTask(SpanPredictionTask):
     def get_metrics(self, reset: bool = False) -> Dict:
         f1 = self.f1_metric.get_metric(reset)
         em = self.em_metric.get_metric(reset)
-        collected_metrics = {"f1": f1, "em": em, "avg": f1 + em}
+        collected_metrics = {"f1": f1, "em": em, "avg": (f1 + em) / 2}
         return collected_metrics
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -679,7 +696,6 @@ class QAMRTask(SpanPredictionTask):
     def process_dataset(self, data_df, shuffle=False):
         example_list = []
         moses = MosesTokenizer()
-        aligner_fn = get_aligner_fn(self.tokenizer_name)
         for i, row in data_df.iterrows():
             # Answer indices are a space-limited list of numbers.
             # We simply take the min/max of the indices
@@ -690,7 +706,7 @@ class QAMRTask(SpanPredictionTask):
                 ptb_tokens=row["sent"].split(),
                 answer_span=(ans_tok_start, ans_tok_end),
                 moses=moses,
-                aligner_fn=aligner_fn,
+                tokenizer_name=self.tokenizer_name,
             )
             example_list.append(
                 {
@@ -744,6 +760,11 @@ class QAMRTask(SpanPredictionTask):
             + [example["passage"] for example in self.val_data]
             + [example["question"] for example in self.val_data]
         )
+        self.example_counts = {
+            "train": len(self.train_data),
+            "val": len(self.val_data),
+            "test": len(self.test_data),
+        }
 
     @staticmethod
     def collapse_contiguous_indices(ls):
@@ -771,8 +792,11 @@ class QAMRTask(SpanPredictionTask):
         return output
 
 
-def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, aligner_fn):
+def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer_name):
     # Start with PTB tokenized tokens
+    # The answer_span is also in ptb_token space. We first want to detokenize, and convert everything to
+    #   space-tokenization space.
+
     # Detokenize the passage. Everything we do will be based on the detokenized input,
     #   INCLUDING evaluation.
     detok_sent = moses.detokenize_ptb(ptb_tokens)
@@ -797,26 +821,124 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, aligner_f
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-    aligner, processed_sentence_tokens = aligner_fn(detok_sent)
-    answer_token_span = aligner.project_span(*ans_space_token_span)
+    space_to_actual_token_map = create_tokenization_alignment(
+        tokens=detok_sent.split(), tokenizer_name=tokenizer_name
+    )
 
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
     space_processed_token_map = []
-    for space_token_i, (space_token, char_start, char_end) in enumerate(space_tokens_with_spans):
-        processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
-        for p_token_i in range(*processed_token_span):
-            space_processed_token_map.append(
-                (processed_sentence_tokens[p_token_i], space_token, space_token_i)
-            )
+    for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
+        for actual_token in actual_token_ls:
+            space_processed_token_map.append((actual_token, space_token, i))
+    ans_actual_token_span = (
+        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
+        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
+    )
 
     return {
         "detok_sent": detok_sent,
-        "answer_token_span": answer_token_span,
+        "answer_token_span": ans_actual_token_span,
         "answer_str": answer_str,
         "space_processed_token_map": space_processed_token_map,
     }
+
+
+@register_task("commonsenseqa", rel_path="CommonsenseQA/")
+@register_task("commonsenseqa-easy", rel_path="CommonsenseQA/", easy=True)
+class CommonsenseQATask(MultipleChoiceTask):
+    """ Task class for CommonsenseQA Task.  """
+
+    def __init__(self, path, max_seq_len, name, easy=False, **kw):
+        super().__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.easy = easy
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+        self.n_choices = 5
+        self.label2choice_idx = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
+        self.choice_idx2label = ["A", "B", "C", "D", "E"]
+
+    def load_data(self):
+        """ Process the dataset located at path.  """
+
+        def _load_split(data_file):
+            questions, choices, targs, id_str = [], [], [], []
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
+            for example in data:
+                question = tokenize_and_truncate(
+                    self._tokenizer_name, "Q:" + example["question"]["stem"], self.max_seq_len
+                )
+                choices_dict = {
+                    a_choice["label"]: tokenize_and_truncate(
+                        self._tokenizer_name, "A:" + a_choice["text"], self.max_seq_len
+                    )
+                    for a_choice in example["question"]["choices"]
+                }
+                multiple_choices = [choices_dict[label] for label in self.choice_idx2label]
+                targ = self.label2choice_idx[example["answerKey"]] if "answerKey" in example else 0
+                example_id = example["id"]
+                questions.append(question)
+                choices.append(multiple_choices)
+                targs.append(targ)
+                id_str.append(example_id)
+            return [questions, choices, targs, id_str]
+
+        train_file = "train_rand_split_EASY.jsonl" if self.easy else "train_rand_split.jsonl"
+        val_file = "dev_rand_split_EASY.jsonl" if self.easy else "dev_rand_split.jsonl"
+        test_file = "test_rand_split_no_answers.jsonl"
+        self.train_data_text = _load_split(os.path.join(self.path, train_file))
+        self.val_data_text = _load_split(os.path.join(self.path, val_file))
+        self.test_data_text = _load_split(os.path.join(self.path, test_file))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.val_data_text[0]
+            + [choice for choices in self.train_data_text[1] for choice in choices]
+            + [choice for choices in self.val_data_text[1] for choice in choices]
+        )
+        log.info("\tFinished loading CommonsenseQA data.")
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+
+        def _make_instance(question, choices, label, id_str):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(question))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                )
+            for choice_idx, choice in enumerate(choices):
+                inp = (
+                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
+                )
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["id_str"] = MetadataField(id_str)
+            return Instance(d)
+
+        split = list(split)
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.scorer1.get_metric(reset)
+        return {"accuracy": acc}
 
 
 @register_task("squad", rel_path="SQuAD/")
@@ -854,15 +976,19 @@ class SQuADTask(SpanPredictionTask):
     def load_data(self):
         self.train_data = self._load_squad_data(os.path.join(self.path, "train-v2.0.json"))
         self.val_data = self._load_squad_data(os.path.join(self.path, "dev-v2.0.json"))
-        self.test_data = copy.deepcopy(
-            self.val_data[0:10]
-        )  # self._load_squad_data(os.path.join(self.path, "test-v2.0.json"))
+        self.test_data = copy.deepcopy(self.val_data)
         self.sentences = (
             [example["passage"] for example in self.train_data]
             + [example["question"] for example in self.train_data]
             + [example["passage"] for example in self.val_data]
             + [example["question"] for example in self.val_data]
         )
+
+        self.example_counts = {
+            "train": len(self.train_data),
+            "val": len(self.val_data),
+            "test": len(self.test_data),
+        }
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
@@ -917,7 +1043,6 @@ class SQuADTask(SpanPredictionTask):
 
         example_list = []
         moses = MosesTokenizer()
-        aligner_fn = get_aligner_fn(self.tokenizer_name)
 
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)["data"]
@@ -960,9 +1085,9 @@ class SQuADTask(SpanPredictionTask):
                         sentence=passage,
                         answer_span=(start_position, end_position),
                         moses=moses,
-                        aligner_fn=aligner_fn,
+                        tokenizer_name=self.tokenizer_name,
                     )
-                    if remapped_result is None or (remapped_result["answer_token_span"][1] >= self.max_seq_len):
+                    if (remapped_result["answer_token_span"][1] >= self.max_seq_len):
                         skipped += 1
                         continue  # skipe for now
                     example_list.append(
@@ -978,6 +1103,7 @@ class SQuADTask(SpanPredictionTask):
                         }
                     )
         print("total skipped: ", skipped)
+        print("len(example_list): ", len(example_list))
         return example_list
 
     def _process_sentence(self, sent):
@@ -986,7 +1112,7 @@ class SQuADTask(SpanPredictionTask):
         )
 
 
-def squad_map_passage_and_answer(sentence, answer_span, moses, aligner_fn):
+def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
     # We space-tokenize, with the accompanying char-indices.
     # We use the char-indices to map the answers to space-tokens.
     ans_char_start, ans_char_end = answer_span
@@ -1001,28 +1127,23 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, aligner_fn):
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-
-    try:
-        aligner, processed_sentence_tokens = aligner_fn(sentence)
-        answer_token_span = aligner.project_span(*ans_space_token_span)
-    except:
-        return None
+    space_to_actual_token_map = create_tokenization_alignment(
+        tokens=sentence.split(), tokenizer_name=tokenizer_name
+    )
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
     space_processed_token_map = []
-    for space_token_i, (space_token, char_start, char_end) in enumerate(space_tokens_with_spans):
-        try:
-            processed_token_span = aligner.project_span(space_token_i, space_token_i + 1)
-        except:
-            return None
-        for p_token_i in range(*processed_token_span):
-            space_processed_token_map.append(
-                (processed_sentence_tokens[p_token_i], space_token, space_token_i)
-            )
+    for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
+        for actual_token in actual_token_ls:
+            space_processed_token_map.append((actual_token, space_token, i))
+    ans_actual_token_span = (
+        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
+        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
+    )
     return {
         "detok_sent": sentence,
-        "answer_token_span": answer_token_span,
+        "answer_token_span": ans_actual_token_span,
         "answer_str": answer_str,
         "space_processed_token_map": space_processed_token_map,
     }
