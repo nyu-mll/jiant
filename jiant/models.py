@@ -1104,7 +1104,7 @@ class MultiTaskModel(nn.Module):
             # Prevent backprop for tags generated for tokenization-introduced tokens
             # such as word boundaries
             batch_mask = batch["mask"][:, :seq_len]
-            keep_idxs = torch.nonzero(batch_mask.view(-1).data).squeeze()
+            keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
