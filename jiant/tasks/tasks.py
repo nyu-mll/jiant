@@ -818,6 +818,13 @@ class QQPTask(PairClassificationTask):
 
     def load_data(self):
         """Process the dataset located at data_file."""
+
+        def label_fn(x):
+            if x == "":
+                return 0
+            else:
+                return int(x)
+
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "train.tsv"),
@@ -825,7 +832,7 @@ class QQPTask(PairClassificationTask):
             s1_idx=3,
             s2_idx=4,
             label_idx=5,
-            label_fn=int,
+            label_fn=label_fn,
             skip_rows=1,
         )
         self.val_data_text = load_tsv(
@@ -835,7 +842,7 @@ class QQPTask(PairClassificationTask):
             s1_idx=3,
             s2_idx=4,
             label_idx=5,
-            label_fn=int,
+            label_fn=label_fn,
             skip_rows=1,
         )
         self.test_data_text = load_tsv(
