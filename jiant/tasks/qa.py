@@ -13,7 +13,7 @@ from allennlp.training.metrics import Average, F1Measure, CategoricalAccuracy
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
 from jiant.allennlp_mods.numeric_field import NumericField
-from jiant.allennlp_mods.span_metrics import (
+from jiant.metrics.span_metrics import (
     metric_max_over_ground_truths,
     f1_score,
     exact_match_score,
@@ -600,7 +600,6 @@ class QAMRTask(SpanPredictionTask):
     """
 
     def __init__(self, path, max_seq_len, name="qamr", **kw):
-        """ There are 1363 supertags in CCGBank without introduced token. """
         self.path = path
         super(QAMRTask, self).__init__(name, **kw)
         self.max_seq_len = max_seq_len
@@ -942,7 +941,7 @@ class CommonsenseQATask(MultipleChoiceTask):
 
 @register_task("cosmosqa", rel_path="cosmosqa/")
 class CosmosQATask(MultipleChoiceTask):
-    """ Task class for CosmosQA Task. 
+    """ Task class for CosmosQA Task.
         adaptation of preprocessing from
         https://github.com/wilburOne/cosmosqa """
 
