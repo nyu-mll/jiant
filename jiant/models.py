@@ -964,32 +964,59 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch["inputs"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits_dict = module.forward(sent_embs, sent_mask)
-        out = {"logits": logits_dict, "n_exs": get_batch_size(batch)}
-        if "span_start" in batch:
-            out["start_loss"] = F.cross_entropy(
+        out = {
+            "logits": logits_dict,
+            "n_exs": get_batch_size(batch, self._cuda_device),
+            "start_loss": F.cross_entropy(
                 input=logits_dict["span_start"], target=batch["span_start"].long().squeeze(dim=1)
-            )
-            out["end_loss"] = F.cross_entropy(
+            ),
+            "end_loss": F.cross_entropy(
                 input=logits_dict["span_end"], target=batch["span_end"].long().squeeze(dim=1)
+            ),
+        }
+        out["loss"] = (out["start_loss"] + out["end_loss"]) / 2
+
+        # Form string predictions
+        pred_str_list = []
+        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1)
+        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1)
+        batch_size = sent_embs.shape[0]
+        for i in range(batch_size):
+
+            # Adjust for start_offset (e.g. [CLS] tokens).
+            pred_span_start_i = pred_span_start[i] - batch["start_offset"][i]
+            pred_span_end_i = pred_span_end[i] - batch["start_offset"][i]
+
+            # Ensure that predictions fit within the range of valid tokens
+            pred_span_start_i = min(
+                pred_span_start_i, len(batch["space_processed_token_map"][i]) - 1
             )
-            out["loss"] = (out["start_loss"] + out["end_loss"]) / 2
-            task.update_metrics(
-                logits=logits_dict,
-                labels={"span_start": batch["span_start"], "span_end": batch["span_end"]},
+            pred_span_end_i = min(
+                max(pred_span_end_i, pred_span_start_i + 1),
+                len(batch["space_processed_token_map"][i]) - 1,
             )
 
+            # space_processed_token_map is a list of tuples
+            #   (space_token, processed_token (e.g. BERT), space_token_index)
+            # The assumption is that each space_token corresponds to multiple processed_tokens.
+            # After we get the corresponding start/end space_token_indices, we can do " ".join
+            #   to get the corresponding string that is definitely within the original input.
+            # One constraint here is that our predictions can only go up to a the granularity of space_tokens.
+            # This is not so bad because SQuAD-style scripts also remove punctuation.
+            pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
+            pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
+            pred_str_list.append(
+                " ".join(
+                    batch["passage_str"][i].split()[pred_char_span_start:pred_char_span_end]
+                ).strip()
+            )
+        task.update_metrics(pred_str_list=pred_str_list, gold_str_list=batch["answer_str"])
+
         if predict:
-            span_start = torch.argmax(logits_dict["span_start"], dim=1)
-            span_end = torch.argmax(logits_dict["span_end"], dim=1)
             out["preds"] = {
-                "span_start": span_start,
-                "span_end": span_end,
-                # raw_sentence/question is space-separated
-                # Adjust -1 for [CLS]/<SOS>
-                "span": [
-                    " ".join(raw_sentence.split()[span_start[i] - 1 : span_end[i]])
-                    for i, raw_sentence in enumerate(batch["raw_sentence"])
-                ],
+                "span_start": pred_span_start,
+                "span_end": pred_span_end,
+                "span_str": pred_str_list,
             }
         return out
 

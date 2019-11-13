@@ -20,7 +20,7 @@ from scipy import sparse
 from Levenshtein.StringMatcher import StringMatcher
 
 from jiant.utils.tokenizers import get_tokenizer, Tokenizer
-from jiant.utils.utils import unescape_moses
+from jiant.utils.utils import unescape_moses, transpose_list_of_lists
 
 
 # Tokenizer instance for internal use.
@@ -435,3 +435,22 @@ def get_aligner_fn(tokenizer_name: Text):
         return functools.partial(align_bytebpe, bytebpe_tokenizer=bytebpe_tokenizer)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
+
+
+def space_tokenize_with_spans(text):
+    space_tokens = text.split()
+    result = []
+    i = 0
+    for token in space_tokens:
+        start = text[i:].find(token)
+        end = start + len(token)
+        result.append((token, i + start, i + end))
+        i += end
+    return result
+
+
+def find_space_token_span(space_tokens_with_spans, char_start, char_end):
+    starts, ends = transpose_list_of_lists(space_tokens_with_spans)[1:]
+    tok_start = np.clip((np.array(starts) > char_start).argmax() - 1, 0, None)
+    tok_end = (np.array(ends) > (char_end - 1)).argmax() + 1
+    return tok_start, tok_end
