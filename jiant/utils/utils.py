@@ -36,16 +36,16 @@ _MOSES_DETOKENIZER = MosesDetokenizer()
 
 def get_output_attribute(out, attribute_name, cuda_device):
     """
-    This function handles processing/reduction of output for both 
-    DataParallel or non-DataParallel situations. 
-    For the case of multiple GPUs, This function will 
-    sum all values for a certain output attribute in various batches 
+    This function handles processing/reduction of output for both
+    DataParallel or non-DataParallel situations.
+    For the case of multiple GPUs, This function will
+    sum all values for a certain output attribute in various batches
     together.
 
-    Parameters 
+    Parameters
     ---------------------
-    out: Dictionary, output of model during forward pass, 
-    attribute_name: str, 
+    out: Dictionary, output of model during forward pass,
+    attribute_name: str,
     cuda_device: list or int
     """
     if isinstance(cuda_device, list):
@@ -56,16 +56,16 @@ def get_output_attribute(out, attribute_name, cuda_device):
 
 def get_model_attribute(model, attribute_name, cuda_device):
     """
-        Getter function for both CPU and GPU. 
+        Getter function for both CPU and GPU.
 
         Parameters
         ____________________
-        model: MultiTaskModel object, 
+        model: MultiTaskModel object,
         attribute_name: str
 
         Returns
         --------------------
-        The attribute object from the model. 
+        The attribute object from the model.
     """
     # maybe we should do (int, list)
     if isinstance(cuda_device, list):
@@ -403,10 +403,10 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
 
 def format_output(obj, cuda_devices):
     """
-    Format output based on whether model is using DataParallel or not. 
-    DataParallel necessitates objects to be gathered into GPU:0 to have 
-    dimension 0. 
-    This function will be used for scalar outputs of model forwards 
+    Format output based on whether model is using DataParallel or not.
+    DataParallel necessitates objects to be gathered into GPU:0 to have
+    dimension 0.
+    This function will be used for scalar outputs of model forwards
     such as loss and n_exs.
     """
     if isinstance(cuda_devices, list):
@@ -664,3 +664,9 @@ def delete_all_checkpoints(serialization_dir):
     task_checkpoints = glob.glob(os.path.join(serialization_dir, "*", "*.th"))
     for file in common_checkpoints + task_checkpoints:
         os.remove(file)
+
+
+def transpose_list_of_lists(ls):
+    if len(ls) == 0:
+        return []
+    return [[ls[i][j] for i in range(len(ls))] for j in range(len(ls[0]))]
