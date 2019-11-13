@@ -1141,6 +1141,10 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
         sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
         sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
     )
+    print("answer_str: ", answer_str)
+    pred_char_span_start = space_processed_token_map[ans_actual_token_span[0]][2]
+    pred_char_span_end = space_processed_token_map[ans_actual_token_span[1]][2]
+    print("retok answer: ", sentence[pred_char_span_start:pred_char_span_end])
     return {
         "detok_sent": sentence,
         "answer_token_span": ans_actual_token_span,
