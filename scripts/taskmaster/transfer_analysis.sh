@@ -90,7 +90,7 @@ function run_intermediate_to_target_task() {
     # This function can also be used to finetune on a probing task as well.
     # Usage: run_intermediate_to_target_task <intermediate_task> <target_task> <directory_to_project_dir> <config_number> <batch_size>
     OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4}
@@ -111,8 +111,8 @@ function run_intermediate_to_probing() {
 function run_intermediate_to_mixing() {
     # Using a pretrained intermediate task, use frozen encoder with mixing on an probing task.  ("Mixing" sheet)
     # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size>
-    OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\""
+    OVERRIDES="exp_name=$1, run_name=$2_mix"
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
