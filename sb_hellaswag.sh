@@ -4,7 +4,8 @@
 #SBATCH --error=/scratch/pmh330/jiant-outputs/tense-%j.err
 #SBATCH --time=48:00:00
 #SBATCH --gres=gpu:p40:1
-#SBATCH --mem=80GB
+#SBATCH --exclude=gpu-36,gpu-37
+#SBATCH --mem=100GB
 #SBATCH --signal=USR1@600
 #SBATCH --mail-user=pmh330@nyu.edu
 #SBATCH --mail-type=END,FAIL
