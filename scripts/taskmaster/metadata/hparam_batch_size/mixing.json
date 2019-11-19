@@ -101,23 +101,23 @@
   },
   {
     "task_name": "acceptability-wh",
-    "hparam_set": 4,
-    "batch_size": 8
+    "hparam_set": 8,
+    "batch_size": 4
   },
   {
     "task_name": "acceptability-def",
-    "hparam_set": 4,
-    "batch_size": 8
+    "hparam_set": 8,
+    "batch_size": 4
   },
   {
     "task_name": "acceptability-conj",
-    "hparam_set": 4,
-    "batch_size": 8
+    "hparam_set": 8,
+    "batch_size": 4
   },
   {
     "task_name": "acceptability-eos",
-    "hparam_set": 4,
-    "batch_size": 7
+    "hparam_set": 7,
+    "batch_size": 4
   },
   {
     "task_name": "cola",
