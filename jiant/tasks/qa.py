@@ -1020,15 +1020,21 @@ class SQuADTask(SpanPredictionTask):
                     model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
                 )
                 start_offset = 0
-            d["span_start"] = NumericField(
-                example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
-            )
-            d["span_end"] = NumericField(
-                example["answer_span"][1] + start_offset, label_namespace="span_end_labels"
-            )
+
+            if example["answer_span"][0] == -1 and example["answer_span"][1]==-1:
+                d["span_start"] = NumericField(start_offset)
+                d["span_end"] = NumericField(start_offset)
+                d["answer_str"] = MetadataField(inp[start_offset])
+            else:
+                d["span_start"] = NumericField(
+                    example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
+                )
+                d["span_end"] = NumericField(
+                    example["answer_span"][1] + start_offset, label_namespace="span_end_labels"
+                )
+                d["answer_str"] = MetadataField(example["answer_str"])
             d["start_offset"] = MetadataField(start_offset)
             d["passage_str"] = MetadataField(example["passage_str"])
-            d["answer_str"] = MetadataField(example["answer_str"])
             d["space_processed_token_map"] = MetadataField(example["space_processed_token_map"])
             return Instance(d)
 
@@ -1047,7 +1053,7 @@ class SQuADTask(SpanPredictionTask):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)["data"]
         skipped = 0
-        for ex in data:
+        for ex in data[:10]:
             for paragraph in ex["paragraphs"]:
                 passage = paragraph["context"]
                 doc_tokens = []
@@ -1066,7 +1072,6 @@ class SQuADTask(SpanPredictionTask):
                         is_impossible = qa["is_impossible"]
 
                     if is_impossible:
-                        continue
                         start_position = -1
                         end_position = -1
                         orig_answer_text = ""
@@ -1118,13 +1123,18 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
     ans_char_start, ans_char_end = answer_span
     while sentence[ans_char_start] == " ":
         ans_char_start += 1
-    answer_str = sentence[ans_char_start:ans_char_end].strip()
+
     space_tokens_with_spans = space_tokenize_with_spans(sentence)
-    ans_space_token_span = find_space_token_span(
-        space_tokens_with_spans=space_tokens_with_spans,
-        char_start=ans_char_start,
-        char_end=ans_char_end,
-    )
+    if ans_char_start == -1 and ans_char_end == -1:
+        answer_str = ""
+    else:
+        answer_str = sentence[ans_char_start:ans_char_end].strip()
+    
+        ans_space_token_span = find_space_token_span(
+            space_tokens_with_spans=space_tokens_with_spans,
+            char_start=ans_char_start,
+            char_end=ans_char_end,
+        )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
     space_to_actual_token_map = create_tokenization_alignment(
@@ -1137,14 +1147,20 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
     for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
         for actual_token in actual_token_ls:
             space_processed_token_map.append((actual_token, space_token, i))
-    ans_actual_token_span = (
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
-    )
+    
+    if ans_char_start == -1 and ans_char_end == -1:
+        ans_actual_token_span = (-1, -1)
+    else:
+        ans_actual_token_span = (
+            sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
+            sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
+        )
+    '''
     print("answer_str: ", answer_str)
     pred_char_span_start = space_processed_token_map[ans_actual_token_span[0]][2]
     pred_char_span_end = space_processed_token_map[ans_actual_token_span[1]][2]
     print("retok answer: ", sentence[pred_char_span_start:pred_char_span_end])
+    '''
     return {
         "detok_sent": sentence,
         "answer_token_span": ans_actual_token_span,
