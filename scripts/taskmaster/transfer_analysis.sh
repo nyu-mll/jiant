@@ -66,7 +66,7 @@ function hyperparameter_sweep_mix() {
     # Usage: hyperparameter_sweep <task> <batch_size>
     OVERRIDES="exp_name=roberta-large"
     OVERRIDES+=", target_tasks=$1, do_pretrain=0, batch_size=$2, reload_vocab=1, transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix,do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
-    for i in 2 3 4 #0 1 2 3 4 5 6 7 8 9
+    for i in 0 1 2 3 4 5 6 7 8 9
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1configmix$i"
         run_exp "jiant/config/taskmaster/base_roberta.conf" "${EXP_OVERRIDES}" $i
@@ -112,7 +112,7 @@ function run_intermediate_to_probing() {
 function run_intermediate_to_mixing() {
     # Using a pretrained intermediate task, use frozen encoder with mixing on an probing task.  ("Mixing" sheet)
     # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size>
-    OVERRIDES="exp_name=$1, run_name=$2"
+    OVERRIDES="exp_name=$1, run_name=$2mix"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix"
