@@ -1024,7 +1024,7 @@ class SQuADTask(SpanPredictionTask):
             if example["answer_span"][0] == -1 and example["answer_span"][1]==-1:
                 d["span_start"] = NumericField(start_offset)
                 d["span_end"] = NumericField(start_offset)
-                d["answer_str"] = MetadataField(inp[start_offset])
+                d["answer_str"] = MetadataField(inp[0])
             else:
                 d["span_start"] = NumericField(
                     example["answer_span"][0] + start_offset, label_namespace="span_start_labels"
@@ -1053,7 +1053,7 @@ class SQuADTask(SpanPredictionTask):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)["data"]
         skipped = 0
-        for ex in data[:10]:
+        for ex in data:
             for paragraph in ex["paragraphs"]:
                 passage = paragraph["context"]
                 doc_tokens = []
@@ -1155,12 +1155,10 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
             sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
             sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
         )
-    '''
     print("answer_str: ", answer_str)
     pred_char_span_start = space_processed_token_map[ans_actual_token_span[0]][2]
     pred_char_span_end = space_processed_token_map[ans_actual_token_span[1]][2]
     print("retok answer: ", sentence[pred_char_span_start:pred_char_span_end])
-    '''
     return {
         "detok_sent": sentence,
         "answer_token_span": ans_actual_token_span,
