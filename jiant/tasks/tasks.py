@@ -2223,7 +2223,7 @@ class TaggingTask(Task):
     def __init__(self, name, num_tags, **kw):
         super().__init__(name, **kw)
         assert num_tags > 0
-        self.num_tags = num_tags + 2  # add tags for unknown and padding
+        self.num_tags = num_tags
         self.scorer1 = CategoricalAccuracy()
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -2249,19 +2249,18 @@ class CCGTaggingTask(TaggingTask):
     """ CCG supertagging as a task.
         Using the supertags from CCGbank. """
 
-    def __init__(self, path, max_seq_len, name="ccg", **kw):
+    def __init__(self, path, max_seq_len, name, tokenizer_name, **kw):
         """ There are 1363 supertags in CCGBank without introduced token. """
-        self.path = path
-        super().__init__(name, 1363, **kw)
-        self.INTRODUCED_TOKEN = "1363"
         from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 
-        self.subword_tokenization = input_module_uses_pytorch_transformers(self._tokenizer_name)
+        subword_tokenization = input_module_uses_pytorch_transformers(tokenizer_name)
+        super().__init__(
+            name, 1363 + int(subword_tokenization), tokenizer_name=tokenizer_name, **kw
+        )
+        self.path = path
+        self.INTRODUCED_TOKEN = "1363"
+        self.subword_tokenization = subword_tokenization
         self.max_seq_len = max_seq_len
-        if self.subword_tokenization:
-            # the +1 is for the tokenization added token
-            self.num_tags = self.num_tags + 1
-
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
@@ -2269,22 +2268,24 @@ class CCGTaggingTask(TaggingTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """ Process a tagging task """
-        inputs = [
-            sentence_to_text_field(model_preprocessing_interface.boundary_token_fn(sent), indexers)
-            for sent in split[0]
-        ]
-        targs = [
-            TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
-            for sent in split[2]
-        ]
-        mask = [
-            MultiLabelField(mask, label_namespace="idx_tags", skip_indexing=True, num_labels=511)
-            for mask in split[3]
-        ]
-        instances = [
-            Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)
-        ]
+        """ Process a CCG tagging task """
+
+        def _make_instance(input1, input2, target, mask):
+            d = {}
+            d["inputs"] = sentence_to_text_field(
+                model_preprocessing_interface.boundary_token_fn(input1), indexers
+            )
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            d["targs"] = sentence_to_text_field(target, self.target_indexer)
+            d["mask"] = MultiLabelField(
+                mask, label_namespace="idx_tags", skip_indexing=True, num_labels=511
+            )
+            return Instance(d)
+
+        split = list(split)
+        split[1] = itertools.repeat(None)
+
+        instances = map(_make_instance, *split)
         return instances
 
     def load_data(self):
