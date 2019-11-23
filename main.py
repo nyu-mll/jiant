@@ -1,5 +1,4 @@
 import logging as log
-
 log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
 )  # noqa
@@ -7,7 +6,8 @@ log.basicConfig(
 import sys
 
 from jiant.__main__ import main
-
+#from heartrate import trace, files
+#trace(files=files.all)
 # Global notification handler, can be accessed outside main() during exception handling.
 EMAIL_NOTIFIER = None
 
