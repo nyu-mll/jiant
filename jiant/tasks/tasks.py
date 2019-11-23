@@ -2508,6 +2508,55 @@ class SpanClassificationTask(Task):
         return metrics
 
 
+@register_task("winogrande", rel_path="Winogrande/")
+@register_task("winogrande-xl", rel_path="Winogrande/")
+@register_task("winogrande-l", rel_path="Winogrande/")
+@register_task("winogrande-m", rel_path="Winogrande/")
+@register_task("winogrande-s", rel_path="Winogrande/")
+@register_task("winogrande-xs", rel_path="Winogrande/")
+class WinograndeTask(PairClassificationTask):
+    def __init__(self, path, max_seq_len, name, train_size="xl", **kw):
+        super().__init__(name, n_classes=3, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.train_size = train_size
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+    def load_data(self):
+        def _load_data(data_file):
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+            sent1s, sent2s, targs, idxs = [], [], [], []
+            for i, example in enumerate(data):
+                sent1, sent2 = example["sentence"].replace("_", example["option1"] + "_").split("_")
+                sent1s.append(
+                    tokenize_and_truncate(self._tokenizer_name, sent1.strip(), self.max_seq_len)
+                )
+                sent2s.append(
+                    tokenize_and_truncate(self._tokenizer_name, sent2.strip(), self.max_seq_len)
+                )
+                trg = example["answer"] == "1" if "label" in example else 0
+                targs.append(trg)
+                idxs.append(i)
+            return [sent1s, sent2s, targs, idxs]
+
+        self.train_data_text = _load_data(
+            os.path.join(self.path, "train_%s.jsonl" % self.train_size)
+        )
+        self.val_data_text = _load_data(os.path.join(self.path, "dev.jsonl"))
+        self.test_data_text = _load_data(os.path.join(self.path, "test.jsonl"))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.val_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[1]
+        )
+
+        log.info("\tFinished loading Winogrande data.")
+
+
 @register_task("commitbank", rel_path="CB/")
 class CommitmentTask(PairClassificationTask):
     """ NLI-formatted task detecting speaker commitment.
