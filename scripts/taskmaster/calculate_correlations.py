@@ -72,7 +72,7 @@ def calculate_correlation(df_target, df_probe, name):
 	plt.gcf().subplots_adjust(bottom=0.15)
 	plt.savefig('correlation_%s' % name)
 
-def get_results_dataframe(path, exp_type):
+def get_results_dataframe(path, exp_type, exclusion_criteria=lambda x: 0):
 	directories = [x[0] for x in os.walk(os.path.join(path, exp_type))]
 	directories = directories[1:]
 	pd_list = []
@@ -88,6 +88,9 @@ def get_results_dataframe(path, exp_type):
 			res_task = None
 			result_dict["%s_macro" % res["task_name"]] = res["macro_avg"]
 		pd_list.append(result_dict) 
+	res_list = pd.DataFrame(pd_list)
+	exclusion_list = [c for c in res_list.columns if not exclusion_criteria(c)]
+	res_list = res_list[exclusion_list]
 	return pd.DataFrame(pd_list)
 
 
@@ -96,12 +99,13 @@ def main():
     parser.add_argument("--path")
     args = parser.parse_args()
     path = args.path
+    exc_criteria = lambda x: "mix" in x 
     stilts_pd = get_results_dataframe(path, "stilts")
-    probe_pd = get_results_dataframe(path, "probing")
-    mix_pd = get_results_dataframe(path, "mixing")
-    import pdb; pdb.set_trace()
+    probe_pd = get_results_dataframe(path, "probing", exc_criteria)
+    exc_criteria_mix = lambda x: "mix" not in x
+    mix_pd = get_results_dataframe(path, "mixing", exc_criteria_mix)
     calculate_correlation(stilts_pd, probe_pd, "stilts_and_probe")
-    #calculate_correlation(stilts_pd, mix_pd, "stilts_and_mix") 
+    calculate_correlation(stilts_pd, mix_pd, "stilts_and_mix") 
 
 
 if __name__ == "__main__":
