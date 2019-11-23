@@ -611,7 +611,7 @@ def main(cl_arguments):
 
 if __name__ == "__main__":
     try:
-        main(sys.argv[1:])
+        main(sys.argv[1:]) 
         if EMAIL_NOTIFIER is not None:
             EMAIL_NOTIFIER(body="Run completed successfully!", prefix="")
     except BaseException as e:

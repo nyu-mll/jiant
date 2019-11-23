@@ -231,7 +231,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build embeddings.
     cove_layer = None
-    if args.input_module.startswith("bert-"):
+    if args.input_module.startswith("bert-") or args.flag_downloaded_model==1:
         from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 
         log.info(f"Using BERT model ({args.input_module}).")

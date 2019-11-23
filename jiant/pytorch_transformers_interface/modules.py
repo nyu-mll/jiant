@@ -253,15 +253,29 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
 
     def __init__(self, args):
         super(BertEmbedderModule, self).__init__(args)
+        log.info(f"args is in modules ({args.input_module}).")
 
-        self.model = pytorch_transformers.BertModel.from_pretrained(
-            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
-        )
+
+        if args.chinese != 'zh':
+            self.model = pytorch_transformers.BertModel.from_pretrained(
+                args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+            )
+        else:
+            self.model = pytorch_transformers.BertModel.from_pretrained(
+                '/Users/ljy/Work/Reseach_academy/github/jiant/bert-zh-pytorch/', cache_dir=self.cache_dir, output_hidden_states=True
+            )
         self.max_pos = self.model.config.max_position_embeddings
 
-        self.tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
-            args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
-        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        if args.chinese != 'zh':
+            self.tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
+                args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
+            )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+            
+        else:
+            self.tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
+                '/Users/ljy/Work/Reseach_academy/github/jiant/bert-zh-pytorch/', cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
+            )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        
         self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
