@@ -2537,7 +2537,7 @@ class WinograndeTask(PairClassificationTask):
                 sent2s.append(
                     tokenize_and_truncate(self._tokenizer_name, sent2.strip(), self.max_seq_len)
                 )
-                trg = example["answer"] == "1" if "label" in example else 0
+                trg = int(example["answer"] == "1") if "answer" in example else 0
                 targs.append(trg)
                 idxs.append(i)
             return [sent1s, sent2s, targs, idxs]
