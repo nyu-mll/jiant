@@ -3,9 +3,9 @@ channels:
     - pytorch
 dependencies:
     - python=3.6
-    - pytorch=1.0.0
+    - pytorch=1.1.0
     - torchvision=0.2.1
-    - numpy=1.14.5
+    - numpy=1.15.0
     - scikit-learn=0.19.1
     - pandas=0.23.0
     # bokeh for plotting
