@@ -22,7 +22,7 @@ from jiant.allennlp_mods.span_metrics import (
     ExactMatchSpanMetric,
 )
 
-from jiant.utils.data_loaders import tokenize_and_truncate
+from jiant.utils.data_loaders import tokenize_and_truncate, tokenize_and_stride
 from jiant.utils.tokenizers import MosesTokenizer
 
 from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask
@@ -708,6 +708,10 @@ class QAMRTask(SpanPredictionTask):
                 moses=moses,
                 tokenizer_name=self.tokenizer_name,
             )
+            #tok_passage, doc_strides = tokenize_and_stride(remapped_result["detok_sent"])
+
+            #for tok_sent in tok_passage:
+            
             example_list.append(
                 {
                     "passage": self._process_sentence(remapped_result["detok_sent"]),
@@ -1095,6 +1099,8 @@ class SQuADTask(SpanPredictionTask):
                     if (remapped_result["answer_token_span"][1] >= self.max_seq_len):
                         skipped += 1
                         continue  # skipe for now
+
+                    
                     example_list.append(
                         {
                             "passage": self._process_sentence(remapped_result["detok_sent"]),
