@@ -52,7 +52,8 @@ def calculate_correlation(df_target, df_probe, name):
 	import numpy as np
 	figure = plt.figure()
 	corr = df_probe_with_target.corr()
-	fig, ax = plt.subplots()
+	import pdb; pdb.set_trace()
+	fig, ax = plt.subplots(figsize=(20, 20))
 	im = ax.imshow(corr)
 	cbar = ax.figure.colorbar(im, ax=ax)
 	ax.set_xticks(np.arange(len(x_axis_values)))
@@ -60,8 +61,8 @@ def calculate_correlation(df_target, df_probe, name):
 	# ... and label them with the respective list entries
 	ax.set_xticklabels(x_axis_values)
 	ax.set_yticklabels(y_axis_values)
-	ax.tick_params(axis="x", labelsize=7)
-	ax.tick_params(axis="y", labelsize=7)
+	ax.tick_params(axis="x", labelsize=14)
+	ax.tick_params(axis="y", labelsize=14)
 
 	# Rotate the tick labels and set their alignment.
 	plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
@@ -69,7 +70,7 @@ def calculate_correlation(df_target, df_probe, name):
 	# Loop over data dimensions and create text annotations.
 
 	ax.set_title("Correlation between %s" % name)
-	plt.gcf().subplots_adjust(bottom=0.15)
+	plt.tight_layout()
 	plt.savefig('correlation_%s' % name)
 
 def get_results_dataframe(path, exp_type, exclusion_criteria=lambda x: 0):
@@ -103,9 +104,9 @@ def main():
     stilts_pd = get_results_dataframe(path, "stilts")
     probe_pd = get_results_dataframe(path, "probing", exc_criteria)
     exc_criteria_mix = lambda x: "mix" not in x
-    mix_pd = get_results_dataframe(path, "mixing", exc_criteria_mix)
+    #mix_pd = get_results_dataframe(path, "mixing", exc_criteria_mix)
     calculate_correlation(stilts_pd, probe_pd, "stilts_and_probe")
-    calculate_correlation(stilts_pd, mix_pd, "stilts_and_mix") 
+    #calculate_correlation(stilts_pd, mix_pd, "stilts_and_mix") 
 
 
 if __name__ == "__main__":
