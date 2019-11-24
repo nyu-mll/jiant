@@ -82,7 +82,10 @@ def read_tsv(path):
     result_lines = read_file_lines(path)
     results = []
     for line in result_lines:
-        task_name, metrics = line.strip().split("\t")
+        line = line.strip()
+        if not line:
+            continue
+        task_name, metrics = line.split(maxsplit=1)
         single_result = {"task_name": task_name}
         for raw_metrics in metrics.split(", "):
             metric_name, metric_value = raw_metrics.split(": ")
