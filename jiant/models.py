@@ -998,11 +998,11 @@ class MultiTaskModel(nn.Module):
 
             # space_processed_token_map is a list of tuples
             #   (space_token, processed_token (e.g. BERT), space_token_index)
-            # The assumption is that each space_token corresponds to multiple processed_tokens
-            # After we get the corresponding start/end space_token_indices, we can do " ",join
-            #   to get the corresponding string that is definitely within the original input
+            # The assumption is that each space_token corresponds to multiple processed_tokens.
+            # After we get the corresponding start/end space_token_indices, we can do " ".join
+            #   to get the corresponding string that is definitely within the original input.
             # One constraint here is that our predictions can only go up to a the granularity of space_tokens.
-            # This is not so bad because SQuAD-style scripts also remove punctuation
+            # This is not so bad because SQuAD-style scripts also remove punctuation.
             pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
             pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
             pred_str_list.append(
@@ -1011,6 +1011,7 @@ class MultiTaskModel(nn.Module):
                 ).strip()
             )
         task.update_metrics(pred_str_list=pred_str_list, gold_str_list=batch["answer_str"])
+
         if predict:
             out["preds"] = {
                 "span_start": pred_span_start,
@@ -1115,30 +1116,22 @@ class MultiTaskModel(nn.Module):
         # batch[inputs] only has one item
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
-        sent_encoder = self.sent_encoder
+        # Note: we are assuming there is one beginning and one ending token, when that no longer
+        # holds, we need to refactor this by adjusting mask according to boundry function
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
-        if not isinstance(sent_encoder, BiLMEncoder):
-            sent, mask = sent_encoder(batch["inputs"], task)
-            sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
-            sent = sent[:, 1:-1, :]
-            hid2tag = self._get_classifier(task)
-            logits = hid2tag(sent)
-            logits = logits.view(b_size * seq_len, -1)
-            out["logits"] = logits
-            targs = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
+        sent, mask = self.sent_encoder(batch["inputs"], task)
+        hid2tag = self._get_classifier(task)
+        logits = hid2tag(sent[:, 1:-1, :]).view(b_size * seq_len, -1)
+        out["logits"] = logits
+        targs = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
         if "mask" in batch:
             # Prevent backprop for tags generated for tokenization-introduced tokens
             # such as word boundaries
-            mask = batch["mask"]
-            batch_mask = [mask[i][:seq_len] for i in range(b_size)]
-            batch_mask = torch.stack(batch_mask)
-            keep_idxs = torch.nonzero(batch_mask.view(-1).data).squeeze()
+            batch_mask = batch["mask"][:, :seq_len]
+            keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
-        pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
-        out["loss"] = format_output(
-            F.cross_entropy(logits, targs, ignore_index=pad_idx), self._cuda_device
-        )
+        out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
         task.scorer1(logits, targs)
         return out
 

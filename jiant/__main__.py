@@ -467,11 +467,8 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         to_train: List of tuples of (name, weight) of trainable parameters
 
     """
-
+    load_model_state(model, ckpt_path, cuda_devices, skip_task_models=[task.name], strict=strict)
     if args.transfer_paradigm == "finetune":
-        load_model_state(
-            model, ckpt_path, cuda_devices, skip_task_models=[task.name], strict=strict
-        )
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     else:  # args.transfer_paradigm == "frozen":

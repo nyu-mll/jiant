@@ -327,7 +327,7 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
         self._sep_id = self.tokenizer.convert_tokens_to_ids("</s>")
         self._cls_id = self.tokenizer.convert_tokens_to_ids("<s>")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
-        self._pad_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 

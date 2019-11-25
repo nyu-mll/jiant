@@ -9,7 +9,6 @@ import json
 import numpy as np
 import pandas as pd
 from allennlp.data import vocabulary
-import collections
 
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.utils.retokenize import realign_spans
@@ -310,29 +309,3 @@ def tokenize_and_truncate(tokenizer_name, sent, max_seq_len):
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
         return sent[:max_seq_len]
-
-
-
-def tokenize_and_stride(tokenizer_name, sent, max_seq_len, stride=128):
-    """ Truncate and tokenize a sentence into multiple sentences """
-    if stride > max_seq_len:
-        return tokenizer.tokenize(sent)[:max_seq_len]
-
-    doc_tokens = tokenizer.tokenize(sent)
-  
-    _DocSpan = collections.namedtuple(  # pylint: disable=invalid-name
-            "DocSpan", ["start", "length"])
-    doc_spans = []
-
-    start_offset = 0
-    sentences = []
-    while start_offset < len(all_doc_tokens):
-        length = len(all_doc_tokens) - start_offset
-        if length > max_tokens_for_doc:
-            length = max_tokens_for_doc
-        doc_spans.append(_DocSpan(start=start_offset, length=length))
-        sentences.append(doc_tokens[start_offset:length])
-        if start_offset + length == len(all_doc_tokens):
-            break
-        start_offset += min(length, doc_stride)
-    return sentences, doc_spans
