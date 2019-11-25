@@ -1036,6 +1036,7 @@ class CosmosQATask(MultipleChoiceTask):
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
 
+
 @register_task("squad", rel_path="SQuAD/")
 class SQuADTask(SpanPredictionTask):
     """
@@ -1117,7 +1118,7 @@ class SQuADTask(SpanPredictionTask):
                 start_offset = 0
 
             # if no answer,use CLS/<s> as answer.
-            if example["answer_span"][0] == -1 and example["answer_span"][1]==-1:
+            if example["answer_span"][0] == -1 and example["answer_span"][1] == -1:
                 d["span_start"] = NumericField(0, label_namespace="span_start_labels")
                 d["span_end"] = NumericField(0, label_namespace="span_end_labels")
                 d["answer_str"] = MetadataField(inp[0])
@@ -1132,7 +1133,7 @@ class SQuADTask(SpanPredictionTask):
             d["start_offset"] = MetadataField(start_offset)
             d["passage_str"] = MetadataField(example["passage_str"])
             d["space_processed_token_map"] = MetadataField(example["space_processed_token_map"])
-            d["tokens"]=MetadataField(example["tokens"])
+            d["tokens"] = MetadataField(example["tokens"])
             return Instance(d)
 
         instances = map(_make_instance, split)
@@ -1181,7 +1182,7 @@ class SQuADTask(SpanPredictionTask):
                         answer_offset = answer["answer_start"]
                         answer_length = len(orig_answer_text)
                         start_position = answer_offset
-                        end_position = answer_offset + answer_length 
+                        end_position = answer_offset + answer_length
 
                     remapped_result = squad_map_passage_and_answer(
                         sentence=passage,
@@ -1189,11 +1190,10 @@ class SQuADTask(SpanPredictionTask):
                         moses=moses,
                         tokenizer_name=self.tokenizer_name,
                     )
-                    if (remapped_result["answer_token_span"][1] >= self.max_seq_len):
+                    if remapped_result["answer_token_span"][1] >= self.max_seq_len:
                         skipped += 1
                         continue  # skip for now
 
-                    
                     example_list.append(
                         {
                             "passage": self._process_sentence(remapped_result["detok_sent"]),
@@ -1204,7 +1204,7 @@ class SQuADTask(SpanPredictionTask):
                             "space_processed_token_map": remapped_result[
                                 "space_processed_token_map"
                             ],
-                            "tokens":remapped_result["space_map"]
+                            "tokens": remapped_result["space_map"],
                         }
                     )
         print("total skipped: ", skipped)
@@ -1229,7 +1229,7 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
         answer_str = ""
     else:
         answer_str = sentence[ans_char_start:ans_char_end].strip()
-    
+
         ans_space_token_span = find_space_token_span(
             space_tokens_with_spans=space_tokens_with_spans,
             char_start=ans_char_start,
@@ -1247,7 +1247,7 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
     for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
         for actual_token in actual_token_ls:
             space_processed_token_map.append((actual_token, space_token, i))
-    
+
     if ans_char_start == -1 and ans_char_end == -1:
         ans_actual_token_span = (-1, -1)
     else:
@@ -1260,5 +1260,5 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
         "answer_token_span": ans_actual_token_span,
         "answer_str": answer_str,
         "space_processed_token_map": space_processed_token_map,
-        "space_map":space_to_actual_token_map,
+        "space_map": space_to_actual_token_map,
     }
