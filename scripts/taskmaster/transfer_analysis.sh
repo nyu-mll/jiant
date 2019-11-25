@@ -52,10 +52,37 @@ function run_exp() {
     python main.py "${args[@]}"
 }
 
+declare -A TASK_TYPE_MAP
+TASK_TYPE_MAP["edges-ner-ontonotes"]="edge"
+TASK_TYPE_MAP["edges-srl-ontonotes"]="edge"
+TASK_TYPE_MAP["edges-coref-ontonotes"]="edge"
+TASK_TYPE_MAP["edges-spr1"]="edge"
+TASK_TYPE_MAP["edges-spr2"]="edge"
+TASK_TYPE_MAP["edges-dpr"]="edge"
+TASK_TYPE_MAP["edges-rel-semeval"]="edge"
+TASK_TYPE_MAP["edges-pos-ontonotes"]="edge"
+TASK_TYPE_MAP["edges-nonterminal-ontonotes"]="edge"
+TASK_TYPE_MAP["edges-dep-ud-ewt"]="edge"
+TASK_TYPE_MAP["se-probing-word-content"]="regular"
+TASK_TYPE_MAP["se-probing-tree-depth"]="regular"
+TASK_TYPE_MAP["se-probing-top-constituents"]="regular"
+TASK_TYPE_MAP["se-probing-bigram-shift"]="regular"
+TASK_TYPE_MAP["se-probing-past-present"]="regular"
+TASK_TYPE_MAP["se-probing-subj-number"]="regular"
+TASK_TYPE_MAP["se-probing-obj-number"]="regular"
+TASK_TYPE_MAP["se-probing-odd-man-out"]="regular"
+TASK_TYPE_MAP["se-probing-coordination-inversion"]="regular"
+TASK_TYPE_MAP["se-probing-sentence-length"]="regular"
+TASK_TYPE_MAP["acceptability-wh"]="regular"
+TASK_TYPE_MAP["acceptability-def"]="regular"
+TASK_TYPE_MAP["acceptability-conj"]="regular"
+TASK_TYPE_MAP["acceptability-eos"]="regular"
+TASK_TYPE_MAP["cola"]="regular"
+
+
 #########################################
 # Hyperparameter tuning experiments
 #########################################
-
 function hyperparameter_sweep() {
     # Do hyerparameter tuning search for the parameters
     # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
@@ -64,7 +91,13 @@ function hyperparameter_sweep() {
     for i in 0 1 2 3 4 5 6 7
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1config$i"
-        run_exp "jiant/config/taskmaster/base_roberta.conf" "${EXP_OVERRIDES}" $i $3
+        TASK_TYPE=${TASK_TYPE_MAP[$1]}
+        if [ ${TASK_TYPE} == "edge" ]; then
+            BASE_CONFIG_FILE="base_edgeprobe"
+        elif [ ${TASK_TYPE} == "regular" ]; then
+            BASE_CONFIG_FILE="base_roberta"
+        fi
+        run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${EXP_OVERRIDES}" $i $3
     done
 
 }
@@ -77,7 +110,13 @@ function hyperparameter_sweep_mix() {
     for i in 0 1 2 3 4 5 6 7 8 9
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1configmix$i"
-        run_exp "jiant/config/taskmaster/base_roberta.conf" "${EXP_OVERRIDES}" $i $3
+        TASK_TYPE=${TASK_TYPE_MAP[$1]}
+        if [ ${TASK_TYPE} == "edge" ]; then
+            BASE_CONFIG_FILE="base_edgeprobe"
+        elif [ ${TASK_TYPE} == "regular" ]; then
+            BASE_CONFIG_FILE="base_roberta"
+        fi
+        run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${EXP_OVERRIDES}" $i $3
     done
 
 }
@@ -112,7 +151,13 @@ function run_intermediate_to_probing() {
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
-    run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4} ${6}
+    TASK_TYPE=${TASK_TYPE_MAP[$2]}
+    if [ ${TASK_TYPE} == "edge" ]; then
+        BASE_CONFIG_FILE="base_edgeprobe"
+    elif [ ${TASK_TYPE} == "regular" ]; then
+        BASE_CONFIG_FILE="base_roberta"
+    fi
+    run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${OVERRIDES}" ${4} ${6}
 }
 
 function run_intermediate_to_mixing() {
