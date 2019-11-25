@@ -2603,55 +2603,6 @@ class SpanClassificationTask(Task):
         return metrics
 
 
-@register_task("winogrande", rel_path="Winogrande/")
-@register_task("winogrande-xl", rel_path="Winogrande/")
-@register_task("winogrande-l", rel_path="Winogrande/")
-@register_task("winogrande-m", rel_path="Winogrande/")
-@register_task("winogrande-s", rel_path="Winogrande/")
-@register_task("winogrande-xs", rel_path="Winogrande/")
-class WinograndeTask(PairClassificationTask):
-    def __init__(self, path, max_seq_len, name, train_size="xl", **kw):
-        super().__init__(name, n_classes=3, **kw)
-        self.path = path
-        self.max_seq_len = max_seq_len
-        self.train_size = train_size
-
-        self.train_data_text = None
-        self.val_data_text = None
-        self.test_data_text = None
-
-    def load_data(self):
-        def _load_data(data_file):
-            data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-            sent1s, sent2s, targs, idxs = [], [], [], []
-            for i, example in enumerate(data):
-                sent1, sent2 = example["sentence"].replace("_", example["option1"] + "_").split("_")
-                sent1s.append(
-                    tokenize_and_truncate(self._tokenizer_name, sent1.strip(), self.max_seq_len)
-                )
-                sent2s.append(
-                    tokenize_and_truncate(self._tokenizer_name, sent2.strip(), self.max_seq_len)
-                )
-                trg = int(example["answer"] == "1") if "answer" in example else 0
-                targs.append(trg)
-                idxs.append(i)
-            return [sent1s, sent2s, targs, idxs]
-
-        self.train_data_text = _load_data(
-            os.path.join(self.path, "train_%s.jsonl" % self.train_size)
-        )
-        self.val_data_text = _load_data(os.path.join(self.path, "dev.jsonl"))
-        self.test_data_text = _load_data(os.path.join(self.path, "test.jsonl"))
-        self.sentences = (
-            self.train_data_text[0]
-            + self.val_data_text[0]
-            + self.train_data_text[1]
-            + self.val_data_text[1]
-        )
-
-        log.info("\tFinished loading Winogrande data.")
-
-
 @register_task("commitbank", rel_path="CB/")
 class CommitmentTask(PairClassificationTask):
     """ NLI-formatted task detecting speaker commitment.
@@ -3525,3 +3476,98 @@ class SciTailTask(PairClassificationTask):
             + self.val_data_text[1]
         )
         log.info("\tFinished loading SciTail")
+
+
+@register_task("winogrande", rel_path="Winogrande/")
+@register_task("winogrande-xl", rel_path="Winogrande/")
+@register_task("winogrande-l", rel_path="Winogrande/")
+@register_task("winogrande-m", rel_path="Winogrande/")
+@register_task("winogrande-s", rel_path="Winogrande/")
+@register_task("winogrande-xs", rel_path="Winogrande/")
+class WinograndeTask(MultipleChoiceTask):
+    def __init__(self, path, max_seq_len, name, train_size="xl", **kw):
+        super().__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.train_size = train_size
+        self.n_choices = 2
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+
+    def load_data(self):
+        def _load_data(data_file):
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+            questions, choices, labels, idxs = [], [], [], []
+            for i, example in enumerate(data):
+                question = tokenize_and_truncate(
+                    self._tokenizer_name, example["sentence"], self.max_seq_len
+                )
+                choice = [
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["option1"], self.max_seq_len
+                    ),
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["option2"], self.max_seq_len
+                    ),
+                ]
+                questions.append(question)
+                choices.append(choice)
+                labels.append(int(example["answer"]) - 1)
+                idxs.append(example["qID"])
+            return [questions, choices, labels, idxs]
+
+        self.train_data_text = _load_data(
+            os.path.join(self.path, "train_%s.jsonl" % self.train_size)
+        )
+        self.val_data_text = _load_data(os.path.join(self.path, "dev.jsonl"))
+        self.test_data_text = _load_data(os.path.join(self.path, "test.jsonl"))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.val_data_text[0]
+            + self.train_data_text[1][0]
+            + self.train_data_text[1][1]
+            + self.val_data_text[1][0]
+            + self.val_data_text[1][1]
+        )
+
+        log.info("\tFinished loading Winogrande data.")
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+
+        def _make_instance(question, choices, label, idx):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(question))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                )
+            for choice_idx, choice in enumerate(choices):
+                inp = (
+                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
+                )
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = MetadataField(idx)
+            return Instance(d)
+
+        split = list(split)
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.scorer1.get_metric(reset)
+        return {"accuracy": acc}
