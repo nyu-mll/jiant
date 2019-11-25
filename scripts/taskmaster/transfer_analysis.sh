@@ -41,7 +41,7 @@ function run_exp() {
     fi
 
     # Add random seed
-    OVERRIDES+=", random_seed=${RANDOM_SEED}}"
+    OVERRIDES+=", random_seed=${RANDOM_SEED}"
 
     # Construct args
     declare -a args
