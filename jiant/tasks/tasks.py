@@ -3519,7 +3519,7 @@ class WinograndeTask(MultipleChoiceTask):
                 ]
                 questions.append(question)
                 choices.append(choice)
-                labels.append(int(example["answer"]) - 1)
+                labels.append(int(example["answer"] if "answer" in example else "1") - 1)
                 idxs.append(example["qID"])
             return [questions, choices, labels, idxs]
 
