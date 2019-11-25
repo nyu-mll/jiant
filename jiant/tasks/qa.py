@@ -1025,9 +1025,10 @@ class SQuADTask(SpanPredictionTask):
                 )
                 start_offset = 0
 
+            # if no answer,use CLS/<s> as answer.
             if example["answer_span"][0] == -1 and example["answer_span"][1]==-1:
-                d["span_start"] = NumericField(start_offset)
-                d["span_end"] = NumericField(start_offset)
+                d["span_start"] = NumericField(0, label_namespace="span_start_labels")
+                d["span_end"] = NumericField(0, label_namespace="span_end_labels")
                 d["answer_str"] = MetadataField(inp[0])
             else:
                 d["span_start"] = NumericField(
@@ -1098,10 +1099,8 @@ class SQuADTask(SpanPredictionTask):
                         tokenizer_name=self.tokenizer_name,
                     )
                     if (remapped_result["answer_token_span"][1] >= self.max_seq_len):
-                        #remapped_result["answer_token_span"]=(-1, -1)
-                        #remapped_result["answer_str"]=""
                         skipped += 1
-                        continue  # skipe for now
+                        continue  # skip for now
 
                     
                     example_list.append(
@@ -1133,7 +1132,6 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
     ans_char_start, ans_char_end = answer_span
     while sentence[ans_char_start] == " " and (ans_char_start != -1):
         ans_char_start += 1
-        #ans_char_end += 1
 
     space_tokens_with_spans = space_tokenize_with_spans(sentence)
     if ans_char_start == -1 and ans_char_end == -1:
@@ -1151,8 +1149,6 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
     space_to_actual_token_map = create_tokenization_alignment(
         tokens=sentence.split(), tokenizer_name=tokenizer_name
     )
-    #print("space_to_actual_token_map: ", space_to_actual_token_map)
-    #print("space_tokens_with_spans: ", space_tokens_with_spans)
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
@@ -1168,11 +1164,6 @@ def squad_map_passage_and_answer(sentence, answer_span, moses, tokenizer_name):
             sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
             sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
         )
-    #print("answer_str: ", answer_str)
-    #pred_char_span_start = space_processed_token_map[ans_actual_token_span[0]][2]
-    #pred_char_span_end = space_processed_token_map[ans_actual_token_span[1]][2]
-    #print("retok answer: ", space_to_actual_token_map[pred_char_span_start:pred_char_span_end])
-    #print("retok : ", sentence[pred_char_span_start:pred_char_span_end])
     return {
         "detok_sent": sentence,
         "answer_token_span": ans_actual_token_span,
