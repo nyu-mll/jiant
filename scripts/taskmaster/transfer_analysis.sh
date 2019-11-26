@@ -360,7 +360,7 @@ function ez_first_intermediate_exp() {
 
 function ez_run_intermediate_to_target_task() {
     # Usage: ez_run_intermediate_to_target_task <1:run_num> <2:intermediate_task> <3:target_task> <4:directory_to_project_dir>
-    run_intermediate_to_target_task ${2} ${3} ${4} ${TARGET_HPARAM[${3}]} ${TARGET_BSIZE[${3}]} ${SEED_DICT[run${1}_target]}
+    run_intermediate_to_target_task ${2} ${3} ${4} ${TARGET_HPARAM[${3}]} ${TARGET_BSIZE[${3}]} ${SEED_DICT[run${1}_stilts]}
 }
 
 function ez_run_intermediate_to_probing() {
