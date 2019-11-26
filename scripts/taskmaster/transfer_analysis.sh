@@ -325,7 +325,7 @@ function run_intermediate_to_probing() {
     # Using a pretrained intermediate task, finetune on an probing task.  ("Probing" sheet)
     # Usage: run_intermediate_to_probing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed>
     OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     TASK_TYPE=${TASK_TYPE_MAP[$2]}
