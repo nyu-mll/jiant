@@ -156,6 +156,7 @@ def build_trainer(
             "max_epochs": params["max_epochs"],
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
+            "accumulation_steps": params["accumulation_steps"],
         }
     )
     assert (
@@ -184,6 +185,7 @@ class SamplingMultiTaskTrainer:
         max_epochs=-1,
         dec_val_scale=100,
         training_data_fraction=1.0,
+        accumulation_steps=1,
     ):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -241,6 +243,7 @@ class SamplingMultiTaskTrainer:
         self._training_data_fraction = training_data_fraction
         self._task_infos = None
         self._metric_infos = None
+        self._accumulation_steps = accumulation_steps
 
         self._log_interval = 10  # seconds
 
@@ -594,7 +597,6 @@ class SamplingMultiTaskTrainer:
             for batch in itertools.islice(tr_generator, 1):
                 n_batches_since_val += 1
                 total_batches_trained += 1
-                optimizer.zero_grad()
                 output_dict = self._forward(batch, task=task)
                 assert_for_log(
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
@@ -603,6 +605,7 @@ class SamplingMultiTaskTrainer:
                     output_dict, "loss", self._cuda_device
                 )  # optionally scale loss
                 loss *= scaling_weights[task.name]
+                loss /= self._accumulation_steps
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
@@ -610,8 +613,11 @@ class SamplingMultiTaskTrainer:
                 # Gradient regularization and application
                 if self._grad_norm:
                     clip_grad_norm_(self._model.parameters(), self._grad_norm)
-                optimizer.step()
                 n_step += 1  # update per batch
+
+                if n_step % self._accumulation_steps == 0:
+                    optimizer.step()
+                    optimizer.zero_grad()
 
                 # step scheduler if it's not ReduceLROnPlateau
                 if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
