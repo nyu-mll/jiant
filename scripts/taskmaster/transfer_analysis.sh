@@ -79,6 +79,183 @@ TASK_TYPE_MAP["acceptability-conj"]="regular"
 TASK_TYPE_MAP["acceptability-eos"]="regular"
 TASK_TYPE_MAP["cola"]="regular"
 
+declare -A INTERM_HPARAM=(
+  ["sst"]=7
+  ["socialiqa"]=0
+  ["qqp"]=5
+  ["mnli"]=6
+  ["scitail"]=4
+  ["qasrl"]=7
+  ["qamr"]=3
+  ["squad"]=5
+  ["cosmosqa"]=6
+  ["hellaswag"]=6
+  ["commonsenseqa"]=6
+)
+declare -A INTERM_BSIZE=(
+  ["sst"]=64
+  ["socialiqa"]=4
+  ["qqp"]=8
+  ["mnli"]=4
+  ["scitail"]=4
+  ["qasrl"]=4
+  ["qamr"]=4
+  ["squad"]=4
+  ["cosmosqa"]=4
+  ["hellaswag"]=4
+  ["commonsenseqa"]=4
+)
+declare -A TARGET_HPARAM=(
+  ["rte"]=4
+  ["boolq"]=7
+  ["commitbank"]=2
+  ["copa"]=5
+  ["multirc"]=0
+  ["record"]=2
+  ["wic"]=3
+  ["wsc"]=5
+  ["commonsenseqa"]=6
+  ["cosmos"]=7
+)
+declare -A TARGET_BSIZE=(
+  ["rte"]=4
+  ["boolq"]=4
+  ["commitbank"]=4
+  ["copa"]=32
+  ["multirc"]=4
+  ["record"]=4
+  ["wic"]=32
+  ["wsc"]=32
+  ["commonsenseqa"]=4
+  ["cosmos"]=4
+)
+declare -A PROBING_HPARAM=(
+  ["edges-ner-ontonotes"]=0
+  ["edges-srl-ontonotes"]=0
+  ["edges-coref-ontonotes"]=2
+  ["edges-spr1"]=1
+  ["edges-spr2"]=5
+  ["edges-dpr"]=5
+  ["edges-rel-semeval"]=1
+  ["se-probing-word-content"]=0
+  ["se-probing-tree-depth"]=1
+  ["se-probing-top-constituents"]=0
+  ["se-probing-bigram-shift"]=2
+  ["se-probing-past-present"]=2
+  ["se-probing-subj-number"]=0
+  ["se-probing-obj-number"]=4
+  ["se-probing-odd-man-out"]=3
+  ["se-probing-coordination-inversion"]=0
+  ["edges-pos-ontonotes"]=1
+  ["edges-nonterminal-ontonotes"]=4
+  ["edges-dep-ud-ewt"]=0
+  ["se-probing-sentence-length"]=0
+  ["acceptability-wh"]=3
+  ["acceptability-def"]=0
+  ["acceptability-conj"]=1
+  ["acceptability-eos"]=3
+  ["cola"]=5
+)
+declare -A PROBING_BSIZE=(
+  ["edges-ner-ontonotes"]=8
+  ["edges-srl-ontonotes"]=8
+  ["edges-coref-ontonotes"]=8
+  ["edges-spr1"]=32
+  ["edges-spr2"]=4
+  ["edges-dpr"]=4
+  ["edges-rel-semeval"]=4
+  ["se-probing-word-content"]=64
+  ["se-probing-tree-depth"]=64
+  ["se-probing-top-constituents"]=64
+  ["se-probing-bigram-shift"]=64
+  ["se-probing-past-present"]=64
+  ["se-probing-subj-number"]=64
+  ["se-probing-obj-number"]=64
+  ["se-probing-odd-man-out"]=64
+  ["se-probing-coordination-inversion"]=64
+  ["edges-pos-ontonotes"]=8
+  ["edges-nonterminal-ontonotes"]=8
+  ["edges-dep-ud-ewt"]=4
+  ["se-probing-sentence-length"]=64
+  ["acceptability-wh"]=4
+  ["acceptability-def"]=4
+  ["acceptability-conj"]=4
+  ["acceptability-eos"]=4
+  ["cola"]=4
+)
+declare -A MIXING_HPARAM=(
+  ["edges-ner-ontonotes"]=1
+  ["edges-srl-ontonotes"]=0
+  ["edges-coref-ontonotes"]=1
+  ["edges-spr1"]=1
+  ["edges-spr2"]=1
+  ["edges-dpr"]=0
+  ["edges-rel-semeval"]=1
+  ["se-probing-word-content"]=9
+  ["se-probing-tree-depth"]=9
+  ["se-probing-top-constituents"]=8
+  ["se-probing-bigram-shift"]=9
+  ["se-probing-past-present"]=2
+  ["se-probing-subj-number"]=9
+  ["se-probing-obj-number"]=9
+  ["se-probing-odd-man-out"]=9
+  ["se-probing-coordination-inversion"]=1
+  ["edges-pos-ontonotes"]=8
+  ["edges-nonterminal-ontonotes"]=9
+  ["edges-dep-ud-ewt"]=8
+  ["se-probing-sentence-length"]=9
+  ["acceptability-wh"]=8
+  ["acceptability-def"]=8
+  ["acceptability-conj"]=8
+  ["acceptability-eos"]=7
+  ["cola"]=9
+)
+declare -A MIXING_BSIZE=(
+  ["edges-ner-ontonotes"]=16
+  ["edges-srl-ontonotes"]=16
+  ["edges-coref-ontonotes"]=16
+  ["edges-spr1"]=16
+  ["edges-spr2"]=16
+  ["edges-dpr"]=16
+  ["edges-rel-semeval"]=16
+  ["se-probing-word-content"]=128
+  ["se-probing-tree-depth"]=128
+  ["se-probing-top-constituents"]=128
+  ["se-probing-bigram-shift"]=128
+  ["se-probing-past-present"]=128
+  ["se-probing-subj-number"]=128
+  ["se-probing-obj-number"]=128
+  ["se-probing-odd-man-out"]=128
+  ["se-probing-coordination-inversion"]=128
+  ["edges-pos-ontonotes"]=128
+  ["edges-nonterminal-ontonotes"]=128
+  ["edges-dep-ud-ewt"]=128
+  ["se-probing-sentence-length"]=16
+  ["acceptability-wh"]=4
+  ["acceptability-def"]=4
+  ["acceptability-conj"]=4
+  ["acceptability-eos"]=4
+  ["cola"]=16
+)
+declare -A SEED_DICT=(
+  ["run1_intermediate"]=1111001
+  ["run1_stilts"]=1111002
+  ["run1_mixing"]=1111003
+  ["run1_probing"]=1111003
+  ["run2_intermediate"]=523821
+  ["run2_stilts"]=523822
+  ["run2_mixing"]=523823
+  ["run2_probing"]=523823
+  ["run3_intermediate"]=921
+  ["run3_stilts"]=922
+  ["run3_mixing"]=923
+  ["run3_probing"]=923
+)
+export TM_TARGET_TASK_NAMES=(rte boolq commitbank copa multirc record wic wsc commonsenseqa cosmos)
+export TM_PROBING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
+export TM_MIXING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
+
+
 
 #########################################
 # Hyperparameter tuning experiments
@@ -141,14 +318,14 @@ function run_intermediate_to_target_task() {
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
-    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4} ${5}
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4} ${6}
 }
 
 function run_intermediate_to_probing() {
     # Using a pretrained intermediate task, finetune on an probing task.  ("Probing" sheet)
     # Usage: run_intermediate_to_probing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed>
     OVERRIDES="exp_name=$1, run_name=$2"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/$1/model_*.best.th, pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     TASK_TYPE=${TASK_TYPE_MAP[$2]}
@@ -169,4 +346,29 @@ function run_intermediate_to_mixing() {
     OVERRIDES+=", transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4} ${6}
+}
+
+
+#########################################
+# EASY Functions
+#########################################
+
+function ez_first_intermediate_exp() {
+    # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
+    first_intermediate_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]}
+}
+
+function ez_run_intermediate_to_target_task() {
+    # Usage: ez_run_intermediate_to_target_task <1:run_num> <2:intermediate_task> <3:target_task> <4:directory_to_project_dir>
+    run_intermediate_to_target_task ${2} ${3} ${4} ${TARGET_HPARAM[${3}]} ${TARGET_BSIZE[${3}]} ${SEED_DICT[run${1}_stilts]}
+}
+
+function ez_run_intermediate_to_probing() {
+    # Usage: ez_run_intermediate_to_probing <1:run_num> <2:intermediate_task> <3:probing_task> <4:directory_to_project_dir>
+    run_intermediate_to_probing ${2} ${3} ${4} ${PROBING_HPARAM[${3}]} ${PROBING_BSIZE[${3}]} ${SEED_DICT[run${1}_probing]}
+}
+
+function ez_run_intermediate_to_mixing() {
+    # Usage: ez_run_intermediate_to_mixing <1:run_num> <2:intermediate_task> <3:mixing_task> <4:directory_to_project_dir>
+    run_intermediate_to_mixing ${2} ${3} ${4} ${MIXING_HPARAM[${3}]} ${MIXING_BSIZE[${3}]} ${SEED_DICT[run${1}_mixing]}
 }
