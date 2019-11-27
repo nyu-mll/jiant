@@ -50,6 +50,7 @@ def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
         "val_interval": 1,
         "cuda": cuda_device,
         "keep_all_checkpoints": 1,
+        "accumulation_steps": 1,
     }
 
 
