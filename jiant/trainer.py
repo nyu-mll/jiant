@@ -163,7 +163,7 @@ def build_trainer(
     assert (
         train_type == "SamplingMultiTaskTrainer"
     ), "We currently only support SamplingMultiTaskTrainer"
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     if train_type == "SamplingMultiTaskTrainer":
         trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
