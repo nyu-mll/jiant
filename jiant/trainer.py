@@ -72,7 +72,7 @@ def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
         "val_data_limit",
         "max_epochs",
         "dec_val_scale",
-        "accumulation_steps"
+        "accumulation_steps",
     ]
     for attr in train_opts:
         params[attr] = _get_attr(attr)
@@ -157,7 +157,7 @@ def build_trainer(
             "max_epochs": params["max_epochs"],
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
-            "accumulation_steps": params["accumulation_steps"]
+            "accumulation_steps": params["accumulation_steps"],
         }
     )
     assert (
@@ -1312,5 +1312,5 @@ class SamplingMultiTaskTrainer:
             max_epochs=max_epochs,
             dec_val_scale=dec_val_scale,
             training_data_fraction=training_data_fraction,
-            accumulation_steps=accumulation_steps
+            accumulation_steps=accumulation_steps,
         )
