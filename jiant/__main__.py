@@ -149,7 +149,8 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     ):
         log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
 
-    assert_for_log(args.accumulation_steps >= 1, "accumulation_steps must be a positive int")
+    assert_for_log(hasattr(args, "accumulation_steps") and args.accumulation_steps >= 1,
+                   "accumulation_steps must be a positive int")
 
     if args.load_target_train_checkpoint != "none":
         assert_for_log(
