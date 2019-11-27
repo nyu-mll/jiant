@@ -108,7 +108,7 @@ This package is released under the [MIT License](LICENSE.md). The material in th
 
 - Part of the development of `jiant` took at the 2018 Frederick Jelinek Memorial Summer Workshop on Speech and Language Technologies, and was supported by Johns Hopkins University with unrestricted gifts from Amazon, Facebook, Google, Microsoft and Mitsubishi Electric Research Laboratories.
 - This work was made possible in part by a donation to NYU from Eric and Wendy Schmidt made
-by recommendation of the Schmidt Futures program.
+by recommendation of the Schmidt Futures program, and by support from Intuit Inc.
 - We gratefully acknowledge the support of NVIDIA Corporation with the donation of a Titan V GPU used at NYU in this work.
 - Developer Alex Wang is supported by the National Science Foundation Graduate Research Fellowship Program under Grant
 No. DGE 1342536. Any opinions, findings, and conclusions or recommendations expressed in this
