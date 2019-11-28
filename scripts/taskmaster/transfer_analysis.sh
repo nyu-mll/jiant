@@ -315,7 +315,7 @@ function run_intermediate_to_target_task() {
     # This function can also be used to finetune on a probing task as well.
     # Usage: run_intermediate_to_target_task <intermediate_task> <target_task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
     OVERRIDES="exp_name=$1, run_name=$2_run$7"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1_$7/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4} ${6}
@@ -325,7 +325,7 @@ function run_intermediate_to_probing() {
     # Using a pretrained intermediate task, finetune on an probing task.  ("Probing" sheet)
     # Usage: run_intermediate_to_probing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
     OVERRIDES="exp_name=$1, run_name=$2_run$7"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1_$7/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     TASK_TYPE=${TASK_TYPE_MAP[$2]}
@@ -341,13 +341,13 @@ function run_intermediate_to_mixing() {
     # Using a pretrained intermediate task, use frozen encoder with mixing on an probing task.  ("Mixing" sheet)
     # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
     OVERRIDES="exp_name=$1, run_name=$2_mixrun$7"
-    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1_$7/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4} ${6}
 }
-
+# ez_run_intermediate_to_probing 2 mnli edges-dpr /beegfs/yp913/jiant/coreference_exp
 
 #########################################
 # EASY Functions
@@ -365,10 +365,10 @@ function ez_run_intermediate_to_target_task() {
 
 function ez_run_intermediate_to_probing() {
     # Usage: ez_run_intermediate_to_probing <1:run_num> <2:intermediate_task> <3:probing_task> <4:directory_to_project_dir>
-    run_intermediate_to_probing ${2} ${3} ${4} ${PROBING_HPARAM[${3}]} ${PROBING_BSIZE[${3}]} ${SEED_DICT[run${1}_probing]}
+    run_intermediate_to_probing ${2} ${3} ${4} ${PROBING_HPARAM[${3}]} ${PROBING_BSIZE[${3}]} ${SEED_DICT[run${1}_probing]} ${1}
 }
 
 function ez_run_intermediate_to_mixing() {
     # Usage: ez_run_intermediate_to_mixing <1:run_num> <2:intermediate_task> <3:mixing_task> <4:directory_to_project_dir>
-    run_intermediate_to_mixing ${2} ${3} ${4} ${MIXING_HPARAM[${3}]} ${MIXING_BSIZE[${3}]} ${SEED_DICT[run${1}_mixing]}
+    run_intermediate_to_mixing ${2} ${3} ${4} ${MIXING_HPARAM[${3}]} ${MIXING_BSIZE[${3}]} ${SEED_DICT[run${1}_mixing]} ${1}
 }
