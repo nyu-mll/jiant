@@ -304,8 +304,8 @@ function hyperparameter_sweep_mix() {
 
 function first_intermediate_exp() {
     # Initial intermediate task pretraining.
-    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed>
-    OVERRIDES="exp_name=roberta-large, run_name=$1, batch_size=$3, reload_vocab=1"
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number> 
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$6, batch_size=$3, reload_vocab=1"
     OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
@@ -313,8 +313,8 @@ function first_intermediate_exp() {
 function run_intermediate_to_target_task() {
     # Using a pretrained intermediate task, finetune on a target task.  ("STILTs" sheet)
     # This function can also be used to finetune on a probing task as well.
-    # Usage: run_intermediate_to_target_task <intermediate_task> <target_task> <directory_to_project_dir> <config_number> <batch_size> <random_seed>
-    OVERRIDES="exp_name=$1, run_name=$2"
+    # Usage: run_intermediate_to_target_task <intermediate_task> <target_task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
+    OVERRIDES="exp_name=$1, run_name=$2_run$7"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
@@ -323,8 +323,8 @@ function run_intermediate_to_target_task() {
 
 function run_intermediate_to_probing() {
     # Using a pretrained intermediate task, finetune on an probing task.  ("Probing" sheet)
-    # Usage: run_intermediate_to_probing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed>
-    OVERRIDES="exp_name=$1, run_name=$2"
+    # Usage: run_intermediate_to_probing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
+    OVERRIDES="exp_name=$1, run_name=$2_run$7"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
@@ -339,8 +339,8 @@ function run_intermediate_to_probing() {
 
 function run_intermediate_to_mixing() {
     # Using a pretrained intermediate task, use frozen encoder with mixing on an probing task.  ("Mixing" sheet)
-    # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed>
-    OVERRIDES="exp_name=$1, run_name=$2_mix"
+    # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
+    OVERRIDES="exp_name=$1, run_name=$2_mixrun$7"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1/model_*.best.th, pretrain_tasks=\"\""
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix"
@@ -355,12 +355,12 @@ function run_intermediate_to_mixing() {
 
 function ez_first_intermediate_exp() {
     # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
-    first_intermediate_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]}
+    first_intermediate_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
 function ez_run_intermediate_to_target_task() {
     # Usage: ez_run_intermediate_to_target_task <1:run_num> <2:intermediate_task> <3:target_task> <4:directory_to_project_dir>
-    run_intermediate_to_target_task ${2} ${3} ${4} ${TARGET_HPARAM[${3}]} ${TARGET_BSIZE[${3}]} ${SEED_DICT[run${1}_stilts]}
+    run_intermediate_to_target_task ${2} ${3} ${4} ${TARGET_HPARAM[${3}]} ${TARGET_BSIZE[${3}]} ${SEED_DICT[run${1}_stilts]} ${1}
 }
 
 function ez_run_intermediate_to_probing() {
