@@ -81,7 +81,7 @@ TASK_TYPE_MAP["cola"]="regular"
 
 declare -A INTERM_HPARAM=(
   ["sst"]=7
-  ["socialiqa"]=0
+  ["SocialIQA"]=0
   ["qqp"]=5
   ["mnli"]=6
   ["scitail"]=4
@@ -94,7 +94,7 @@ declare -A INTERM_HPARAM=(
 )
 declare -A INTERM_BSIZE=(
   ["sst"]=64
-  ["socialiqa"]=4
+  ["SocialIQA"]=4
   ["qqp"]=8
   ["mnli"]=4
   ["scitail"]=4
@@ -113,9 +113,9 @@ declare -A TARGET_HPARAM=(
   ["multirc"]=0
   ["record"]=2
   ["wic"]=3
-  ["wsc"]=5
+  ["winograd-coreference"]=5
   ["commonsenseqa"]=6
-  ["cosmos"]=7
+  ["cosmosqa"]=7
 )
 declare -A TARGET_BSIZE=(
   ["rte"]=4
@@ -125,9 +125,9 @@ declare -A TARGET_BSIZE=(
   ["multirc"]=4
   ["record"]=4
   ["wic"]=32
-  ["wsc"]=32
+  ["winograd-coreference"]=32
   ["commonsenseqa"]=4
-  ["cosmos"]=4
+  ["cosmosqa"]=4
 )
 declare -A PROBING_HPARAM=(
   ["edges-ner-ontonotes"]=0
@@ -251,7 +251,7 @@ declare -A SEED_DICT=(
   ["run3_mixing"]=923
   ["run3_probing"]=923
 )
-export TM_TARGET_TASK_NAMES=(rte boolq commitbank copa multirc record wic wsc commonsenseqa cosmos)
+export TM_TARGET_TASK_NAMES=(rte boolq commitbank copa multirc record wic winograd-coreference commonsenseqa cosmosqa)
 export TM_PROBING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
 export TM_MIXING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
 
