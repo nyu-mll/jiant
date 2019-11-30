@@ -18,25 +18,25 @@ function run_exp() {
     OVERRIDES=$2
     RANDOM_SEED=${4:-1234}
 
-    if [ $3 == 0 ]; then
+    if [[ $3 == 0 ]]; then
         OVERRIDES+=", lr=2e-5, dropout=0.2"
-    elif [ $3 == 1 ]; then
+    elif [[ $3 == 1 ]]; then
         OVERRIDES+=", lr=2e-5, dropout=0.1"
-    elif [ $3 == 2 ]; then
+    elif [[ $3 == 2 ]]; then
         OVERRIDES+=", lr=1e-5, dropout=0.2"
-    elif [ $3 == 3 ]; then
+    elif [[ $3 == 3 ]]; then
         OVERRIDES+=", lr=1e-5, dropout=0.1"
-    elif [ $3 == 4 ]; then
+    elif [[ $3 == 4 ]]; then
         OVERRIDES+=", lr=5e-6, dropout=0.2"
-    elif [ $3 == 5 ]; then
+    elif [[ $3 == 5 ]]; then
         OVERRIDES+=", lr=5e-6, dropout=0.1"
-    elif [ $3 == 6 ]; then
+    elif [[ $3 == 6 ]]; then
         OVERRIDES+=", lr=3e-6, dropout=0.2"
-    elif [ $3 == 7 ]; then
+    elif [[ $3 == 7 ]]; then
         OVERRIDES+=", lr=3e-6, dropout=0.1"
-    elif [ $3 == 8 ]; then
+    elif [[ $3 == 8 ]]; then
         OVERRIDES+=", lr=1e-3, dropout=0.2"
-    elif [ $3 == 9 ]; then
+    elif [[ $3 == 9 ]]; then
         OVERRIDES+=", lr=1e-3, dropout=0.1"
     fi
 
@@ -81,7 +81,7 @@ TASK_TYPE_MAP["cola"]="regular"
 
 declare -A INTERM_HPARAM=(
   ["sst"]=7
-  ["socialiqa"]=0
+  ["SocialIQA"]=0
   ["qqp"]=5
   ["mnli"]=6
   ["scitail"]=4
@@ -94,7 +94,7 @@ declare -A INTERM_HPARAM=(
 )
 declare -A INTERM_BSIZE=(
   ["sst"]=64
-  ["socialiqa"]=4
+  ["SocialIQA"]=4
   ["qqp"]=8
   ["mnli"]=4
   ["scitail"]=4
@@ -115,7 +115,7 @@ declare -A TARGET_HPARAM=(
   ["wic"]=3
   ["winograd-coreference"]=5
   ["commonsenseqa"]=6
-  ["cosmos"]=7
+  ["cosmosqa"]=7
 )
 declare -A TARGET_BSIZE=(
   ["rte-superglue"]=4
@@ -127,7 +127,7 @@ declare -A TARGET_BSIZE=(
   ["wic"]=32
   ["winograd-coreference"]=32
   ["commonsenseqa"]=4
-  ["cosmos"]=4
+  ["cosmosqa"]=4
 )
 declare -A PROBING_HPARAM=(
   ["edges-ner-ontonotes"]=0
@@ -251,7 +251,7 @@ declare -A SEED_DICT=(
   ["run3_mixing"]=923
   ["run3_probing"]=923
 )
-export TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference commonsenseqa cosmos)
+export TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference commonsenseqa cosmosqa)
 export TM_PROBING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
 export TM_MIXING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
 
@@ -269,9 +269,9 @@ function hyperparameter_sweep() {
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1config$i"
         TASK_TYPE=${TASK_TYPE_MAP[$1]}
-        if [ ${TASK_TYPE} == "edge" ]; then
+        if [[ ${TASK_TYPE} == "edge" ]]; then
             BASE_CONFIG_FILE="base_edgeprobe"
-        elif [ ${TASK_TYPE} == "regular" ]; then
+        elif [[ ${TASK_TYPE} == "regular" ]]; then
             BASE_CONFIG_FILE="base_roberta"
         fi
         run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${EXP_OVERRIDES}" $i $3
@@ -288,9 +288,9 @@ function hyperparameter_sweep_mix() {
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1configmix$i"
         TASK_TYPE=${TASK_TYPE_MAP[$1]}
-        if [ ${TASK_TYPE} == "edge" ]; then
+        if [[ ${TASK_TYPE} == "edge" ]]; then
             BASE_CONFIG_FILE="base_edgeprobe"
-        elif [ ${TASK_TYPE} == "regular" ]; then
+        elif [[ ${TASK_TYPE} == "regular" ]]; then
             BASE_CONFIG_FILE="base_roberta"
         fi
         run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${EXP_OVERRIDES}" $i $3
@@ -304,7 +304,7 @@ function hyperparameter_sweep_mix() {
 
 function first_intermediate_exp() {
     # Initial intermediate task pretraining.
-    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number> 
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
     OVERRIDES="exp_name=roberta-large, run_name=$1_$6, batch_size=$3, reload_vocab=1"
     OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
@@ -329,9 +329,9 @@ function run_intermediate_to_probing() {
     OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     TASK_TYPE=${TASK_TYPE_MAP[$2]}
-    if [ ${TASK_TYPE} == "edge" ]; then
+    if [[ ${TASK_TYPE} == "edge" ]]; then
         BASE_CONFIG_FILE="base_edgeprobe"
-    elif [ ${TASK_TYPE} == "regular" ]; then
+    elif [[ ${TASK_TYPE} == "regular" ]]; then
         BASE_CONFIG_FILE="base_roberta"
     fi
     run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${OVERRIDES}" ${4} ${6}
