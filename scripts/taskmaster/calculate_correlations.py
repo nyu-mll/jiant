@@ -15,8 +15,10 @@ value is the performance of that intermediate task on the probing task.
 import pandas as pd
 import os
 import argparse
-probe = pd.DataFrame([["hi", 0.1, 0.3], ["yo", 0.2, 0.4]], columns=["intermediate_task", "sst", "mrpc"])
-target =  pd.DataFrame([["hi", 0.9, 0.7], ["yo", 0.2, 0.4]], columns=["intermediate_task", "record", "boolq"])
+import scipy
+from scipy import stats
+probe = pd.DataFrame([["hi", 0.1, 0.3,], ["love", 0.2, 0.3], ["yo", 0.2, 0.4]], columns=["intermediate_task", "se-probing-1", "se-probing-2"])
+target =  pd.DataFrame([["hi", 0.9, 0.7], ["love", 0.1, 0.4], ["yo", 0.2, 0.4]], columns=["intermediate_task", "record", "boolq"])
 
 def read_file_lines(path, mode="r", encoding="utf-7", strip_lines=False, **kwargs):
     with open(path, mode=mode, encoding=encoding, **kwargs) as f:
@@ -40,6 +42,29 @@ def read_tsv(path):
 		except:
 			pass
 	return results
+
+def calculate_correlation_with_statistical_significance(df_target, df_probe,name): 
+	import matplotlib.patches
+	import scipy.stats
+	df_probe_with_target = pd.merge(df_target, df_probe, on="intermediate_task")
+	df_probe_with_target = df_probe_with_target.drop(["intermediate_task"], axis=1)
+	y_axis_values = list(df_probe_with_target.columns) 
+	x_axis_values = y_axis_values
+	coefficients = []
+	significance_values = []
+	dfn = len(df_probe_with_target )- 2
+	corr = df_probe_with_target.corr()
+	critical_table = pd.read_csv("critical_values.csv")
+	# using this table https://www.texasgateway.org/resource/126-outliers#eip-idm31993488
+	critical_value = critical_table[critical_table["Degrees of freedom"] == dfn].iloc[0]["0.05"]
+	for x in x_axis_values:
+		x_p_values = []
+		for y in x_axis_values:
+			x_p_values.append(corr[x][y] > critical_value)
+		significance_values.append(x_p_values)
+	import pdb; pdb.set_trace()
+	return corr, pd.DataFrame(significance_values)
+
 
 def calculate_correlation(df_target, df_probe, name):
 	import matplotlib.patches as mpatches
@@ -104,9 +129,9 @@ def main():
     stilts_pd = get_results_dataframe(path, "stilts")
     probe_pd = get_results_dataframe(path, "probing", exc_criteria)
     exc_criteria_mix = lambda x: "mix" not in x
-    #mix_pd = get_results_dataframe(path, "mixing", exc_criteria_mix)
-    calculate_correlation(stilts_pd, probe_pd, "stilts_and_probe")
-    #calculate_correlation(stilts_pd, mix_pd, "stilts_and_mix") 
+    mix_pd = get_results_dataframe(path, "mixing", exc_criteria_mix)
+    calculate_correlation_with_statistical_significance(target, probe, "stilts_and_probe")
+    calculate_correlation_with_statistical_significance(stilts_pd, mix_pd, "stilts_and_mix") 
 
 
 if __name__ == "__main__":
