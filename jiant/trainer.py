@@ -607,7 +607,6 @@ class SamplingMultiTaskTrainer:
                     output_dict, "loss", self._cuda_device
                 )  # optionally scale loss
                 loss *= scaling_weights[task.name]
-                loss /= self._accumulation_steps
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
