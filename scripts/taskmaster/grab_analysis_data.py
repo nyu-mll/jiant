@@ -172,6 +172,7 @@ def get_regression_raw_data(all_data, single_metadata, double_metadata):
     x_df.index = targ_srs.index
     full_df = x_df.copy()
     full_df.insert(0, "targ", targ_srs)
+    full_df.index.names = ["run_num", "int_task", "targ_task"]
     return full_df
 
 
