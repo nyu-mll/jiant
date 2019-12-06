@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tqdm
 
-import scripts.taskmaster.get_results_row as get_results_row
+import get_results_row as get_results_row
 
 
 INT_TASK_NAME_LIST = [
@@ -17,6 +17,7 @@ INT_TASK_NAME_LIST = [
     "qasrl",
     "qamr",
     "cosmosqa",
+    "ccg",
     "hellaswag",
     "commonsenseqa",
 ]
@@ -94,9 +95,6 @@ def load_raw_data(base_path):
         run_num = int(tokens[-3].replace("run", ""))
         phase = tokens[-2]
         int_task = tokens[-1]
-        if phase == "stilts" and int_task == "cosmosqa" and run_num == 1:
-            # Weird case. Xiaoyi might have put something in the wrong folder
-            continue
 
         srs = get_results_row.get_result_series(get_results_row.read_tsv(path), duplicate="last")
         srs.index = srs.index.map(lambda k: k.replace("rte-superglue", "rte"))
@@ -161,7 +159,6 @@ def get_regression_raw_data(all_data, single_metadata, double_metadata):
     for run_num, int_task, targ_task in targ_srs.index.tolist():
         key = (int_task, run_num)
         probing_data = add_index_suffix(all_data["probing"].get(key, EMPTY_PROBING), "_PRB")
-        mixing_data = add_index_suffix(all_data["mixing"].get(key, EMPTY_PROBING), "_MIX")
         targ_metadata = add_index_suffix(single_metadata.loc[targ_task], "_META_TRG")
         int_metadata = add_index_suffix(single_metadata.loc[int_task], "_META_INT")
         targ_int_metadata = add_index_suffix(double_metadata.loc[int_task, targ_task], "_META_X")
@@ -174,6 +171,8 @@ def get_regression_raw_data(all_data, single_metadata, double_metadata):
     full_df.insert(0, "targ", targ_srs)
     return full_df
 
+base_path = "/scratch/zp489/share/nlutransfer/results/phase2/"
+all_data = load_raw_data(base_path)
 
-def main():
-    pass
+yo =  get_correlation_raw_data(all_data)
+import pdb; pdb.set_trace()
