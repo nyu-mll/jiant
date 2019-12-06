@@ -80,7 +80,7 @@ def calculate_correlation_with_statistical_significance(df_target, df_probe, nam
     return corr, pd.DataFrame(significance_values)
 
 
-def compute_correlation_stats(df_a, df_b=None):
+def compute_correlation_stats(df_a, df_b=None, correl_type="pearson"):
     if df_b is None:
         df_b = df_a
     correl_data = {}
@@ -95,7 +95,12 @@ def compute_correlation_stats(df_a, df_b=None):
             dat = pd.DataFrame({"a": df_a[col_a], "b": df_b[col_b]}).dropna(how="any")
             if len(dat) >= 3:
                 # Require at least n = 3 before computing correlations
-                correl, p_val = scipy.stats.pearsonr(dat["a"], dat["b"])
+                if correl_type == "pearson":
+                    correl, p_val = scipy.stats.pearsonr(dat["a"], dat["b"])
+                elif correl_type == "spearman":
+                    correl, p_val = scipy.stats.spearmanr(dat["a"], dat["b"])
+                else:
+                    raise KeyError(correl_type)
             else:
                 correl, p_val = np.NaN, np.NaN
 
