@@ -91,6 +91,15 @@ declare -A INTERM_HPARAM=(
   ["cosmosqa"]=6
   ["hellaswag"]=6
   ["commonsenseqa"]=6
+  # === Target
+  ["rte-superglue"]=4
+  ["boolq"]=7
+  ["commitbank"]=2
+  ["copa"]=5
+  ["multirc"]=0
+  ["record"]=2
+  ["wic"]=3
+  ["winograd-coreference"]=5
 )
 declare -A INTERM_BSIZE=(
   ["sst"]=64
@@ -104,6 +113,15 @@ declare -A INTERM_BSIZE=(
   ["cosmosqa"]=4
   ["hellaswag"]=4
   ["commonsenseqa"]=4
+  # === Target
+  ["rte-superglue"]=4
+  ["boolq"]=4
+  ["commitbank"]=4
+  ["copa"]=32
+  ["multirc"]=4
+  ["record"]=4
+  ["wic"]=32
+  ["winograd-coreference"]=32
 )
 declare -A TARGET_HPARAM=(
   ["rte-superglue"]=4
@@ -306,7 +324,8 @@ function first_intermediate_exp() {
     # Initial intermediate task pretraining.
     # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
     OVERRIDES="exp_name=roberta-large, run_name=$1_$6, batch_size=$3, reload_vocab=1"
-    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES+=", target_tasks=$1, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES+=", do_full_eval=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
 
