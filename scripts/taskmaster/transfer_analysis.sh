@@ -91,6 +91,15 @@ declare -A INTERM_HPARAM=(
   ["cosmosqa"]=6
   ["hellaswag"]=6
   ["commonsenseqa"]=6
+  # === Target
+  ["rte-superglue"]=4
+  ["boolq"]=7
+  ["commitbank"]=2
+  ["copa"]=5
+  ["multirc"]=0
+  ["record"]=2
+  ["wic"]=3
+  ["winograd-coreference"]=5
 )
 declare -A INTERM_BSIZE=(
   ["sst"]=64
@@ -104,6 +113,15 @@ declare -A INTERM_BSIZE=(
   ["cosmosqa"]=4
   ["hellaswag"]=4
   ["commonsenseqa"]=4
+  # === Target
+  ["rte-superglue"]=4
+  ["boolq"]=4
+  ["commitbank"]=4
+  ["copa"]=32
+  ["multirc"]=4
+  ["record"]=4
+  ["wic"]=32
+  ["winograd-coreference"]=32
 )
 declare -A TARGET_HPARAM=(
   ["rte-superglue"]=4
