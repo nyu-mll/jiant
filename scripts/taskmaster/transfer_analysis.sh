@@ -329,6 +329,14 @@ function first_intermediate_exp() {
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
 
+function first_target_exp() {
+    # Initial intermediate task pretraining.
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$6, batch_size=$3, reload_vocab=1"
+    OVERRIDES+=", target_tasks=$1, do_pretrain=0, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES+=", do_full_eval=1"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
+}
 function run_intermediate_to_target_task() {
     # Using a pretrained intermediate task, finetune on a target task.  ("STILTs" sheet)
     # This function can also be used to finetune on a probing task as well.
@@ -375,6 +383,11 @@ function run_intermediate_to_mixing() {
 function ez_first_intermediate_exp() {
     # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
     first_intermediate_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
+}
+
+function ez_first_target_exp() {
+    # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
+    first_target_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
 function ez_run_intermediate_to_target_task() {
