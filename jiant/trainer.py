@@ -611,12 +611,12 @@ class SamplingMultiTaskTrainer:
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
 
-                # Gradient regularization and application
-                if self._grad_norm:
-                    clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 n_step += 1  # update per batch
 
                 if n_step % self._accumulation_steps == 0:
+                    # Gradient regularization and application
+                    if self._grad_norm:
+                        clip_grad_norm_(self._model.parameters(), self._grad_norm)
                     optimizer.step()
                     optimizer.zero_grad()
 
