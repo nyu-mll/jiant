@@ -271,6 +271,42 @@ declare -A SEED_DICT=(
   ["run3_mixing"]=923
   ["run3_probing"]=923
 )
+declare -A INTERM_DATA_FRACTION=(
+    ["ccg_size1"]="0.032882"
+    ["ccg_size2"]="0.065764"
+    ["ccg_size3"]="0.131527"
+    ["ccg_size4"]="0.263054"
+    ["ccg_size5"]="0.526108"
+    ["ccg_size6"]="1."
+    ["qqp_size1"]="0.003436"
+    ["qqp_size2"]="0.006871"
+    ["qqp_size3"]="0.013742"
+    ["qqp_size4"]="0.027484"
+    ["qqp_size5"]="0.054968"
+    ["qqp_size6"]="0.109937"
+    ["qqp_size7"]="0.219873"
+    ["qqp_size8"]="0.439746"
+    ["qqp_size9"]="0.879493"
+    ["hellaswag_size1"]="0.031324"
+    ["hellaswag_size2"]="0.062649"
+    ["hellaswag_size3"]="0.125298"
+    ["hellaswag_size4"]="0.250595"
+    ["hellaswag_size5"]="0.501190"
+    ["hellaswag_size6"]="1."
+    ["mnli_size1"]="0.003183"
+    ["mnli_size2"]="0.006366"
+    ["mnli_size3"]="0.012732"
+    ["mnli_size4"]="0.025465"
+    ["mnli_size5"]="0.050929"
+    ["mnli_size6"]="0.101858"
+    ["mnli_size7"]="0.203717"
+    ["mnli_size8"]="0.407434"
+    ["mnli_size9"]="0.814867"
+    ["commonsenseqa_size1"]="0.128324"
+    ["commonsenseqa_size1"]="0.256647"
+    ["commonsenseqa_size1"]="0.513294"
+    ["commonsenseqa_size1"]="1."
+)
 export TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference commonsenseqa cosmosqa)
 export TM_PROBING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
 export TM_MIXING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
@@ -331,6 +367,18 @@ function first_intermediate_exp() {
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
 
+function first_intermediate_exp_limited_size() {
+    # Initial intermediate task pretraining with limited size.
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
+    # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccg_size1
+    IFS="_size" read -ra ADDR <<< "${1}"
+    TASK_NAME=${ADDR[0]}
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    OVERRIDES+=", target_tasks=$TASK_NAME, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$TASK_NAME"
+    OVERRIDES+=", do_full_eval=1, pretrain_data_fraction=${INTERM_DATA_FRACTION[$1]}"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
+}
+
 function first_target_exp() {
     # Initial intermediate task pretraining.
     # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
@@ -385,6 +433,15 @@ function run_intermediate_to_mixing() {
 function ez_first_intermediate_exp() {
     # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
     first_intermediate_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
+}
+
+function ez_first_intermediate_exp_limited_size() {
+    # Usage: ez_first_intermediate_exp_limited_size <1:run_num> <2:intermediate_task>
+    # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccg_size1
+    IFS="_size" read -ra ADDR <<< "${2}"
+    TASK_NAME=${ADDR[0]}
+    echo $TASK_NAME
+    first_intermediate_exp_limited_size ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
 function ez_first_target_exp() {
