@@ -21,4 +21,6 @@ JIANT_CONF=$1
 JIANT_OVERRIDES=$2
 echo "$JIANT_CONF" 
 echo "$JIANT_OVERRIDES"
+export JIANT_PROJECT_PREFIX="/scratch/pmh330/jiant-outputs/roberta-large-run2"
+JIANT_PROJECT_PREFIX="/scratch/pmh330/jiant-outputs/roberta-large-run2"
 python main.py --config_file "$JIANT_CONF" -o "$JIANT_OVERRIDES" 
