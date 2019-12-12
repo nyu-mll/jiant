@@ -303,9 +303,9 @@ declare -A INTERM_DATA_FRACTION=(
     ["mnli_size8"]="0.407434"
     ["mnli_size9"]="0.814867"
     ["commonsenseqa_size1"]="0.128324"
-    ["commonsenseqa_size1"]="0.256647"
-    ["commonsenseqa_size1"]="0.513294"
-    ["commonsenseqa_size1"]="1."
+    ["commonsenseqa_size2"]="0.256647"
+    ["commonsenseqa_size3"]="0.513294"
+    ["commonsenseqa_size4"]="1."
 )
 export TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference commonsenseqa cosmosqa)
 export TM_PROBING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
