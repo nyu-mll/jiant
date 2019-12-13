@@ -272,40 +272,40 @@ declare -A SEED_DICT=(
   ["run3_probing"]=923
 )
 declare -A INTERM_DATA_FRACTION=(
-    ["ccg_size1"]="0.032882"
-    ["ccg_size2"]="0.065764"
-    ["ccg_size3"]="0.131527"
-    ["ccg_size4"]="0.263054"
-    ["ccg_size5"]="0.526108"
-    ["ccg_size6"]="1."
-    ["qqp_size1"]="0.003436"
-    ["qqp_size2"]="0.006871"
-    ["qqp_size3"]="0.013742"
-    ["qqp_size4"]="0.027484"
-    ["qqp_size5"]="0.054968"
-    ["qqp_size6"]="0.109937"
-    ["qqp_size7"]="0.219873"
-    ["qqp_size8"]="0.439746"
-    ["qqp_size9"]="0.879493"
-    ["hellaswag_size1"]="0.031324"
-    ["hellaswag_size2"]="0.062649"
-    ["hellaswag_size3"]="0.125298"
-    ["hellaswag_size4"]="0.250595"
-    ["hellaswag_size5"]="0.501190"
-    ["hellaswag_size6"]="1."
-    ["mnli_size1"]="0.003183"
-    ["mnli_size2"]="0.006366"
-    ["mnli_size3"]="0.012732"
-    ["mnli_size4"]="0.025465"
-    ["mnli_size5"]="0.050929"
-    ["mnli_size6"]="0.101858"
-    ["mnli_size7"]="0.203717"
-    ["mnli_size8"]="0.407434"
-    ["mnli_size9"]="0.814867"
-    ["commonsenseqa_size1"]="0.128324"
-    ["commonsenseqa_size2"]="0.256647"
-    ["commonsenseqa_size3"]="0.513294"
-    ["commonsenseqa_size4"]="1."
+    ["ccgS1"]="0.032882"
+    ["ccgS2"]="0.065764"
+    ["ccgS3"]="0.131527"
+    ["ccgS4"]="0.263054"
+    ["ccgS5"]="0.526108"
+    ["ccgS6"]="1."
+    ["qqpS1"]="0.003436"
+    ["qqpS2"]="0.006871"
+    ["qqpS3"]="0.013742"
+    ["qqpS4"]="0.027484"
+    ["qqpS5"]="0.054968"
+    ["qqpS6"]="0.109937"
+    ["qqpS7"]="0.219873"
+    ["qqpS8"]="0.439746"
+    ["qqpS9"]="0.879493"
+    ["hellaswagS1"]="0.031324"
+    ["hellaswagS2"]="0.062649"
+    ["hellaswagS3"]="0.125298"
+    ["hellaswagS4"]="0.250595"
+    ["hellaswagS5"]="0.501190"
+    ["hellaswagS6"]="1."
+    ["mnliS1"]="0.003183"
+    ["mnliS2"]="0.006366"
+    ["mnliS3"]="0.012732"
+    ["mnliS4"]="0.025465"
+    ["mnliS5"]="0.050929"
+    ["mnliS6"]="0.101858"
+    ["mnliS7"]="0.203717"
+    ["mnliS8"]="0.407434"
+    ["mnliS9"]="0.814867"
+    ["commonsenseqaS1"]="0.128324"
+    ["commonsenseqaS2"]="0.256647"
+    ["commonsenseqaS3"]="0.513294"
+    ["commonsenseqaS4"]="1."
 )
 export TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference commonsenseqa cosmosqa)
 export TM_PROBING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
@@ -318,9 +318,9 @@ export TM_MIXING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref
 #########################################
 function hyperparameter_sweep() {
     # Do hyerparameter tuning search for the parameters
-    # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
+    # Usage: hyperparameter_sweep <task> <batchS> <random_seed>
     OVERRIDES="exp_name=roberta-large"
-    OVERRIDES+=", target_tasks=$1, do_pretrain=0, batch_size=$2, reload_vocab=1, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$1, do_pretrain=0, batchS=$2, reload_vocab=1, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
     for i in 0 1 2 3 4 5 6 7
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1config$i"
@@ -337,9 +337,9 @@ function hyperparameter_sweep() {
 
 function hyperparameter_sweep_mix() {
     # Do hyerparameter tuning search for the parameters
-    # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
+    # Usage: hyperparameter_sweep <task> <batchS> <random_seed>
     OVERRIDES="exp_name=roberta-large"
-    OVERRIDES+=", target_tasks=$1, do_pretrain=0, batch_size=$2, reload_vocab=1, transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix,do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
+    OVERRIDES+=", target_tasks=$1, do_pretrain=0, batchS=$2, reload_vocab=1, transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix,do_target_task_training=1, input_module=roberta-large,pretrain_tasks=\"\""
     for i in 0 1 2 3 4 5 6 7 8 9
     do
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1configmix$i"
@@ -360,20 +360,20 @@ function hyperparameter_sweep_mix() {
 
 function first_intermediate_exp() {
     # Initial intermediate task pretraining.
-    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
-    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batchS> <random_seed> <run_number>
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batchS=$3, reload_vocab=1"
     OVERRIDES+=", target_tasks=$1, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     OVERRIDES+=", do_full_eval=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
 
-function first_intermediate_exp_limited_size() {
+function first_intermediate_exp_limitedS() {
     # Initial intermediate task pretraining with limited size.
-    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
-    # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccg_size1
-    IFS="_size" read -ra ADDR <<< "${1}"
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batchS> <random_seed> <run_number>
+    # <intermediate_task_name> should use S to seperate real task name and size, e.g. ccgS1
+    IFS="S" read -ra ADDR <<< "${1}"
     TASK_NAME=${ADDR[0]}
-    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batchS=$3, reload_vocab=1"
     OVERRIDES+=", target_tasks=$TASK_NAME, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$TASK_NAME"
     OVERRIDES+=", do_full_eval=1, pretrain_data_fraction=${INTERM_DATA_FRACTION[$1]}"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
@@ -381,8 +381,8 @@ function first_intermediate_exp_limited_size() {
 
 function first_target_exp() {
     # Initial intermediate task pretraining.
-    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
-    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batchS> <random_seed> <run_number>
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batchS=$3, reload_vocab=1"
     OVERRIDES+=", target_tasks=$1, do_pretrain=0, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=$1"
     OVERRIDES+=", do_full_eval=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
@@ -390,20 +390,20 @@ function first_target_exp() {
 function run_intermediate_to_target_task() {
     # Using a pretrained intermediate task, finetune on a target task.  ("STILTs" sheet)
     # This function can also be used to finetune on a probing task as well.
-    # Usage: run_intermediate_to_target_task <intermediate_task> <target_task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
+    # Usage: run_intermediate_to_target_task <intermediate_task> <target_task> <directory_to_project_dir> <config_number> <batchS> <random_seed> <run>
     OVERRIDES="exp_name=$1, run_name=$2_run$7"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1_$7/model_*.best.th, pretrain_tasks=\"\""
-    OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
+    OVERRIDES+=", input_module=roberta-large, batchS=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${4} ${6}
 }
 
 function run_intermediate_to_probing() {
     # Using a pretrained intermediate task, finetune on an probing task.  ("Probing" sheet)
-    # Usage: run_intermediate_to_probing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
+    # Usage: run_intermediate_to_probing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batchS> <random_seed> <run>
     OVERRIDES="exp_name=$1, run_name=$2_run$7"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1_$7/model_*.best.th, pretrain_tasks=\"\""
-    OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
+    OVERRIDES+=", input_module=roberta-large, batchS=$5, reload_vocab=1"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     TASK_TYPE=${TASK_TYPE_MAP[$2]}
     if [[ ${TASK_TYPE} == "edge" ]]; then
@@ -416,10 +416,10 @@ function run_intermediate_to_probing() {
 
 function run_intermediate_to_mixing() {
     # Using a pretrained intermediate task, use frozen encoder with mixing on an probing task.  ("Mixing" sheet)
-    # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
+    # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batchS> <random_seed> <run>
     OVERRIDES="exp_name=$1, run_name=$2_mixrun$7"
     OVERRIDES+=", target_tasks=$2, load_model=1, load_target_train_checkpoint=$3/roberta-large/$1_$7/model_*.best.th, pretrain_tasks=\"\""
-    OVERRIDES+=", input_module=roberta-large, batch_size=$5, reload_vocab=1"
+    OVERRIDES+=", input_module=roberta-large, batchS=$5, reload_vocab=1"
     OVERRIDES+=", transfer_paradigm=frozen, allow_untrained_encoder_parameters=1, pytorch_transformers_output_mode = mix"
     OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
     run_exp "jiant/config/taskmaster/base_edgeprobe.conf" "${OVERRIDES}" ${4} ${6}
@@ -436,12 +436,12 @@ function ez_first_intermediate_exp() {
 }
 
 function ez_first_intermediate_exp_limited_size() {
-    # Usage: ez_first_intermediate_exp_limited_size <1:run_num> <2:intermediate_task>
-    # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccg_size1
-    IFS="_size" read -ra ADDR <<< "${2}"
+    # Usage: ez_first_intermediate_exp_limitedS <1:run_num> <2:intermediate_task>
+    # <intermediate_task_name> should use S to seperate real task name and size, e.g. ccgS1
+    IFS="S" read -ra ADDR <<< "${2}"
     TASK_NAME=${ADDR[0]}
     echo $TASK_NAME
-    first_intermediate_exp_limited_size ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
+    first_intermediate_exp_limitedS ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
 function ez_first_target_exp() {
