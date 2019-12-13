@@ -441,7 +441,7 @@ function ez_first_intermediate_exp_limited_size() {
     IFS="S" read -ra ADDR <<< "${2}"
     TASK_NAME=${ADDR[0]}
     echo $TASK_NAME
-    first_intermediate_exp_limitedS ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
+    first_intermediate_exp_limited_size ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
 function ez_first_target_exp() {
