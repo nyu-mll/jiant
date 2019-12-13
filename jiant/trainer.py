@@ -620,10 +620,11 @@ class SamplingMultiTaskTrainer:
                     if self._grad_norm:
                         clip_grad_norm_(self._model.parameters(), self._grad_norm)
                     optimizer.step()
-                    # step scheduler if it's not ReduceLROnPlateau
-                    if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                        scheduler.step_batch(n_step)
                     optimizer.zero_grad()
+
+                # step scheduler if it's not ReduceLROnPlateau
+                if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+                    scheduler.step_batch(n_step)
 
             # Update training progress on that task
             task_info["n_batches_since_val"] = n_batches_since_val
