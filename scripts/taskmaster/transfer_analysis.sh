@@ -367,7 +367,7 @@ function first_intermediate_exp() {
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
 
-function first_intermediate_exp_limitedS() {
+function first_intermediate_exp_limited_size() {
     # Initial intermediate task pretraining with limited size.
     # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batchS> <random_seed> <run_number>
     # <intermediate_task_name> should use S to seperate real task name and size, e.g. ccgS1
