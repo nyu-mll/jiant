@@ -359,7 +359,7 @@ class SamplingMultiTaskTrainer:
                 # epoch limit.
                 if self._max_epochs > 0:
                     max_epochs_in_vals = math.ceil(
-                        (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
+                        (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval / self._accumulation_steps
                     )
                     val_limit = min(max_epochs_in_vals, self._max_vals)
                 else:
@@ -510,7 +510,7 @@ class SamplingMultiTaskTrainer:
             if self._max_epochs > 0:
                 n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
                 max_epochs_in_vals = math.ceil(
-                    (n_epoch_steps * self._max_epochs) / self._val_interval
+                    (n_epoch_steps * self._max_epochs) / self._val_interval / self._accumulation_steps
                 )
                 val_limit = min(max_epochs_in_vals, self._max_vals)
             else:
@@ -597,6 +597,7 @@ class SamplingMultiTaskTrainer:
             tr_loss = task_info["loss"]
 
             for batch in itertools.islice(tr_generator, 1):
+                # import pdb; pdb.set_trace()
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 output_dict = self._forward(batch, task=task)
