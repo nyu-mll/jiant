@@ -1310,7 +1310,7 @@ class MultiNLITask(PairClassificationTask):
             + self.val_data_text[0]
             + self.val_data_text[1]
         )
-        log.info("\tFinished loading NLI data.")
+        log.info("\tFinished loading MNLI data.")
 
 
 @register_task("mnli-ho", rel_path="MNLI/")
@@ -1329,6 +1329,9 @@ class MultiNLIHypothesisOnlyTask(SingleClassificationTask):
         When genre is set to one of the ten MNLI genres, only examples matching that genre will be
         loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
         being empty.
+
+        When two_class_evaluation is set, merge the contradiction and neutral labels, for both
+        predictions and gold labels, in the metric when evaluating on this task.
         """
         super(MultiNLIHypothesisOnlyTask, self).__init__(name, n_classes=3, **kw)
         self.path = path
