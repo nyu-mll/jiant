@@ -1194,8 +1194,11 @@ class AdversarialNLITask(PairClassificationTask):
 
 
 @register_task("mnli", rel_path="MNLI/")
+# Alternate version with a modified evaluation metric. For use in transfer evaluations on
+# two-class test sets like RTE. Example config override:
+#   pretrain_tasks = mnli, target_tasks = \"mnli-two,rte\", rte += {use_classifier = mnli-two}
 @register_task("mnli-two", rel_path="MNLI/", two_class_evaluation=True)
-# second copy for different params
+# Second copy that can be assigned separate task-specific config options.
 @register_task("mnli-alt", rel_path="MNLI/")
 @register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate", rel_path="MNLI/", genre="slate")
@@ -1213,7 +1216,7 @@ class MultiNLITask(PairClassificationTask):
         being empty.
 
         When two_class_evaluation is set, merge the contradiction and neutral labels, for both
-        predictions and gold labels, before evaluating on this task.
+        predictions and gold labels, in the metric when evaluating on this task.
         """
         super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
         self.path = path
