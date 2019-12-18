@@ -10,13 +10,13 @@ First off, let's make sure you've the full repository, including all the git sub
 This project uses submodules to manage some dependencies on other research code, in particular for loading CoVe, GPT, and BERT. To make sure you get these repos when you download `jiant`, add `--recursive` to your `clone` command:
 
 ```
-git clone --branch v1.2.0  --recursive https://github.com/nyu-mll/jiant.git jiant
+git clone --branch v1.2.1  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
-This will download the full repository and load the 1.2 release of `jiant`. If you already have `jiant` downloaded locally, you can switch to the 1.2 release with
+This will download the full repository and load the 1.2 release of `jiant`. If you already have `jiant` downloaded locally, you can switch to the 1.2.1 release with
 ```
-git checkout tags/v1.2.0 -b 1.2_master
+git checkout tags/v1.2.1 -b 1.2.1_master
 ```
-This will create a branch called 1.2_master with HEAD at version 1.2. If you already cloned and just need to get the submodules, you can run:
+This will create a branch called 1.2.1_master with HEAD at version 1.2.1. If you already cloned and just need to get the submodules, you can run:
 
 ```
 git submodule update --init --recursive
@@ -159,7 +159,7 @@ include "defaults.conf"  // relative path to this file
 exp_name = jiant-demo
 run_name = mtl-sst-mrpc
 
-cuda = 0
+cuda = -1
 random_seed = 42
 
 load_model = 0
@@ -208,7 +208,7 @@ python main.py --config_file jiant/config/tutorial.conf \
 ```
 
 will run the demo config, but write output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
-
+Note that cuda=-1 means that we do not use GPU. Jiant uses DataParallel to help with memory constraints, which may be useful if you are running on a multi-GPU machine. Refer to the documentation on the settings for the cuda variable in jiant/config/defaults.conf.
 
 ### 3.b) Understanding the output logs
 

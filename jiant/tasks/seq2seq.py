@@ -29,7 +29,6 @@ class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
-        """ """
         super().__init__(name, **kw)
         if name == "seg_wix":
             self.scorer2 = BooleanAccuracy()

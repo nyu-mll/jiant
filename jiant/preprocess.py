@@ -52,7 +52,8 @@ from jiant.tasks import (
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask
-from jiant.utils import config, serialize, utils
+from jiant.utils import config, serialize, utils, options
+from jiant.utils.options import parse_task_list_arg
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -397,21 +398,6 @@ def build_tasks(args):
     return pretrain_tasks, target_tasks, vocab, word_embs
 
 
-def parse_task_list_arg(task_list):
-    """Parse task list argument into a list of task names."""
-    task_names = []
-    for task_name in task_list.split(","):
-        if task_name == "glue":
-            task_names.extend(ALL_GLUE_TASKS)
-        elif task_name == "superglue":
-            task_names.extend(ALL_SUPERGLUE_TASKS)
-        elif task_name == "none" or task_name == "":
-            continue
-        else:
-            task_names.append(task_name)
-    return task_names
-
-
 def _get_task(name, args, data_path, scratch_path):
     """ Build or load a single task. """
     assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
@@ -620,13 +606,6 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
 
     vocab_size = len(tokenizer)
     # do not use tokenizer.vocab_size, it does not include newly added token
-    if tokenizer_name.startswith("roberta-"):
-        if tokenizer.convert_ids_to_tokens(vocab_size - 1) is None:
-            vocab_size -= 1
-        else:
-            log.info("Time to delete vocab_size-1 in preprocess.py !!!")
-    # due to a quirk in huggingface's file, the last token of RobertaTokenizer is None, remove
-    # this when they fix the problem
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
     log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
