@@ -45,10 +45,6 @@ class Seq2SeqTask(SequenceGenerationTask):
             split: os.path.join(path, "%s.tsv" % split) for split in ["train", "val", "test"]
         }
 
-        # The following is necessary since word-level tasks (e.g., MT) haven't been tested, yet.
-        if self._tokenizer_name != "SplitChars" and self._tokenizer_name != "dummy_tokenizer_name":
-            raise NotImplementedError("For now, Seq2SeqTask only supports character-level tasks.")
-
     def load_data(self):
         # Data is exposed as iterable: no preloading
         pass
