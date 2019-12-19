@@ -340,10 +340,14 @@ class SamplingMultiTaskTrainer:
                 #  example is included or excluded independently using a hashing function.
                 # Fortunately, it doesn't need to be.
                 task_info["n_tr_batches"] = math.ceil(
-                    task.n_train_examples * self._training_data_fraction / batch_size
+                    task.n_train_examples
+                    * self._training_data_fraction
+                    / (batch_size * self._accumulation_steps)
                 )
             else:
-                task_info["n_tr_batches"] = math.ceil(task.n_train_examples / batch_size)
+                task_info["n_tr_batches"] = math.ceil(
+                    task.n_train_examples / (batch_size * self._accumulation_steps)
+                )
 
             task_info["tr_generator"] = tr_generator
             task_info["loss"] = 0.0
@@ -583,6 +587,12 @@ class SamplingMultiTaskTrainer:
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
+        log.info(
+            "Effective batch size is %d (batch size %d * gradient accumulation steps %d)",
+            batch_size * self._accumulation_steps,
+            batch_size,
+            self._accumulation_steps,
+        )
         while not should_stop:
             self._model.train()
             task = samples[(n_step + offset) % validation_interval]  # randomly select a task
