@@ -23,7 +23,7 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
-@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000)
+@register_task("wmt14_en_de", rel_path="wmt14/en_de/small/", max_targ_v_size=40000)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
@@ -35,7 +35,6 @@ class Seq2SeqTask(SequenceGenerationTask):
         else:  # for MT
             self.scorer2 = BLEU(exclude_indices=set([0, 1, 2, 3]))  # PAD, SOS, EOS, UNK
         self.scorers.append(self.scorer2)
-        self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
