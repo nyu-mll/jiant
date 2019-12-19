@@ -605,31 +605,29 @@ class SamplingMultiTaskTrainer:
             n_batches_since_val = task_info["n_batches_since_val"]
             tr_loss = task_info["loss"]
 
-            for batch in itertools.islice(tr_generator, 1):
-                n_batches_since_val += 1
-                total_batches_trained += 1
-                optimizer.zero_grad()
+            for batch in itertools.islice(tr_generator, self._accumulation_steps):
                 output_dict = self._forward(batch, task=task)
-                assert_for_log(
-                    "loss" in output_dict, "Model must return a dict containing a 'loss' key"
-                )
-                loss = get_output_attribute(
-                    output_dict, "loss", self._cuda_device
-                )  # optionally scale loss
+                assert_for_log("loss" in output_dict, "Model must return a dict with 'loss' key")
+                loss = get_output_attribute(output_dict, "loss", self._cuda_device)
+                if self._accumulation_steps > 1:
+                    loss = loss / self._accumulation_steps
                 loss *= scaling_weights[task.name]
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
+            n_batches_since_val += 1
+            total_batches_trained += 1
+            n_step += 1
 
-                # Gradient regularization and application
-                if self._grad_norm:
-                    clip_grad_norm_(self._model.parameters(), self._grad_norm)
-                optimizer.step()
-                n_step += 1  # update per batch
+            # Gradient regularization and application
+            if self._grad_norm:
+                clip_grad_norm_(self._model.parameters(), self._grad_norm)
+            optimizer.step()
+            optimizer.zero_grad()
 
-                # step scheduler if it's not ReduceLROnPlateau
-                if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                    scheduler.step_batch(n_step)
+            # step scheduler if it's not ReduceLROnPlateau
+            if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+                scheduler.step_batch(n_step)
 
             # Update training progress on that task
             task_info["n_batches_since_val"] = n_batches_since_val
