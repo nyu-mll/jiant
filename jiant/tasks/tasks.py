@@ -422,10 +422,6 @@ class SequenceGenerationTask(Task):
         self.scorers = [self.scorer1]
         self.val_metric = "%s_bleu" % self.name
         self.val_metric_decreases = False
-        log.warning(
-            "BLEU scoring is turned off (current code in progress)."
-            "Please use outputed prediction files to score offline"
-        )
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
