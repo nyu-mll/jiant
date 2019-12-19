@@ -66,12 +66,12 @@ def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
         "d_hid",
         "max_grad_norm",
         "min_lr",
-        "batch_size",
         "cuda",
         "keep_all_checkpoints",
         "val_data_limit",
         "max_epochs",
         "dec_val_scale",
+        "accumulation_steps",
     ]
     for attr in train_opts:
         params[attr] = _get_attr(attr)
@@ -156,11 +156,13 @@ def build_trainer(
             "max_epochs": params["max_epochs"],
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
+            "accumulation_steps": params["accumulation_steps"],
         }
     )
     assert (
         train_type == "SamplingMultiTaskTrainer"
     ), "We currently only support SamplingMultiTaskTrainer"
+
     if train_type == "SamplingMultiTaskTrainer":
         trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
@@ -184,6 +186,7 @@ class SamplingMultiTaskTrainer:
         max_epochs=-1,
         dec_val_scale=100,
         training_data_fraction=1.0,
+        accumulation_steps=1,
     ):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -241,6 +244,7 @@ class SamplingMultiTaskTrainer:
         self._training_data_fraction = training_data_fraction
         self._task_infos = None
         self._metric_infos = None
+        self._accumulation_steps = accumulation_steps
 
         self._log_interval = 10  # seconds
 
@@ -1285,6 +1289,7 @@ class SamplingMultiTaskTrainer:
         max_epochs = params.pop("max_epochs", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
+        accumulation_steps = params.pop("accumulation_steps", 1.0)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(
@@ -1303,4 +1308,5 @@ class SamplingMultiTaskTrainer:
             max_epochs=max_epochs,
             dec_val_scale=dec_val_scale,
             training_data_fraction=training_data_fraction,
+            accumulation_steps=accumulation_steps,
         )
