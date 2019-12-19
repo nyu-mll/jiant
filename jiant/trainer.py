@@ -860,7 +860,8 @@ class SamplingMultiTaskTrainer:
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
-            if print_output and "words" in batch["inputs"]:  # Doesn't work for other inputs, yet.
+            # The following doesn't work for other inputs, yet.
+            if print_output and "inputs" in batch and "words" in batch["inputs"]:
                 if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
                         voc_src = self._model.vocab.get_index_to_token_vocabulary("tokens")
