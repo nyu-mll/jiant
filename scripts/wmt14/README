@@ -1,0 +1,19 @@
+For machine translation (MT) tasks, all examples should be in the format
+
+<input sentence><tab><output sentence><\n>,
+
+and the data files should be placed in data/wmt14/en_de/ or similarly named folders, depeding on the task definition.
+If the data originally comes in separate files for source and target language, run
+
+python prepare_data.py <src lang file> <trg lang file>
+
+for each of train, dev, and (optionally) test first. Using the example data in this folder, this would be:
+
+python prepare_data.py example_data/train.en example_data/train.de
+python prepare_data.py example_data/dev.en example_data/dev.de
+
+For a config example, please refer to: jiant/config/wmt14_en_de.conf
+
+Training of an MT model can then be started with
+
+python main.py --config_file jiant/config/wmt14_en_de.conf
