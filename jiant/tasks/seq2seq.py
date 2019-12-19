@@ -8,6 +8,7 @@ from typing import Iterable, List, Sequence, Type
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy
+from allennlp.training.metrics.bleu import BLEU
 
 from jiant.utils.tokenizers import get_tokenizer
 from ..utils.data_loaders import tokenize_and_truncate
@@ -22,12 +23,17 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
+@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         super().__init__(name, **kw)
-        self.scorer2 = BooleanAccuracy()
+        if name == "seg_wix":
+            self.scorer2 = BooleanAccuracy()
+            self.val_metric = "%s_accuracy" % self.name
+        else:  # for MT
+            self.scorer2 = BLEU(exclude_indices=set([0, 1, 2, 3]))  # PAD, SOS, EOS, UNK
         self.scorers.append(self.scorer2)
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -71,7 +77,10 @@ class Seq2SeqTask(SequenceGenerationTask):
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
                 src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
-                tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
+                if self.name == "seg_wix":
+                    tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
+                else:  # for MT
+                    tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -114,8 +123,13 @@ class Seq2SeqTask(SequenceGenerationTask):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
-        acc = self.scorer2.get_metric(reset)
-        return {"perplexity": math.exp(avg_nll), "accuracy": acc}
+        val_metric = self.scorer2.get_metric(reset)
+        if self.name == "seg_wix":
+            metric_name = "accuracy"
+        else:  # for MT
+            metric_name = "bleu"
+            val_metric = val_metric["BLEU"]
+        return {"perplexity": math.exp(avg_nll), metric_name: val_metric}
 
     def update_metrics(self, logits, labels, tagmask=None, predictions=None):
         # This doesn't require logits for now, since loss is updated in another part.
@@ -128,10 +142,33 @@ class Seq2SeqTask(SequenceGenerationTask):
             # Cut labels if predictions (without gold target) are shorter.
             labels = labels[:, : predictions.shape[1]]
             tagmask = tagmask[:, : predictions.shape[1]]
-        self.scorer2(predictions, labels, tagmask)
+        if self.name == "seg_wix":
+            self.scorer2(predictions, labels, tagmask)
+        else:  # for MT
+            self.scorer2(predictions, labels)
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
+        if self.name == "seg_wix":
+            return self._get_char_prediction(voc_src, voc_trg, inputs, gold, output)
+        else:  # for MT
+            return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
+
+    def _get_mt_prediction(self, voc_src, voc_trg, inputs, gold, output):
+        tokenizer = get_tokenizer(self._tokenizer_name)
+        input_string = " ".join(
+            tokenizer.detokenize([voc_src[token.item()] for token in inputs])
+        ).split(" <EOS>")[0]
+        gold_string = " ".join(
+            tokenizer.detokenize([voc_trg[token.item()] for token in gold])
+        ).split(" <EOS>")[0]
+        output_string = " ".join(
+            tokenizer.detokenize([voc_trg[token.item()] for token in output])
+        ).split(" <EOS>")[0]
+
+        return input_string, gold_string, output_string
+
+    def _get_char_prediction(self, voc_src, voc_trg, inputs, gold, output):
         tokenizer = get_tokenizer(self._tokenizer_name)
 
         input_string = tokenizer.detokenize([voc_src[token.item()] for token in inputs]).split(
