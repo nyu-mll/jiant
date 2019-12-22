@@ -23,7 +23,7 @@
 # ./run_batch.sh -p demos -m k80 jiant-demo \
 #     "python $JIANT_PATH/main.py --config_file $JIANT_PATH/jiant/config/demo.conf"
 #
-# will run as job name 'demos.jiant-demo' and write results to /nfs/jsalt/exp/demos
+# will run as job name 'demos.jiant-demo' and write results to /nfs/jiant/exp/demos
 #
 set -e
 

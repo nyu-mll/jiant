@@ -170,7 +170,7 @@ def write_preds(
         glue_style_tasks = (
             tasks_module.ALL_NLI_PROBING_TASKS
             + tasks_module.ALL_GLUE_TASKS
-            + ["wmt"]
+            + ["wmt", "hans"]
             + tasks_module.ALL_COLA_NPI_TASKS
         )
 
@@ -616,6 +616,16 @@ def _write_glue_preds(
         _write_preds_with_pd(
             preds_df.iloc[9796:],
             _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format),
+        )
+    elif task_name == "hans":
+        pred_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
+        _apply_pred_map(preds_df, pred_map, "prediction")
+        _write_preds_with_pd(
+            preds_df.iloc[:30000],
+            _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format),
+        )
+        _write_preds_with_pd(
+            preds_df, _get_pred_filename("hans", pred_dir, split_name, strict_glue_format)
         )
     elif task_name in ["rte", "qnli"]:
         pred_map = {0: "not_entailment", 1: "entailment"}

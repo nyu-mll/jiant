@@ -1098,6 +1098,62 @@ class SNLITask(PairClassificationTask):
         log.info("\tFinished loading SNLI data.")
 
 
+@register_task("snli-ho", rel_path="SNLI/")
+class SNLIHypothesisOnlyTask(SingleClassificationTask):
+    """ Task class for Stanford Natural Language Inference """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        """ Do stuff """
+        super(SNLIHypothesisOnlyTask, self).__init__(name, n_classes=3, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+    def load_data(self):
+        """ Process the dataset located at path.  """
+        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+        self.train_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=8,
+            s2_idx=None,
+            label_idx=10,
+            skip_rows=1,
+        )
+        self.val_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=8,
+            s2_idx=None,
+            label_idx=10,
+            skip_rows=1,
+        )
+        self.test_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+        )
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
+        )
+        log.info("\tFinished loading SNLI-HO data.")
+
+
 @register_task("adversarial_nli_a1", rel_path="AdversarialNLI/", datasets=["R1"])
 @register_task("adversarial_nli_a2", rel_path="AdversarialNLI/", datasets=["R2"])
 @register_task("adversarial_nli_a3", rel_path="AdversarialNLI/", datasets=["R3"])
@@ -1193,6 +1249,83 @@ class AdversarialNLITask(PairClassificationTask):
         log.info("\tFinished loading ANLI data: " + self.name)
 
 
+@register_task("adversarial_nli_a1-ho", rel_path="AdversarialNLI/", datasets=["R1"])
+@register_task("adversarial_nli_a2-ho", rel_path="AdversarialNLI/", datasets=["R2"])
+@register_task("adversarial_nli_a3-ho", rel_path="AdversarialNLI/", datasets=["R3"])
+@register_task("adversarial_nli-ho", rel_path="AdversarialNLI/", datasets=["R1", "R2", "R3"])
+class AdversarialNLIHOTask(SingleClassificationTask):
+    """Task class for use with Adversarial Natural Language Inference dataset.
+
+    Configures a 3-class PairClassificationTask using Adversarial NLI data.
+    Requires original ANLI dataset file structure under the relative path.
+    Data: https://dl.fbaipublicfiles.com/anli/anli_v0.1.zip
+    Paper: https://arxiv.org/abs/1910.14599
+
+    Attributes:
+        path (str): AdversarialNLI path relative to JIANT_DATA_DIR
+        max_seq_len (int): max tokens allowed in a sequence
+        train_data_text (list[list[str], list[str], list[int]]):
+            list of lists of context, hypothesis, and target training data
+        val_data_text (list[list[str], list[str], list[int]]):
+            list of lists of context, hypothesis, and target val data
+        test_data_text (list[list[str], list[str], list[int]]):
+            list of lists of context, hypothesis, and target test data
+        datasets (list[str]): list of sub-datasets used in task (e.g., R1)
+        sentences (list): list of all (tokenized) context and hypothesis
+            texts from train and val data.
+    """
+
+    def __init__(self, path, max_seq_len, name, datasets, **kw):
+        """Initialize an AdversarialNLIHOTask task.
+
+        Args:
+            path (str): AdversarialNLI path relative to the data dir
+            max_seq_len (int): max tokens allowed in a sequence
+            name (str): task name, specified in @register_task
+            datasets (list[str]): list of ANLI sub-datasets used in task
+        """
+        super(AdversarialNLIHOTask, self).__init__(name, n_classes=3, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+        self.datasets = datasets
+
+    def _read_data(self, path: str) -> pd.core.frame.DataFrame:
+        """Read json, tokenize text, encode labels as int, return dataframe."""
+        df = pd.read_json(path_or_buf=path, encoding="UTF-8", lines=True)
+        # for ANLI datasets n=neutral, e=entailment, c=contradiction
+        df["target"] = df["label"].map({"n": 0, "e": 1, "c": 2})
+        tokenizer = get_tokenizer(self._tokenizer_name)
+        df["hypothesis"] = df["hypothesis"].apply(tokenizer.tokenize)
+        return df[["hypothesis", "target"]]
+
+    def load_data(self):
+        """Read, preprocess and load data into an AdversarialNLIHOTask.
+
+        Assumes original dataset file structure under `self.rel_path`.
+        Loads only the datasets (e.g., "R1") specified in the `datasets` attr.
+        Populates task train_, val_, test_data_text and `sentence` attr.
+        """
+        train_dfs, val_dfs, test_dfs = [], [], []
+        for dataset in self.datasets:
+            train_dfs.append(self._read_data(os.path.join(self.path, dataset, "train.jsonl")))
+            val_dfs.append(self._read_data(os.path.join(self.path, dataset, "dev.jsonl")))
+            test_dfs.append(self._read_data(os.path.join(self.path, dataset, "test.jsonl")))
+        train_df = pd.concat(train_dfs, axis=0, ignore_index=True)
+        val_df = pd.concat(val_dfs, axis=0, ignore_index=True)
+        test_df = pd.concat(test_dfs, axis=0, ignore_index=True)
+
+        self.train_data_text = [train_df["hypothesis"].tolist(), [], train_df["target"].tolist()]
+        self.val_data_text = [val_df["hypothesis"].tolist(), [], val_df["target"].tolist()]
+        self.test_data_text = [test_df["hypothesis"].tolist(), [], test_df["target"].tolist()]
+
+        self.sentences = train_df["hypothesis"].tolist() + val_df["hypothesis"].tolist()
+
+        log.info("\tFinished loading ANLI-HO data: " + self.name)
+
+
 @register_task("mnli", rel_path="MNLI/")
 # Alternate version with a modified evaluation metric. For use in transfer evaluations on
 # two-class test sets like RTE. Example config override:
@@ -1200,6 +1333,13 @@ class AdversarialNLITask(PairClassificationTask):
 @register_task("mnli-two", rel_path="MNLI/", two_class_evaluation=True)
 # Second copy that can be assigned separate task-specific config options.
 @register_task("mnli-alt", rel_path="MNLI/")
+@register_task("nli-a", rel_path="A-main/")  # 'Base' dataset from paper.
+@register_task("nli-b", rel_path="B-main/")  # 'Paragraph' dataset from paper.
+@register_task("nli-c", rel_path="C-main/")  # 'EditPremise' dataset from paper.
+@register_task("nli-d", rel_path="D-main/")  # 'EditOther' dataset from paper.
+@register_task(
+    "nli-f", rel_path="F-main/", two_class_evaluation=True
+)  # 'Contrast' dataset from paper.
 @register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate", rel_path="MNLI/", genre="slate")
 @register_task("mnli-government", rel_path="MNLI/", genre="government")
@@ -1310,9 +1450,14 @@ class MultiNLITask(PairClassificationTask):
             + self.val_data_text[0]
             + self.val_data_text[1]
         )
-        log.info("\tFinished loading MNLI data.")
+        log.info("\tFinished loading NLI data.")
 
 
+@register_task("nli-a-ho", rel_path="A-main/")
+@register_task("nli-b-ho", rel_path="B-main/")
+@register_task("nli-c-ho", rel_path="C-main/")
+@register_task("nli-d-ho", rel_path="D-main/")
+@register_task("nli-f-ho", rel_path="F-main/")
 @register_task("mnli-ho", rel_path="MNLI/")
 @register_task("mnli-two-ho", rel_path="MNLI/", two_class_evaluation=True)
 @register_task("mnli-fiction-ho", rel_path="MNLI/", genre="fiction")
@@ -1421,7 +1566,7 @@ class MultiNLIHypothesisOnlyTask(SingleClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        log.info("\tFinished loading MNLI-HO data.")
+        log.info("\tFinished loading NLI-HO data.")
 
 
 # GLUE diagnostic (3-class NLI), expects TSV

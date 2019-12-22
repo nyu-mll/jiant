@@ -2,6 +2,11 @@
 
 [![CircleCI](https://circleci.com/gh/nyu-mll/jiant/tree/master.svg?style=svg)](https://circleci.com/gh/nyu-mll/jiant/tree/master) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
+## Branch Note
+
+This branch reflects the code used for (most of) the experiments for a paper on NLI data collection.
+
+## Introduction
 
 `jiant` is a software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks.
 
