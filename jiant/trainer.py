@@ -645,17 +645,17 @@ class SamplingMultiTaskTrainer:
                 # log to tensorboard
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
-                    task_metrics_to_TB["loss"] = float(task_info["loss"] / n_batches_since_val)
+                    task_metrics_to_TB["loss"] = float(task_info["loss"] / n_steps_since_val)
                     self._metrics_to_tensorboard_tr(n_step, task_metrics_to_TB, task.name)
 
-                task_metrics["%s_loss" % task.name] = tr_loss / n_batches_since_val
+                task_metrics["%s_loss" % task.name] = tr_loss / n_steps_since_val
                 description = self._description_from_metrics(task_metrics)
                 log.info(
-                    "Update %d: task %s, batch %d (%d): %s",
+                    "Update %d: task %s, steps since last val %d (total steps = %d): %s",
                     n_step,
                     task.name,
-                    n_batches_since_val,
-                    total_batches_trained,
+                    n_steps_since_val,
+                    total_steps_trained,
                     description,
                 )
                 task_info["last_log"] = time.time()
@@ -674,22 +674,23 @@ class SamplingMultiTaskTrainer:
                 # Get metrics for all training progress so far
                 for task in tasks:
                     task_info = task_infos[task.name]
-                    n_batches_since_val = task_info["n_batches_since_val"]
-                    if n_batches_since_val > 0:
+                    n_steps_since_val = task_info["n_steps_since_val"]
+                    if n_steps_since_val > 0:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
                         # Updating loss from training
                         all_tr_metrics["%s_loss" % task.name] = float(
-                            task_info["loss"] / n_batches_since_val
+                            task_info["loss"] / n_steps_since_val
                         )
                     else:
                         all_tr_metrics["%s_loss" % task.name] = 0.0
                     log.info(
-                        "%s: trained on %d batches, %.3f epochs",
+                        "%s: trained on %d steps (%d batches) since val, %.3f epochs",
                         task.name,
+                        n_steps_since_val,
                         n_batches_since_val,
-                        n_batches_since_val / task_info["n_tr_batches"],
+                        n_steps_since_val / task_info["n_tr_steps"],
                     )
                 if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
                     batch_util = get_model_attribute(
@@ -753,10 +754,10 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             task_info = task_infos[task.name]
             log.info(
-                "Trained %s for %d batches or %.3f epochs",
+                "Trained %s for %d steps or %.3f epochs",
                 task.name,
-                task_info["total_batches_trained"],
-                task_info["total_batches_trained"] / task_info["n_tr_batches"],
+                task_info["total_steps_trained"],
+                task_info["total_steps_trained"] / task_info["n_tr_steps"],
             )
             # * validation_interval
             results[task.name] = metric_infos[task.val_metric]["best"][0]
@@ -934,6 +935,7 @@ class SamplingMultiTaskTrainer:
 
         # Reset training progress
         task_info["n_batches_since_val"] = 0
+        task_info["n_steps_since_val"] = 0
         task_info["loss"] = 0
         return n_examples_overall, task_infos, all_val_metrics
 
@@ -1028,7 +1030,7 @@ class SamplingMultiTaskTrainer:
         if self._max_epochs > 0:  # check if max # epochs hit
             for task in tasks:
                 task_info = task_infos[task.name]
-                n_epochs_trained = task_info["total_batches_trained"] / task_info["n_tr_batches"]
+                n_epochs_trained = task_info["total_steps_trained"] / task_info["n_tr_steps"]
                 if n_epochs_trained >= self._max_epochs:
                     # Commented out the below line as more confusing than helpful. May make sense
                     # to restore if we wind up using more complex stopping strategies.
@@ -1137,6 +1139,7 @@ class SamplingMultiTaskTrainer:
         for task_name, task_info in self._task_infos.items():
             task_states[task_name] = {}
             task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
+            task_states[task_name]["total_steps_trained"] = task_info["total_steps_trained"]
             task_states[task_name]["stopped"] = task_info["stopped"]
         task_states["global"] = {}
         task_states["global"]["optimizer"] = self._optimizer.state_dict()
@@ -1239,6 +1242,7 @@ class SamplingMultiTaskTrainer:
             self._task_infos[task_name]["total_batches_trained"] = task_state[
                 "total_batches_trained"
             ]
+            self._task_infos[task_name]["total_steps_trained"] = task_state["total_steps_trained"]
             self._task_infos[task_name]["stopped"] = task_state["stopped"]
             generator = self._task_infos[task_name]["tr_generator"]
             for _ in itertools.islice(
