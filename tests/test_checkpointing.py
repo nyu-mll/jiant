@@ -148,6 +148,8 @@ class TestCheckpointing(unittest.TestCase):
                     "tr_generator": iterator(self.wic.val_data, num_epochs=1),
                     "total_batches_trained": 400,
                     "n_batches_since_val": 0,
+                    "total_steps_trained": 400,
+                    "n_steps_since_val": 0,
                     "optimizer": optimizer,
                     "scheduler": scheduler,
                     "stopped": False,
