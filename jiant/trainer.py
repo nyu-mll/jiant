@@ -332,8 +332,9 @@ class SamplingMultiTaskTrainer:
                 batch_size=batch_size,
                 biggest_batch_first=True,
             )
-            tr_generator = iterator(task.train_data, num_epochs=None)
             task_info["iterator"] = iterator
+            tr_generator = iterator(task.train_data, num_epochs=None)
+            task_info["tr_generator"] = tr_generator
 
             if phase == "pretrain":
                 # Warning: This won't be precise when training_data_fraction is set, since each
@@ -349,7 +350,6 @@ class SamplingMultiTaskTrainer:
                     task.n_train_examples / (batch_size * self._accumulation_steps)
                 )
 
-            task_info["tr_generator"] = tr_generator
             task_info["loss"] = 0.0
             task_info["total_batches_trained"] = 0
             task_info["n_batches_since_val"] = 0
@@ -587,12 +587,6 @@ class SamplingMultiTaskTrainer:
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
-        log.info(
-            "Effective batch size is %d (batch size %d * gradient accumulation steps %d)",
-            batch_size * self._accumulation_steps,
-            batch_size,
-            self._accumulation_steps,
-        )
         while not should_stop:
             self._model.train()
             task = samples[(n_step + offset) % validation_interval]  # randomly select a task
