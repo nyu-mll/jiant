@@ -1,12 +1,12 @@
 # Create a set of kubernetes run commands to launch the full set of
 # experiments used in the paper.
 
-# Used to generate 191123-paper-runs.sh, which is meant to run on a Google Cloud
+# Used to generate 191223-paper-runs.sh, which is meant to run on a Google Cloud
 # Platform Kubernetes cluster set up according to the instructions in gcp/kubernetes.
 
 # Results files can be converted to LaTeX tables using results_to_table.py
 
-BASENAME = "191123"  # Short descriptor of the full experiment.
+BASENAME = "191223"  # Short descriptor of the full experiment.
 EXP_PATH = "/nfs/jiant/exp/srbowman/srbowman"  # Base path run directories.
 # Should match the jiant `project_dir` config option.
 
@@ -34,10 +34,10 @@ pretrain_data_fractions = {
     "c9": "1.0",
     "d9": "1.0",
     "f9": "1.0",
-    "m9": "0.022918",  # = 9000/392703
-    "g9": "0.116349",  # = 9000/77353
+    "m9": "0.021644",  # 8500/392703
+    "g9": "0.109885",  # 8500/77353
     "ma": "1.0",
-    "x9": "0.008140",  # = 9000/(550152+392703+162765)
+    "x9": "0.007687",  # 8500/(550152+392703+162765)
     "xa": "1.0",
 }
 

@@ -80,7 +80,7 @@ ho_rows = [
 
 
 # This should be the (concatenated) results file produced by the experiments described in
-# generate_script.py and 191123-paper-runs.sh.
+# generate_script.py and 191223-paper-runs.sh.
 with open("results.tsv") as in_file:
     tsv_reader = csv.reader(in_file, delimiter="\t")
     main_table = {
