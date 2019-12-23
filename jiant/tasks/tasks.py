@@ -1453,11 +1453,11 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading NLI data.")
 
 
-@register_task("nli-a-ho", rel_path="A-main/")
-@register_task("nli-b-ho", rel_path="B-main/")
-@register_task("nli-c-ho", rel_path="C-main/")
-@register_task("nli-d-ho", rel_path="D-main/")
-@register_task("nli-f-ho", rel_path="F-main/")
+@register_task("nli-a-ho", rel_path="base/")
+@register_task("nli-b-ho", rel_path="paragraph/")
+@register_task("nli-c-ho", rel_path="edit_premise/")
+@register_task("nli-d-ho", rel_path="edit_other/")
+@register_task("nli-f-ho", rel_path="contrast/")
 @register_task("mnli-ho", rel_path="MNLI/")
 @register_task("mnli-two-ho", rel_path="MNLI/", two_class_evaluation=True)
 @register_task("mnli-fiction-ho", rel_path="MNLI/", genre="fiction")
