@@ -1333,13 +1333,13 @@ class AdversarialNLIHOTask(SingleClassificationTask):
 @register_task("mnli-two", rel_path="MNLI/", two_class_evaluation=True)
 # Second copy that can be assigned separate task-specific config options.
 @register_task("mnli-alt", rel_path="MNLI/")
-@register_task("nli-a", rel_path="A-main/")  # 'Base' dataset from paper.
-@register_task("nli-b", rel_path="B-main/")  # 'Paragraph' dataset from paper.
-@register_task("nli-c", rel_path="C-main/")  # 'EditPremise' dataset from paper.
-@register_task("nli-d", rel_path="D-main/")  # 'EditOther' dataset from paper.
-@register_task(
-    "nli-f", rel_path="F-main/", two_class_evaluation=True
-)  # 'Contrast' dataset from paper.
+@register_task("mnli-9", rel_path="MNLI9/")
+@register_task("mnli-temp-eval", rel_path="MNLI-Temp-Eval/")
+@register_task("nli-a", rel_path="base/")
+@register_task("nli-b", rel_path="paragraph/")
+@register_task("nli-c", rel_path="edit_premise/")
+@register_task("nli-d", rel_path="edit_other/")
+@register_task("nli-f", rel_path="contrast/", two_class_evaluation=True)
 @register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate", rel_path="MNLI/", genre="slate")
 @register_task("mnli-government", rel_path="MNLI/", genre="government")
