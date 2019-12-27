@@ -818,7 +818,7 @@ class SamplingMultiTaskTrainer:
         batch_size,
         all_val_metrics,
         n_examples_overall,
-        print_output=True,
+        print_output=False,
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
@@ -861,7 +861,11 @@ class SamplingMultiTaskTrainer:
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
             # The following doesn't work for other inputs, yet.
-            if print_output and "inputs" in batch and "words" in batch["inputs"]:
+            if print_output:
+                if not ("inputs" in batch and "words" in batch["inputs"]):
+                    raise NotImplementedError(
+                        "Printing of examples is not supported for your model, yet. Set print_output=False."
+                    )
                 if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
                         voc_src = self._model.vocab.get_index_to_token_vocabulary("tokens")
