@@ -23,7 +23,9 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200, valid_metric="accuracy")
-@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000, valid_metric="BLEU")
+@register_task(
+    "wmt14_en_de", rel_path="wmt14/en_de/small/", max_targ_v_size=40000, valid_metric="BLEU"
+)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
@@ -130,17 +132,17 @@ class Seq2SeqTask(SequenceGenerationTask):
         # This doesn't require logits for now, since loss is updated in another part.
         assert logits is None and predictions is not None
 
-        if labels.shape[1] < predictions.shape[2]:
-            predictions = predictions[:, 0, : labels.shape[1]]
+        if self.val_metric != "%s_accuracy" % self.name:  # for MT
+            self.scorer2(predictions[:, 0, :], labels)
         else:
-            predictions = predictions[:, 0, :]
-            # Cut labels if predictions (without gold target) are shorter.
-            labels = labels[:, : predictions.shape[1]]
-            tagmask = tagmask[:, : predictions.shape[1]]
-        if self.val_metric == "%s_accuracy" % self.name:
+            if labels.shape[1] < predictions.shape[2]:
+                predictions = predictions[:, 0, : labels.shape[1]]
+            else:
+                predictions = predictions[:, 0, :]
+                # Cut labels if predictions (without gold target) are shorter.
+                labels = labels[:, : predictions.shape[1]]
+                tagmask = tagmask[:, : predictions.shape[1]]
             self.scorer2(predictions, labels, tagmask)
-        else:  # for MT
-            self.scorer2(predictions, labels)
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
