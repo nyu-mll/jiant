@@ -7,7 +7,7 @@ If the data originally comes in separate files for source and target language, r
 
 python prepare_MT_data.py <output file> <src lang file> <trg lang file>
 
-for each of train, dev, and (optionally) test first. Using the example data in this folder, this would be:
+for each of train, dev, and (optionally) test first. Using the example data in this folder, which is a subset of the WMT 2014 data, this would be:
 
 python prepare_MT_data.py ../../data/wmt14/en_de/train.tsv example_data/train.en example_data/train.de
 python prepare_MT_data.py ../../data/wmt14/en_de/val.tsv example_data/dev.en example_data/dev.de
