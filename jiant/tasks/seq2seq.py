@@ -22,8 +22,8 @@ from .tasks import (
 )
 
 
-@register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
-@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000)
+@register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200, valid_metric="accuracy")
+@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000, valid_metric="BLEU")
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
@@ -72,7 +72,7 @@ class Seq2SeqTask(SequenceGenerationTask):
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
                 src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
-                if self.name == "seg_wix":
+                if self.val_metric == "%s_accuracy" % self.name:
                     tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
                 else:  # for MT
                     tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
@@ -119,7 +119,7 @@ class Seq2SeqTask(SequenceGenerationTask):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
         val_metric = self.scorer2.get_metric(reset)
-        if self.name == "seg_wix":
+        if self.val_metric == "%s_accuracy" % self.name:
             metric_name = "accuracy"
         else:  # for MT
             metric_name = "bleu"
@@ -137,14 +137,14 @@ class Seq2SeqTask(SequenceGenerationTask):
             # Cut labels if predictions (without gold target) are shorter.
             labels = labels[:, : predictions.shape[1]]
             tagmask = tagmask[:, : predictions.shape[1]]
-        if self.name == "seg_wix":
+        if self.val_metric == "%s_accuracy" % self.name:
             self.scorer2(predictions, labels, tagmask)
         else:  # for MT
             self.scorer2(predictions, labels)
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
-        if self.name == "seg_wix":
+        if self.val_metric == "%s_accuracy" % self.name:
             return self._get_char_prediction(voc_src, voc_trg, inputs, gold, output)
         else:  # for MT
             return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
