@@ -27,9 +27,9 @@ from .tasks import (
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name, valid_metric, **kw):
         super().__init__(name, **kw)
-        if name == "seg_wix":
+        if valid_metric == "accuracy":
             self.scorer2 = BooleanAccuracy()
             self.val_metric = "%s_accuracy" % self.name
         else:  # for MT
