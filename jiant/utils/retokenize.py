@@ -336,7 +336,7 @@ def process_sentencepiece_for_alignment(t):
 
 def process_bytebpe_for_alignment(t):
     """Add <w> markers to ensure word-boundary alignment."""
-    if t.startswith("▁"):
+    if t.startswith("Ġ"):
         return "<w>" + re.sub(r"^Ġ", "", t)
     else:
         return t
