@@ -11,7 +11,7 @@ from sacremoses import MosesDetokenizer
 from sacremoses import MosesTokenizer as SacreMosesTokenizer
 from nltk.tokenize.simple import SpaceTokenizer
 from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
-from pytorch_transformers import (
+from transformers import (
     BertTokenizer,
     RobertaTokenizer,
     XLNetTokenizer,

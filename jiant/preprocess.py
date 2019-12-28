@@ -31,7 +31,7 @@ from jiant.pytorch_transformers_interface import (
     input_module_uses_pytorch_transformers,
     input_module_tokenizer_name,
 )
-from pytorch_transformers import (
+from transformers import (
     BertTokenizer,
     RobertaTokenizer,
     XLNetTokenizer,
