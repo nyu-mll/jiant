@@ -313,10 +313,10 @@ class TestRetokenize(unittest.TestCase):
 
     def test_bytebpe(self):
         self.tokens = [
-            ["ĠMembers", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"],
-            ["ĠI", "Ġlook", "Ġat", "ĠSarah", "'s", "Ġdog", ".", "ĠIt", "Ġwas", "Ġcute", ".", "!"],
+            ["Members", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"],
+            ["I", "Ġlook", "Ġat", "ĠSarah", "'s", "Ġdog", ".", "ĠIt", "Ġwas", "Ġcute", ".", "!"],
             [
-                "ĠMr",
+                "Mr",
                 ".",
                 "ĠImm",
                 "elt",
@@ -333,7 +333,7 @@ class TestRetokenize(unittest.TestCase):
                 "Ġrules",
                 ".",
             ],
-            ["ĠWhat", "?"],
+            ["What", "?"],
         ]
         self.token_index_tgt = [
             [[0], [1], [2], [3], [4, 5], [6], [7]],
@@ -361,7 +361,7 @@ class TestRetokenize(unittest.TestCase):
         ]
         orig_tokens = self.text[0].split()
         alignment_map = retokenize.create_tokenization_alignment(orig_tokens, "roberta-base")
-        bytebpe_tokens = ["ĠMembers", "Ġof", "Ġthe", "ĠHouse", "Ġcl,apped", "Ġtheir", "Ġhands"]
+        bytebpe_tokens = ["Members", "Ġof", "Ġthe", "ĠHouse", "Ġcl,apped", "Ġtheir", "Ġhands"]
         for i, v in enumerate(alignment_map):
             assert v[0] == orig_tokens[i] and ",".join(v[1]) == bytebpe_tokens[i]
         assert self.tokens == tokens

@@ -2,7 +2,7 @@ import unittest
 from unittest import mock
 import torch
 import copy
-from jiant.pytorch_transformers_interface.modules import (
+from jiant.huggingface_transformers_interface.modules import (
     PytorchTransformersEmbedderModule,
     BertEmbedderModule,
     RobertaEmbedderModule,
@@ -35,6 +35,17 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         self.assertListEqual(
             RobertaEmbedderModule.apply_boundary_tokens(s1, s2),
             ["<s>", "A", "B", "C", "</s>", "</s>", "D", "E", "</s>"],
+        )
+
+    def test_albert_apply_boundary_tokens(self):
+        s1 = ["A", "B", "C"]
+        s2 = ["D", "E"]
+        self.assertListEqual(
+            RobertaEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
+        )
+        self.assertListEqual(
+            RobertaEmbedderModule.apply_boundary_tokens(s1, s2),
+            ["[CLS]", "A", "B", "C", "[SEP]", "D", "E", "[SEP]"],
         )
 
     def test_xlnet_apply_boundary_tokens(self):

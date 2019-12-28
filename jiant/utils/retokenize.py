@@ -375,7 +375,7 @@ def align_wpm(
 def align_sentencepiece(
     text: Text, sentencepiece_tokenizer: Tokenizer
 ) -> Tuple[TokenAligner, List[Text]]:
-    """Alignment fn for SentencePiece Tokenizer, used in XLNET
+    """Alignment fn for SentencePiece Tokenizer, used in XLNET, XLM-RoBERTa and ALBERT
     """
     bow_tokens = space_tokenize_with_bow(text)
     sentencepiece_tokens = sentencepiece_tokenizer.tokenize(text)
@@ -402,8 +402,12 @@ def align_bytebpe(text: Text, bytebpe_tokenizer: Tokenizer) -> Tuple[TokenAligne
     bow_tokens = space_tokenize_with_bow(text)
     bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
 
+    if len(bytebpe_tokens) > 0:
+        bytebpe_tokens[0] = "Ġ" + bytebpe_tokens[0]
     modified_bytebpe_tokens = list(map(process_bytebpe_for_alignment, bytebpe_tokens))
     ta = TokenAligner(bow_tokens, modified_bytebpe_tokens)
+    if len(bytebpe_tokens) > 0:
+        bytebpe_tokens[0] = re.sub(r"^Ġ", "", bytebpe_tokens[0])
     return ta, bytebpe_tokens
 
 
@@ -425,7 +429,11 @@ def get_aligner_fn(tokenizer_name: Text):
     elif tokenizer_name.startswith("openai-gpt") or tokenizer_name.startswith("xlm-mlm-en-"):
         bpe_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(align_bpe, bpe_tokenizer=bpe_tokenizer)
-    elif tokenizer_name.startswith("xlnet-"):
+    elif (
+        tokenizer_name.startswith("xlnet-")
+        or tokenizer_name.startswith("xlm-roberta-")
+        or tokenizer_name.startswith("albert-")
+    ):
         sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(
             align_sentencepiece, sentencepiece_tokenizer=sentencepiece_tokenizer

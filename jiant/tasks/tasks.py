@@ -2365,9 +2365,9 @@ class CCGTaggingTask(TaggingTask):
 
     def __init__(self, path, max_seq_len, name, tokenizer_name, **kw):
         """ There are 1363 supertags in CCGBank without introduced token. """
-        from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+        from jiant.huggingface_transformers_interface import input_module_uses_transformers
 
-        subword_tokenization = input_module_uses_pytorch_transformers(tokenizer_name)
+        subword_tokenization = input_module_uses_transformers(tokenizer_name)
         super().__init__(
             name, 1363 + int(subword_tokenization), tokenizer_name=tokenizer_name, **kw
         )

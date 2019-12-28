@@ -162,7 +162,7 @@ function bert_cat_exp() {
     OVERRIDES="exp_name=bert-${2}-cat-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
-    OVERRIDES+=", pytorch_transformers_output_mode=cat"
+    OVERRIDES+=", transformers_output_mode=cat"
     run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
@@ -172,7 +172,7 @@ function bert_lex_exp() {
     OVERRIDES="exp_name=bert-${2}-lex-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
-    OVERRIDES+=", pytorch_transformers_output_mode=only"
+    OVERRIDES+=", transformers_output_mode=only"
     run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
@@ -182,7 +182,7 @@ function bert_mix_exp() {
     OVERRIDES="exp_name=bert-${2}-mix-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
-    OVERRIDES+=", pytorch_transformers_output_mode=mix"
+    OVERRIDES+=", transformers_output_mode=mix"
     run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
@@ -194,8 +194,8 @@ function bert_mix_k_exp() {
     OVERRIDES="exp_name=bert-${2}-mix_${3}-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
-    OVERRIDES+=", pytorch_transformers_output_mode=mix"
-    OVERRIDES+=", pytorch_transformers_max_layer=${3}"
+    OVERRIDES+=", transformers_output_mode=mix"
+    OVERRIDES+=", transformers_max_layer=${3}"
     run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
@@ -205,7 +205,7 @@ function bert_at_k_exp() {
     OVERRIDES="exp_name=bert-${2}-at_${3}-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
-    OVERRIDES+=", pytorch_transformers_output_mode=top"
-    OVERRIDES+=", pytorch_transformers_max_layer=${3}"
+    OVERRIDES+=", transformers_output_mode=top"
+    OVERRIDES+=", transformers_max_layer=${3}"
     run_exp "jiant/config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }

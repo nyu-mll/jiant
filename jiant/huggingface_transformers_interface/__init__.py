@@ -1,6 +1,6 @@
 """
 Warning: jiant currently depends on *both* pytorch_pretrained_bert > 0.6 _and_
-pytorch_transformers > 1.0
+transformers > 2.3
 
 These are the same package, though the name changed between these two versions. AllenNLP requires
 0.6 to support the BertAdam optimizer, and jiant directly requires 1.0 to support XLNet and
@@ -13,14 +13,15 @@ When they fix it, remove this note
 https://github.com/huggingface/pytorch-transformers/issues/763 
 
 TODO: We do not support non-English versions of XLM, if you need them, add some code in XLMEmbedderModule
-to prepare langs input to pytorch_transformers.XLMModel
+to prepare langs input to transformers.XLMModel
 """
 
 
-def input_module_uses_pytorch_transformers(input_module):
+def input_module_uses_transformers(input_module):
     return (
         input_module.startswith("bert-")
         or input_module.startswith("roberta-")
+        or input_module.startswith("albert-")
         or input_module.startswith("xlnet-")
         or input_module.startswith("gpt2")
         or input_module.startswith("openai-gpt")
@@ -53,6 +54,7 @@ def input_module_tokenizer_name(input_module):
         "gpt2": "gpt2",
         "gpt2-medium": "gpt2",
         "gpt2-large": "gpt2",
+        "gpt2-xl": "gpt2",
         "transfo-xl-wt103": "transfo_xl",
         "xlm-mlm-en-2048": "xlm_en",
         "xlm-mlm-ende-1024": "xlm_ende",
@@ -61,5 +63,13 @@ def input_module_tokenizer_name(input_module):
         "xlm-mlm-enro-1024": "xlm_enro",
         "xlm-mlm-tlm-xnli15-1024": "xlm_xnli",
         "xlm-mlm-xnli15-1024": "xlm_xnli",
+        "albert-base-v1": "albert",
+        "albert-large-v1": "albert",
+        "albert-xlarge-v1": "albert",
+        "albert-xxlarge-v1": "albert",
+        "albert-base-v2": "albert",
+        "albert-large-v2": "albert",
+        "albert-xlarge-v2": "albert",
+        "albert-xxlarge-v2": "albert",
     }
     return input_module_to_pretokenized[input_module]
