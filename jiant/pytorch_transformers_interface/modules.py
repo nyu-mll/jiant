@@ -30,7 +30,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         )
         utils.maybe_make_dir(self.cache_dir)
 
-        self.output_mode = args.transformers_output_mode
+        self.output_mode = args.pytorch_transformers_output_mode
         self.input_module = args.input_module
         self.max_pos = None
         self.tokenizer_required = input_module_tokenizer_name(args.input_module)
@@ -51,8 +51,8 @@ class PytorchTransformersEmbedderModule(nn.Module):
             param.requires_grad = bool(args.transfer_paradigm == "finetune")
 
         self.num_layers = self.model.config.num_hidden_layers
-        if args.transformers_max_layer >= 0:
-            self.max_layer = args.transformers_max_layer
+        if args.pytorch_transformers_max_layer >= 0:
+            self.max_layer = args.pytorch_transformers_max_layer
             assert self.max_layer <= self.num_layers
         else:
             self.max_layer = self.num_layers
@@ -70,7 +70,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         if self.output_mode == "mix":
             if args.transfer_paradigm == "frozen":
                 log.warning(
-                    "NOTE: transformers_output_mode='mix', so scalar "
+                    "NOTE: pytorch_transformers_output_mode='mix', so scalar "
                     "mixing weights will be fine-tuned even if BERT "
                     "model is frozen."
                 )
@@ -78,7 +78,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # scalars. See the ELMo implementation here:
             # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
             assert len(parse_task_list_arg(args.target_tasks)) <= 1, (
-                "transformers_output_mode='mix' only supports a single set of "
+                "pytorch_transformers_output_mode='mix' only supports a single set of "
                 "scalars (but if you need this feature, see the TODO in "
                 "the code!)"
             )
