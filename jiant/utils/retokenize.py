@@ -99,16 +99,16 @@ def create_tokenization_alignment(
     tokens: Sequence[str], tokenizer_name: str
 ) -> Sequence[Tuple[str, str]]:
     """
-    Builds alignment mapping between space tokenization and tokenization of 
-    choice. 
-    
+    Builds alignment mapping between space tokenization and tokenization of
+    choice.
+
     Example:
         Input: ['Larger', 'than', 'life.']
         Output: [('Larger', ['ĠL', 'arger']), ('than', ['Ġthan']), ('life.', ['Ġlife', '.'])]
 
     Parameters
     -----------------------
-        tokens: list[(str)]. list of tokens, 
+        tokens: list[(str)]. list of tokens,
         tokenizer_name: str
 
     Returns
