@@ -23,7 +23,9 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200, valid_metric="accuracy")
-@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000, valid_metric="BLEU")
+@register_task(
+    "wmt14_en_de", rel_path="wmt14/en_de/small", max_targ_v_size=40000, valid_metric="bleu"
+)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
