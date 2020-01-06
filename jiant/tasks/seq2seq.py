@@ -23,14 +23,13 @@ from .tasks import (
 
 
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200, valid_metric="accuracy")
-@register_task(
-    "wmt14_en_de", rel_path="wmt14/en_de/small", max_targ_v_size=40000, valid_metric="bleu"
-)
+@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000, valid_metric="bleu")
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, valid_metric, **kw):
         super().__init__(name, **kw)
+        # Set scorer2 to compute the validation metric determined in the config file (see 's2s.valid_metric').
         if valid_metric == "accuracy":
             self.scorer2 = BooleanAccuracy()
             self.val_metric = "%s_accuracy" % self.name
