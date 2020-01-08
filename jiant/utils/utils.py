@@ -1,27 +1,19 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
-import codecs
 import copy
 import json
 import logging
 import os
 from pkg_resources import resource_filename
-import random
-import time
-from typing import Dict, Iterable, List, Optional, Sequence, Union
+from typing import Iterable, Sequence, Union
 import glob
-import numpy as np
 import torch
 import jsondiff
 
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
-from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
-from allennlp.nn.util import device_mapping, masked_softmax
 from sacremoses import MosesDetokenizer
-from torch.autograd import Variable
-from torch.nn import Dropout, Linear, Parameter, init
 
 from .config import Params
 
