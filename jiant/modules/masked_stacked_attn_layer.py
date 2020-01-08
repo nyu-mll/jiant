@@ -1,10 +1,12 @@
 import torch
+
 from allennlp.modules import Seq2SeqEncoder
 from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
-from ..utils.utils import MaskedMultiHeadSelfAttention
 from allennlp.nn.util import add_positional_features
+
+from jiant.modules.masked_multi_head_self_attention import MaskedMultiHeadSelfAttention
 
 
 class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
