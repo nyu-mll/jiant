@@ -353,25 +353,6 @@ class SamplingMultiTaskTrainer:
             task_info["total_steps_trained"] = 0
             task_info["n_steps_since_val"] = 0
 
-            # deepcopy b/c using Params pops values and we may want to reuse
-            # the Params object later
-            opt_params = copy.deepcopy(optimizer_params)
-            if "t_total" in optimizer_params:
-                # If we know in advance how many opt steps there will be, set it so the LR scheduler
-                # can use that information. This should be the next validation after we hit the
-                # epoch limit.
-                if self._max_epochs > 0:
-                    n_vals_in_max_epochs = math.ceil(
-                        (task_info["n_tr_steps"] * self._max_epochs) / self._val_interval
-                    )
-                    val_limit = min(n_vals_in_max_epochs, self._max_vals)
-                else:
-                    val_limit = self._max_vals
-                opt_params["t_total"] = val_limit * self._val_interval
-            task_info["optimizer"] = Optimizer.from_params(train_params, opt_params)
-            task_info["scheduler"] = LearningRateScheduler.from_params(
-                task_info["optimizer"], copy.deepcopy(scheduler_params)
-            )
             task_info["stopped"] = False
             task_info["last_log"] = time.time()
 
