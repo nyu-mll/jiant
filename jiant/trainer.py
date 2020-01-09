@@ -244,6 +244,8 @@ class SamplingMultiTaskTrainer:
         self._training_data_fraction = training_data_fraction
         self._task_infos = None
         self._metric_infos = None
+        self._scheduler = None
+        self._optimizer = None
         self._accumulation_steps = accumulation_steps
 
         self._log_interval = 10  # seconds
@@ -333,8 +335,7 @@ class SamplingMultiTaskTrainer:
                 biggest_batch_first=True,
             )
             task_info["iterator"] = iterator
-            tr_generator = iterator(task.train_data, num_epochs=None)
-            task_info["tr_generator"] = tr_generator
+            task_info["tr_generator"] = iterator(task.train_data, num_epochs=None)
 
             n_training_examples = task.n_train_examples
             if phase == "pretrain":
@@ -347,7 +348,7 @@ class SamplingMultiTaskTrainer:
                 task_info["n_tr_batches"] / self._accumulation_steps
             )
 
-            task_info["loss"] = 0.0
+            task_info["loss_since_val"] = 0.0
             task_info["total_batches_trained"] = 0
             task_info["n_batches_since_val"] = 0
             task_info["total_steps_trained"] = 0
@@ -481,7 +482,6 @@ class SamplingMultiTaskTrainer:
         ----------
         Validation results
         """
-        validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(
             tasks, batch_size, train_params, optimizer_params, scheduler_params, phase
         )
@@ -500,10 +500,10 @@ class SamplingMultiTaskTrainer:
             else:
                 val_limit = self._max_vals
             optimizer_params["t_total"] = val_limit * self._val_interval
-        optimizer = Optimizer.from_params(train_params, optimizer_params)
-        scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
-        self._optimizer = optimizer
-        self._scheduler = scheduler
+        self._optimizer = Optimizer.from_params(train_params, optimizer_params)
+        self._scheduler = LearningRateScheduler.from_params(
+            self._optimizer, copy.deepcopy(scheduler_params)
+        )
 
         # define these here b/c they might get overridden on load
         n_step, should_stop = 0, False
@@ -563,27 +563,21 @@ class SamplingMultiTaskTrainer:
 
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
-        samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
+        samples = random.choices(tasks, weights=sample_weights, k=self._val_interval)
 
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[(n_step + offset) % validation_interval]  # randomly select a task
+            task = samples[(n_step + offset) % self._val_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info["stopped"]:
                 offset += 1
                 continue
-            tr_generator = task_info["tr_generator"]
-            total_batches_trained = task_info["total_batches_trained"]
-            n_batches_since_val = task_info["n_batches_since_val"]
-            total_steps_trained = task_info["total_steps_trained"]
-            n_steps_since_val = task_info["n_steps_since_val"]
-            tr_loss = task_info["loss"]
 
             # gradients are accumulated for accumulation_steps-many batches before an opt. step:
-            for batch in itertools.islice(tr_generator, self._accumulation_steps):
+            for batch in itertools.islice(task_info["tr_generator"], self._accumulation_steps):
                 output_dict = self._forward(batch, task=task)
                 assert_for_log("loss" in output_dict, "Model must return a dict with 'loss' key")
                 loss = get_output_attribute(output_dict, "loss", self._cuda_device)
@@ -594,49 +588,44 @@ class SamplingMultiTaskTrainer:
                 loss *= scaling_weights[task.name]
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
-                tr_loss += loss.data.cpu().numpy()
-                n_batches_since_val += 1
-                total_batches_trained += 1
+                task_info["loss_since_val"] += loss.data.cpu().numpy()
+                task_info["n_batches_since_val"] += 1
+                task_info["total_batches_trained"] += 1
 
             # Gradient regularization and application
             if self._grad_norm:
                 clip_grad_norm_(self._model.parameters(), self._grad_norm)
 
-            optimizer.step()
-            optimizer.zero_grad()
-            total_steps_trained += 1
-            n_steps_since_val += 1
+            self._optimizer.step()
+            self._optimizer.zero_grad()
+            task_info["total_steps_trained"] += 1
+            task_info["n_steps_since_val"] += 1
             n_step += 1
 
             # step scheduler if it's not ReduceLROnPlateau
-            if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                scheduler.step_batch(n_step)
-
-            # Update training progress on that task
-            task_info["total_batches_trained"] = total_batches_trained
-            task_info["n_batches_since_val"] = n_batches_since_val
-            task_info["total_steps_trained"] = total_steps_trained
-            task_info["n_steps_since_val"] = n_steps_since_val
-            task_info["loss"] = tr_loss
+            if not isinstance(self._scheduler.lr_scheduler, ReduceLROnPlateau):
+                self._scheduler.step_batch(n_step)
 
             # Intermediate log to logger and tensorboard
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()
-
+                avg_loss_per_step_since_val = (
+                    task_info["loss_since_val"] / task_info["n_steps_since_val"]
+                )
                 # log to tensorboard
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
-                    task_metrics_to_TB["loss"] = float(task_info["loss"] / n_steps_since_val)
+                    task_metrics_to_TB["loss"] = avg_loss_per_step_since_val
                     self._metrics_to_tensorboard_tr(n_step, task_metrics_to_TB, task.name)
 
-                task_metrics["%s_loss" % task.name] = tr_loss / n_steps_since_val
+                task_metrics["%s_loss" % task.name] = avg_loss_per_step_since_val
                 description = self._description_from_metrics(task_metrics)
                 log.info(
                     "Update %d: task %s, steps since last val %d (total steps = %d): %s",
                     n_step,
                     task.name,
-                    n_steps_since_val,
-                    total_steps_trained,
+                    task_info["n_steps_since_val"],
+                    task_info["total_steps_trained"],
                     description,
                 )
                 task_info["last_log"] = time.time()
@@ -648,30 +637,29 @@ class SamplingMultiTaskTrainer:
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
-            if n_step % validation_interval == 0:
+            if n_step % self._val_interval == 0:
                 # Dump and log all of our current info
-                n_val = int(n_step / validation_interval)
+                n_val = int(n_step / self._val_interval)
                 log.info("***** Step %d / Validation %d *****", n_step, n_val)
                 # Get metrics for all training progress so far
                 for task in tasks:
                     task_info = task_infos[task.name]
-                    n_steps_since_val = task_info["n_steps_since_val"]
-                    if n_steps_since_val > 0:
+                    if task_info["n_steps_since_val"] > 0:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
                         # Updating loss from training
                         all_tr_metrics["%s_loss" % task.name] = float(
-                            task_info["loss"] / n_steps_since_val
+                            task_info["loss_since_val"] / task_info["n_steps_since_val"]
                         )
                     else:
                         all_tr_metrics["%s_loss" % task.name] = 0.0
                     log.info(
                         "%s: trained on %d steps (%d batches) since val, %.3f epochs",
                         task.name,
-                        n_steps_since_val,
-                        n_batches_since_val,
-                        n_steps_since_val / task_info["n_tr_steps"],
+                        task_info["n_steps_since_val"],
+                        task_info["n_batches_since_val"],
+                        task_info["n_steps_since_val"] / task_info["n_tr_steps"],
                     )
                 if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
                     batch_util = get_model_attribute(
@@ -681,6 +669,7 @@ class SamplingMultiTaskTrainer:
 
                 # Validate
                 log.info("Validating...")
+                # this call resets n_steps_since_val, n_batches_since_val, and loss_since_val = 0
                 all_val_metrics, should_save, new_best = self._validate(n_val, tasks, batch_size)
 
                 # Check stopping conditions
@@ -715,7 +704,7 @@ class SamplingMultiTaskTrainer:
                 # Reset training preogress
                 all_tr_metrics = {}
                 samples = random.choices(
-                    tasks, weights=sample_weights, k=validation_interval
+                    tasks, weights=sample_weights, k=self._val_interval
                 )  # pylint: disable=no-member
 
                 if should_save:
@@ -726,7 +715,7 @@ class SamplingMultiTaskTrainer:
                         new_best=new_best,
                     )
 
-        log.info("Stopped training after %d validation checks", n_step / validation_interval)
+        log.info("Stopped training after %d validation checks", n_step / self._val_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
 
     def _aggregate_results(self, tasks, task_infos, metric_infos):
@@ -917,7 +906,7 @@ class SamplingMultiTaskTrainer:
         # Reset training progress
         task_info["n_batches_since_val"] = 0
         task_info["n_steps_since_val"] = 0
-        task_info["loss"] = 0
+        task_info["loss_since_val"] = 0
         return n_examples_overall, task_infos, all_val_metrics
 
     def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
@@ -940,7 +929,6 @@ class SamplingMultiTaskTrainer:
         new_best: bool, whether or not the macro performance increased
         """
         task_infos, metric_infos = self._task_infos, self._metric_infos
-        scheduler = self._scheduler
         self._model.eval()
         all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
         all_val_metrics["macro_avg"] = 0.0
@@ -989,15 +977,17 @@ class SamplingMultiTaskTrainer:
 
             # Get scheduler, and update using macro score
             # micro has no scheduler updates
-            if task_name == "macro" and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+            if task_name == "macro" and isinstance(self._scheduler.lr_scheduler, ReduceLROnPlateau):
                 log.info("Updating LR scheduler:")
-                scheduler.step(this_val_metric, val_pass)
+                self._scheduler.step(this_val_metric, val_pass)
                 log.info(
-                    "\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best
+                    "\tBest result seen so far for %s: %.3f",
+                    metric,
+                    self._scheduler.lr_scheduler.best,
                 )
                 log.info(
                     "\t# validation passes without improvement: %d",
-                    scheduler.lr_scheduler.num_bad_epochs,
+                    self._scheduler.lr_scheduler.num_bad_epochs,
                 )
 
         return all_val_metrics, should_save, new_best
@@ -1005,7 +995,6 @@ class SamplingMultiTaskTrainer:
     def _check_stop(self, val_n, stop_metric, tasks):
         """ Check to see if should stop """
         task_infos, metric_infos = self._task_infos, self._metric_infos
-        optimizer = self._optimizer
 
         should_stop = False
         if self._max_epochs > 0:  # check if max # epochs hit
@@ -1022,7 +1011,7 @@ class SamplingMultiTaskTrainer:
                 log.info("Reached max_epochs limit on all tasks. Stopping training.")
                 should_stop = True
 
-        if optimizer.param_groups[0]["lr"] < self._min_lr:
+        if self._optimizer.param_groups[0]["lr"] < self._min_lr:
             log.info("Minimum LR reached. Stopping training.")
             should_stop = True
 
