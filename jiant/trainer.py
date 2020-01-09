@@ -669,6 +669,7 @@ class SamplingMultiTaskTrainer:
 
                 # Validate
                 log.info("Validating...")
+                # this call resets n_steps_since_val, n_batches_since_val, and loss_since_val = 0
                 all_val_metrics, should_save, new_best = self._validate(n_val, tasks, batch_size)
 
                 # Check stopping conditions
