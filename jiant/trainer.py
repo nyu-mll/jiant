@@ -335,8 +335,7 @@ class SamplingMultiTaskTrainer:
                 biggest_batch_first=True,
             )
             task_info["iterator"] = iterator
-            tr_generator = iterator(task.train_data, num_epochs=None)
-            task_info["tr_generator"] = tr_generator
+            task_info["tr_generator"] = iterator(task.train_data, num_epochs=None)
 
             n_training_examples = task.n_train_examples
             if phase == "pretrain":
@@ -576,15 +575,9 @@ class SamplingMultiTaskTrainer:
             if task_info["stopped"]:
                 offset += 1
                 continue
-            tr_generator = task_info["tr_generator"]
-            total_batches_trained = task_info["total_batches_trained"]
-            n_batches_since_val = task_info["n_batches_since_val"]
-            total_steps_trained = task_info["total_steps_trained"]
-            n_steps_since_val = task_info["n_steps_since_val"]
-            tr_loss = task_info["loss"]
 
             # gradients are accumulated for accumulation_steps-many batches before an opt. step:
-            for batch in itertools.islice(tr_generator, self._accumulation_steps):
+            for batch in itertools.islice(task_info["tr_generator"], self._accumulation_steps):
                 output_dict = self._forward(batch, task=task)
                 assert_for_log("loss" in output_dict, "Model must return a dict with 'loss' key")
                 loss = get_output_attribute(output_dict, "loss", self._cuda_device)
@@ -595,9 +588,9 @@ class SamplingMultiTaskTrainer:
                 loss *= scaling_weights[task.name]
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
-                tr_loss += loss.data.cpu().numpy()
-                n_batches_since_val += 1
-                total_batches_trained += 1
+                task_info["loss"] += loss.data.cpu().numpy()
+                task_info["n_batches_since_val"] += 1
+                task_info["total_batches_trained"] += 1
 
             # Gradient regularization and application
             if self._grad_norm:
@@ -605,20 +598,13 @@ class SamplingMultiTaskTrainer:
 
             self._optimizer.step()
             self._optimizer.zero_grad()
-            total_steps_trained += 1
-            n_steps_since_val += 1
+            task_info["total_steps_trained"] += 1
+            task_info["n_steps_since_val"] += 1
             n_step += 1
 
             # step scheduler if it's not ReduceLROnPlateau
             if not isinstance(self._scheduler.lr_scheduler, ReduceLROnPlateau):
                 self._scheduler.step_batch(n_step)
-
-            # Update training progress on that task
-            task_info["total_batches_trained"] = total_batches_trained
-            task_info["n_batches_since_val"] = n_batches_since_val
-            task_info["total_steps_trained"] = total_steps_trained
-            task_info["n_steps_since_val"] = n_steps_since_val
-            task_info["loss"] = tr_loss
 
             # Intermediate log to logger and tensorboard
             if time.time() - task_info["last_log"] > self._log_interval:
@@ -627,17 +613,21 @@ class SamplingMultiTaskTrainer:
                 # log to tensorboard
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
-                    task_metrics_to_TB["loss"] = float(task_info["loss"] / n_steps_since_val)
+                    task_metrics_to_TB["loss"] = float(
+                        task_info["loss"] / task_info["n_steps_since_val"]
+                    )
                     self._metrics_to_tensorboard_tr(n_step, task_metrics_to_TB, task.name)
 
-                task_metrics["%s_loss" % task.name] = tr_loss / n_steps_since_val
+                task_metrics["%s_loss" % task.name] = float(
+                    task_info["loss"] / task_info["n_steps_since_val"]
+                )
                 description = self._description_from_metrics(task_metrics)
                 log.info(
                     "Update %d: task %s, steps since last val %d (total steps = %d): %s",
                     n_step,
                     task.name,
-                    n_steps_since_val,
-                    total_steps_trained,
+                    task_info["n_steps_since_val"],
+                    task_info["total_steps_trained"],
                     description,
                 )
                 task_info["last_log"] = time.time()
@@ -656,23 +646,22 @@ class SamplingMultiTaskTrainer:
                 # Get metrics for all training progress so far
                 for task in tasks:
                     task_info = task_infos[task.name]
-                    n_steps_since_val = task_info["n_steps_since_val"]
-                    if n_steps_since_val > 0:
+                    if task_info["n_steps_since_val"] > 0:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
                         # Updating loss from training
                         all_tr_metrics["%s_loss" % task.name] = float(
-                            task_info["loss"] / n_steps_since_val
+                            task_info["loss"] / task_info["n_steps_since_val"]
                         )
                     else:
                         all_tr_metrics["%s_loss" % task.name] = 0.0
                     log.info(
                         "%s: trained on %d steps (%d batches) since val, %.3f epochs",
                         task.name,
-                        n_steps_since_val,
-                        n_batches_since_val,
-                        n_steps_since_val / task_info["n_tr_steps"],
+                        task_info["n_steps_since_val"],
+                        task_info["n_batches_since_val"],
+                        task_info["n_steps_since_val"] / task_info["n_tr_steps"],
                     )
                 if get_model_attribute(self._model, "utilization", self._cuda_device) is not None:
                     batch_util = get_model_attribute(
