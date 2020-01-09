@@ -481,7 +481,6 @@ class SamplingMultiTaskTrainer:
         ----------
         Validation results
         """
-        validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(
             tasks, batch_size, train_params, optimizer_params, scheduler_params, phase
         )
@@ -563,14 +562,14 @@ class SamplingMultiTaskTrainer:
 
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
-        samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
+        samples = random.choices(tasks, weights=sample_weights, k=self._val_interval)
 
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[(n_step + offset) % validation_interval]  # randomly select a task
+            task = samples[(n_step + offset) % self._val_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info["stopped"]:
                 offset += 1
@@ -648,9 +647,9 @@ class SamplingMultiTaskTrainer:
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
-            if n_step % validation_interval == 0:
+            if n_step % self._val_interval == 0:
                 # Dump and log all of our current info
-                n_val = int(n_step / validation_interval)
+                n_val = int(n_step / self._val_interval)
                 log.info("***** Step %d / Validation %d *****", n_step, n_val)
                 # Get metrics for all training progress so far
                 for task in tasks:
@@ -715,7 +714,7 @@ class SamplingMultiTaskTrainer:
                 # Reset training preogress
                 all_tr_metrics = {}
                 samples = random.choices(
-                    tasks, weights=sample_weights, k=validation_interval
+                    tasks, weights=sample_weights, k=self._val_interval
                 )  # pylint: disable=no-member
 
                 if should_save:
@@ -726,7 +725,7 @@ class SamplingMultiTaskTrainer:
                         new_best=new_best,
                     )
 
-        log.info("Stopped training after %d validation checks", n_step / validation_interval)
+        log.info("Stopped training after %d validation checks", n_step / self._val_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
 
     def _aggregate_results(self, tasks, task_infos, metric_infos):
