@@ -244,6 +244,8 @@ class SamplingMultiTaskTrainer:
         self._training_data_fraction = training_data_fraction
         self._task_infos = None
         self._metric_infos = None
+        self._scheduler = None
+        self._optimizer = None
         self._accumulation_steps = accumulation_steps
 
         self._log_interval = 10  # seconds
@@ -499,10 +501,10 @@ class SamplingMultiTaskTrainer:
             else:
                 val_limit = self._max_vals
             optimizer_params["t_total"] = val_limit * self._val_interval
-        optimizer = Optimizer.from_params(train_params, optimizer_params)
-        scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
-        self._optimizer = optimizer
-        self._scheduler = scheduler
+        self._optimizer = Optimizer.from_params(train_params, optimizer_params)
+        self._scheduler = LearningRateScheduler.from_params(
+            self._optimizer, copy.deepcopy(scheduler_params)
+        )
 
         # define these here b/c they might get overridden on load
         n_step, should_stop = 0, False
@@ -601,15 +603,15 @@ class SamplingMultiTaskTrainer:
             if self._grad_norm:
                 clip_grad_norm_(self._model.parameters(), self._grad_norm)
 
-            optimizer.step()
-            optimizer.zero_grad()
+            self._optimizer.step()
+            self._optimizer.zero_grad()
             total_steps_trained += 1
             n_steps_since_val += 1
             n_step += 1
 
             # step scheduler if it's not ReduceLROnPlateau
-            if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                scheduler.step_batch(n_step)
+            if not isinstance(self._scheduler.lr_scheduler, ReduceLROnPlateau):
+                self._scheduler.step_batch(n_step)
 
             # Update training progress on that task
             task_info["total_batches_trained"] = total_batches_trained
@@ -939,7 +941,6 @@ class SamplingMultiTaskTrainer:
         new_best: bool, whether or not the macro performance increased
         """
         task_infos, metric_infos = self._task_infos, self._metric_infos
-        scheduler = self._scheduler
         self._model.eval()
         all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
         all_val_metrics["macro_avg"] = 0.0
@@ -988,15 +989,17 @@ class SamplingMultiTaskTrainer:
 
             # Get scheduler, and update using macro score
             # micro has no scheduler updates
-            if task_name == "macro" and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+            if task_name == "macro" and isinstance(self._scheduler.lr_scheduler, ReduceLROnPlateau):
                 log.info("Updating LR scheduler:")
-                scheduler.step(this_val_metric, val_pass)
+                self._scheduler.step(this_val_metric, val_pass)
                 log.info(
-                    "\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best
+                    "\tBest result seen so far for %s: %.3f",
+                    metric,
+                    self._scheduler.lr_scheduler.best,
                 )
                 log.info(
                     "\t# validation passes without improvement: %d",
-                    scheduler.lr_scheduler.num_bad_epochs,
+                    self._scheduler.lr_scheduler.num_bad_epochs,
                 )
 
         return all_val_metrics, should_save, new_best
@@ -1004,7 +1007,6 @@ class SamplingMultiTaskTrainer:
     def _check_stop(self, val_n, stop_metric, tasks):
         """ Check to see if should stop """
         task_infos, metric_infos = self._task_infos, self._metric_infos
-        optimizer = self._optimizer
 
         should_stop = False
         if self._max_epochs > 0:  # check if max # epochs hit
@@ -1021,7 +1023,7 @@ class SamplingMultiTaskTrainer:
                 log.info("Reached max_epochs limit on all tasks. Stopping training.")
                 should_stop = True
 
-        if optimizer.param_groups[0]["lr"] < self._min_lr:
+        if self._optimizer.param_groups[0]["lr"] < self._min_lr:
             log.info("Minimum LR reached. Stopping training.")
             should_stop = True
 
