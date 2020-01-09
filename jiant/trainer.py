@@ -348,7 +348,7 @@ class SamplingMultiTaskTrainer:
                 task_info["n_tr_batches"] / self._accumulation_steps
             )
 
-            task_info["loss"] = 0.0
+            task_info["loss_since_val"] = 0.0
             task_info["total_batches_trained"] = 0
             task_info["n_batches_since_val"] = 0
             task_info["total_steps_trained"] = 0
@@ -588,7 +588,7 @@ class SamplingMultiTaskTrainer:
                 loss *= scaling_weights[task.name]
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
-                task_info["loss"] += loss.data.cpu().numpy()
+                task_info["loss_since_val"] += loss.data.cpu().numpy()
                 task_info["n_batches_since_val"] += 1
                 task_info["total_batches_trained"] += 1
 
@@ -609,18 +609,16 @@ class SamplingMultiTaskTrainer:
             # Intermediate log to logger and tensorboard
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()
-
+                avg_loss_per_step_since_val = (
+                    task_info["loss_since_val"] / task_info["n_steps_since_val"]
+                )
                 # log to tensorboard
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
-                    task_metrics_to_TB["loss"] = float(
-                        task_info["loss"] / task_info["n_steps_since_val"]
-                    )
+                    task_metrics_to_TB["loss"] = avg_loss_per_step_since_val
                     self._metrics_to_tensorboard_tr(n_step, task_metrics_to_TB, task.name)
 
-                task_metrics["%s_loss" % task.name] = float(
-                    task_info["loss"] / task_info["n_steps_since_val"]
-                )
+                task_metrics["%s_loss" % task.name] = avg_loss_per_step_since_val
                 description = self._description_from_metrics(task_metrics)
                 log.info(
                     "Update %d: task %s, steps since last val %d (total steps = %d): %s",
@@ -652,7 +650,7 @@ class SamplingMultiTaskTrainer:
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
                         # Updating loss from training
                         all_tr_metrics["%s_loss" % task.name] = float(
-                            task_info["loss"] / task_info["n_steps_since_val"]
+                            task_info["loss_since_val"] / task_info["n_steps_since_val"]
                         )
                     else:
                         all_tr_metrics["%s_loss" % task.name] = 0.0
@@ -907,7 +905,7 @@ class SamplingMultiTaskTrainer:
         # Reset training progress
         task_info["n_batches_since_val"] = 0
         task_info["n_steps_since_val"] = 0
-        task_info["loss"] = 0
+        task_info["loss_since_val"] = 0
         return n_examples_overall, task_infos, all_val_metrics
 
     def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
