@@ -26,7 +26,7 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
-def get_output_attribute(out, attribute_name, cuda_device):
+def get_output_attribute(out, attribute_name, cuda_device, reduction="sum"):
     """
     This function handles processing/reduction of output for both
     DataParallel or non-DataParallel situations.
@@ -36,12 +36,18 @@ def get_output_attribute(out, attribute_name, cuda_device):
 
     Parameters
     ---------------------
-    out: Dictionary, output of model during forward pass,
-    attribute_name: str,
-    cuda_device: list or int
+    :param out: Dictionary, output of model during forward pass,
+    :param attribute_name: str,
+    :param cuda_device: list or int
+    :param reduction: (string, optional) reduction to apply to the output. Default: 'sum'.
     """
     if isinstance(cuda_device, list):
-        return out[attribute_name].sum()
+        if reduction == "sum":
+            return out[attribute_name].sum()
+        elif reduction == "mean":
+            return out[attribute_name].sum() / float(len(out[attribute_name]))
+        else:
+            raise ValueError("invalid reduction type argument")
     else:
         return out[attribute_name]
 
