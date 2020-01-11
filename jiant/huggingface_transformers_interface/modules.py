@@ -25,8 +25,7 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
         super(HuggingfaceTransformersEmbedderModule, self).__init__()
 
         self.cache_dir = os.getenv(
-            "HUGGINGFACE_TRANSFORMERS_CACHE",
-            os.path.join(args.exp_dir, "transformers_cache"),
+            "HUGGINGFACE_TRANSFORMERS_CACHE", os.path.join(args.exp_dir, "transformers_cache"),
         )
         utils.maybe_make_dir(self.cache_dir)
 
