@@ -11,7 +11,6 @@ from allennlp.models.model import Model
 from allennlp.nn import InitializerApplicator, util
 from allennlp.modules import Highway, TimeDistributed
 
-from jiant.huggingface_transformers_interface.modules import PytorchTransformersEmbedderModule
 from jiant.tasks.tasks import PairClassificationTask, PairRegressionTask
 from jiant.utils import utils
 from jiant.modules.simple_modules import NullPhraseLayer

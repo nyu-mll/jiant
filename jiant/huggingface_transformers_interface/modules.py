@@ -14,7 +14,7 @@ from jiant.utils import utils
 from jiant.huggingface_transformers_interface import input_module_tokenizer_name
 
 
-class PytorchTransformersEmbedderModule(nn.Module):
+class HuggingfaceTransformersEmbedderModule(nn.Module):
     """ Shared code for transformers wrappers.
 
     Subclasses share a good deal of code, but have a number of subtle differences due to different
@@ -22,7 +22,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
     """
 
     def __init__(self, args):
-        super(PytorchTransformersEmbedderModule, self).__init__()
+        super(HuggingfaceTransformersEmbedderModule, self).__init__()
 
         self.cache_dir = os.getenv(
             "HUGGINGFACE_TRANSFORMERS_CACHE",
@@ -252,9 +252,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
         raise NotImplementedError
 
 
-class BertEmbedderModule(PytorchTransformersEmbedderModule):
+class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for BERT module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(BertEmbedderModule, self).__init__(args)
@@ -309,9 +309,9 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
+class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for RoBERTa module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(RobertaEmbedderModule, self).__init__(args)
@@ -363,9 +363,9 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class AlbertEmbedderModule(PytorchTransformersEmbedderModule):
+class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for ALBERT module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(AlbertEmbedderModule, self).__init__(args)
@@ -420,9 +420,9 @@ class AlbertEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
+class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for XLNet module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(XLNetEmbedderModule, self).__init__(args)
@@ -482,9 +482,9 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
+class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for OpenAI GPT module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(OpenAIGPTEmbedderModule, self).__init__(args)
@@ -545,9 +545,9 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
+class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for GPT-2 module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(GPT2EmbedderModule, self).__init__(args)
@@ -607,9 +607,9 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
+class TransfoXLEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for Transformer-XL module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(TransfoXLEmbedderModule, self).__init__(args)
@@ -677,9 +677,9 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         return lm_head
 
 
-class XLMEmbedderModule(PytorchTransformersEmbedderModule):
+class XLMEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for XLM module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(XLMEmbedderModule, self).__init__(args)

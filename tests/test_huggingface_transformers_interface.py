@@ -3,7 +3,7 @@ from unittest import mock
 import torch
 import copy
 from jiant.huggingface_transformers_interface.modules import (
-    PytorchTransformersEmbedderModule,
+    HuggingfaceTransformersEmbedderModule,
     BertEmbedderModule,
     RobertaEmbedderModule,
     XLNetEmbedderModule,
@@ -14,7 +14,7 @@ from jiant.huggingface_transformers_interface.modules import (
 )
 
 
-class TestPytorchTransformersInterface(unittest.TestCase):
+class TestHuggingfaceTransformersInterface(unittest.TestCase):
     def test_bert_apply_boundary_tokens(self):
         s1 = ["A", "B", "C"]
         s2 = ["D", "E"]
@@ -88,7 +88,7 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         model._unk_id = 10
         model.max_pos = None
         model.tokenizer_required = "correct_tokenizer"
-        model.correct_sent_indexing = PytorchTransformersEmbedderModule.correct_sent_indexing
+        model.correct_sent_indexing = HuggingfaceTransformersEmbedderModule.correct_sent_indexing
 
         allenNLP_indexed = torch.LongTensor([[7, 10, 5, 11, 1, 13, 5], [7, 10, 11, 5, 1, 5, 0]])
 
