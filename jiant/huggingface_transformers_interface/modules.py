@@ -25,7 +25,7 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
         super(HuggingfaceTransformersEmbedderModule, self).__init__()
 
         self.cache_dir = os.getenv(
-            "HUGGINGFACE_TRANSFORMERS_CACHE", os.path.join(args.exp_dir, "transformers_cache"),
+            "HUGGINGFACE_TRANSFORMERS_CACHE", os.path.join(args.exp_dir, "transformers_cache")
         )
         utils.maybe_make_dir(self.cache_dir)
 
@@ -375,7 +375,7 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.max_pos = self.model.config.max_position_embeddings
 
         self.tokenizer = transformers.AlbertTokenizer.from_pretrained(
-            args.input_module, cache_dir=self.cache_dir,
+            args.input_module, cache_dir=self.cache_dir
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
