@@ -65,7 +65,7 @@ setuptools.setup(
         "pyhocon==0.3.35",
         "python-Levenshtein==0.12.0",
         "sacremoses",
-        "pytorch-transformers==1.2.0",
+        "transformers==2.3.0",
         "ftfy",
         "spacy",
     ],
