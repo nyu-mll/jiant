@@ -1,4 +1,4 @@
-"""Main flow for jiant. 
+"""Main flow for jiant.
 
 To debug this, run with -m ipdb:
 
@@ -148,6 +148,10 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         [not t.val_metric_decreases for t in pretrain_tasks]
     ):
         log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
+
+    assert (
+        hasattr(args, "accumulation_steps") and args.accumulation_steps >= 1
+    ), "accumulation_steps must be a positive int."
 
     if args.load_target_train_checkpoint != "none":
         assert_for_log(
