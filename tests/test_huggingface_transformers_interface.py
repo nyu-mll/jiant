@@ -6,6 +6,7 @@ from jiant.huggingface_transformers_interface.modules import (
     HuggingfaceTransformersEmbedderModule,
     BertEmbedderModule,
     RobertaEmbedderModule,
+    AlbertEmbedderModule,
     XLNetEmbedderModule,
     OpenAIGPTEmbedderModule,
     GPT2EmbedderModule,
