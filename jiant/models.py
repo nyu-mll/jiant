@@ -553,7 +553,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         assert not input_module_uses_transformers(args.input_module), (
             "our LM Task does not support transformers, if you need them, try to update",
             "corresponding parts of the code. You may find get_pretrained_lm_head and",
-            "apply_lm_boundary_tokens from pytorch_transformer_interface.module useful,",
+            "apply_lm_boundary_tokens from huggingface_transformers_interface.module useful,",
             "do check if they are working correctly though.",
         )
         d_sent = args.d_hid + (args.skip_embs * d_emb)

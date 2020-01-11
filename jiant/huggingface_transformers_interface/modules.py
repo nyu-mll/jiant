@@ -18,7 +18,7 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
     """ Shared code for transformers wrappers.
 
     Subclasses share a good deal of code, but have a number of subtle differences due to different
-    APIs from pytorch_transfromers.
+    APIs from transfromers.
     """
 
     def __init__(self, args):
@@ -104,9 +104,9 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
 
         input_mask = (ids != 0).long()
         pad_mask = (ids == 0).long()
-        # map AllenNLP @@PADDING@@ to _pad_id in specific pytorch_transformer
+        # map AllenNLP @@PADDING@@ to _pad_id in specific transformer vocab
         unk_mask = (ids == 1).long()
-        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
+        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific transformer vocab
         valid_mask = (ids > 1).long()
         # shift ordinary indexes by 2 to match pretrained token embedding indexes
         if self._unk_id is not None:
