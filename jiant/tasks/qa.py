@@ -27,11 +27,7 @@ from jiant.utils.tokenizers import MosesTokenizer
 from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
-from ..utils.retokenize import (
-    space_tokenize_with_spans,
-    find_space_token_span,
-    create_tokenization_alignment,
-)
+from ..utils.retokenize import space_tokenize_with_spans, find_space_token_span, get_aligner_fn
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -819,21 +815,18 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-    space_to_actual_token_map = create_tokenization_alignment(
-        tokens=detok_sent.split(), tokenizer_name=tokenizer_name
-    )
+    aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
+    token_aligner, actual_tokens = aligner_fn(detok_sent)
 
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
-    space_processed_token_map = []
-    for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
-        for actual_token in actual_token_ls:
-            space_processed_token_map.append((actual_token, space_token, i))
-    ans_actual_token_span = (
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
-    )
+    space_processed_token_map = [
+        (actual_tokens[actual_idx], space_token, actual_idx)
+        for space_idx, (space_token, _, _) in enumerate(space_tokens_with_spans)
+        for actual_idx in aligner_fn.project_tokens(space_idx)
+    ]
+    ans_actual_token_span = aligner_fn.project_span(ans_space_token_span)
 
     return {
         "detok_sent": detok_sent,
