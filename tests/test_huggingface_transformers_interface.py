@@ -41,10 +41,10 @@ class TestHuggingfaceTransformersInterface(unittest.TestCase):
         s1 = ["A", "B", "C"]
         s2 = ["D", "E"]
         self.assertListEqual(
-            RobertaEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
+            AlbertEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
         )
         self.assertListEqual(
-            RobertaEmbedderModule.apply_boundary_tokens(s1, s2),
+            AlbertEmbedderModule.apply_boundary_tokens(s1, s2),
             ["[CLS]", "A", "B", "C", "[SEP]", "D", "E", "[SEP]"],
         )
 
