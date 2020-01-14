@@ -414,8 +414,8 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         model_with_lm_head = transformers.AlbertForMaskedLM.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
-        lm_head = model_with_lm_head.cls
-        lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
+        lm_head = model_with_lm_head.predictions
+        lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
