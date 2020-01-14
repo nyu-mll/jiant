@@ -1053,13 +1053,13 @@ class MultiTaskModel(nn.Module):
             if isinstance(task, RegressionTask):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out["loss"] = F.mse_loss(logits, labels)
-                logits_np = logits.data.cpu().numpy()
-                labels_np = labels.data.cpu().numpy()
-                task.update_metrics(logits_np, labels_np, tagmask=tagmask)
             else:
                 out["loss"] = F.cross_entropy(logits, labels)
-                task.update_metrics(logits, labels, tagmask=tagmask)
+        logits_np = logits.data.cpu().numpy()
+        labels_np = labels.data.cpu().numpy()
         out["loss"] = format_output(out["loss"], self._cuda_device)
+        out["update_metrics_labels"] = format_output(labels_np, self._cuda_device)
+        out["update_metrics_logits"] = format_output(logits_np, self._cuda_device)
         if predict:
             if isinstance(task, RegressionTask):
                 if logits.ndimension() > 1:

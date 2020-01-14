@@ -564,7 +564,7 @@ class SamplingMultiTaskTrainer:
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=self._val_interval)
-
+        self.num = 0
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
@@ -575,7 +575,6 @@ class SamplingMultiTaskTrainer:
             if task_info["stopped"]:
                 offset += 1
                 continue
-
             # gradients are accumulated for accumulation_steps-many batches before an opt. step:
             for batch in itertools.islice(task_info["tr_generator"], self._accumulation_steps):
                 output_dict = self._forward(batch, task=task)
@@ -1033,6 +1032,15 @@ class SamplingMultiTaskTrainer:
         if isinstance(self._cuda_device, int) and self._cuda_device >= 0:
             batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, batch)
+        tagmask = batch.get("tagmask", None)
+        import pdb; pdb.set_trace()
+        update_metrics_kwargs = {}
+        for key, val in model_out.items():
+            if "update_metrics" in key:
+                update_metrics_kwargs[key.replace("update_metrics_", "")] = val
+        update_metrics_kwargs["tagmask"] = tagmask
+        if task is not None:
+            task.update_metrics(**update_metrics_kwargs)
         return model_out
 
     def _description_from_metrics(self, metrics):
