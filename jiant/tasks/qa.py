@@ -815,7 +815,7 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-    aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
+    aligner_fn = get_aligner_fn(tokenizer_name)
     token_aligner, actual_tokens = aligner_fn(detok_sent)
 
     # space_processed_token_map is a list of tuples
