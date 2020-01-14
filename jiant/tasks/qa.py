@@ -824,9 +824,9 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer
     space_processed_token_map = [
         (actual_tokens[actual_idx], space_token, actual_idx)
         for space_idx, (space_token, _, _) in enumerate(space_tokens_with_spans)
-        for actual_idx in aligner_fn.project_tokens(space_idx)
+        for actual_idx in token_aligner.project_tokens(space_idx)
     ]
-    ans_actual_token_span = aligner_fn.project_span(ans_space_token_span)
+    ans_actual_token_span = token_aligner.project_span(ans_space_token_span)
 
     return {
         "detok_sent": detok_sent,
