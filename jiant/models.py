@@ -1001,8 +1001,8 @@ class MultiTaskModel(nn.Module):
             # The assumption is that each space_token corresponds to multiple processed_tokens.
             # After we get the corresponding start/end space_token_indices, we can do " ".join
             #   to get the corresponding string that is definitely within the original input.
-            # One constraint here is that our predictions can only go up to a the granularity of space_tokens.
-            # This is not so bad because SQuAD-style scripts also remove punctuation.
+            # One constraint here is that our predictions can only go up to a the granularity of
+            # space_tokens. This is not so bad because SQuAD-style scripts also remove punctuation.
             pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
             pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
             pred_str_list.append(
