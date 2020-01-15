@@ -11,7 +11,7 @@ TODO: We do not support non-English versions of XLM, if you need them, add some 
 to prepare langs input to transformers.XLMModel
 """
 
-# All the supported input_module from huggingface transformer
+# All the supported input_module from huggingface transformers
 # input_modules mapped to the same string share vocabulary
 input_module_to_pretokenized = {
     "bert-base-uncased": "bert_uncased",
