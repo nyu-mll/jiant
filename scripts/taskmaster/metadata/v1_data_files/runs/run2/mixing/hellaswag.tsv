@@ -1,0 +1,16 @@
+edges-ner-ontonotes_mixrun2	micro_avg: 0.000, macro_avg: 0.967, edges-ner-ontonotes_mcc: 0.965, edges-ner-ontonotes_acc: 0.955, edges-ner-ontonotes_precision: 0.971, edges-ner-ontonotes_recall: 0.962, edges-ner-ontonotes_f1: 0.967
+edges-srl-ontonotes_mixrun2	micro_avg: 0.000, macro_avg: 0.908, edges-srl-ontonotes_mcc: 0.907, edges-srl-ontonotes_acc: 0.878, edges-srl-ontonotes_precision: 0.930, edges-srl-ontonotes_recall: 0.887, edges-srl-ontonotes_f1: 0.908
+edges-coref-ontonotes_mixrun2	micro_avg: 0.000, macro_avg: 0.967, edges-coref-ontonotes_mcc: 0.934, edges-coref-ontonotes_acc: 0.966, edges-coref-ontonotes_precision: 0.967, edges-coref-ontonotes_recall: 0.967, edges-coref-ontonotes_f1: 0.967
+edges-spr1_mixrun2	micro_avg: 0.000, macro_avg: 0.849, edges-spr1_mcc: 0.781, edges-spr1_acc: 0.315, edges-spr1_precision: 0.850, edges-spr1_recall: 0.847, edges-spr1_f1: 0.849
+edges-spr2_mixrun2	micro_avg: 0.000, macro_avg: 0.836, edges-spr2_mcc: 0.740, edges-spr2_acc: 0.090, edges-spr2_precision: 0.847, edges-spr2_recall: 0.825, edges-spr2_f1: 0.836
+edges-dpr_mixrun2	micro_avg: 0.000, macro_avg: 0.696, edges-dpr_mcc: 0.383, edges-dpr_acc: 0.675, edges-dpr_precision: 0.685, edges-dpr_recall: 0.707, edges-dpr_f1: 0.696
+edges-rel-semeval_mixrun2	micro_avg: 0.000, macro_avg: 0.771, edges-rel-semeval_mcc: 0.769, edges-rel-semeval_acc: 0.662, edges-rel-semeval_precision: 0.897, edges-rel-semeval_recall: 0.676, edges-rel-semeval_f1: 0.771
+se-probing-word-content_mixrun2	micro_avg: 0.682, macro_avg: 0.682, se-probing-word-content_accuracy: 0.682
+se-probing-tree-depth_mixrun2	micro_avg: 0.374, macro_avg: 0.374, se-probing-tree-depth_accuracy: 0.374
+se-probing-top-constituents_mixrun2	micro_avg: 0.688, macro_avg: 0.688, se-probing-top-constituents_accuracy: 0.688
+se-probing-bigram-shift_mixrun2	micro_avg: 0.892, macro_avg: 0.892, se-probing-bigram-shift_accuracy: 0.892
+se-probing-past-present_mixrun2	micro_avg: 0.859, macro_avg: 0.859, se-probing-past-present_accuracy: 0.859
+se-probing-subj-number_mixrun2	micro_avg: 0.846, macro_avg: 0.846, se-probing-subj-number_accuracy: 0.846
+se-probing-obj-number_mixrun2	micro_avg: 0.812, macro_avg: 0.812, se-probing-obj-number_accuracy: 0.812
+se-probing-odd-man-out_mixrun2	micro_avg: 0.729, macro_avg: 0.729, se-probing-odd-man-out_accuracy: 0.729
+se-probing-coordination-inversion_mixrun2	micro_avg: 0.666, macro_avg: 0.666, se-probing-coordination-inversion_accuracy: 0.666

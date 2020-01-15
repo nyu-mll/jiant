@@ -171,9 +171,3 @@ def get_regression_raw_data(all_data, single_metadata, double_metadata):
     full_df.insert(0, "targ", targ_srs)
     full_df.index.names = ["run_num", "int_task", "targ_task"]
     return full_df
-
-base_path = "/scratch/zp489/share/nlutransfer/results/phase2/"
-all_data = load_raw_data(base_path)
-
-yo =  get_correlation_raw_data(all_data)
-import pdb; pdb.set_trace()

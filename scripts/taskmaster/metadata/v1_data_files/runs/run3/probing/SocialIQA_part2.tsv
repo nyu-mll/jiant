@@ -1,0 +1,2 @@
+se-probing-sentence-length_run3	micro_avg: 0.462, macro_avg: 0.462, se-probing-sentence-length_accuracy: 0.462
+edges-dep-ud-ewt_run3	micro_avg: 0.000, macro_avg: 0.028, edges-dep-ud-ewt_mcc: 0.073, edges-dep-ud-ewt_acc: 0.014, edges-dep-ud-ewt_precision: 0.398, edges-dep-ud-ewt_recall: 0.014, edges-dep-ud-ewt_f1: 0.028
