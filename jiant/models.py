@@ -497,7 +497,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     """
 
     # Attach task-specific params.
-    for task in tasks:
+    for task in sorted(set(tasks), key=lambda x: x.name):
         task_params = get_task_specific_params(args, task.name)
         log.info(
             "\tTask '%s' params: %s",
@@ -508,7 +508,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         setattr(model, "%s_task_params" % task.name, task_params)
 
     # Actually construct modules.
-    for task in tasks:
+    for task in sorted(set(tasks), key=lambda x: x.name):
         # If the name of the task is different than the classifier it should use
         # then skip the module creation.
         if task.name != model._get_task_params(task.name).get("use_classifier", task.name):
