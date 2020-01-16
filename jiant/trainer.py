@@ -843,7 +843,6 @@ class SamplingMultiTaskTrainer:
             with torch.no_grad():
                 out = self._forward(batch, task=task)
             loss = get_output_attribute(out, "loss", self._cuda_device)
-
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
             if print_output:
@@ -1033,7 +1032,6 @@ class SamplingMultiTaskTrainer:
             batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, batch)
         tagmask = batch.get("tagmask", None)
-        import pdb; pdb.set_trace()
         update_metrics_kwargs = {}
         for key, val in model_out.items():
             if "update_metrics" in key:

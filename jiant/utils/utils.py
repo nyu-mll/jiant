@@ -41,7 +41,10 @@ def get_output_attribute(out, attribute_name, cuda_device):
     cuda_device: list or int
     """
     if isinstance(cuda_device, list):
-        return out[attribute_name].sum()
+        result = out[attribute_name].sum()
+        if attribute_name != "loss":
+            result = result.item()
+        return result
     else:
         return out[attribute_name]
 
