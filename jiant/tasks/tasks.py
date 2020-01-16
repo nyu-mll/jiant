@@ -345,8 +345,6 @@ class PairClassificationTask(ClassificationTask):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
-        if acc > 1.0: 
-            import pdb; pdb.set_trace()
         return {"accuracy": acc}
 
     def process_split(
