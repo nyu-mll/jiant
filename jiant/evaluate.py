@@ -102,6 +102,14 @@ def evaluate(
                 if isinstance(cuda_device, int):
                     batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
+            tagmask = batch.get("tagmask", None)
+            update_metrics_kwargs = {}
+            for key, val in out.items():
+                if "update_metrics" in key:
+                    update_metrics_kwargs[key.replace("update_metrics_", "")] = val
+            update_metrics_kwargs["tagmask"] = tagmask
+            if task is not None:
+                task.update_metrics(**update_metrics_kwargs)
             n_task_examples += get_output_attribute(out, "n_exs", cuda_device)
             # get predictions
             if "preds" not in out:
