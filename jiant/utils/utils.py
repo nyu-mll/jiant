@@ -43,14 +43,11 @@ def get_output_attribute(out, attribute_name, cuda_device, reduction="sum"):
     """
     if isinstance(cuda_device, list):
         if reduction == "sum":
-            result = out[attribute_name].sum()
+            return out[attribute_name].sum()
         elif reduction == "mean":
-            result = out[attribute_name].sum() / float(len(out[attribute_name]))
+            return out[attribute_name].sum() / float(len(out[attribute_name]))
         else:
             raise ValueError("invalid reduction type argument")
-        if attribute_name != "loss":
-            result = result.item()
-        return result
     else:
         return out[attribute_name]
 

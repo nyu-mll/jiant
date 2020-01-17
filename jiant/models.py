@@ -1011,7 +1011,7 @@ class MultiTaskModel(nn.Module):
                     batch["passage_str"][i].split()[pred_char_span_start:pred_char_span_end]
                 ).strip()
             )
-        out["update_metrics_pred_str_list"] = (pred_str_list,)
+        out["update_metrics_pred_str_list"] = pred_str_list
         out["update_metrics_gold_str_list"] = batch["answer_str"]
 
         if predict:
