@@ -379,8 +379,8 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
-        self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
-        self._unk_id = self.tokenizer.convert_tokens_to_ids("[UNK]")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 
