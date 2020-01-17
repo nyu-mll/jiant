@@ -578,7 +578,7 @@ class SamplingMultiTaskTrainer:
             for batch in itertools.islice(task_info["tr_generator"], self._accumulation_steps):
                 output_dict = self._forward(batch, task=task)
                 assert_for_log("loss" in output_dict, "Model must return a dict with 'loss' key")
-                loss = get_output_attribute(output_dict, "loss", self._cuda_device)
+                loss = get_output_attribute(output_dict, "loss", self._cuda_device, "mean")
                 # Losses are reduced as means. When aggregating loss for accumulation steps,
                 # losses are divided to calculate mean loss over batches within a step.
                 if self._accumulation_steps > 1:
@@ -841,7 +841,9 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = get_output_attribute(out, "loss", self._cuda_device)
+
+            loss = get_output_attribute(out, "loss", self._cuda_device, "mean")
+
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
             if print_output:

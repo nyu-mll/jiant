@@ -497,7 +497,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     """
 
     # Attach task-specific params.
-    for task in set(tasks):
+    for task in sorted(set(tasks), key=lambda x: x.name):
         task_params = get_task_specific_params(args, task.name)
         log.info(
             "\tTask '%s' params: %s",
@@ -508,7 +508,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         setattr(model, "%s_task_params" % task.name, task_params)
 
     # Actually construct modules.
-    for task in set(tasks):
+    for task in sorted(set(tasks), key=lambda x: x.name):
         # If the name of the task is different than the classifier it should use
         # then skip the module creation.
         if task.name != model._get_task_params(task.name).get("use_classifier", task.name):
@@ -1002,8 +1002,8 @@ class MultiTaskModel(nn.Module):
             # The assumption is that each space_token corresponds to multiple processed_tokens.
             # After we get the corresponding start/end space_token_indices, we can do " ".join
             #   to get the corresponding string that is definitely within the original input.
-            # One constraint here is that our predictions can only go up to a the granularity of space_tokens.
-            # This is not so bad because SQuAD-style scripts also remove punctuation.
+            # One constraint here is that our predictions can only go up to a the granularity of
+            # space_tokens. This is not so bad because SQuAD-style scripts also remove punctuation.
             pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
             pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
             pred_str_list.append(
