@@ -13,7 +13,7 @@ to prepare langs input to transformers.XLMModel
 
 # All the supported input_module from huggingface transformers
 # input_modules mapped to the same string share vocabulary
-input_module_to_pretokenized = {
+transformer_input_module_to_tokenizer_name = {
     "bert-base-uncased": "bert_uncased",
     "bert-large-uncased": "bert_uncased",
     "bert-large-uncased-whole-word-masking": "bert_uncased",
@@ -49,8 +49,8 @@ input_module_to_pretokenized = {
 
 
 def input_module_uses_transformers(input_module):
-    return input_module in input_module_to_pretokenized
+    return input_module in transformer_input_module_to_tokenizer_name
 
 
 def input_module_tokenizer_name(input_module):
-    return input_module_to_pretokenized[input_module]
+    return transformer_input_module_to_tokenizer_name[input_module]
