@@ -37,7 +37,7 @@ def get_tags(text, current_tags, tokenizer_name, tag_dict):
     for text_idx, text_tag in enumerate(current_tags):
         aligned_idx = token_aligner.project_tokens(text_idx)[0]
         assert aligned_idx < len(aligned_tags)
-        aligned_tags[aligned_idx] = text_tag
+        aligned_tags[aligned_idx] = tag_dict[text_tag]
     str_tags = [str(s) for s in aligned_tags]
     return " ".join(str_tags)
 
