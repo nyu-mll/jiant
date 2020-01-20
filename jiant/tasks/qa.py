@@ -238,7 +238,9 @@ class ReCoRDTask(Task):
                 )
             )
             sent_tok = tokenize_and_truncate(
-                self.tokenizer_name, sent, self.max_seq_len - max_ent_length
+                self.tokenizer_name,
+                " ".join(sent.replace("@placeholder", " ").split()),
+                self.max_seq_len - max_ent_length,
             )
             return sent_tok[:placeholder_loc] + ["@placeholder"] + sent_tok[placeholder_loc:]
 

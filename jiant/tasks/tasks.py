@@ -2729,7 +2729,9 @@ class WiCTask(PairClassificationTask):
             then concatenate everything together. This allows us to track where in the tokenized
             sequence the marked word is located. """
             token_aligner, sent_tok = aligner_fn(sent)
-            raw_start_idx = len(sent.split(word)[0].split())
+            raw_start_idx = max(len(sent.split(word)[0].split(" ")) - 1, 0)
+            # after spliting, there could be three cases, 1. a tailing space, 2. characters in front
+            # of the keyword, 3. the sentence starts with the keyword
             raw_end_idx = len(word.split()) + raw_start_idx
             start_idx, end_idx = token_aligner.project_span(raw_start_idx, raw_end_idx)
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
