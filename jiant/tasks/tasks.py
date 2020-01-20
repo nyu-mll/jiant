@@ -36,6 +36,7 @@ from jiant.utils.data_loaders import (
     load_pair_nli_jsonl,
 )
 from jiant.utils.tokenizers import get_tokenizer
+from jiant.utils.retokenize import get_aligner_fn
 from jiant.tasks.registry import register_task  # global task registry
 from jiant.metrics.winogender_metrics import GenderParity
 from jiant.metrics.nli_metrics import NLITwoClassAccuracy
@@ -2721,16 +2722,16 @@ class WiCTask(PairClassificationTask):
 
         trg_map = {"true": 1, "false": 0, True: 1, False: 0}
 
+        aligner_fn = get_aligner_fn(self._tokenizer_name)
+
         def _process_preserving_word(sent, word):
             """ Tokenize the subsequence before the [first] instance of the word and after,
             then concatenate everything together. This allows us to track where in the tokenized
             sequence the marked word is located. """
-            sent_parts = sent.split(word)
-            sent_tok1 = tokenize_and_truncate(self._tokenizer_name, sent_parts[0], self.max_seq_len)
-            sent_mid = tokenize_and_truncate(self._tokenizer_name, word, self.max_seq_len)
-            sent_tok = tokenize_and_truncate(self._tokenizer_name, sent, self.max_seq_len)
-            start_idx = len(sent_tok1)
-            end_idx = start_idx + len(sent_mid)
+            token_aligner, sent_tok = aligner_fn(sent)
+            raw_start_idx = len(sent.split(word)[0].split())
+            raw_end_idx = len(word.split()) + raw_start_idx
+            start_idx, end_idx = token_aligner.project_span(raw_start_idx, raw_end_idx)
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
             return sent_tok, start_idx, end_idx
 
@@ -2786,7 +2787,7 @@ class WiCTask(PairClassificationTask):
                 inp, offset1, offset2 = model_preprocessing_interface.boundary_token_fn(
                     input1, input2, get_offset=True
                 )
-                d["inputs"] = sentence_to_text_field(inp, indexers)
+                d["inputs"] = sentence_to_text_field(inp[: self.max_seq_len], indexers)
             else:
                 inp1, offset1 = model_preprocessing_interface.boundary_token_fn(
                     input1, get_offset=True
@@ -2794,13 +2795,25 @@ class WiCTask(PairClassificationTask):
                 inp2, offset2 = model_preprocessing_interface.boundary_token_fn(
                     input2, get_offset=True
                 )
-                d["input1"] = sentence_to_text_field(inp1, indexers)
-                d["input2"] = sentence_to_text_field(inp2, indexers)
+                d["input1"] = sentence_to_text_field(inp1[: self.max_seq_len], indexers)
+                d["input2"] = sentence_to_text_field(inp2[: self.max_seq_len], indexers)
             d["idx1"] = ListField(
-                [NumericField(i) for i in range(idxs1[0] + offset1, idxs1[1] + offset1)]
+                [
+                    NumericField(i)
+                    for i in range(
+                        min(idxs1[0] + offset1, self.max_seq_len - 1),
+                        min(idxs1[1] + offset1, self.max_seq_len),
+                    )
+                ]
             )
             d["idx2"] = ListField(
-                [NumericField(i) for i in range(idxs2[0] + offset2, idxs2[1] + offset2)]
+                [
+                    NumericField(i)
+                    for i in range(
+                        min(idxs2[0] + offset2, self.max_seq_len - 1),
+                        min(idxs2[1] + offset2, self.max_seq_len),
+                    )
+                ]
             )
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
