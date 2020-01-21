@@ -228,22 +228,6 @@ class ReCoRDTask(Task):
     def load_data_for_path(self, path, split):
         """ Load data """
 
-        def tokenize_preserve_placeholder(sent, max_ent_length):
-            """ Tokenize questions while preserving @placeholder token """
-            sent_parts = sent.split("@placeholder")
-            assert len(sent_parts) == 2
-            placeholder_loc = len(
-                tokenize_and_truncate(
-                    self.tokenizer_name, sent_parts[0], self.max_seq_len - max_ent_length
-                )
-            )
-            sent_tok = tokenize_and_truncate(
-                self.tokenizer_name,
-                " ".join(sent.replace("@placeholder", " ").split()),
-                self.max_seq_len - max_ent_length,
-            )
-            return sent_tok[:placeholder_loc] + ["@placeholder"] + sent_tok[placeholder_loc:]
-
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
@@ -253,10 +237,9 @@ class ReCoRDTask(Task):
             )
             ent_idxs = item["passage"]["entities"]
             ents = [item["passage"]["text"][idx["start"] : idx["end"] + 1] for idx in ent_idxs]
-            max_ent_length = max([idx["end"] - idx["start"] + 1 for idx in ent_idxs])
             qas = item["qas"]
             for qa in qas:
-                qst = tokenize_preserve_placeholder(qa["query"], max_ent_length)
+                qst = qa["query"]
                 qst_id = qa["idx"]
                 if "answers" in qa:
                     anss = [a["text"] for a in qa["answers"]]
@@ -309,9 +292,8 @@ class ReCoRDTask(Task):
 
         def insert_ent(ent, template):
             """ Replace ent into template (query with @placeholder) """
-            assert "@placeholder" in template, "No placeholder detected!"
-            split_idx = template.index("@placeholder")
-            return template[:split_idx] + ent + template[split_idx + 1 :]
+            len(template.split("@placeholder") == 2), "No placeholder detected!"
+            return template.replace("@placeholder", ent)
 
         def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
             """ pq_id: passage-question ID """
@@ -341,19 +323,17 @@ class ReCoRDTask(Task):
             psg = example["passage"]
             qst_template = example["query"]
 
-            ent_strs = example["ents"]
-            ents = [
-                tokenize_and_truncate(self._tokenizer_name, ent, self.max_seq_len)
-                for ent in ent_strs
-            ]
+            ents = example["ents"]
 
             anss = example["answers"]
             par_idx = example["psg_id"]
             qst_idx = example["qst_id"]
-            for ent_idx, (ent, ent_str) in enumerate(zip(ents, ent_strs)):
-                label = is_answer(ent_str, anss)
-                qst = insert_ent(ent, qst_template)
-                yield _make_instance(psg, qst, ent_str, label, par_idx, qst_idx, ent_idx)
+            for ent_idx, ent in enumerate(ents):
+                label = is_answer(ent, anss)
+                qst = tokenize_and_truncate(
+                    self.tokenizer_name, insert_ent(ent, qst_template), self.max_seq_len
+                )
+                yield _make_instance(psg, qst, ent, label, par_idx, qst_idx, ent_idx)
 
     def count_examples(self):
         """ Compute here b/c we're streaming the sentences. """
