@@ -343,6 +343,7 @@ class SamplingMultiTaskTrainer:
                 #  example is included or excluded independently using a hashing function.
                 # Fortunately, it doesn't need to be.
                 n_training_examples *= self._training_data_fraction
+            
             task_info["n_tr_batches"] = math.ceil(n_training_examples / batch_size)
             task_info["n_tr_steps"] = math.ceil(
                 task_info["n_tr_batches"] / self._accumulation_steps

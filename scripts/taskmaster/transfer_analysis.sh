@@ -51,6 +51,8 @@ function run_exp() {
     # Run
     #python main.py "${args[@]}"
     sbatch sb_hellaswag.sh "${CONFIG_FILE}" "${OVERRIDES}"
+    #echo "${CONFIG_FILE}" 
+    #echo "${OVERRIDES}"
 }
 
 declare -A TASK_TYPE_MAP
@@ -92,6 +94,16 @@ declare -A INTERM_HPARAM=(
   ["cosmosqa"]=6
   ["hellaswag"]=6
   ["commonsenseqa"]=6
+  ["ccg"]=5
+  # === Target
+  ["rte-superglue"]=4
+  ["boolq"]=7
+  ["commitbank"]=2
+  ["copa"]=5
+  ["multirc"]=0
+  ["record"]=2
+  ["wic"]=3
+  ["winograd-coreference"]=5
 )
 declare -A INTERM_BSIZE=(
   ["sst"]=64
@@ -105,6 +117,16 @@ declare -A INTERM_BSIZE=(
   ["cosmosqa"]=4
   ["hellaswag"]=4
   ["commonsenseqa"]=4
+  ["ccg"]=4
+  # === Target
+  ["rte-superglue"]=4
+  ["boolq"]=4
+  ["commitbank"]=4
+  ["copa"]=32
+  ["multirc"]=4
+  ["record"]=4
+  ["wic"]=32
+  ["winograd-coreference"]=32
 )
 declare -A TARGET_HPARAM=(
   ["rte-superglue"]=4
@@ -252,6 +274,42 @@ declare -A SEED_DICT=(
   ["run3_mixing"]=923
   ["run3_probing"]=923
 )
+declare -A INTERM_DATA_FRACTION=(
+    ["ccgS1"]="0.032882"
+    ["ccgS2"]="0.065764"
+    ["ccgS3"]="0.131527"
+    ["ccgS4"]="0.263054"
+    ["ccgS5"]="0.526108"
+    ["ccgS6"]="1"
+    ["qqpS1"]="0.003436"
+    ["qqpS2"]="0.006871"
+    ["qqpS3"]="0.013742"
+    ["qqpS4"]="0.027484"
+    ["qqpS5"]="0.054968"
+    ["qqpS6"]="0.109937"
+    ["qqpS7"]="0.219873"
+    ["qqpS8"]="0.439746"
+    ["qqpS9"]="0.879493"
+    ["hellaswagS1"]="0.031324"
+    ["hellaswagS2"]="0.062649"
+    ["hellaswagS3"]="0.125298"
+    ["hellaswagS4"]="0.250595"
+    ["hellaswagS5"]="0.501190"
+    ["hellaswagS6"]=1
+    ["mnliS1"]="0.003183"
+    ["mnliS2"]="0.006366"
+    ["mnliS3"]="0.012732"
+    ["mnliS4"]="0.025465"
+    ["mnliS5"]="0.050929"
+    ["mnliS6"]="0.101858"
+    ["mnliS7"]="0.203717"
+    ["mnliS8"]="0.407434"
+    ["mnliS9"]="0.814867"
+    ["commonsenseqaS1"]="0.128324"
+    ["commonsenseqaS2"]="0.256647"
+    ["commonsenseqaS3"]="0.513294"
+    ["commonsenseqaS4"]="1"
+)
 export TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference commonsenseqa cosmosqa)
 export TM_PROBING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
 export TM_MIXING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref-ontonotes edges-spr1 edges-spr2 edges-dpr edges-rel-semeval se-probing-word-content se-probing-tree-depth se-probing-top-constituents se-probing-bigram-shift se-probing-past-present se-probing-subj-number se-probing-obj-number se-probing-odd-man-out se-probing-coordination-inversion edges-pos-ontonotes edges-nonterminal-ontonotes edges-dep-ud-ewt se-probing-sentence-length acceptability-wh acceptability-def acceptability-conj acceptability-eos cola)
@@ -306,11 +364,32 @@ function hyperparameter_sweep_mix() {
 function first_intermediate_exp() {
     # Initial intermediate task pretraining.
     # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
-    OVERRIDES="exp_name=roberta-large, run_name=$1_$6, batch_size=$3, reload_vocab=1"
-    OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    OVERRIDES+=", target_tasks=$1, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES+=", do_full_eval=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
 
+function first_intermediate_exp_limited_size() {
+    # Initial intermediate task pretraining with limited size.
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
+    # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccg_size1
+    IFS="S" read -ra ADDR <<< "${1}"
+    TASK_NAME=${ADDR[0]}
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    OVERRIDES+=", target_tasks=$TASK_NAME, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$TASK_NAME"
+    OVERRIDES+=", do_full_eval=1, pretrain_data_fraction=${INTERM_DATA_FRACTION[$1]}"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
+}
+
+function first_target_exp() {
+    # Initial intermediate task pretraining.
+    # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    OVERRIDES+=", target_tasks=$1, do_pretrain=0, do_target_task_training=1, input_module=roberta-large,pretrain_tasks=$1"
+    OVERRIDES+=", do_full_eval=1"
+    run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
+}
 function run_intermediate_to_target_task() {
     # Using a pretrained intermediate task, finetune on a target task.  ("STILTs" sheet)
     # This function can also be used to finetune on a probing task as well.
@@ -357,6 +436,20 @@ function run_intermediate_to_mixing() {
 function ez_first_intermediate_exp() {
     # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
     first_intermediate_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
+}
+
+function ez_first_intermediate_exp_limited_size() {
+    # Usage: ez_first_intermediate_exp_limited_size <1:run_num> <2:intermediate_task>
+    # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccg_size1
+    IFS="S" read -ra ADDR <<< "${2}"
+    TASK_NAME=${ADDR[0]}
+    echo $TASK_NAME
+    first_intermediate_exp_limited_size ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
+}
+
+function ez_first_target_exp() {
+    # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
+    first_target_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
 function ez_run_intermediate_to_target_task() {

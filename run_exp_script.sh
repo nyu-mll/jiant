@@ -5,10 +5,10 @@ export TM_MIXING_TASK_NAMES=(edges-ner-ontonotes edges-srl-ontonotes edges-coref
 function run_all_intermediate_to_target() {
     # Do hyerparameter tuning search for the parameters
     # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
-    TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference cosmosqa)
+    TM_TARGET_TASK_NAMES=(rte-superglue boolq commitbank copa multirc record wic winograd-coreference cosmosqa commonsenseqa)
     for task in ${TM_TARGET_TASK_NAMES[@]}
     do
-        echo "ez_run_intermediate_to_target_task 2 commonsenseqa $task /scratch/pmh330/jiant-outputs/roberta-large-run2"
+        echo "ez_run_intermediate_to_target_task 2 ccgS5 $task /scratch/pmh330/jiant-outputs/datasize_control_v2/"
     done
 
 }

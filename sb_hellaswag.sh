@@ -2,7 +2,7 @@
 #SBATCH --job-name=tense
 #SBATCH --output=/scratch/pmh330/jiant-outputs/tense-%j.out
 #SBATCH --error=/scratch/pmh330/jiant-outputs/tense-%j.err
-#SBATCH --time=48:00:00
+#SBATCH --time=72:00:00
 #SBATCH --gres=gpu:p40:1
 #SBATCH --exclude=gpu-36,gpu-37
 #SBATCH --mem=100GB
@@ -21,6 +21,6 @@ JIANT_CONF=$1
 JIANT_OVERRIDES=$2
 echo "$JIANT_CONF" 
 echo "$JIANT_OVERRIDES"
-export JIANT_PROJECT_PREFIX="/scratch/pmh330/jiant-outputs/roberta-large-run2"
-JIANT_PROJECT_PREFIX="/scratch/pmh330/jiant-outputs/roberta-large-run2"
+#export JIANT_PROJECT_PREFIX="/scratch/pmh330/jiant-outputs/roberta-large-run2"
+#JIANT_PROJECT_PREFIX="/scratch/pmh330/jiant-outputs/roberta-large-run2"
 python main.py --config_file "$JIANT_CONF" -o "$JIANT_OVERRIDES" 
