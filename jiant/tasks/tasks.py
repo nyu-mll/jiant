@@ -2725,11 +2725,11 @@ class WiCTask(PairClassificationTask):
         aligner_fn = get_aligner_fn(self._tokenizer_name)
 
         def _process_preserving_word(sent, word):
-            """ Tokenize the subsequence before the [first] instance of the word and after,
-            then concatenate everything together. This allows us to track where in the tokenized
-            sequence the marked word is located. """
+            """ Find out the index of the [first] instance of the word in the original sentence,
+            and project the span containing marked word to the span containing tokens created from 
+            the marked word. """
             token_aligner, sent_tok = aligner_fn(sent)
-            raw_start_idx = max(len(sent.split(word)[0].split(" ")) - 1, 0)
+            raw_start_idx = len(sent.split(word)[0].split(" ")) - 1
             # after spliting, there could be three cases, 1. a tailing space, 2. characters in front
             # of the keyword, 3. the sentence starts with the keyword
             raw_end_idx = len(word.split()) + raw_start_idx
