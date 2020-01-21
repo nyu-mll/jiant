@@ -292,7 +292,7 @@ class ReCoRDTask(Task):
 
         def insert_ent(ent, template):
             """ Replace ent into template (query with @placeholder) """
-            len(template.split("@placeholder") == 2), "No placeholder detected!"
+            len(template.split("@placeholder")) == 2, "No placeholder detected!"
             return template.replace("@placeholder", ent)
 
         def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
