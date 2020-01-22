@@ -17,6 +17,7 @@ import logging as log
 import os
 import sys
 from collections import defaultdict
+from typing import List, Dict, Union
 
 import numpy as np
 import torch
@@ -51,7 +52,7 @@ from jiant.tasks import (
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
-from jiant.tasks.tasks import SequenceGenerationTask
+from jiant.tasks.tasks import SequenceGenerationTask, Task
 from jiant.utils import config, serialize, utils, options
 from jiant.utils.options import parse_task_list_arg
 
@@ -230,16 +231,25 @@ def _build_embeddings(args, vocab, emb_file: str):
     return embeddings
 
 
-def _build_vocab(args, tasks, vocab_path: str):
-    """ Build vocabulary from scratch, reading data from tasks. """
-    # NOTE: task-specific target vocabulary should be counted in the task object
-    # and provided via `task.all_labels()`. The namespace should be task-specific,
-    # i.e. not something generic like "targets".
+def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
+    """
+    Build vocabulary from scratch: read data from all tasks into namespaces, optionally add special
+    vocab items, and save vocabulary file.
+
+    NOTE: task-specific target vocabulary should be counted in the task object
+    and provided via `task.all_labels()`. The namespace should be task-specific,
+    i.e. not something generic like "targets".
+
+    :param args: Params, config map
+    :param tasks: List[Task], list of Task from which to build vocab
+    :param vocab_path: str, where to save vocab file
+    """
     log.info("\tBuilding vocab from scratch.")
     max_v_sizes = {"word": args.max_word_v_size, "char": args.max_char_v_size}
     word2freq, char2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
+        # TODO: surface more docs for add_task_label_vocab:
         add_task_label_vocab(vocab, task)
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
@@ -283,13 +293,25 @@ def build_indexers(args):
     return indexers
 
 
-def build_tasks(args):
-    """Main logic for preparing tasks, doing so by
-    1) creating / loading the tasks
-    2) building / loading the vocabulary
-    3) building / loading the word vectors
-    4) indexing each task's data
-    5) initializing lazy loaders (streaming iterators)
+def build_tasks(
+    args: config.Params,
+) -> (List[Task], List[Task], Vocabulary, Union[np.ndarray, float]):
+    """
+    Main logic for preparing tasks:
+
+    1. create or load the tasks
+    2. configure classifiers for tasks
+    3. set up indexers
+    4. build and save vocab to disk
+    5. load vocab from disk
+    6. if specified, load word embeddings
+    7. set up ModelPreprocessingInterface (MPI) to handle model-specific preprocessing
+    8. index tasks using vocab and task-specific MPI, save to disk.
+    9. return: task data lazy-loaders in phase-specific lists w/ vocab, and word embeddings
+
+    :param args: Params, config map
+    :return: (List[Task]: list of pretrain Tasks, List[Task]: list of target Tasks,
+             allennlp.data.Vocabulary: tasks vocab, Union[np.ndarray, float]: word embeddings)
     """
 
     # 1) create / load tasks
@@ -398,8 +420,16 @@ def build_tasks(args):
     return pretrain_tasks, target_tasks, vocab, word_embs
 
 
-def _get_task(name, args, data_path, scratch_path):
-    """ Build or load a single task. """
+def _get_task(name: str, args: config.Params, data_path: str, scratch_path: str) -> Task:
+    """
+    Get task object from disk if available. Else construct, prepare and save a new task object.
+
+    :param name: str, task name to load
+    :param args: Params, param handler object
+    :param data_path: str, base data directory
+    :param scratch_path: str, where to save Task objects
+    :return: Task, task object
+    """
     assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
     task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
     pkl_path = os.path.join(scratch_path, "tasks", f"{name:s}.{args.tokenizer:s}.pkl")
@@ -445,8 +475,17 @@ def get_task_without_loading_data(task_name, args):
     return task
 
 
-def get_tasks(args):
-    """ Actually build or load (from pickles) the tasks. """
+def get_tasks(args: config.Params) -> (List[Task], List[str], List[str]):
+    """
+    1. Set up task storage file paths
+    2. Parse config for task names
+    3. Load (or build and save) task objects
+    4. Call counting methods on task objects
+    5. Log example-count stats for tasks.
+
+    :param args: config.Params, config
+    :return: (List[Task]: all Tasks, List[str]: pretrain task names, List[str]: target task names)
+    """
     data_path = args.data_dir
     scratch_path = args.exp_dir
 
@@ -479,10 +518,12 @@ def get_tasks(args):
     return tasks, pretrain_task_names, target_task_names
 
 
-def get_words(tasks):
+def get_words(tasks: List[Task]) -> (Dict[str, int], Dict[str, int]):
     """
-    Get all words for all tasks for all splits for all sentences
-    Return dictionary mapping words to frequencies.
+    Get all words for all tasks for all splits for all sentences across all tasks.
+
+    :param tasks: List[Task]
+    :return: (Dict[str, int]: word frequencies, Dict[str, int]: char frequencies)
     """
     word2freq, char2freq = defaultdict(int), defaultdict(int)
 
@@ -503,20 +544,20 @@ def get_words(tasks):
             for sentence in task.get_sentences():
                 update_vocab_freqs(sentence)
 
-    # This branch is meant for tasks that have *English* target sentences
-    # (or more generally, same language source and target sentences)
-    # Tasks with different language source and target sentences should
-    # count and return the vocab in a `task.all_labels()` method.
-    for task in tasks:
-        if hasattr(task, "target_sentences"):
-            for sentence in task.target_sentences:
-                update_target_vocab_freqs(sentence)
-
     return word2freq, char2freq
 
 
-def get_vocab(word2freq, char2freq, max_v_sizes):
-    """Build vocabulary by selecting the most frequent tokens"""
+def get_vocab(
+    word2freq: Dict[str, int], char2freq: Dict[str, int], max_v_sizes: Dict[str, int]
+) -> Vocabulary:
+    """
+    Build vocabulary by selecting the most frequent tokens
+
+    :param word2freq: dict mapping words to frequencies
+    :param char2freq: dict mapping chars to frequencies
+    :param max_v_sizes: dict[str: int], used to set max vocab size for each token namespace
+    :return: allennlp.data.Vocabulary, word and char vocab
+    """
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
         vocab.add_token_to_namespace(special, "tokens")
