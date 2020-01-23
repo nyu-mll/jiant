@@ -3523,24 +3523,25 @@ class WinograndeTask(MultipleChoiceTask):
     def load_data(self):
         def _load_data(data_file):
             data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-            questions, choices, labels, idxs = [], [], [], []
+            contexts, choices, labels, idxs = [], [], [], []
             for i, example in enumerate(data):
-                question = tokenize_and_truncate(
-                    self._tokenizer_name, example["sentence"], self.max_seq_len
+                sent_part1, sent_part2 = example["sentence"].split("_")
+                sent_part1_tokens = tokenize_and_truncate(
+                    self._tokenizer_name, sent_part1, self.max_seq_len
                 )
-                choice = [
+                choice_tokens = [
                     tokenize_and_truncate(
-                        self._tokenizer_name, example["option1"], self.max_seq_len
+                        self._tokenizer_name, example["option1"] + sent_part2, self.max_seq_len
                     ),
                     tokenize_and_truncate(
-                        self._tokenizer_name, example["option2"], self.max_seq_len
+                        self._tokenizer_name, example["option2"] + sent_part2, self.max_seq_len
                     ),
                 ]
-                questions.append(question)
-                choices.append(choice)
+                contexts.append(sent_part1_tokens)
+                choices.append(choice_tokens)
                 labels.append(int(example["answer"] if "answer" in example else "1") - 1)
                 idxs.append(example["qID"])
-            return [questions, choices, labels, idxs]
+            return [contexts, choices, labels, idxs]
 
         self.train_data_text = _load_data(
             os.path.join(self.path, "train_%s.jsonl" % self.train_size)
@@ -3563,16 +3564,16 @@ class WinograndeTask(MultipleChoiceTask):
     ) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
-        def _make_instance(question, choices, label, idx):
+        def _make_instance(context, choices, label, idx):
             d = {}
-            d["question_str"] = MetadataField(" ".join(question))
+            d["question_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                    model_preprocessing_interface.boundary_token_fn(context), indexers
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    model_preprocessing_interface.boundary_token_fn(context, choice)
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
