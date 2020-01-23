@@ -51,11 +51,17 @@ EMAIL_NOTIFIER = None
 
 
 def handle_arguments(cl_arguments: Iterable[str]) -> argparse.Namespace:
-    """
-    Defines jiant's CLI argument parsing logic
+    """Defines jiant's CLI argument parsing logic
 
-    :param cl_arguments: Iterable[str], sys.argv-style args obj
-    :return: argparse.Namespace, map of params and parsed args
+    Parameters
+    ----------
+    cl_arguments : Iterable[str]
+        An sys.argv-style args obj.
+
+    Returns
+    -------
+    argparse.Namespace
+        A map of params and parsed args
     """
     parser = argparse.ArgumentParser(description="")
     # Configuration files
@@ -337,7 +343,8 @@ def evaluate_and_write(args, model, tasks, splits_to_write, cuda_device):
 
 
 def initial_setup(args: config.Params, cl_args: argparse.Namespace) -> (config.Params, int):
-    """
+    """Perform setup steps:
+
     1. create project, exp, and run dirs if they don't already exist
     2. create log formatter
     3. configure GCP remote logging
@@ -346,12 +353,23 @@ def initial_setup(args: config.Params, cl_args: argparse.Namespace) -> (config.P
     6. write the config out to file
     7. log diff between default and experiment's configs
     8. choose torch's and random's random seed
-    9. if config specifies a single GPU, then set the GPU's random see (doesn't cover multi-GPU)
-    10. resolve "auto" settings for tokenizer and pool_type parameters (not resolved in #5)
+    9. if config specifies a single GPU, then set the GPU's random seed (doesn't cover multi-GPU)
+    10. resolve "auto" settings for tokenizer and pool_type parameters
 
-    :param args: config.Params, config map
-    :param cl_args: Namespace, mapping named arguments to parsed values
-    :return: (config.Params: config map, int: random's and pytorch's random seed)
+    Parameters
+    ----------
+    args : config.Params
+        config map
+    cl_args : argparse.Namespace
+        mapping named arguments to parsed values
+
+    Returns
+    -------
+    args : config.Params
+        config map
+    seed : int
+        random's and pytorch's random seed
+
     """
     output = io.StringIO()
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
@@ -414,11 +432,18 @@ def initial_setup(args: config.Params, cl_args: argparse.Namespace) -> (config.P
 
 
 def check_arg_name(args: config.Params):
-    """
-    Check for obsolete parameter names in config, throw exceptions if found.
+    """Check for obsolete params in config, throw exceptions if obsolete params are found.
 
-    :param args: config.Params, config map
-    :except AssertionError when obsolete parameter names are present in config
+    Parameters
+    ----------
+    args: config.Params
+        config map
+
+    Raises
+    ------
+    AssertionError
+        If obsolete parameter names are present in config
+
     """
     # Mapping - key: old name, value: new name
     name_dict = {

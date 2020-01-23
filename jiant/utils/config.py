@@ -113,17 +113,25 @@ def get_task_attr(args: Type[Params], task_name: str, attr_name: str, default=No
 
 
 def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = None) -> Params:
-    """
-    Generate config map from config_files and overrides.
+    """Generate config map from config_files and overrides:
 
     1) read config file(s) lines (into a str)
     2) append overrides (into str from #1)
     3) call pyhocon's parse_string on combined config-str
     4) return a Params object (a custom jaint config map)
 
-    :param config_files: str or Iterable[str], filepath(s) for config files
-    :param overrides: str, parameters overriding parameters found in config files
-    :return: Params, config map
+    Parameters
+    ----------
+    config_files : Union[str, Iterable[str]]
+        filepath(s) for config files.
+    overrides : str
+        parameters overriding parameters found in config files.
+
+    Returns
+    -------
+    Params
+        config map.
+
     """
     config_string = ""
     if isinstance(config_files, str):

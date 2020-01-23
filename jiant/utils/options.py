@@ -10,11 +10,18 @@ from jiant.tasks import ALL_GLUE_TASKS, ALL_SUPERGLUE_TASKS
 
 
 def parse_task_list_arg(task_list: str) -> List[str]:
-    """
-    Parse task list argument into a list of task names.
+    """Parse task list argument into a list of task names.
 
-    :param task_list: str, comma-delimited list of tasks
-    :return: List[str], task names
+    Parameters
+    ----------
+    task_list : str
+        comma-delimited list of tasks.
+
+    Returns
+    -------
+    List[str]
+        List of tasks names.
+
     """
     task_names = []
     for task_name in task_list.split(","):
