@@ -42,7 +42,7 @@ If you use `jiant` in academic work, please cite it directly:
 
 ```
 @misc{wang2019jiant,
-    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Jason Phang and Edouard Grave and Haokun Liu and Najoung Kim and Phu Mon Htut and Thibault F'{e}vry and Berlin Chen and Nikita Nangia and Anhad Mohananey and Katharina Kann and Shikha Bordia and Nicolas Patry and David Benton and Ellie Pavlick and Samuel R. Bowman},
+    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Jason Phang and Edouard Grave and Haokun Liu and Najoung Kim and Phu Mon Htut and Thibault F\'evry and Berlin Chen and Nikita Nangia and Anhad Mohananey and Katharina Kann and Shikha Bordia and Nicolas Patry and David Benton and Ellie Pavlick and Samuel R. Bowman},
     title = {\texttt{jiant} 1.2: A software toolkit for research on general-purpose text understanding models},
     howpublished = {\url{http://jiant.info/}},
     year = {2019}
@@ -108,7 +108,7 @@ This package is released under the [MIT License](LICENSE.md). The material in th
 
 - Part of the development of `jiant` took at the 2018 Frederick Jelinek Memorial Summer Workshop on Speech and Language Technologies, and was supported by Johns Hopkins University with unrestricted gifts from Amazon, Facebook, Google, Microsoft and Mitsubishi Electric Research Laboratories.
 - This work was made possible in part by a donation to NYU from Eric and Wendy Schmidt made
-by recommendation of the Schmidt Futures program.
+by recommendation of the Schmidt Futures program, and by support from Intuit Inc.
 - We gratefully acknowledge the support of NVIDIA Corporation with the donation of a Titan V GPU used at NYU in this work.
 - Developer Alex Wang is supported by the National Science Foundation Graduate Research Fellowship Program under Grant
 No. DGE 1342536. Any opinions, findings, and conclusions or recommendations expressed in this

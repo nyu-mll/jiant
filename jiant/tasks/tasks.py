@@ -38,6 +38,7 @@ from jiant.utils.data_loaders import (
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task  # global task registry
 from jiant.metrics.winogender_metrics import GenderParity
+from jiant.metrics.nli_metrics import NLITwoClassAccuracy
 
 """Define the tasks and code for loading their data.
 
@@ -1193,7 +1194,11 @@ class AdversarialNLITask(PairClassificationTask):
 
 
 @register_task("mnli", rel_path="MNLI/")
-# second copy for different params
+# Alternate version with a modified evaluation metric. For use in transfer evaluations on
+# two-class test sets like RTE. Example config override:
+#   pretrain_tasks = mnli, target_tasks = \"mnli-two,rte\", rte += {use_classifier = mnli-two}
+@register_task("mnli-two", rel_path="MNLI/", two_class_evaluation=True)
+# Second copy that can be assigned separate task-specific config options.
 @register_task("mnli-alt", rel_path="MNLI/")
 @register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate", rel_path="MNLI/", genre="slate")
@@ -1203,17 +1208,23 @@ class AdversarialNLITask(PairClassificationTask):
 class MultiNLITask(PairClassificationTask):
     """ Task class for Multi-Genre Natural Language Inference. """
 
-    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+    def __init__(self, path, max_seq_len, name, genre=None, two_class_evaluation=False, **kw):
         """Set up the MNLI task object.
 
         When genre is set to one of the ten MNLI genres, only examples matching that genre will be
         loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
         being empty.
+
+        When two_class_evaluation is set, merge the contradiction and neutral labels, for both
+        predictions and gold labels, in the metric when evaluating on this task.
         """
         super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self.genre = genre
+        if two_class_evaluation:
+            self.scorer1 = NLITwoClassAccuracy()
+            self.scorers = [self.scorer1]
 
         self.train_data_text = None
         self.val_data_text = None
@@ -1303,6 +1314,7 @@ class MultiNLITask(PairClassificationTask):
 
 
 @register_task("mnli-ho", rel_path="MNLI/")
+@register_task("mnli-two-ho", rel_path="MNLI/", two_class_evaluation=True)
 @register_task("mnli-fiction-ho", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate-ho", rel_path="MNLI/", genre="slate")
 @register_task("mnli-government-ho", rel_path="MNLI/", genre="government")
@@ -1311,17 +1323,24 @@ class MultiNLITask(PairClassificationTask):
 class MultiNLIHypothesisOnlyTask(SingleClassificationTask):
     """ Task class for MultiNLI hypothesis-only classification. """
 
-    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+    def __init__(self, path, max_seq_len, name, genre=None, two_class_evaluation=False, **kw):
         """Set up the MNLI-HO task object.
 
         When genre is set to one of the ten MNLI genres, only examples matching that genre will be
         loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
         being empty.
+
+        When two_class_evaluation is set, merge the contradiction and neutral labels, for both
+        predictions and gold labels, in the metric when evaluating on this task.
         """
         super(MultiNLIHypothesisOnlyTask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self.genre = genre
+
+        if two_class_evaluation:
+            self.scorer1 = NLITwoClassAccuracy()
+            self.scorers = [self.scorer1]
 
         self.train_data_text = None
         self.val_data_text = None

@@ -99,16 +99,16 @@ def create_tokenization_alignment(
     tokens: Sequence[str], tokenizer_name: str
 ) -> Sequence[Tuple[str, str]]:
     """
-    Builds alignment mapping between space tokenization and tokenization of 
-    choice. 
-    
+    Builds alignment mapping between space tokenization and tokenization of
+    choice.
+
     Example:
         Input: ['Larger', 'than', 'life.']
         Output: [('Larger', ['ĠL', 'arger']), ('than', ['Ġthan']), ('life.', ['Ġlife', '.'])]
 
     Parameters
     -----------------------
-        tokens: list[(str)]. list of tokens, 
+        tokens: list[(str)]. list of tokens,
         tokenizer_name: str
 
     Returns
@@ -336,7 +336,7 @@ def process_sentencepiece_for_alignment(t):
 
 def process_bytebpe_for_alignment(t):
     """Add <w> markers to ensure word-boundary alignment."""
-    if t.startswith("▁"):
+    if t.startswith("Ġ"):
         return "<w>" + re.sub(r"^Ġ", "", t)
     else:
         return t
