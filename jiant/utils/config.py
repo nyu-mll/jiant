@@ -118,7 +118,7 @@ def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = N
     1) read config file(s) lines (into a str)
     2) append overrides (into str from #1)
     3) call pyhocon's parse_string on combined config-str
-    4) return a Params object (a custom jaint config map)
+    4) return a Params object (a custom jiant config map)
 
     Parameters
     ----------
