@@ -3497,14 +3497,22 @@ class SciTailTask(PairClassificationTask):
         log.info("\tFinished loading SciTail")
 
 
-@register_task("winogrande", rel_path="Winogrande/")
-@register_task("winogrande-xl", rel_path="Winogrande/")
-@register_task("winogrande-l", rel_path="Winogrande/")
-@register_task("winogrande-m", rel_path="Winogrande/")
-@register_task("winogrande-s", rel_path="Winogrande/")
-@register_task("winogrande-xs", rel_path="Winogrande/")
+@register_task("winogrande", rel_path="Winogrande/", train_size="xl")
+# For experiment record management convenience, we use winogrande as an alias of winogrande-xl
+@register_task("winogrande-xl", rel_path="Winogrande/", train_size="xl")
+@register_task("winogrande-l", rel_path="Winogrande/", train_size="l")
+@register_task("winogrande-m", rel_path="Winogrande/", train_size="m")
+@register_task("winogrande-s", rel_path="Winogrande/", train_size="s")
+@register_task("winogrande-xs", rel_path="Winogrande/", train_size="xs")
 class WinograndeTask(MultipleChoiceTask):
-    def __init__(self, path, max_seq_len, name, train_size="xl", **kw):
+    def __init__(self, path, max_seq_len, name, train_size, **kw):
+        """
+        Task class for Winogrande dataset.
+
+        Paper: https://arxiv.org/abs/1907.10641
+        Website (data download): https://mosaic.allenai.org/projects/winogrande
+        Reference code: https://github.com/allenai/winogrande
+        """
         super().__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
