@@ -52,7 +52,8 @@ from jiant.tasks import (
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask
-from jiant.utils import config, serialize, utils
+from jiant.utils import config, serialize, utils, options
+from jiant.utils.options import parse_task_list_arg
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -395,21 +396,6 @@ def build_tasks(args):
     log.info("\t  Training on %s", ", ".join(pretrain_task_names))
     log.info("\t  Evaluating on %s", ", ".join(target_task_names))
     return pretrain_tasks, target_tasks, vocab, word_embs
-
-
-def parse_task_list_arg(task_list):
-    """Parse task list argument into a list of task names."""
-    task_names = []
-    for task_name in task_list.split(","):
-        if task_name == "glue":
-            task_names.extend(ALL_GLUE_TASKS)
-        elif task_name == "superglue":
-            task_names.extend(ALL_SUPERGLUE_TASKS)
-        elif task_name == "none" or task_name == "":
-            continue
-        else:
-            task_names.append(task_name)
-    return task_names
 
 
 def _get_task(name, args, data_path, scratch_path):

@@ -1,0 +1,127 @@
+[
+  {
+    "task_name": "edges-ner-ontonotes",
+    "hparam_set": 0,
+    "batch_size": 8
+  },
+  {
+    "task_name": "edges-srl-ontonotes",
+    "hparam_set": 0,
+    "batch_size": 8
+  },
+  {
+    "task_name": "edges-coref-ontonotes",
+    "hparam_set": 2,
+    "batch_size": 8
+  },
+  {
+    "task_name": "edges-spr1",
+    "hparam_set": 1,
+    "batch_size": 32
+  },
+  {
+    "task_name": "edges-spr2",
+    "hparam_set": 5,
+    "batch_size": 4
+  },
+  {
+    "task_name": "edges-dpr",
+    "hparam_set": 5,
+    "batch_size": 4
+  },
+  {
+    "task_name": "edges-rel-semeval",
+    "hparam_set": 1,
+    "batch_size": 4
+  },
+  {
+    "task_name": "se-probing-word-content",
+    "hparam_set": 0,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-tree-depth",
+    "hparam_set": 1,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-top-constituents",
+    "hparam_set": 0,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-bigram-shift",
+    "hparam_set": 2,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-past-present",
+    "hparam_set": 2,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-subj-number",
+    "hparam_set": 0,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-obj-number",
+    "hparam_set": 4,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-odd-man-out",
+    "hparam_set": 3,
+    "batch_size": 64
+  },
+  {
+    "task_name": "se-probing-coordination-inversion",
+    "hparam_set": 0,
+    "batch_size": 64
+  },
+  {
+    "task_name": "edges-pos-ontonotes",
+    "hparam_set": 1,
+    "batch_size": 8
+  },
+  {
+    "task_name": "edges-nonterminal-ontonotes",
+    "hparam_set": 4,
+    "batch_size": 8
+  },
+  {
+    "task_name": "edges-dep-ud-ewt",
+    "hparam_set": 0,
+    "batch_size": 4
+  },
+  {
+    "task_name": "se-probing-sentence-length",
+    "hparam_set": 0,
+    "batch_size": 64
+  },
+  {
+    "task_name": "acceptability-wh",
+    "hparam_set": 3,
+    "batch_size": 4
+  },
+  {
+    "task_name": "acceptability-def",
+    "hparam_set": 0,
+    "batch_size": 4
+  },
+  {
+    "task_name": "acceptability-conj",
+    "hparam_set": 1,
+    "batch_size": 4
+  },
+  {
+    "task_name": "acceptability-eos",
+    "hparam_set": 3,
+    "batch_size": 4
+  },
+  {
+    "task_name": "cola",
+    "hparam_set": 5,
+    "batch_size": 4
+  }
+]

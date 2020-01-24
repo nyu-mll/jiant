@@ -19,6 +19,8 @@ from jiant.tasks.tasks import (
 )
 
 
+
+
 class LanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
     See base class: SequenceGenerationTask
@@ -127,6 +129,7 @@ class LanguageModelingTask(SequenceGenerationTask):
                 yield sent
 
 
+
 # TODO: restructure LM task hierarchy
 @register_task("bwb", rel_path="BWB/")
 class WikiTextLMTask(LanguageModelingTask):
@@ -172,3 +175,60 @@ class WikiText103LMTask(WikiTextLMTask):
             "val": os.path.join(path, "valid.sentences.txt"),
             "test": os.path.join(path, "test.sentences.txt"),
         }
+
+
+@register_task("mlm", rel_path="toronto/")
+class MaskedLanguageModelingTask(LanguageModelingTask):
+    """
+    Masked language modeling task on Toronto Books dataset
+    Attributes:
+        max_seq_len: (int) maximum sequence length
+        min_seq_len: (int) minimum sequence length
+        files_by_split: (dict) files for three data split (train, val, test)
+    """
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """Process a language modeling split by indexing and creating fields.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
+
+        def _make_instance(sent_):
+            """ Forward targs adds <s> as a target for input </s>
+            and bwd targs adds </s> as a target for input <s>
+            to avoid issues with needing to strip extra tokens
+            in the input for each direction """
+
+            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+            d = {
+                "input": sentence_to_text_field(sent_, indexers),
+                "targs": sentence_to_text_field(sent_, self.target_indexer),
+            }
+            return Instance(d)
+
+        for sent in split:
+            yield _make_instance(sent)
+
+
+    def get_data_iter(self, path):
+        """Load data file, tokenize text and concat sentences to create long term dependencies.
+        Args:
+            path: (str) data file path
+        """
+        seq_len = self.max_seq_len
+        tokens = []
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if not toks:
+                    continue
+                toks_v = toks.split()
+                toks = toks.split() 
+                tokens += toks
+            for i in range(0, len(tokens), seq_len):
+                yield tokens[i : i + seq_len]
+
+

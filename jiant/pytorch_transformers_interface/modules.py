@@ -9,7 +9,7 @@ from allennlp.modules import scalar_mix
 
 import pytorch_transformers
 
-from jiant.preprocess import parse_task_list_arg
+from jiant.utils.options import parse_task_list_arg
 from jiant.utils import utils
 from jiant.pytorch_transformers_interface import input_module_tokenizer_name
 
@@ -103,20 +103,25 @@ class PytorchTransformersEmbedderModule(nn.Module):
         ids = sent[self.tokenizer_required]
 
         input_mask = (ids != 0).long()
-        ids[ids == 0] = self._pad_id + 2
+        pad_mask = (ids == 0).long()
         # map AllenNLP @@PADDING@@ to _pad_id in specific pytorch_transformer
+        unk_mask = (ids == 1).long()
+        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
+        valid_mask = (ids > 1).long()
+        # shift ordinary indexes by 2 to match pretrained token embedding indexes
         if self._unk_id is not None:
-            ids[ids == 1] = self._unk_id + 2
-            # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
-        ids -= 2  # shift indexes to match pretrained token embedding indexes
-        assert (
-            ids >= 0
-        ).all(), "out-of-vocabulary token found in the input, but _unk_id of pytorch_transformers model is not specified"
+            ids = (ids - 2) * valid_mask + self._pad_id * pad_mask + self._unk_id * unk_mask
+        else:
+            ids = (ids - 2) * valid_mask + self._pad_id * pad_mask
+            assert (
+                unk_mask == 0
+            ).all(), "out-of-vocabulary token found in the input, but _unk_id of pytorch_transformers model is not specified"
         if self.max_pos is not None:
             assert (
                 ids.size()[-1] <= self.max_pos
             ), "input length exceeds position embedding capacity, reduce max_seq_len"
 
+        sent[self.tokenizer_required] = ids
         return ids, input_mask
 
     def prepare_output(self, lex_seq, hidden_states, input_mask):
@@ -322,7 +327,7 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
         self._sep_id = self.tokenizer.convert_tokens_to_ids("</s>")
         self._cls_id = self.tokenizer.convert_tokens_to_ids("<s>")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
-        self._pad_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 

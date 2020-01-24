@@ -19,8 +19,8 @@ from scipy import sparse
 # install with: pip install python-Levenshtein
 from Levenshtein.StringMatcher import StringMatcher
 
-from jiant.utils.tokenizers import get_tokenizer
-from jiant.utils.utils import unescape_moses
+from jiant.utils.tokenizers import get_tokenizer, Tokenizer
+from jiant.utils.utils import unescape_moses, transpose_list_of_lists
 
 
 # Tokenizer instance for internal use.
@@ -93,6 +93,35 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]], n_chars: int) -> Ma
         #  assert len(ridxs) == len(cidxs)
     data = np.ones(len(ridxs), dtype=_DTYPE)
     return sparse.csr_matrix((data, (ridxs, cidxs)), shape=(len(spans), n_chars))
+
+
+def create_tokenization_alignment(
+    tokens: Sequence[str], tokenizer_name: str
+) -> Sequence[Tuple[str, str]]:
+    """
+    Builds alignment mapping between space tokenization and tokenization of
+    choice.
+
+    Example:
+        Input: ['Larger', 'than', 'life.']
+        Output: [('Larger', ['ĠL', 'arger']), ('than', ['Ġthan']), ('life.', ['Ġlife', '.'])]
+
+    Parameters
+    -----------------------
+        tokens: list[(str)]. list of tokens,
+        tokenizer_name: str
+
+    Returns
+    -----------------------
+        tokenization_mapping: list[(str, str)], list of tuples with (orig_token, tokenized_token).
+
+    """
+    tokenizer = get_tokenizer(tokenizer_name)
+    tokenization_mapping = []
+    for tok in tokens:
+        aligned_tok = tokenizer.tokenize(tok)
+        tokenization_mapping.append((tok, aligned_tok))
+    return tokenization_mapping
 
 
 def realign_spans(record, tokenizer_name):
@@ -307,7 +336,7 @@ def process_sentencepiece_for_alignment(t):
 
 def process_bytebpe_for_alignment(t):
     """Add <w> markers to ensure word-boundary alignment."""
-    if t.startswith("▁"):
+    if t.startswith("Ġ"):
         return "<w>" + re.sub(r"^Ġ", "", t)
     else:
         return t
@@ -328,13 +357,13 @@ def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
     return ta, moses_tokens
 
 
-def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_wpm(
+    text: Text, wpm_tokenizer: Tokenizer, do_lower_case: bool
+) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for WPM tokenizer, used in BERT
     """
     # If using lowercase, do this for the source tokens for better matching.
-    do_lower_case = tokenizer_name.endswith("uncased")
     bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else text)
-    wpm_tokenizer = get_tokenizer(tokenizer_name)
     wpm_tokens = wpm_tokenizer.tokenize(text)
 
     # Align using <w> markers for stability w.r.t. word boundaries.
@@ -343,11 +372,12 @@ def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]
     return ta, wpm_tokens
 
 
-def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_sentencepiece(
+    text: Text, sentencepiece_tokenizer: Tokenizer
+) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for SentencePiece Tokenizer, used in XLNET
     """
     bow_tokens = space_tokenize_with_bow(text)
-    sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
     sentencepiece_tokens = sentencepiece_tokenizer.tokenize(text)
 
     modified_sentencepiece_tokens = list(
@@ -357,21 +387,19 @@ def align_sentencepiece(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, 
     return ta, sentencepiece_tokens
 
 
-def align_bpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_bpe(text: Text, bpe_tokenizer: Tokenizer) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for BPE tokenizer, used in GPT and XLM
     """
     eow_tokens = space_tokenize_with_eow(text.lower())
-    bpe_tokenizer = get_tokenizer(tokenizer_name)
     bpe_tokens = bpe_tokenizer.tokenize(text)
     ta = TokenAligner(eow_tokens, bpe_tokens)
     return ta, bpe_tokens
 
 
-def align_bytebpe(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_bytebpe(text: Text, bytebpe_tokenizer: Tokenizer) -> Tuple[TokenAligner, List[Text]]:
     """Alignment fn for Byte-level BPE tokenizer, used in GPT-2 and RoBERTa
     """
     bow_tokens = space_tokenize_with_bow(text)
-    bytebpe_tokenizer = get_tokenizer(tokenizer_name)
     bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
 
     modified_bytebpe_tokens = list(map(process_bytebpe_for_alignment, bytebpe_tokens))
@@ -389,12 +417,40 @@ def get_aligner_fn(tokenizer_name: Text):
     if tokenizer_name == "MosesTokenizer" or tokenizer_name.startswith("transfo-xl-"):
         return align_moses
     elif tokenizer_name.startswith("bert-"):
-        return functools.partial(align_wpm, tokenizer_name=tokenizer_name)
+        do_lower_case = tokenizer_name.endswith("uncased")
+        wpm_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(
+            align_wpm, wpm_tokenizer=wpm_tokenizer, do_lower_case=do_lower_case
+        )
     elif tokenizer_name.startswith("openai-gpt") or tokenizer_name.startswith("xlm-mlm-en-"):
-        return functools.partial(align_bpe, tokenizer_name=tokenizer_name)
+        bpe_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(align_bpe, bpe_tokenizer=bpe_tokenizer)
     elif tokenizer_name.startswith("xlnet-"):
-        return functools.partial(align_sentencepiece, tokenizer_name=tokenizer_name)
+        sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(
+            align_sentencepiece, sentencepiece_tokenizer=sentencepiece_tokenizer
+        )
     elif tokenizer_name.startswith("roberta-") or tokenizer_name.startswith("gpt2"):
-        return functools.partial(align_bytebpe, tokenizer_name=tokenizer_name)
+        bytebpe_tokenizer = get_tokenizer(tokenizer_name)
+        return functools.partial(align_bytebpe, bytebpe_tokenizer=bytebpe_tokenizer)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
+
+
+def space_tokenize_with_spans(text):
+    space_tokens = text.split()
+    result = []
+    i = 0
+    for token in space_tokens:
+        start = text[i:].find(token)
+        end = start + len(token)
+        result.append((token, i + start, i + end))
+        i += end
+    return result
+
+
+def find_space_token_span(space_tokens_with_spans, char_start, char_end):
+    starts, ends = transpose_list_of_lists(space_tokens_with_spans)[1:]
+    tok_start = np.clip((np.array(starts) > char_start).argmax() - 1, 0, None)
+    tok_end = (np.array(ends) > (char_end - 1)).argmax() + 1
+    return tok_start, tok_end
