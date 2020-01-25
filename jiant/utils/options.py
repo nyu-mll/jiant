@@ -1,12 +1,28 @@
 """
 Functions for parsing configs.
 """
+from typing import List
+
 import torch
 import logging as log
 
+from jiant.tasks import ALL_GLUE_TASKS, ALL_SUPERGLUE_TASKS
 
-def parse_task_list_arg(task_list):
-    """Parse task list argument into a list of task names."""
+
+def parse_task_list_arg(task_list: str) -> List[str]:
+    """Parse task list argument into a list of task names.
+
+    Parameters
+    ----------
+    task_list : str
+        comma-delimited list of tasks.
+
+    Returns
+    -------
+    List[str]
+        List of tasks names.
+
+    """
     task_names = []
     for task_name in task_list.split(","):
         if task_name == "glue":
