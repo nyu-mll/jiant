@@ -34,6 +34,7 @@ from jiant.utils.utils import (
     get_model_attribute,
     uses_cuda,
 )  # pylint: disable=import-error
+from jiant.tasks.qa import ReCoRDTask
 from allennlp.nn.util import move_to_device
 
 
@@ -1038,6 +1039,11 @@ class SamplingMultiTaskTrainer:
             if "update_metrics" in key:
                 update_metrics_kwargs[key.replace("update_metrics_", "")] = val
         update_metrics_kwargs["tagmask"] = tagmask
+        if isinstance(task, ReCoRDTask):
+            # ReCoRD needs the answer string to compute F1
+            update_metrics_kwargs["anss"] = batch["ans_str"]
+            idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
+            update_metrics_kwargs["idxs"] = idxs
         if task is not None:
             task.update_metrics(**update_metrics_kwargs)
         return model_out

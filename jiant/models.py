@@ -1296,17 +1296,11 @@ class MultiTaskModel(nn.Module):
             logits = classifier(inp, inp_mask)
         out["logits"] = logits
         if "label" in batch:
-            idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
             labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            if isinstance(task, ReCoRDTask):
-                # ReCoRD needs the answer string to compute F1
-                out["update_metrics_labels"] = batch["ans_str"]
-            else:
-                out["update_metrics_labels"] = labels
             out["update_metrics_logits"] = logits
-            out["update_metrics_idxs"] = idxs
-
+            if not isinstance(task, ReCoRDTask):
+                out["update_metrics_labels"] = labels
         if predict:
             if isinstance(task, ReCoRDTask):
                 # For ReCoRD, we want the logits to make
