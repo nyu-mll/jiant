@@ -45,7 +45,7 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.tasks.lm import LanguageModelingTask
+from jiant.tasks.lm import LanguageModelingTask, MaskedLanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.seq2seq import Seq2SeqTask
@@ -158,7 +158,29 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
+    elif any(isinstance(task, LanguageModelingTask) for task in tasks) and args.sent_enc == "none":
+        # Expose word representation layer (GloVe, ELMo, etc.) directly.
+        assert_for_log(
+            args.skip_embs,
+            "skip_embs is false and sent_enc is none, "
+            "which means that your token representations are zero-dimensional. "
+            "Consider setting skip_embs.",
+        )
+        phrase_layer = NullPhraseLayer(rnn_params["input_size"])
+        sent_encoder = SentenceEncoder(
+            vocab,
+            embedder,
+            args.n_layers_highway,
+            phrase_layer,
+            skip_embs=args.skip_embs,
+            dropout=args.dropout,
+            sep_embs_for_skip=args.sep_embs_for_skip,
+            cove_layer=cove_layer,
+        )
+        d_sent = 0
+
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
+    #elif args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
         assert_for_log(
             not (
@@ -225,6 +247,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         assert_for_log(
             False, f"Shared encoder layer specification `{args.sent_enc}` not recognized."
         )
+
     return sent_encoder, d_sent
 
 
@@ -543,6 +566,10 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
         setattr(model, "%s_mdl" % task.name, hid2voc)
+    elif isinstance(task, MaskedLanguageModelingTask):
+        module = build_mlm(task, d_sent, task_params, model.sent_encoder._text_field_embedder)
+        setattr(model, "%s_mdl" % task.name, module)
+        import pdb; pdb.set_trace()
     elif isinstance(task, LanguageModelingTask):
         assert not input_module_uses_pytorch_transformers(args.input_module), (
             "our LM Task does not support pytorch_transformers, if you need them, try to update",
@@ -739,6 +766,11 @@ def build_lm(task, d_inp, args):
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
 
+def build_mlm(task, d_inp, task_params, embedder):
+    " Build MLM components """
+    lm_head = embedder.get_pretrained_lm_head()
+    return lm_head
+
 
 def build_span_classifier(task, d_sent, task_params):
     module = SpanClassifierModule(task, d_sent, task_params, num_spans=task.num_spans)
@@ -847,6 +879,8 @@ class MultiTaskModel(nn.Module):
             task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)
         ):
             out = self._pair_sentence_forward(batch, task, predict)
+        elif isinstance(task, MaskedLanguageModelingTask):
+            out = self._masked_lm_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or isinstance(
                 self.sent_encoder._phrase_layer, PRPN
@@ -1150,6 +1184,7 @@ class MultiTaskModel(nn.Module):
                                 backward layer
                 - 'loss': size average CE loss
         """
+        print("lm forward: batch, task, predict")
         out = {}
         sent_encoder = self.sent_encoder
         assert_for_log(
@@ -1192,6 +1227,26 @@ class MultiTaskModel(nn.Module):
         if predict:
             pass
         return out
+
+
+    def _masked_lm_forward(self, batch, task, predict):
+        print("masked lm forward: batch, task, predict")
+        import pdb; pdb.set_trace()
+        out = {}
+        sent_encoder = self.sent_encoder
+        assert_for_log(
+            "targs" in batch and "words" in batch["targs"], "Batch missing target words!"
+        )
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, "tokens")
+        b_size, seq_len = batch["targs"]["words"].size()
+        n_pad = batch["targs"]["words"].eq(pad_idx).sum().item()
+        out["n_exs"] = format_output(((b_size * seq_len - n_pad) * 2), self._cuda_device)
+
+        sent, mask = sent_encoder(batch["input"], task)
+        sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+
+
+
 
     def _mc_forward(self, batch, task, predict):
         """ Forward for a multiple choice question answering task """

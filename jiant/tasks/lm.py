@@ -177,8 +177,14 @@ class WikiText103LMTask(WikiTextLMTask):
         }
 
 
-@register_task("mlm", rel_path="toronto/")
 class MaskedLanguageModelingTask(LanguageModelingTask):
+    """
+       Generic Masked Language Modeling Task
+    """
+    pass
+
+@register_task("mlm", rel_path="WikiText103/")
+class MLMTask(MaskedLanguageModelingTask):
     """
     Masked language modeling task on Toronto Books dataset
     Attributes:
@@ -187,6 +193,16 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
         files_by_split: (dict) files for three data split (train, val, test)
     """
 
+    def __init__(self, path, *args, **kw):
+        super().__init__(path, *args, **kw)
+        self.files_by_split = {
+            "train": os.path.join(path, "train.sentences.txt"),
+            "val": os.path.join(path, "valid.sentences.txt"),
+            "test": os.path.join(path, "test.sentences.txt"),
+        }
+
+
+    
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
@@ -201,11 +217,10 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-
             sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
             d = {
                 "input": sentence_to_text_field(sent_, indexers),
-                "targs": sentence_to_text_field(sent_, self.target_indexer),
+                "targs": sentence_to_text_field(sent_, indexers), #self.target_indexer),
             }
             return Instance(d)
 
@@ -213,22 +228,5 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
             yield _make_instance(sent)
 
 
-    def get_data_iter(self, path):
-        """Load data file, tokenize text and concat sentences to create long term dependencies.
-        Args:
-            path: (str) data file path
-        """
-        seq_len = self.max_seq_len
-        tokens = []
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if not toks:
-                    continue
-                toks_v = toks.split()
-                toks = toks.split() 
-                tokens += toks
-            for i in range(0, len(tokens), seq_len):
-                yield tokens[i : i + seq_len]
 
 

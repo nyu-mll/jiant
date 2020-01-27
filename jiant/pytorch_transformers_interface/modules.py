@@ -359,9 +359,10 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
-        lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
-
+        lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
+        #lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
+        #return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for XLNet module to fit into jiant APIs.
