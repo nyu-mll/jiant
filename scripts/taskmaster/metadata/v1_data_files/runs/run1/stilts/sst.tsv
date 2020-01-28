@@ -1,0 +1,10 @@
+rte_run1	micro_avg: 0.866, macro_avg: 0.866, rte_accuracy: 0.866
+commitbank_run1	micro_avg: 0.987, macro_avg: 0.987, commitbank_accuracy: 0.982, commitbank_f1: 0.987, commitbank_precision: 0.989, commitbank_recall: 0.986
+copa_run1	micro_avg: 0.840, macro_avg: 0.840, copa_accuracy: 0.840
+wic_run1	micro_avg: 0.503, macro_avg: 0.503, wic_accuracy: 0.503, wic_f1: 0.019, wic_precision: 0.750, wic_recall: 0.009
+boolq_run1	micro_avg: 0.873, macro_avg: 0.873, boolq_acc_f1: 0.873, boolq_accuracy: 0.858, boolq_f1: 0.887, boolq_precision: 0.883, boolq_recall: 0.890
+commonsenseqa_run1	micro_avg: 0.729, macro_avg: 0.729, commonsenseqa_accuracy: 0.729
+multirc_run1	micro_avg: 0.505, macro_avg: 0.505, multirc_ans_f1: 0.717, multirc_qst_f1: 0.655, multirc_em: 0.294, multirc_avg: 0.505
+winograd-coreference_run1	micro_avg: 0.673, macro_avg: 0.673, winograd-coreference_f1: 0.646, winograd-coreference_acc: 0.673
+cosmosqa_run1	micro_avg: 0.816, macro_avg: 0.816, cosmosqa_accuracy: 0.816
+record_run1	micro_avg: 0.846, macro_avg: 0.846, record_f1: 0.849, record_em: 0.843, record_avg: 0.846
