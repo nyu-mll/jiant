@@ -27,11 +27,7 @@ from jiant.utils.tokenizers import MosesTokenizer
 from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
-from ..utils.retokenize import (
-    space_tokenize_with_spans,
-    find_space_token_span,
-    create_tokenization_alignment,
-)
+from ..utils.retokenize import space_tokenize_with_spans, find_space_token_span, get_aligner_fn
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -232,20 +228,6 @@ class ReCoRDTask(Task):
     def load_data_for_path(self, path, split):
         """ Load data """
 
-        def tokenize_preserve_placeholder(sent, max_ent_length):
-            """ Tokenize questions while preserving @placeholder token """
-            sent_parts = sent.split("@placeholder")
-            assert len(sent_parts) == 2
-            placeholder_loc = len(
-                tokenize_and_truncate(
-                    self.tokenizer_name, sent_parts[0], self.max_seq_len - max_ent_length
-                )
-            )
-            sent_tok = tokenize_and_truncate(
-                self.tokenizer_name, sent, self.max_seq_len - max_ent_length
-            )
-            return sent_tok[:placeholder_loc] + ["@placeholder"] + sent_tok[placeholder_loc:]
-
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
@@ -255,10 +237,9 @@ class ReCoRDTask(Task):
             )
             ent_idxs = item["passage"]["entities"]
             ents = [item["passage"]["text"][idx["start"] : idx["end"] + 1] for idx in ent_idxs]
-            max_ent_length = max([idx["end"] - idx["start"] + 1 for idx in ent_idxs])
             qas = item["qas"]
             for qa in qas:
-                qst = tokenize_preserve_placeholder(qa["query"], max_ent_length)
+                qst = qa["query"]
                 qst_id = qa["idx"]
                 if "answers" in qa:
                     anss = [a["text"] for a in qa["answers"]]
@@ -311,9 +292,8 @@ class ReCoRDTask(Task):
 
         def insert_ent(ent, template):
             """ Replace ent into template (query with @placeholder) """
-            assert "@placeholder" in template, "No placeholder detected!"
-            split_idx = template.index("@placeholder")
-            return template[:split_idx] + ent + template[split_idx + 1 :]
+            len(template.split("@placeholder")) == 2, "No placeholder detected!"
+            return template.replace("@placeholder", ent)
 
         def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
             """ pq_id: passage-question ID """
@@ -343,19 +323,17 @@ class ReCoRDTask(Task):
             psg = example["passage"]
             qst_template = example["query"]
 
-            ent_strs = example["ents"]
-            ents = [
-                tokenize_and_truncate(self._tokenizer_name, ent, self.max_seq_len)
-                for ent in ent_strs
-            ]
+            ents = example["ents"]
 
             anss = example["answers"]
             par_idx = example["psg_id"]
             qst_idx = example["qst_id"]
-            for ent_idx, (ent, ent_str) in enumerate(zip(ents, ent_strs)):
-                label = is_answer(ent_str, anss)
-                qst = insert_ent(ent, qst_template)
-                yield _make_instance(psg, qst, ent_str, label, par_idx, qst_idx, ent_idx)
+            for ent_idx, ent in enumerate(ents):
+                label = is_answer(ent, anss)
+                qst = tokenize_and_truncate(
+                    self.tokenizer_name, insert_ent(ent, qst_template), self.max_seq_len
+                )
+                yield _make_instance(psg, qst, ent, label, par_idx, qst_idx, ent_idx)
 
     def count_examples(self):
         """ Compute here b/c we're streaming the sentences. """
@@ -819,21 +797,18 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-    space_to_actual_token_map = create_tokenization_alignment(
-        tokens=detok_sent.split(), tokenizer_name=tokenizer_name
-    )
+    aligner_fn = get_aligner_fn(tokenizer_name)
+    token_aligner, actual_tokens = aligner_fn(detok_sent)
 
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
-    space_processed_token_map = []
-    for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
-        for actual_token in actual_token_ls:
-            space_processed_token_map.append((actual_token, space_token, i))
-    ans_actual_token_span = (
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
-    )
+    space_processed_token_map = [
+        (actual_tokens[actual_idx], space_token, space_idx)
+        for space_idx, (space_token, _, _) in enumerate(space_tokens_with_spans)
+        for actual_idx in token_aligner.project_tokens(space_idx)
+    ]
+    ans_actual_token_span = token_aligner.project_span(*ans_space_token_span)
 
     return {
         "detok_sent": detok_sent,

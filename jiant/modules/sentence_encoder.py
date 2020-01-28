@@ -11,7 +11,6 @@ from allennlp.models.model import Model
 from allennlp.nn import InitializerApplicator, util
 from allennlp.modules import Highway, TimeDistributed
 
-from jiant.pytorch_transformers_interface.modules import PytorchTransformersEmbedderModule
 from jiant.tasks.tasks import PairClassificationTask, PairRegressionTask
 from jiant.utils import utils
 from jiant.modules.simple_modules import NullPhraseLayer
@@ -84,7 +83,7 @@ class SentenceEncoder(Model):
             self.reset_states()
 
         # General sentence embeddings (for sentence encoder).
-        # Make sent_mask first, pytorch_transformers text_field_embedder will change the token index
+        # Make sent_mask first, transformers text_field_embedder will change the token index
         sent_mask = util.get_text_field_mask(sent).float()
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):

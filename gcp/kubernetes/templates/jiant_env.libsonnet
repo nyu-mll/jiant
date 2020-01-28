@@ -21,7 +21,7 @@
   # Path to ELMO cache.
   elmo_src_dir: "/nfs/jiant/share/elmo",
   # Path to BERT etc. model cache; should be writable by Kubernetes workers.
-  pytorch_transformers_cache_path: "/nfs/jiant/share/pytorch_transformers_cache",
+  transformers_cache_path: "/nfs/jiant/share/transformers_cache",
   # Path to default word embeddings file
   word_embs_file: "/nfs/jiant/share/wiki-news-300d-1M.vec",
 }
