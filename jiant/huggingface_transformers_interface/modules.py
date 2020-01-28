@@ -39,6 +39,7 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
         self._sep_id = None
         self._pad_id = None
         self._unk_id = None
+        self._mask_id = None
 
         # If set, treat these special tokens as part of input segments other than A/B.
         self._SEG_ID_CLS = None
@@ -270,6 +271,7 @@ class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("[UNK]")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("[MASK]")
 
         self.parameter_setup(args)
 
@@ -327,6 +329,7 @@ class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("<s>")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("<mask>")
 
         self.parameter_setup(args)
 
@@ -381,6 +384,7 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("[MASK]")
 
         self.parameter_setup(args)
 
@@ -437,6 +441,7 @@ class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("<cls>")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("<mask>")
 
         self.parameter_setup(args)
 
