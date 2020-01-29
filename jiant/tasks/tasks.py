@@ -446,6 +446,90 @@ class RankingTask(Task):
     pass
 
 
+@register_task("hans", rel_path="HANS/")
+class HANSTask(PairClassificationTask):
+    """ Task class for Stanford Natural Language Inference """
+
+    def __init__(self, path, max_seq_len, name, target_class, **kw):
+        """ Do stuff """
+        super(HANSTask, self).__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.target_class = target_class
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+    def load_data(self):
+        """ Process the dataset located at path.  """
+        def label_fn(x):
+            if self.target_class == x:
+                # instance is target
+                return 0
+            else:
+                return 1
+        def label_idx():
+            if self.target_class in {'constituent', 'lexical_overlap', 'subsequence'}:
+                # target is heuristic
+                return 8
+            else:
+                # target is subcase (syntax)
+                return 9
+
+        # targ_map = {"entailment": 0, "non-entailment": 1}
+        # subcase_map = {
+        #     'le_around_prepositional_phrase': 0,
+        #     'le_around_relative_clause': 1,
+        #     'le_conjunction': 2,
+        #     'le_passive': 3,
+        #     'le_relative_clause': 4,
+        #     'ln_conjunction': 5,
+        #     'ln_passive': 6,
+        #     'ln_preposition': 7,
+        #     'ln_relative_clause': 8,
+        #     'ln_subject/object_swap': 9
+        # }
+        # subcase_map_tie = {
+        #     'le_around_prepositional_phrase': 0,
+        #     'le_conjunction': 2,
+        #     'le_passive': 3,
+        #     'le_relative_clause': 1,
+        #     'ln_conjunction': 2,
+        #     'ln_passive': 3,
+        #     'ln_preposition': 0,
+        #     'ln_relative_clause': 1,
+        #     'le_around_relative_clause': 1,
+        #     'ln_subject/object_swap': 9
+        # }
+
+        self.train_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=label_fn,
+            s1_idx=5,
+            s2_idx=6,
+            label_idx=label_idx(),
+            skip_rows=1,
+        )
+        self.test_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "eval.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=label_fn,
+            s1_idx=5,
+            s2_idx=6,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+        )
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+        )
+
 @register_task("sst", rel_path="SST-2/")
 class SSTTask(SingleClassificationTask):
     """ Task class for Stanford Sentiment Treebank.  """
