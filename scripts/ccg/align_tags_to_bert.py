@@ -5,8 +5,7 @@ import sys
 
 import pandas as pd
 
-from jiant import utils
-from jiant.utils import retokenize
+from jiant.utils.retokenize import get_aligner_fn
 
 
 """
@@ -30,22 +29,15 @@ a subpiece of a word that has been split due to tokenization.
 
 
 def get_tags(text, current_tags, tokenizer_name, tag_dict):
-    aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
+    aligner_fn = get_aligner_fn(tokenizer_name)
     assert len(text) == len(current_tags)
-    res_tags = []
     introduced_tokenizer_tag = len(tag_dict)
-    for i in range(len(text)):
-        token = text[i]
-        _, new_toks = aligner_fn(token)
-        res_tags.append(tag_dict[current_tags[i]])
-        if len(new_toks) > 1:
-            for tok in new_toks[1:]:
-                res_tags.append(introduced_tokenizer_tag)
-                # based on BERT-paper for wordpiece, we only keep the tag
-                # for the first part of the word.
-    _, aligned_text = aligner_fn(" ".join(text))
-    assert len(aligned_text) == len(res_tags)
-    str_tags = [str(s) for s in res_tags]
+    token_aligner, aligned_text = aligner_fn(" ".join(text))
+    aligned_tags = [introduced_tokenizer_tag for token in aligned_text]
+    for text_idx, text_tag in enumerate(current_tags):
+        aligned_idx = token_aligner.project_tokens(text_idx)[0]
+        aligned_tags[aligned_idx] = tag_dict[text_tag]
+    str_tags = [str(s) for s in aligned_tags]
     return " ".join(str_tags)
 
 
@@ -80,9 +72,11 @@ def align_ccg(split, tokenizer_name, data_dir):
         None, saves tag alligned files to same directory as the original file.
     """
     tags_to_id = json.load(open(data_dir + "tags_to_id.json", "r"))
-    ccg_text = pd.read_csv(data_dir + "ccg." + split, names=["text", "tags"], delimiter="\t")
+    ccg_text = pd.read_csv(
+        os.path.join(data_dir, "ccg." + split), names=["text", "tags"], delimiter="\t"
+    )
     result = align_tags_BERT(ccg_text, tokenizer_name, tags_to_id)
-    result.to_csv(data_dir + "ccg." + split + "." + tokenizer_name, sep="\t")
+    result.to_csv(os.path.join(data_dir, "ccg." + split + "." + tokenizer_name), sep="\t")
 
 
 def main(arguments):

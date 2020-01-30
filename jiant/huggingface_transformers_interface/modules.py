@@ -7,30 +7,29 @@ import torch
 import torch.nn as nn
 from allennlp.modules import scalar_mix
 
-import pytorch_transformers
+import transformers
 
 from jiant.utils.options import parse_task_list_arg
 from jiant.utils import utils
-from jiant.pytorch_transformers_interface import input_module_tokenizer_name
+from jiant.huggingface_transformers_interface import input_module_tokenizer_name
 
 
-class PytorchTransformersEmbedderModule(nn.Module):
-    """ Shared code for pytorch_transformers wrappers.
+class HuggingfaceTransformersEmbedderModule(nn.Module):
+    """ Shared code for transformers wrappers.
 
     Subclasses share a good deal of code, but have a number of subtle differences due to different
-    APIs from pytorch_transfromers.
+    APIs from transfromers.
     """
 
     def __init__(self, args):
-        super(PytorchTransformersEmbedderModule, self).__init__()
+        super(HuggingfaceTransformersEmbedderModule, self).__init__()
 
         self.cache_dir = os.getenv(
-            "PYTORCH_PRETRAINED_BERT_CACHE",
-            os.path.join(args.exp_dir, "pytorch_transformers_cache"),
+            "HUGGINGFACE_TRANSFORMERS_CACHE", os.path.join(args.exp_dir, "transformers_cache")
         )
         utils.maybe_make_dir(self.cache_dir)
 
-        self.output_mode = args.pytorch_transformers_output_mode
+        self.output_mode = args.transformers_output_mode
         self.input_module = args.input_module
         self.max_pos = None
         self.tokenizer_required = input_module_tokenizer_name(args.input_module)
@@ -51,8 +50,8 @@ class PytorchTransformersEmbedderModule(nn.Module):
             param.requires_grad = bool(args.transfer_paradigm == "finetune")
 
         self.num_layers = self.model.config.num_hidden_layers
-        if args.pytorch_transformers_max_layer >= 0:
-            self.max_layer = args.pytorch_transformers_max_layer
+        if args.transformers_max_layer >= 0:
+            self.max_layer = args.transformers_max_layer
             assert self.max_layer <= self.num_layers
         else:
             self.max_layer = self.num_layers
@@ -70,7 +69,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         if self.output_mode == "mix":
             if args.transfer_paradigm == "frozen":
                 log.warning(
-                    "NOTE: pytorch_transformers_output_mode='mix', so scalar "
+                    "NOTE: transformers_output_mode='mix', so scalar "
                     "mixing weights will be fine-tuned even if BERT "
                     "model is frozen."
                 )
@@ -78,7 +77,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # scalars. See the ELMo implementation here:
             # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
             assert len(parse_task_list_arg(args.target_tasks)) <= 1, (
-                "pytorch_transformers_output_mode='mix' only supports a single set of "
+                "transformers_output_mode='mix' only supports a single set of "
                 "scalars (but if you need this feature, see the TODO in "
                 "the code!)"
             )
@@ -86,7 +85,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
     def correct_sent_indexing(self, sent):
-        """ Correct id difference between pytorch_transformers and AllenNLP.
+        """ Correct id difference between transformers and AllenNLP.
         The AllenNLP indexer adds'@@UNKNOWN@@' token as index 1, and '@@PADDING@@' as index 0
 
         args:
@@ -99,14 +98,14 @@ class PytorchTransformersEmbedderModule(nn.Module):
         """
         assert (
             self.tokenizer_required in sent
-        ), "pytorch_transformers cannot find correcpondingly tokenized input"
+        ), "transformers cannot find correcpondingly tokenized input"
         ids = sent[self.tokenizer_required]
 
         input_mask = (ids != 0).long()
         pad_mask = (ids == 0).long()
-        # map AllenNLP @@PADDING@@ to _pad_id in specific pytorch_transformer
+        # map AllenNLP @@PADDING@@ to _pad_id in specific transformer vocab
         unk_mask = (ids == 1).long()
-        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
+        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific transformer vocab
         valid_mask = (ids > 1).long()
         # shift ordinary indexes by 2 to match pretrained token embedding indexes
         if self._unk_id is not None:
@@ -115,7 +114,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             ids = (ids - 2) * valid_mask + self._pad_id * pad_mask
             assert (
                 unk_mask == 0
-            ).all(), "out-of-vocabulary token found in the input, but _unk_id of pytorch_transformers model is not specified"
+            ).all(), "out-of-vocabulary token found in the input, but _unk_id of transformers model is not specified"
         if self.max_pos is not None:
             assert (
                 ids.size()[-1] <= self.max_pos
@@ -126,7 +125,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
     def prepare_output(self, lex_seq, hidden_states, input_mask):
         """
-        Convert the output of the pytorch_transformers module to a vector sequence as expected by jiant.
+        Convert the output of the transformers module to a vector sequence as expected by jiant.
 
         args:
             lex_seq: The sequence of input word embeddings as a tensor (batch_size, sequence_length, hidden_size).
@@ -226,7 +225,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         raise NotImplementedError
 
     def forward(self, sent, task_name):
-        """ Run pytorch_transformers model and return output representation
+        """ Run transformers model and return output representation
         This function should be implmented in subclasses.
 
         args:
@@ -252,19 +251,19 @@ class PytorchTransformersEmbedderModule(nn.Module):
         raise NotImplementedError
 
 
-class BertEmbedderModule(PytorchTransformersEmbedderModule):
+class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for BERT module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(BertEmbedderModule, self).__init__(args)
 
-        self.model = pytorch_transformers.BertModel.from_pretrained(
+        self.model = transformers.BertModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )
         self.max_pos = self.model.config.max_position_embeddings
 
-        self.tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
+        self.tokenizer = transformers.BertTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
@@ -301,7 +300,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
-        model_with_lm_head = pytorch_transformers.BertForMaskedLM.from_pretrained(
+        model_with_lm_head = transformers.BertForMaskedLM.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.cls
@@ -309,19 +308,19 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
+class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for RoBERTa module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(RobertaEmbedderModule, self).__init__(args)
 
-        self.model = pytorch_transformers.RobertaModel.from_pretrained(
+        self.model = transformers.RobertaModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )
         self.max_pos = self.model.config.max_position_embeddings
 
-        self.tokenizer = pytorch_transformers.RobertaTokenizer.from_pretrained(
+        self.tokenizer = transformers.RobertaTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._sep_id = self.tokenizer.convert_tokens_to_ids("</s>")
@@ -355,7 +354,7 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
-        model_with_lm_head = pytorch_transformers.RobertaForMaskedLM.from_pretrained(
+        model_with_lm_head = transformers.RobertaForMaskedLM.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
@@ -363,18 +362,75 @@ class RobertaEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
+class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
+    """ Wrapper for ALBERT module to fit into jiant APIs.
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
+
+    def __init__(self, args):
+        super(AlbertEmbedderModule, self).__init__(args)
+
+        self.model = transformers.AlbertModel.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+        )
+        self.max_pos = self.model.config.max_position_embeddings
+
+        self.tokenizer = transformers.AlbertTokenizer.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self._sep_id = self.tokenizer.convert_tokens_to_ids("[SEP]")
+        self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
+        self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
+        self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+
+        self.parameter_setup(args)
+
+    @staticmethod
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
+        # ALBERT-style boundary token padding on string token sequences
+        if s2:
+            s = ["[CLS]"] + s1 + ["[SEP]"] + s2 + ["[SEP]"]
+            if get_offset:
+                return s, 1, len(s1) + 2
+        else:
+            s = ["[CLS]"] + s1 + ["[SEP]"]
+            if get_offset:
+                return s, 1
+        return s
+
+    def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
+        ids, input_mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
+            lex_seq = self.model.embeddings.word_embeddings(ids)
+            lex_seq = self.model.embeddings.LayerNorm(lex_seq)
+        if self.output_mode != "only":
+            token_types = self.get_seg_ids(ids, input_mask)
+            _, output_pooled_vec, hidden_states = self.model(
+                ids, token_type_ids=token_types, attention_mask=input_mask
+            )
+        return self.prepare_output(lex_seq, hidden_states, input_mask)
+
+    def get_pretrained_lm_head(self):
+        model_with_lm_head = transformers.AlbertForMaskedLM.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.predictions
+        lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+
+
+class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for XLNet module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(XLNetEmbedderModule, self).__init__(args)
 
-        self.model = pytorch_transformers.XLNetModel.from_pretrained(
+        self.model = transformers.XLNetModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )
 
-        self.tokenizer = pytorch_transformers.XLNetTokenizer.from_pretrained(
+        self.tokenizer = transformers.XLNetTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._sep_id = self.tokenizer.convert_tokens_to_ids("<sep>")
@@ -385,8 +441,8 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         self.parameter_setup(args)
 
         # Segment IDs for CLS and SEP tokens. Unlike in BERT, these aren't part of the usual 0/1
-        # input segments. Standard constants reused from pytorch_transformers. They aren't actually
-        # used within the pytorch_transformers code, so we're reproducing them here in case they're
+        # input segments. Standard constants reused from transformers. They aren't actually
+        # used within the transformers code, so we're reproducing them here in case they're
         # removed in a later cleanup.
         self._SEG_ID_CLS = 2
         self._SEG_ID_SEP = 3
@@ -417,7 +473,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self, args):
-        model_with_lm_head = pytorch_transformers.XLNetLMHeadModel.from_pretrained(
+        model_with_lm_head = transformers.XLNetLMHeadModel.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_loss
@@ -425,19 +481,19 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
+class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for OpenAI GPT module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(OpenAIGPTEmbedderModule, self).__init__(args)
 
-        self.model = pytorch_transformers.OpenAIGPTModel.from_pretrained(
+        self.model = transformers.OpenAIGPTModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self.max_pos = self.model.config.n_positions
 
-        self.tokenizer = pytorch_transformers.OpenAIGPTTokenizer.from_pretrained(
+        self.tokenizer = transformers.OpenAIGPTTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
         self._pad_id = self.tokenizer.convert_tokens_to_ids("\n</w>")
@@ -480,7 +536,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self, args):
-        model_with_lm_head = pytorch_transformers.OpenAIGPTLMHeadModel.from_pretrained(
+        model_with_lm_head = transformers.OpenAIGPTLMHeadModel.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
@@ -488,19 +544,19 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
+class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for GPT-2 module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(GPT2EmbedderModule, self).__init__(args)
 
-        self.model = pytorch_transformers.GPT2Model.from_pretrained(
+        self.model = transformers.GPT2Model.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self.max_pos = self.model.config.n_positions
 
-        self.tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
+        self.tokenizer = transformers.GPT2Tokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<|endoftext|>")
@@ -542,7 +598,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
-        model_with_lm_head = pytorch_transformers.GPT2LMHeadModel.from_pretrained(
+        model_with_lm_head = transformers.GPT2LMHeadModel.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
@@ -550,18 +606,18 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
-class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
+class TransfoXLEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for Transformer-XL module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(TransfoXLEmbedderModule, self).__init__(args)
 
-        self.model = pytorch_transformers.TransfoXLModel.from_pretrained(
+        self.model = transformers.TransfoXLModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
 
-        self.tokenizer = pytorch_transformers.TransfoXLTokenizer.from_pretrained(
+        self.tokenizer = transformers.TransfoXLTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<eos>")
@@ -604,8 +660,8 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
-        # Note: pytorch_transformers didn't implement TransfoXLLMHeadModel, use this in eval only
-        model_with_lm_head = pytorch_transformers.TransfoXLLMHeadModel.from_pretrained(
+        # Note: transformers didn't implement TransfoXLLMHeadModel, use this in eval only
+        model_with_lm_head = transformers.TransfoXLLMHeadModel.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.crit
@@ -620,19 +676,19 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         return lm_head
 
 
-class XLMEmbedderModule(PytorchTransformersEmbedderModule):
+class XLMEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for XLM module to fit into jiant APIs.
-    Check PytorchTransformersEmbedderModule for function definitions """
+    Check HuggingfaceTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(XLMEmbedderModule, self).__init__(args)
 
-        self.model = pytorch_transformers.XLMModel.from_pretrained(
+        self.model = transformers.XLMModel.from_pretrained(
             args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self.max_pos = self.model.config.max_position_embeddings
 
-        self.tokenizer = pytorch_transformers.XLMTokenizer.from_pretrained(
+        self.tokenizer = transformers.XLMTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
@@ -663,7 +719,7 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, input_mask)
 
     def get_pretrained_lm_head(self):
-        model_with_lm_head = pytorch_transformers.XLMWithLMHeadModel.from_pretrained(
+        model_with_lm_head = transformers.XLMWithLMHeadModel.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.pred_layer
