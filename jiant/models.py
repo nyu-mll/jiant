@@ -1238,9 +1238,10 @@ class MultiTaskModel(nn.Module):
         mlm_probability=0.15
         out = {}
         sent_encoder = self.sent_encoder
-        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, "tokens")
         tokenizer = self.sent_encoder._text_field_embedder.tokenizer
-        mask_idx = self.vocab.get_token_index("[MASK]", "token")
+        #mask_idx = self.sent_encoder._text_field_embedder._mask_id # 
+        mask_idx = tokenizer.convert_tokens_to_ids("<mask>")
+        pad_idx = tokenizer.convert_tokens_to_ids("<pad>")
         b_size, seq_len = batch["targs"]["roberta"].size()
 
         inputs = batch["input"]["roberta"]
