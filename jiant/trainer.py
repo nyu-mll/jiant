@@ -1033,19 +1033,7 @@ class SamplingMultiTaskTrainer:
         if isinstance(self._cuda_device, int) and self._cuda_device >= 0:
             batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, batch)
-        tagmask = batch.get("tagmask", None)
-        update_metrics_kwargs = {}
-        for key, val in model_out.items():
-            if "update_metrics" in key:
-                update_metrics_kwargs[key.replace("update_metrics_", "")] = val
-        update_metrics_kwargs["tagmask"] = tagmask
-        if isinstance(task, ReCoRDTask):
-            # ReCoRD needs the answer string to compute F1
-            update_metrics_kwargs["anss"] = batch["ans_str"]
-            idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
-            update_metrics_kwargs["idxs"] = idxs
-        if task is not None:
-            task.update_metrics(**update_metrics_kwargs)
+        task.update_metrics(model_out, batch)
         return model_out
 
     def _description_from_metrics(self, metrics):

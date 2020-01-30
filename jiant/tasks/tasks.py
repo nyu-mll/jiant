@@ -288,10 +288,8 @@ class Task(object):
     def get_scorers(self):
         return self.scorers
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        assert len(self.get_scorers()) > 0, "Please specify a score metric"
-        for scorer in self.get_scorers():
-            scorer(logits, labels)
+    def update_metrics(self, out, batch):
+        raise NotImplementedError
 
 
 class ClassificationTask(Task):
@@ -330,6 +328,14 @@ class SingleClassificationTask(ClassificationTask):
             split, indexers, model_preprocessing_interface, is_pair=False
         )
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labaels)
+
 
 class PairClassificationTask(ClassificationTask):
     """ Generic sentence pair classification """
@@ -356,6 +362,14 @@ class PairClassificationTask(ClassificationTask):
             split, indexers, model_preprocessing_interface, is_pair=True
         )
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labaels)
+
 
 class PairRegressionTask(RegressionTask):
     """ Generic sentence pair classification """
@@ -380,6 +394,14 @@ class PairRegressionTask(RegressionTask):
         return process_single_pair_task_split(
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
         )
+
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 class PairOrdinalRegressionTask(RegressionTask):
@@ -409,10 +431,13 @@ class PairOrdinalRegressionTask(RegressionTask):
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
         )
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        self.scorer1(mean_squared_error(logits, labels))  # update average MSE
-        self.scorer2(logits, labels)
-        return
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 class SequenceGenerationTask(Task):
@@ -597,7 +622,10 @@ class CoLANPITask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         return {"mcc": self.scorer1.get_metric(reset), "accuracy": self.scorer2.get_metric(reset)}
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -659,7 +687,10 @@ class CoLATask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         return {"mcc": self.scorer1.get_metric(reset), "accuracy": self.scorer2.get_metric(reset)}
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -773,7 +804,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -3243,7 +3277,10 @@ class WinogradCoreferenceTask(SpanClassificationTask):
                 )
         self._iters_by_split = iters_by_split
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
 
