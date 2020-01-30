@@ -914,8 +914,8 @@ class MultiTaskModel(nn.Module):
                 labels = batch["labels"].squeeze(-1)
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
             tagmask = batch.get("tagmask", None)
-            out["update_metrics_logits"] = logits
-            out["update_metrics_labels"] = labels
+            out["logits"] = logits
+            out["labels"] = labels
 
         if predict:
             if isinstance(task, RegressionTask):
@@ -1017,8 +1017,8 @@ class MultiTaskModel(nn.Module):
                     batch["passage_str"][i].split()[pred_char_span_start:pred_char_span_end]
                 ).strip()
             )
-        out["update_metrics_pred_str_list"] = pred_str_list
-        out["update_metrics_gold_str_list"] = batch["answer_str"]
+        out["pred_str_list"] = pred_str_list
+        out["gold_str_list"] = batch["answer_str"]
 
         if predict:
             out["preds"] = {
@@ -1069,8 +1069,8 @@ class MultiTaskModel(nn.Module):
                 labels_np = labels
 
         out["loss"] = format_output(out["loss"], self._cuda_device)
-        out["update_metrics_labels"] = labels_np
-        out["update_metrics_logits"] = logits_np
+        out["labels"] = labels_np
+        out["logits"] = logits_np
         if predict:
             if isinstance(task, RegressionTask):
                 if logits.ndimension() > 1:
@@ -1101,10 +1101,10 @@ class MultiTaskModel(nn.Module):
             target_mask = out["target_mask"]
 
             assert "predictions" in out
-            out["update_metrics_logits"] = None
-            out["update_metrics_labels"] = target
-            out["update_metrics_tagmask"] = target_mask[:, 1:].contiguous()
-            out["update_metrics_predictions"] = out["predictions"]
+            out["logits"] = None
+            out["labels"] = target
+            out["tagmask"] = target_mask[:, 1:].contiguous()
+            out["predictions"] = out["predictions"]
 
         return out
 
@@ -1226,8 +1226,8 @@ class MultiTaskModel(nn.Module):
         if "label" in batch:
             labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            out["update_metrics_logits"] = logits
-            out["update_metrics_labels"] = labels
+            out["logits"] = logits
+            out["labels"] = labels
 
         if predict:
             out["preds"] = logits.argmax(dim=-1)
@@ -1304,9 +1304,9 @@ class MultiTaskModel(nn.Module):
         if "label" in batch:
             labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            out["update_metrics_logits"] = logits
+            out["logits"] = logits
             if not isinstance(task, ReCoRDTask):
-                out["update_metrics_labels"] = labels
+                out["labels"] = labels
         if predict:
             if isinstance(task, ReCoRDTask):
                 # For ReCoRD, we want the logits to make

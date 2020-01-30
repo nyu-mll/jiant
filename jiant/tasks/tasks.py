@@ -2980,6 +2980,14 @@ class SpanPredictionTask(Task):
 
     n_classes = 2
 
+    def update_metrics(self, out, batch):
+        pred_str_list = out["pred_str_list"]
+        gold_str_list = out["gold_str_list"]
+        tagmask = batch.get("taskmaster", None)
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+
 
 @register_task("copa", rel_path="COPA/")
 class COPATask(MultipleChoiceTask):
