@@ -1239,7 +1239,8 @@ class MultiTaskModel(nn.Module):
         out = {}
         sent_encoder = self.sent_encoder
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token, "tokens")
-
+        tokenizer = self.sent_encoder._text_field_embedder.tokenizer
+        mask_idx = self.vocab.get_token_index("[MASK]", "token")
         b_size, seq_len = batch["targs"]["roberta"].size()
 
         inputs = batch["input"]["roberta"]
@@ -1249,29 +1250,28 @@ class MultiTaskModel(nn.Module):
         padding_mask = labels.eq(pad_idx) 
         probability_matrix.masked_fill_(padding_mask, value=0.0)
 
-        print("labels: ", labels)
-        import pdb; pdb.set_trace()
- 
-        masked_indices = torch.bernoulli(probability_matrix).bool()
+        masked_indices = torch.bernoulli(probability_matrix).to(torch.uint8)
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
 
-        print("masked lm labels: ")
-        import pdb; pdb.set_trace()
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
-        inputs[indices_replaced] = tokenizer.convert_tokens_to_ids(tokenizer.mask_token)
+        indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).to(torch.uint8) & masked_indices
+        inputs[indices_replaced] = mask_idx 
 
         # 10% of the time, we replace masked input tokens with random word
-        indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).bool() & masked_indices & ~indices_replaced
+        indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).to(torch.uint8) & masked_indices & ~indices_replaced
         random_words = torch.randint(len(tokenizer), labels.shape, dtype=torch.long)
         inputs[indices_random] = random_words[indices_random]
 
+        batch["input"]["roberta"] = inputs
 
-        sent_embs, sent_mask = self.sent_encoder(inputs, task)
+        sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
-        logits_dict = module.forward(sent_embs, sent_mask)
-        
-
+        logits = module.forward(sent_embs)
+       
+        out["logits"] = logits
+        out["loss"] = format_output(F.cross_entropy(logits.view(-1, 50265), labels.view(-1)), self._cuda_device)
+        task.scorer1(out["loss"].item())
+        return out
 
     def _mc_forward(self, batch, task, predict):
         """ Forward for a multiple choice question answering task """
