@@ -6,6 +6,7 @@ To debug this, run with -m ipdb:
 """
 # pylint: disable=no-member
 import logging as log
+from typing import Iterable
 
 log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
@@ -49,7 +50,19 @@ from jiant.utils.utils import (
 EMAIL_NOTIFIER = None
 
 
-def handle_arguments(cl_arguments):
+def handle_arguments(cl_arguments: Iterable[str]) -> argparse.Namespace:
+    """Defines jiant's CLI argument parsing logic
+
+    Parameters
+    ----------
+    cl_arguments : Iterable[str]
+        An sys.argv-style args obj.
+
+    Returns
+    -------
+    argparse.Namespace
+        A map of params and parsed args
+    """
     parser = argparse.ArgumentParser(description="")
     # Configuration files
     parser.add_argument(
@@ -329,24 +342,34 @@ def evaluate_and_write(args, model, tasks, splits_to_write, cuda_device):
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
 
-def initial_setup(args, cl_args):
-    """
-    Sets up email hook, creating seed, and cuda settings.
+def initial_setup(args: config.Params, cl_args: argparse.Namespace) -> (config.Params, int):
+    """Perform setup steps:
+
+    1. create project, exp, and run dirs if they don't already exist
+    2. create log formatter
+    3. configure GCP remote logging
+    4. set up email notifier
+    5. log git info
+    6. write the config out to file
+    7. log diff between default and experiment's configs
+    8. choose torch's and random's random seed
+    9. if config specifies a single GPU, then set the GPU's random seed (doesn't cover multi-GPU)
+    10. resolve "auto" settings for tokenizer and pool_type parameters
 
     Parameters
-    ----------------
-    args: Params object
-    cl_args: list of arguments
+    ----------
+    args : config.Params
+        config map
+    cl_args : argparse.Namespace
+        mapping named arguments to parsed values
 
     Returns
-    ----------------
-    tasks: list of Task objects
-    pretrain_tasks: list of pretraining tasks
-    target_tasks: list of target tasks
-    vocab: list of vocab
-    word_embs: loaded word embeddings, may be None if args.input_module in
-    {gpt, elmo, elmo-chars-only, bert-*}
-    model: a MultiTaskModel object
+    -------
+    args : config.Params
+        config map
+    seed : int
+        random's and pytorch's random seed
+
     """
     output = io.StringIO()
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
@@ -408,8 +431,20 @@ def initial_setup(args, cl_args):
     return args, seed
 
 
-def check_arg_name(args):
-    """ Raise error if obsolete arg names are present. """
+def check_arg_name(args: config.Params):
+    """Check for obsolete params in config, throw exceptions if obsolete params are found.
+
+    Parameters
+    ----------
+    args: config.Params
+        config map
+
+    Raises
+    ------
+    AssertionError
+        If obsolete parameter names are present in config
+
+    """
     # Mapping - key: old name, value: new name
     name_dict = {
         "task_patience": "lr_patience",

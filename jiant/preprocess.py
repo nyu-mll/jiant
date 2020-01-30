@@ -17,6 +17,7 @@ import logging as log
 import os
 import sys
 from collections import defaultdict
+from typing import List, Dict, Union
 
 import numpy as np
 import torch
@@ -27,13 +28,14 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
-from jiant.pytorch_transformers_interface import (
-    input_module_uses_pytorch_transformers,
+from jiant.huggingface_transformers_interface import (
+    input_module_uses_transformers,
     input_module_tokenizer_name,
 )
-from pytorch_transformers import (
+from transformers import (
     BertTokenizer,
     RobertaTokenizer,
+    AlbertTokenizer,
     XLNetTokenizer,
     OpenAIGPTTokenizer,
     GPT2Tokenizer,
@@ -51,7 +53,7 @@ from jiant.tasks import (
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
-from jiant.tasks.tasks import SequenceGenerationTask
+from jiant.tasks.tasks import SequenceGenerationTask, Task
 from jiant.utils import config, serialize, utils, options
 from jiant.utils.options import parse_task_list_arg
 
@@ -132,8 +134,8 @@ def _index_split(task, split, indexers, vocab, record_file, model_preprocessing_
         indexers: dict of token indexers
         vocab: Vocabulary instance
         record_file: (string) file to write serialized Instances to
-        model_preprocessing_interface: packed information from model that effects the task data, including
-            whether to concatenate sentence pair, and how to mark the sentence boundry
+        model_preprocessing_interface: packed information from model that effects the task data,
+            including whether to concatenate sentence pair, and how to mark the sentence boundry
     """
     log_prefix = "\tTask %s (%s)" % (task.name, split)
     log.info("%s: Indexing from scratch.", log_prefix)
@@ -230,23 +232,41 @@ def _build_embeddings(args, vocab, emb_file: str):
     return embeddings
 
 
-def _build_vocab(args, tasks, vocab_path: str):
-    """ Build vocabulary from scratch, reading data from tasks. """
-    # NOTE: task-specific target vocabulary should be counted in the task object
-    # and provided via `task.all_labels()`. The namespace should be task-specific,
-    # i.e. not something generic like "targets".
+def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
+    """Build vocabulary from scratch
+
+    Read data from all tasks into namespaces, optionally add special vocab items, and save
+    vocabulary file.
+
+    Note
+    ----
+    task-specific target vocabulary should be counted in the task object
+    and provided via `task.all_labels()`. The namespace should be task-specific,
+    i.e. not something generic like "targets".
+
+    Parameters
+    ----------
+    args : config.Params
+        config map
+    tasks : List[Task]
+        list of Task from which to build vocab
+    vocab_path : str
+        vocab file save path
+
+    """
     log.info("\tBuilding vocab from scratch.")
     max_v_sizes = {"word": args.max_word_v_size, "char": args.max_char_v_size}
     word2freq, char2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
+        # TODO: surface more docs for add_task_label_vocab:
         add_task_label_vocab(vocab, task)
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
-    if input_module_uses_pytorch_transformers(args.input_module):
-        # Add pre-computed vocabulary of corresponding tokenizer for pytorch_transformers models.
-        add_pytorch_transformers_vocab(vocab, args.tokenizer)
+    if input_module_uses_transformers(args.input_module):
+        # Add pre-computed vocabulary of corresponding tokenizer for transformers models.
+        add_transformers_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -269,13 +289,13 @@ def build_indexers(args):
             " you are using args.tokenizer = {args.tokenizer}"
         )
 
-    if input_module_uses_pytorch_transformers(args.input_module):
+    if input_module_uses_transformers(args.input_module):
         assert (
             not indexers
-        ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
+        ), "transformers modules like BERT/XLNet are not supported alongside other "
         "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "pytorch_transformers models use custom tokenization for each model, so tokenizer "
+            "transformers models use custom tokenization for each model, so tokenizer "
             "must match the specified model."
         )
         tokenizer_name = input_module_tokenizer_name(args.input_module)
@@ -283,15 +303,38 @@ def build_indexers(args):
     return indexers
 
 
-def build_tasks(args):
-    """Main logic for preparing tasks, doing so by
-    1) creating / loading the tasks
-    2) building / loading the vocabulary
-    3) building / loading the word vectors
-    4) indexing each task's data
-    5) initializing lazy loaders (streaming iterators)
-    """
+def build_tasks(
+    args: config.Params,
+) -> (List[Task], List[Task], Vocabulary, Union[np.ndarray, float]):
+    """Main logic for preparing tasks:
 
+    1. create or load the tasks
+    2. configure classifiers for tasks
+    3. set up indexers
+    4. build and save vocab to disk
+    5. load vocab from disk
+    6. if specified, load word embeddings
+    7. set up ModelPreprocessingInterface (MPI) to handle model-specific preprocessing
+    8. index tasks using vocab and task-specific MPI, save to disk.
+    9. return: task data lazy-loaders in phase-specific lists w/ vocab, and word embeddings
+
+    Parameters
+    ----------
+    args : Params
+        config map
+
+    Returns
+    -------
+    List[Task]
+        list of pretrain Tasks.
+    List[Task]
+        list of target Tasks.
+    allennlp.data.Vocabulary
+        vocabulary from task data.
+    Union[np.ndarray, float]
+        Word embeddings.
+
+    """
     # 1) create / load tasks
     tasks, pretrain_task_names, target_task_names = get_tasks(args)
     for task in tasks:
@@ -398,8 +441,26 @@ def build_tasks(args):
     return pretrain_tasks, target_tasks, vocab, word_embs
 
 
-def _get_task(name, args, data_path, scratch_path):
-    """ Build or load a single task. """
+def _get_task(name: str, args: config.Params, data_path: str, scratch_path: str) -> Task:
+    """Get task object from disk if available. Else construct, prepare and save a new task object.
+
+    Parameters
+    ----------
+    name : str
+        task name to load.
+    args : config.Params
+        param handler object.
+    data_path : str
+        base data directory.
+    scratch_path : str
+        where to save Task objects.
+
+    Returns
+    -------
+    Task
+        loaded task object.
+
+    """
     assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
     task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
     pkl_path = os.path.join(scratch_path, "tasks", f"{name:s}.{args.tokenizer:s}.pkl")
@@ -445,8 +506,30 @@ def get_task_without_loading_data(task_name, args):
     return task
 
 
-def get_tasks(args):
-    """ Actually build or load (from pickles) the tasks. """
+def get_tasks(args: config.Params) -> (List[Task], List[str], List[str]):
+    """Get and save tasks:
+
+    1. Set up task storage file paths
+    2. Parse config for task names
+    3. Load (or build and save) task objects
+    4. Call counting methods on task objects
+    5. Log example-count stats for tasks.
+
+    Parameters
+    ----------
+    args : config.Params
+        config map.
+
+    Returns
+    -------
+    List[Task]
+        list of all loaded Tasks.
+    List[str]
+        pretrain task names.
+    List[str]
+        target task names.
+
+    """
     data_path = args.data_dir
     scratch_path = args.exp_dir
 
@@ -479,10 +562,21 @@ def get_tasks(args):
     return tasks, pretrain_task_names, target_task_names
 
 
-def get_words(tasks):
-    """
-    Get all words for all tasks for all splits for all sentences
-    Return dictionary mapping words to frequencies.
+def get_words(tasks: List[Task]) -> (Dict[str, int], Dict[str, int]):
+    """Get all words for all tasks for all splits for all sentences across all tasks.
+
+    Parameters
+    ----------
+    tasks : List[Task]
+        List of tasks to process.
+
+    Returns
+    -------
+    Dict[str, int]
+        Dictionary storing word frequencies across all tasks.
+    Dict[str, int]
+        Dictionary storing char frequencies across all tasks.
+
     """
     word2freq, char2freq = defaultdict(int), defaultdict(int)
 
@@ -503,20 +597,29 @@ def get_words(tasks):
             for sentence in task.get_sentences():
                 update_vocab_freqs(sentence)
 
-    # This branch is meant for tasks that have *English* target sentences
-    # (or more generally, same language source and target sentences)
-    # Tasks with different language source and target sentences should
-    # count and return the vocab in a `task.all_labels()` method.
-    for task in tasks:
-        if hasattr(task, "target_sentences"):
-            for sentence in task.target_sentences:
-                update_target_vocab_freqs(sentence)
-
     return word2freq, char2freq
 
 
-def get_vocab(word2freq, char2freq, max_v_sizes):
-    """Build vocabulary by selecting the most frequent tokens"""
+def get_vocab(
+    word2freq: Dict[str, int], char2freq: Dict[str, int], max_v_sizes: Dict[str, int]
+) -> Vocabulary:
+    """Build vocabulary by selecting the most frequent tokens
+
+    Parameters
+    ----------
+    word2freq : Dict[str, int]
+        Dict mapping words to frequencies.
+    char2freq : Dict[str, int]
+        Dict mapping chars to frequencies.
+    max_v_sizes : dict[str: int]
+        Dict used to set max vocab size for each token namespace.
+
+    Returns
+    -------
+    allennlp.data.Vocabulary
+        vocab containing word and char namespaces.
+
+    """
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
         vocab.add_token_to_namespace(special, "tokens")
@@ -569,8 +672,8 @@ def add_task_label_vocab(vocab, task):
         vocab.add_token_to_namespace(label, namespace)
 
 
-def add_pytorch_transformers_vocab(vocab, tokenizer_name):
-    """Add vocabulary from tokenizers in pytorch_transformers for use with pre-tokenized data.
+def add_transformers_vocab(vocab, tokenizer_name):
+    """Add vocabulary from tokenizers in transformers for use with pre-tokenized data.
 
     These tokenizers have a convert_tokens_to_ids method, but this doesn't do
     anything special, so we can just use the standard indexers.
@@ -581,6 +684,8 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("roberta-"):
         tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("albert-"):
+        tokenizer = AlbertTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("xlnet-"):
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("openai-gpt"):
@@ -607,7 +712,7 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     # do not use tokenizer.vocab_size, it does not include newly added token
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
-    log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
+    log.info("Added transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, input_module_tokenizer_name(tokenizer_name))
 
@@ -643,34 +748,38 @@ class ModelPreprocessingInterface(object):
         lm_boundary_token_fn = None
 
         if args.input_module.startswith("bert-"):
-            from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import BertEmbedderModule
 
             boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
         elif args.input_module.startswith("roberta-"):
-            from jiant.pytorch_transformers_interface.modules import RobertaEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import RobertaEmbedderModule
 
             boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("albert-"):
+            from jiant.huggingface_transformers_interface.modules import AlbertEmbedderModule
+
+            boundary_token_fn = AlbertEmbedderModule.apply_boundary_tokens
         elif args.input_module.startswith("xlnet-"):
-            from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import XLNetEmbedderModule
 
             boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
         elif args.input_module.startswith("openai-gpt"):
-            from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import OpenAIGPTEmbedderModule
 
             boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
         elif args.input_module.startswith("gpt2"):
-            from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+            from jiant.huggingface_transformers_interface.modules import GPT2EmbedderModule
 
             boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
         elif args.input_module.startswith("transfo-xl-"):
-            from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import TransfoXLEmbedderModule
 
             boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
         elif args.input_module.startswith("xlm-"):
-            from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import XLMEmbedderModule
 
             boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
         else:

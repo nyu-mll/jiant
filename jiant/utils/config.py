@@ -112,11 +112,27 @@ def get_task_attr(args: Type[Params], task_name: str, attr_name: str, default=No
     return args[attr_name]
 
 
-def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = None):
-    # Argument handling is as follows:
-    # 1) read config file into pyhocon.ConfigTree
-    # 2) merge overrides into the ConfigTree
-    # 3) validate specific parameters with custom logic
+def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = None) -> Params:
+    """Generate config map from config_files and overrides:
+
+    1) read config file(s) lines (into a str)
+    2) append overrides (into str from #1)
+    3) call pyhocon's parse_string on combined config-str
+    4) return a Params object (a custom jiant config map)
+
+    Parameters
+    ----------
+    config_files : Union[str, Iterable[str]]
+        filepath(s) for config files.
+    overrides : str
+        parameters overriding parameters found in config files.
+
+    Returns
+    -------
+    Params
+        config map.
+
+    """
     config_string = ""
     if isinstance(config_files, str):
         config_files = [config_files]
