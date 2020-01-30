@@ -218,6 +218,10 @@ class MLMTask(MaskedLanguageModelingTask):
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
             sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+            #input_idx = sentence_to_text_field(sent_, indexers)
+            #print("input: ", input_idx)
+            #import pdb; pdb.set_trace()
+            #targs = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": sentence_to_text_field(sent_, indexers),
                 "targs": sentence_to_text_field(sent_, indexers), #self.target_indexer),

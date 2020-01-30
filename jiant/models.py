@@ -569,7 +569,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, MaskedLanguageModelingTask):
         module = build_mlm(task, d_sent, task_params, model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
-        import pdb; pdb.set_trace()
     elif isinstance(task, LanguageModelingTask):
         assert not input_module_uses_pytorch_transformers(args.input_module), (
             "our LM Task does not support pytorch_transformers, if you need them, try to update",
@@ -1230,22 +1229,42 @@ class MultiTaskModel(nn.Module):
 
 
     def _masked_lm_forward(self, batch, task, predict):
-        print("masked lm forward: batch, task, predict")
-        import pdb; pdb.set_trace()
+        mlm_probability=0.15
         out = {}
         sent_encoder = self.sent_encoder
-        assert_for_log(
-            "targs" in batch and "words" in batch["targs"], "Batch missing target words!"
-        )
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token, "tokens")
-        b_size, seq_len = batch["targs"]["words"].size()
-        n_pad = batch["targs"]["words"].eq(pad_idx).sum().item()
-        out["n_exs"] = format_output(((b_size * seq_len - n_pad) * 2), self._cuda_device)
 
-        sent, mask = sent_encoder(batch["input"], task)
-        sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+        b_size, seq_len = batch["targs"]["roberta"].size()
+
+        inputs = batch["input"]["roberta"]
+        labels = batch["targs"]["roberta"]
+
+        probability_matrix = torch.full(labels.shape, mlm_probability)
+        padding_mask = labels.eq(pad_idx) 
+        probability_matrix.masked_fill_(padding_mask, value=0.0)
+
+        print("labels: ", labels)
+        import pdb; pdb.set_trace()
+ 
+        masked_indices = torch.bernoulli(probability_matrix).bool()
+        labels[~masked_indices] = -100  # We only compute loss on masked tokens
+
+        print("masked lm labels: ")
+        import pdb; pdb.set_trace()
+        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
+        indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
+        inputs[indices_replaced] = tokenizer.convert_tokens_to_ids(tokenizer.mask_token)
+
+        # 10% of the time, we replace masked input tokens with random word
+        indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).bool() & masked_indices & ~indices_replaced
+        random_words = torch.randint(len(tokenizer), labels.shape, dtype=torch.long)
+        inputs[indices_random] = random_words[indices_random]
 
 
+        sent_embs, sent_mask = self.sent_encoder(inputs, task)
+        module = getattr(self, "%s_mdl" % task.name)
+        logits_dict = module.forward(sent_embs, sent_mask)
+        
 
 
     def _mc_forward(self, batch, task, predict):
