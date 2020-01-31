@@ -362,8 +362,6 @@ class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_head
         lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
-        # lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
-        # return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
         return lm_head
 
 
@@ -485,7 +483,7 @@ class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_loss
         lm_head.weight = self.model.word_embedding.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -548,7 +546,7 @@ class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_head
         lm_head.weight = self.model.tokens_embed.weight[: lm_head.weight.size()[0]]
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -610,7 +608,7 @@ class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_head
         lm_head.weight = self.model.wte.weight[: lm_head.weight.size()[0]]
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class TransfoXLEmbedderModule(HuggingfaceTransformersEmbedderModule):
