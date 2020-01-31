@@ -362,9 +362,10 @@ class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_head
         lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
-        #lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
-        #return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        # lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
+        # return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
         return lm_head
+
 
 class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
     """ Wrapper for ALBERT module to fit into jiant APIs.

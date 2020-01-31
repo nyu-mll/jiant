@@ -19,8 +19,6 @@ from jiant.tasks.tasks import (
 )
 
 
-
-
 class LanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
     See base class: SequenceGenerationTask
@@ -129,7 +127,6 @@ class LanguageModelingTask(SequenceGenerationTask):
                 yield sent
 
 
-
 # TODO: restructure LM task hierarchy
 @register_task("bwb", rel_path="BWB/")
 class WikiTextLMTask(LanguageModelingTask):
@@ -181,7 +178,9 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     """
        Generic Masked Language Modeling Task
     """
+
     pass
+
 
 @register_task("mlm", rel_path="WikiText103/")
 class MLMTask(MaskedLanguageModelingTask):
@@ -201,8 +200,6 @@ class MLMTask(MaskedLanguageModelingTask):
             "test": os.path.join(path, "test.sentences.txt"),
         }
 
-
-    
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
@@ -218,19 +215,11 @@ class MLMTask(MaskedLanguageModelingTask):
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
             sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
-            #input_idx = sentence_to_text_field(sent_, indexers)
-            #print("input: ", input_idx)
-            #import pdb; pdb.set_trace()
-            #targs = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": sentence_to_text_field(sent_, indexers),
-                "targs": sentence_to_text_field(sent_, indexers), #self.target_indexer),
+                "targs": sentence_to_text_field(sent_, indexers),
             }
             return Instance(d)
 
         for sent in split:
             yield _make_instance(sent)
-
-
-
-

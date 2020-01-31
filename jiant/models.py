@@ -180,7 +180,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         d_sent = 0
 
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
-    #elif args.sent_enc == "bilm":
+        # elif args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
         assert_for_log(
             not (
@@ -771,8 +771,9 @@ def build_lm(task, d_inp, args):
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
 
+
 def build_mlm(task, d_inp, task_params, embedder):
-    " Build MLM components """
+    " Build MLM components " ""
     lm_head = embedder.get_pretrained_lm_head()
     return lm_head
 
@@ -1233,13 +1234,12 @@ class MultiTaskModel(nn.Module):
             pass
         return out
 
-
     def _masked_lm_forward(self, batch, task, predict):
-        mlm_probability=0.15
+        mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
         tokenizer = self.sent_encoder._text_field_embedder.tokenizer
-        #mask_idx = self.sent_encoder._text_field_embedder._mask_id # 
+        # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
         mask_idx = tokenizer.convert_tokens_to_ids("<mask>")
         pad_idx = tokenizer.convert_tokens_to_ids("<pad>")
         b_size, seq_len = batch["targs"]["roberta"].size()
@@ -1248,18 +1248,24 @@ class MultiTaskModel(nn.Module):
         labels = batch["targs"]["roberta"]
 
         probability_matrix = torch.full(labels.shape, mlm_probability)
-        padding_mask = labels.eq(pad_idx) 
+        padding_mask = labels.eq(pad_idx)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
 
         masked_indices = torch.bernoulli(probability_matrix).to(torch.uint8)
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
 
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).to(torch.uint8) & masked_indices
-        inputs[indices_replaced] = mask_idx 
+        indices_replaced = (
+            torch.bernoulli(torch.full(labels.shape, 0.8)).to(torch.uint8) & masked_indices
+        )
+        inputs[indices_replaced] = mask_idx
 
         # 10% of the time, we replace masked input tokens with random word
-        indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).to(torch.uint8) & masked_indices & ~indices_replaced
+        indices_random = (
+            torch.bernoulli(torch.full(labels.shape, 0.5)).to(torch.uint8)
+            & masked_indices
+            & ~indices_replaced
+        )
         random_words = torch.randint(len(tokenizer), labels.shape, dtype=torch.long)
         inputs[indices_random] = random_words[indices_random]
 
@@ -1268,9 +1274,11 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
-       
+
         out["logits"] = logits
-        out["loss"] = format_output(F.cross_entropy(logits.view(-1, 50265), labels.view(-1)), self._cuda_device)
+        out["loss"] = format_output(
+            F.cross_entropy(logits.view(-1, 50265), labels.view(-1)), self._cuda_device
+        )
         task.scorer1(out["loss"].item())
         return out
 

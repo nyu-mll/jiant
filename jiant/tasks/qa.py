@@ -1010,5 +1010,3 @@ class CosmosQATask(MultipleChoiceTask):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
-
-
