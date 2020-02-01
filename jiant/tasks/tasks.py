@@ -1094,7 +1094,9 @@ class SNLITask(PairClassificationTask):
     def load_data(self):
         """ Process the dataset located at path.  """
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "train.tsv"),
