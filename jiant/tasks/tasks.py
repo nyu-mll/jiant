@@ -334,7 +334,7 @@ class SingleClassificationTask(ClassificationTask):
         tagmask = batch.get("tagmask", None)
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
-            scorer(logits, labaels)
+            scorer(logits, labels)
 
 
 class PairClassificationTask(ClassificationTask):
@@ -368,7 +368,7 @@ class PairClassificationTask(ClassificationTask):
         tagmask = batch.get("tagmask", None)
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
-            scorer(logits, labaels)
+            scorer(logits, labels)
 
 
 class PairRegressionTask(RegressionTask):
@@ -459,7 +459,7 @@ class SequenceGenerationTask(Task):
         bleu = self.scorer1.get_metric(reset)
         return {"bleu": bleu}
 
-    def update_metrics(self):
+    def update_metrics(self, out, batch):
         # currently don't support metrics for regression task
         # TODO(Yada): support them!
         return
@@ -1094,6 +1094,7 @@ class SNLITask(PairClassificationTask):
     def load_data(self):
         """ Process the dataset located at path.  """
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+        import pdb; pdb.set_trace()
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "train.tsv"),
