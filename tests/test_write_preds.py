@@ -24,8 +24,8 @@ def model_forward(task, batch, predict=True):
         logits = torch.Tensor([0.6, 0.4])
         labels = torch.Tensor([0.875, 0.6])
         out = {
-            "update_metrics_logits": logits,
-            "update_metrics_labels": labels,
+            "logits": logits,
+            "abels": labels,
             "n_exs": 2,
             "preds": [1.0, 0.8],
         }
@@ -33,15 +33,15 @@ def model_forward(task, batch, predict=True):
         logits = torch.Tensor([[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
         labels = torch.LongTensor([0, 1, 1, 0])
         out = {
-            "update_metrics_logits": logits,
-            "update_metrics_labels": labels,
+            "logits": logits,
+            "labels": labels,
             "n_exs": 4,
             "preds": [0, 1, 1, 1],
         }
     else:
         raise ValueError("Unexpected task found")
 
-    task.update_metrics(logits, labels)
+    task.update_metrics(out, batch)
     return out
 
 
