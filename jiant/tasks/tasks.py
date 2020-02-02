@@ -445,6 +445,180 @@ class RankingTask(Task):
 
     pass
 
+@register_task("hans+mnli", rel_path="MNLI/")
+class MultiNLITask(PairClassificationTask):
+    """ Task class for Multi-Genre Natural Language Inference. 
+    
+    
+    MNLI + HANS (joint training.)
+    """
+
+    def __init__(self, path, max_seq_len, name, genre=None, two_class_evaluation=True, **kw):
+        """Set up the MNLI task object.
+
+        When genre is set to one of the ten MNLI genres, only examples matching that genre will be
+        loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
+        being empty.
+
+        When two_class_evaluation is set, merge the contradiction and neutral labels, for both
+        predictions and gold labels, in the metric when evaluating on this task.
+        """
+        super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.genre = genre
+        # if two_class_evaluation:
+        #     self.scorer1 = NLITwoClassAccuracy()
+        #     self.scorers = [self.scorer1]
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+    def load_data(self):
+        """Process the dataset located at path."""
+        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 0}
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            label_idx=11,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+
+        # Warning to anyone who edits this: The reference label is column *15*,
+        # not 11 as above.
+        val_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev_matched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        val_mismatched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev_mismatched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        val_data = tuple(val_data)
+
+        te_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test_matched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        te_mismatched_data = load                                                                                                                                                                                                                                                  _tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test_mismatched.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+            filter_idx=3,
+            filter_value=self.genre,
+        )
+        te_data = [m + mm for m, mm in zip(te_matched_data, te_mismatched_data)]
+
+        HANS_targ_map = {"entailment": 1, "non-entailment": 0}
+        HANS_train_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join("./HANS/", "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=5,
+            s2_idx=6,
+            label_idx=0,
+            skip_rows=1,
+        )
+
+        self.train_data_text = tr_data + HANS_train_data_text
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
+        )
+        log.info("\tFinished loading MNLI + HANS data.")
+
+@register_task("hans", rel_path="HANS/")
+class HANSBaseTask(PairClassificationTask):
+    """ Task class for Stanford Natural Language Inference 
+    
+    HANS only task.
+    """
+
+    def __init__(self, path, max_seq_len, name, target_class, **kw):
+        """ Do stuff """
+        super(HANSBaseTask, self).__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.target_class = target_class
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+    def load_data(self):
+        """ Process the dataset located at path.  """
+        targ_map = {"non-entailment": 0, "entailment": 1,}
+        self.train_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=5,
+            s2_idx=6,
+            label_idx=0,
+            skip_rows=1,
+        )
+        self.test_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "eval.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=5,
+            s2_idx=6,
+            label_idx=0,
+            skip_rows=1,
+            return_indices=True
+        )
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.test_data_text[0]
+            + self.train_data_text[1]
+        )
+
 
 @register_task("hans", rel_path="HANS/")
 class HANSTask(PairClassificationTask):
