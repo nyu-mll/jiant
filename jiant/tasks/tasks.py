@@ -532,7 +532,7 @@ class MultiNLITask(PairClassificationTask):
             filter_idx=3,
             filter_value=self.genre,
         )
-        te_mismatched_data = load                                                                                                                                                                                                                                                  _tsv(
+        te_mismatched_data = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "test_mismatched.tsv"),
             max_seq_len=self.max_seq_len,
