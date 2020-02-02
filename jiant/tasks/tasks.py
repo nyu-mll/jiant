@@ -445,8 +445,8 @@ class RankingTask(Task):
 
     pass
 
-@register_task("hans+mnli", rel_path="MNLI/")
-class MultiNLITask(PairClassificationTask):
+@register_task("mnli+hans", rel_path="MNLI/")
+class HansMnliNLITask(PairClassificationTask):
     """ Task class for Multi-Genre Natural Language Inference. 
     
     
@@ -463,7 +463,7 @@ class MultiNLITask(PairClassificationTask):
         When two_class_evaluation is set, merge the contradiction and neutral labels, for both
         predictions and gold labels, in the metric when evaluating on this task.
         """
-        super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
+        super(HansMnliNLITask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self.genre = genre
@@ -477,7 +477,7 @@ class MultiNLITask(PairClassificationTask):
 
     def load_data(self):
         """Process the dataset located at path."""
-        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 0}
+        targ_map = {"neutral": 0, "contradiction": 0, "entailment": 1}
         tr_data = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "train.tsv"),
@@ -546,7 +546,7 @@ class MultiNLITask(PairClassificationTask):
         )
         te_data = [m + mm for m, mm in zip(te_matched_data, te_mismatched_data)]
 
-        HANS_targ_map = {"entailment": 1, "non-entailment": 0}
+        HANS_targ_map = {"non-entailment": 0, "entailment": 1,}
         HANS_train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join("./HANS/", "train.tsv"),
@@ -557,10 +557,21 @@ class MultiNLITask(PairClassificationTask):
             label_idx=0,
             skip_rows=1,
         )
+        HANS_test_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join("./HANS/", "eval.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=5,
+            s2_idx=6,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+        )
 
         self.train_data_text = tr_data + HANS_train_data_text
         self.val_data_text = val_data
-        self.test_data_text = te_data
+        self.test_data_text = te_data + HANS_test_data_text
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
@@ -569,7 +580,7 @@ class MultiNLITask(PairClassificationTask):
         )
         log.info("\tFinished loading MNLI + HANS data.")
 
-@register_task("hans", rel_path="HANS/")
+@register_task("hansbase", rel_path="HANS/")
 class HANSBaseTask(PairClassificationTask):
     """ Task class for Stanford Natural Language Inference 
     
@@ -619,8 +630,8 @@ class HANSBaseTask(PairClassificationTask):
             + self.train_data_text[1]
         )
 
-
-@register_task("hans", rel_path="HANS/")
+@register_task("bert-heuristic-lexical_overlap", target_class='lexical_overlap', rel_path="HANS/")
+@register_task("bert-syntax-ln_subject/object_swap", target_class='ln_subject/object_swap', rel_path="HANS/")
 class HANSTask(PairClassificationTask):
     """ Task class for Stanford Natural Language Inference """
 
