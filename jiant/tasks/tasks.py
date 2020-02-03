@@ -551,7 +551,7 @@ class HansMnliNLITask(PairClassificationTask):
             self._tokenizer_name,
             os.path.join("./HANS/", "train.tsv"),
             max_seq_len=self.max_seq_len,
-            label_fn=targ_map.__getitem__,
+            label_fn=HANS_targ_map.__getitem__,
             s1_idx=5,
             s2_idx=6,
             label_idx=0,
@@ -631,7 +631,7 @@ class HANSBaseTask(PairClassificationTask):
         )
 
 @register_task("bert-heuristic-lexical_overlap", target_class='lexical_overlap', rel_path="HANS/")
-@register_task("bert-syntax-ln_subject/object_swap", target_class='ln_subject/object_swap', rel_path="HANS/")
+@register_task("bert-syntax-ln_subject-object_swap", target_class='ln_subject/object_swap', rel_path="HANS/")
 class HANSTask(PairClassificationTask):
     """ Task class for Stanford Natural Language Inference """
 
@@ -640,9 +640,7 @@ class HANSTask(PairClassificationTask):
         super(HANSTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
-
         self.target_class = target_class
-
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
