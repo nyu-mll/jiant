@@ -3573,6 +3573,8 @@ class WinograndeTask(MultipleChoiceTask):
         """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(context, choices, label, idx):
+            # because Winogrande uses MultiTaskModel._mc_forward as its forward funcion, we adapt
+            # to the keywords specified in _mc_forward, i.e. "question", "choice1" and "choice2".
             d = {}
             d["question_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
