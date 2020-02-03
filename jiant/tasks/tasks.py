@@ -568,10 +568,13 @@ class HansMnliNLITask(PairClassificationTask):
             return_indices=True,
             skip_rows=1,
         )
-
-        self.train_data_text = tr_data + HANS_train_data_text
+        tr_data = [m + mm for m, mm in zip(tr_data, HANS_train_data_text)]
+        tr_data = tuple(tr_data)
+        self.train_data_text = tr_data
         self.val_data_text = val_data
-        self.test_data_text = te_data + HANS_test_data_text
+        te_data = [m + mm for m, mm in zip(te_data, HANS_test_data_text)]
+        te_data = tuple(te_data)
+        self.test_data_text = te_data
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
