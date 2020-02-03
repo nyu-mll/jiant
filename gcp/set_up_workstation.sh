@@ -26,8 +26,8 @@ source /etc/profile.d/jiant_paths.sh
 if [ ! -d "${JIANT_PROJECT_PREFIX}" ]; then
   mkdir "${JIANT_PROJECT_PREFIX}"
 fi
-if [ ! -d "${PYTORCH_PRETRAINED_BERT_CACHE}" ]; then
-  sudo mkdir -m 0777 "${PYTORCH_PRETRAINED_BERT_CACHE}"
+if [ ! -d "${HUGGINGFACE_TRANSFORMERS_CACHE}" ]; then
+  sudo mkdir -m 0777 "${HUGGINGFACE_TRANSFORMERS_CACHE}"
 fi
 
 # Build the conda environment, and activate

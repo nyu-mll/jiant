@@ -28,13 +28,14 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
-from jiant.pytorch_transformers_interface import (
-    input_module_uses_pytorch_transformers,
+from jiant.huggingface_transformers_interface import (
+    input_module_uses_transformers,
     input_module_tokenizer_name,
 )
-from pytorch_transformers import (
+from transformers import (
     BertTokenizer,
     RobertaTokenizer,
+    AlbertTokenizer,
     XLNetTokenizer,
     OpenAIGPTTokenizer,
     GPT2Tokenizer,
@@ -263,9 +264,9 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
-    if input_module_uses_pytorch_transformers(args.input_module):
-        # Add pre-computed vocabulary of corresponding tokenizer for pytorch_transformers models.
-        add_pytorch_transformers_vocab(vocab, args.tokenizer)
+    if input_module_uses_transformers(args.input_module):
+        # Add pre-computed vocabulary of corresponding tokenizer for transformers models.
+        add_transformers_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -288,13 +289,13 @@ def build_indexers(args):
             " you are using args.tokenizer = {args.tokenizer}"
         )
 
-    if input_module_uses_pytorch_transformers(args.input_module):
+    if input_module_uses_transformers(args.input_module):
         assert (
             not indexers
-        ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
+        ), "transformers modules like BERT/XLNet are not supported alongside other "
         "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "pytorch_transformers models use custom tokenization for each model, so tokenizer "
+            "transformers models use custom tokenization for each model, so tokenizer "
             "must match the specified model."
         )
         tokenizer_name = input_module_tokenizer_name(args.input_module)
@@ -671,8 +672,8 @@ def add_task_label_vocab(vocab, task):
         vocab.add_token_to_namespace(label, namespace)
 
 
-def add_pytorch_transformers_vocab(vocab, tokenizer_name):
-    """Add vocabulary from tokenizers in pytorch_transformers for use with pre-tokenized data.
+def add_transformers_vocab(vocab, tokenizer_name):
+    """Add vocabulary from tokenizers in transformers for use with pre-tokenized data.
 
     These tokenizers have a convert_tokens_to_ids method, but this doesn't do
     anything special, so we can just use the standard indexers.
@@ -683,6 +684,8 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("roberta-"):
         tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("albert-"):
+        tokenizer = AlbertTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("xlnet-"):
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("openai-gpt"):
@@ -709,7 +712,7 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     # do not use tokenizer.vocab_size, it does not include newly added token
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
-    log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
+    log.info("Added transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, input_module_tokenizer_name(tokenizer_name))
 
@@ -745,34 +748,38 @@ class ModelPreprocessingInterface(object):
         lm_boundary_token_fn = None
 
         if args.input_module.startswith("bert-"):
-            from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import BertEmbedderModule
 
             boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
         elif args.input_module.startswith("roberta-"):
-            from jiant.pytorch_transformers_interface.modules import RobertaEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import RobertaEmbedderModule
 
             boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("albert-"):
+            from jiant.huggingface_transformers_interface.modules import AlbertEmbedderModule
+
+            boundary_token_fn = AlbertEmbedderModule.apply_boundary_tokens
         elif args.input_module.startswith("xlnet-"):
-            from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import XLNetEmbedderModule
 
             boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
         elif args.input_module.startswith("openai-gpt"):
-            from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import OpenAIGPTEmbedderModule
 
             boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
         elif args.input_module.startswith("gpt2"):
-            from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+            from jiant.huggingface_transformers_interface.modules import GPT2EmbedderModule
 
             boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
         elif args.input_module.startswith("transfo-xl-"):
-            from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import TransfoXLEmbedderModule
 
             boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
         elif args.input_module.startswith("xlm-"):
-            from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
+            from jiant.huggingface_transformers_interface.modules import XLMEmbedderModule
 
             boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
         else:
