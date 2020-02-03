@@ -445,7 +445,7 @@ class RankingTask(Task):
 
     pass
 
-@register_task("mnli+hans", rel_path="MNLI/")
+@register_task("mnli_hans", rel_path="MNLI/")
 class HansMnliNLITask(PairClassificationTask):
     """ Task class for Multi-Genre Natural Language Inference. 
     
