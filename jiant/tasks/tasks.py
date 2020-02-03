@@ -590,13 +590,11 @@ class HANSBaseTask(PairClassificationTask):
     HANS only task.
     """
 
-    def __init__(self, path, max_seq_len, name, target_class, **kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         """ Do stuff """
         super(HANSBaseTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
-
-        self.target_class = target_class
 
         self.train_data_text = None
         self.val_data_text = None
