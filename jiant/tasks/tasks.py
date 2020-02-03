@@ -580,7 +580,7 @@ class HansMnliNLITask(PairClassificationTask):
         )
         log.info("\tFinished loading MNLI + HANS data.")
 
-@register_task("hansbase", rel_path="HANS/")
+@register_task("hans", rel_path="HANS/")
 class HANSBaseTask(PairClassificationTask):
     """ Task class for Stanford Natural Language Inference 
     
@@ -612,6 +612,9 @@ class HANSBaseTask(PairClassificationTask):
             label_idx=0,
             skip_rows=1,
         )
+        # TODO: Consider splitting train data (or not).
+        # HANS has no val data by default.
+        self.val_data_text = []
         self.test_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "eval.tsv"),
@@ -697,6 +700,7 @@ class HANSTask(PairClassificationTask):
             label_idx=label_idx(),
             skip_rows=1,
         )
+        self.val_data_text = []
         self.test_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "eval.tsv"),
