@@ -617,7 +617,8 @@ class HANSBaseTask(PairClassificationTask):
         )
         # TODO: Consider splitting train data (or not).
         # HANS has no val data by default.
-        self.val_data_text = []
+        # TODO: None is breaking the code?
+        self.val_data_text = [[] for _ in self.train_data_text]
         self.test_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "eval.tsv"),
@@ -703,7 +704,8 @@ class HANSTask(PairClassificationTask):
             label_idx=label_idx(),
             skip_rows=1,
         )
-        self.val_data_text = []
+        # TODO: None is breaking the code?
+        self.val_data_text = [[] for _ in self.train_data_text]
         self.test_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "eval.tsv"),
