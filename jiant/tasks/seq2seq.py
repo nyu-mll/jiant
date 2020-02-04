@@ -33,7 +33,7 @@ class Seq2SeqTask(SequenceGenerationTask):
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
-        self.max_targ_v_size = run_config.max_targ_v_size
+        self.max_targ_v_size = run_config.get("max_targ_v_size")
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
         self.files_by_split = {
             split: os.path.join(path, "%s.tsv" % split) for split in ["train", "val", "test"]
