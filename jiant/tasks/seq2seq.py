@@ -25,7 +25,7 @@ from .tasks import (
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
+    def __init__(self, path, max_seq_len, name, run_config, **kw):
         super().__init__(name, **kw)
         self.scorer2 = BooleanAccuracy()
         self.scorers.append(self.scorer2)
@@ -33,7 +33,7 @@ class Seq2SeqTask(SequenceGenerationTask):
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
-        self.max_targ_v_size = max_targ_v_size
+        self.max_targ_v_size = run_config.max_targ_v_size
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
         self.files_by_split = {
             split: os.path.join(path, "%s.tsv" % split) for split in ["train", "val", "test"]

@@ -39,11 +39,11 @@ class NPSTask(PairClassificationTask):
 class NLITypeProbingTask(PairClassificationTask):
     """ Task class for Probing Task (NLI-type)"""
 
-    def __init__(self, path, max_seq_len, name, probe_path="", **kw):
+    def __init__(self, path, max_seq_len, name, run_config, **kw):
         super(NLITypeProbingTask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
-        self.probe_path = probe_path
+        self.probe_path = run_config["nli-prob"].probe_path
 
         self.train_data_text = None
         self.val_data_text = None
@@ -71,13 +71,13 @@ class NLITypeProbingTask(PairClassificationTask):
 class NLITypeProbingAltTask(NLITypeProbingTask):
     """ Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices"""
 
-    def __init__(self, path, max_seq_len, name, probe_path="", **kw):
+    def __init__(self, path, max_seq_len, name, run_config, **kw):
         super(NLITypeProbingAltTask, self).__init__(
             name=name, path=path, max_seq_len=max_seq_len, **kw
         )
         self.path = path
         self.max_seq_len = max_seq_len
-        self.probe_path = probe_path
+        self.probe_path = run_config["nli-prob"].probe_path
 
         self.train_data_text = None
         self.val_data_text = None
