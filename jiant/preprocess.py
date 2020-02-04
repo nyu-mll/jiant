@@ -55,6 +55,7 @@ from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask, Task
 from jiant.utils import config, serialize, utils, options
+from jiant.utils.config import Params
 from jiant.utils.options import parse_task_list_arg
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
@@ -484,6 +485,7 @@ def _get_task(name: str, args: config.Params, data_path: str, scratch_path: str)
             max_seq_len=args.max_seq_len,
             name=name,
             tokenizer_name=args.tokenizer,
+            run_config=Params.clone(args),
             **task_kw,
         )
         task.load_data()
@@ -501,6 +503,7 @@ def get_task_without_loading_data(task_name, args):
         max_seq_len=args.max_seq_len,
         name=task_name,
         tokenizer_name=args.tokenizer,
+        run_config=Params.clone(args),
         **task_kw,
     )
     return task
