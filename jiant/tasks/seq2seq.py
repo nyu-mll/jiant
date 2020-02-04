@@ -22,19 +22,72 @@ from .tasks import (
 )
 
 
-@register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200, valid_metric="accuracy")
 @register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000, valid_metric="bleu")
+class MTTask(Seq2SeqTask):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name, valid_metric, **kw):
+        super().__init__(name, **kw)
+        self.tokenizer = get_tokenizer(tokenizer_name)
+        exclusion_index_set = [
+            self.tokenizer.pad_token,
+            self.tokenizer.bos_token,
+            self.tokenizer.eos_token,
+            self.tokenizer.unk_token,
+        ]
+        self.scorer2 = BLEU(exclude_indices=set(exclusion_index_set))
+        self.scorers.append(self.scorer2)
+        self.val_metric_decreases = False
+        self.val_metric = "%s_bleu" % name
+        self.max_seq_len = max_seq_len
+        self._label_namespace = self.name + "_tokens"
+        self.max_targ_v_size = max_targ_v_size
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
+        self.files_by_split = {
+            split: os.path.join(path, "%s.tsv" % split) for split in ["train", "val", "test"]
+        }
+
+    def get_data_iter(self, path):
+        """ Load data """
+        with codecs.open(path, "r", "utf-8", errors="ignore") as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split("\t")
+                if len(row) < 2 or not row[0] or not row[1]:
+                    continue
+                src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
+                tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
+                yield (src_sent, tgt_sent)
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        avg_nll = self.scorer1.get_metric(reset)
+        val_metric = self.scorer2.get_metric(reset)
+        return {"perplexity": math.exp(avg_nll), "blue": val_metric["BLEU"]}
+
+    def update_metrics(self, logits, labels, tagmask=None, predictions=None):
+        # This doesn't require logits for now, since loss is updated in another part.
+        assert logits is None and predictions is not None
+        if labels.shape[1] < predictions.shape[2]:
+            predictions = predictions[:, 0, : labels.shape[1]]
+        else:
+            predictions = predictions[:, 0, :]
+            # Cut labels if predictions (without gold target) are shorter.
+            labels = labels[:, : predictions.shape[1]]
+            tagmask = tagmask[:, : predictions.shape[1]]
+        self.scorer2(predictions, labels, tagmask)
+        return
+
+    def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
+        return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
+
+
+@register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200, valid_metric="accuracy")
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, valid_metric, **kw):
         super().__init__(name, **kw)
         # Set scorer2 to compute the validation metric determined in the config file (see 's2s.valid_metric').
-        if valid_metric == "accuracy":
-            self.scorer2 = BooleanAccuracy()
-            self.val_metric = "%s_accuracy" % self.name
-        else:  # for MT
-            self.scorer2 = BLEU(exclude_indices=set([0, 1, 2, 3]))  # PAD, SOS, EOS, UNK
+        self.scorer2 = BooleanAccuracy()
+        self.val_metric = "%s_accuracy" % self.name
         self.scorers.append(self.scorer2)
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
@@ -73,10 +126,7 @@ class Seq2SeqTask(SequenceGenerationTask):
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
                 src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
-                if self.val_metric == "%s_accuracy" % self.name:
-                    tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
-                else:  # for MT
-                    tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
+                stgt_sent = tokenize_and_truncate(self._tokenizer_name, row[2], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -120,35 +170,17 @@ class Seq2SeqTask(SequenceGenerationTask):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
         val_metric = self.scorer2.get_metric(reset)
-        if self.val_metric == "%s_accuracy" % self.name:
-            metric_name = "accuracy"
-        else:  # for MT
-            metric_name = "bleu"
-            val_metric = val_metric["BLEU"]
-        return {"perplexity": math.exp(avg_nll), metric_name: val_metric}
+        metric_name = "accuracy"
+        return {"perplexity": math.exp(avg_nll), "accuracy": val_metric}
 
     def update_metrics(self, logits, labels, tagmask=None, predictions=None):
         # This doesn't require logits for now, since loss is updated in another part.
         assert logits is None and predictions is not None
-
-        if self.val_metric != "%s_accuracy" % self.name:  # for MT
-            self.scorer2(predictions[:, 0, :], labels)
-        else:
-            if labels.shape[1] < predictions.shape[2]:
-                predictions = predictions[:, 0, : labels.shape[1]]
-            else:
-                predictions = predictions[:, 0, :]
-                # Cut labels if predictions (without gold target) are shorter.
-                labels = labels[:, : predictions.shape[1]]
-                tagmask = tagmask[:, : predictions.shape[1]]
-            self.scorer2(predictions, labels, tagmask)
+        self.scorer2(predictions[:, 0, :], labels)
         return
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
-        if self.val_metric == "%s_accuracy" % self.name:
-            return self._get_char_prediction(voc_src, voc_trg, inputs, gold, output)
-        else:  # for MT
-            return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
+        return self._get_char_prediction(voc_src, voc_trg, inputs, gold, output)
 
     def _get_mt_prediction(self, voc_src, voc_trg, inputs, gold, output):
         tokenizer = get_tokenizer(self._tokenizer_name)
