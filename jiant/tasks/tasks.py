@@ -220,7 +220,7 @@ class Task(object):
         - optimizer
     """
 
-    def __init__(self, name, tokenizer_name):
+    def __init__(self, name, tokenizer_name, **kw):
         self.name = name
         self._tokenizer_name = tokenizer_name
         self.scorers = []
@@ -2726,7 +2726,7 @@ class WiCTask(PairClassificationTask):
 
         def _process_preserving_word(sent, word):
             """ Find out the index of the [first] instance of the word in the original sentence,
-            and project the span containing marked word to the span containing tokens created from 
+            and project the span containing marked word to the span containing tokens created from
             the marked word. """
             token_aligner, sent_tok = aligner_fn(sent)
             raw_start_idx = len(sent.split(word)[0].split(" ")) - 1
