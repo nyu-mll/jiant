@@ -1,5 +1,6 @@
 import logging
 
+from jiant.utils.config import Params
 from jiant.tasks.registry import REGISTRY
 
 
@@ -17,5 +18,6 @@ def test_instantiate_all_tasks():
             max_seq_len=1,
             name="dummy_name",
             tokenizer_name="dummy_tokenizer_name",
+            run_config=Params(),
             **kw,
         )
