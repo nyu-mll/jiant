@@ -10,10 +10,11 @@ import os
 from sacremoses import MosesDetokenizer
 from sacremoses import MosesTokenizer as SacreMosesTokenizer
 from nltk.tokenize.simple import SpaceTokenizer
-from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
-from pytorch_transformers import (
+from jiant.huggingface_transformers_interface import input_module_uses_transformers
+from transformers import (
     BertTokenizer,
     RobertaTokenizer,
+    AlbertTokenizer,
     XLNetTokenizer,
     OpenAIGPTTokenizer,
     GPT2Tokenizer,
@@ -32,7 +33,7 @@ def select_tokenizer(args):
         Select a sane default tokenizer.
     """
     if args.tokenizer == "auto":
-        if input_module_uses_pytorch_transformers(args.input_module):
+        if input_module_uses_transformers(args.input_module):
             tokenizer_name = args.input_module
         else:
             tokenizer_name = "MosesTokenizer"
@@ -97,6 +98,8 @@ def get_tokenizer(tokenizer_name):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name.startswith("roberta-"):
         tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("albert-"):
+        tokenizer = AlbertTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("xlnet-"):
         do_lower_case = tokenizer_name.endswith("uncased")
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)

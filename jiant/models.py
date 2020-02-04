@@ -43,7 +43,7 @@ from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
 from jiant.modules.prpn.PRPN import PRPN
 from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
-from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+from jiant.huggingface_transformers_interface import input_module_uses_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
@@ -237,43 +237,49 @@ def build_model(args, vocab, pretrained_embs, tasks, cuda_devices):
     # Build embeddings.
     cove_layer = None
     if args.input_module.startswith("bert-"):
-        from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+        from jiant.huggingface_transformers_interface.modules import BertEmbedderModule
 
         log.info(f"Using BERT model ({args.input_module}).")
         embedder = BertEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("roberta-"):
-        from jiant.pytorch_transformers_interface.modules import RobertaEmbedderModule
+        from jiant.huggingface_transformers_interface.modules import RobertaEmbedderModule
 
         log.info(f"Using RoBERTa model ({args.input_module}).")
         embedder = RobertaEmbedderModule(args)
         d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("albert-"):
+        from jiant.huggingface_transformers_interface.modules import AlbertEmbedderModule
+
+        log.info(f"Using ALBERT model ({args.input_module}).")
+        embedder = AlbertEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("xlnet-"):
-        from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+        from jiant.huggingface_transformers_interface.modules import XLNetEmbedderModule
 
         log.info(f"Using XLNet model ({args.input_module}).")
         embedder = XLNetEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("openai-gpt"):
-        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+        from jiant.huggingface_transformers_interface.modules import OpenAIGPTEmbedderModule
 
         log.info(f"Using OpenAI GPT model ({args.input_module}).")
         embedder = OpenAIGPTEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("gpt2"):
-        from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+        from jiant.huggingface_transformers_interface.modules import GPT2EmbedderModule
 
         log.info(f"Using GPT-2 model ({args.input_module}).")
         embedder = GPT2EmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("transfo-xl-"):
-        from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+        from jiant.huggingface_transformers_interface.modules import TransfoXLEmbedderModule
 
         log.info(f"Using Transformer-XL model ({args.input_module}).")
         embedder = TransfoXLEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("xlm-"):
-        from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
+        from jiant.huggingface_transformers_interface.modules import XLMEmbedderModule
 
         log.info(f"Using XLM model ({args.input_module}).")
         embedder = XLMEmbedderModule(args)
@@ -343,7 +349,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         d_word = args.d_word
         word_embs = nn.Embedding(n_token_vocab, d_word).weight
     else:
-        assert input_module_uses_pytorch_transformers(args.input_module) or args.input_module in [
+        assert input_module_uses_transformers(args.input_module) or args.input_module in [
             "elmo",
             "elmo-chars-only",
         ], f"'{args.input_module}' is not a valid value for input_module."
@@ -497,7 +503,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     """
 
     # Attach task-specific params.
-    for task in set(tasks):
+    for task in sorted(set(tasks), key=lambda x: x.name):
         task_params = get_task_specific_params(args, task.name)
         log.info(
             "\tTask '%s' params: %s",
@@ -508,7 +514,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         setattr(model, "%s_task_params" % task.name, task_params)
 
     # Actually construct modules.
-    for task in set(tasks):
+    for task in sorted(set(tasks), key=lambda x: x.name):
         # If the name of the task is different than the classifier it should use
         # then skip the module creation.
         if task.name != model._get_task_params(task.name).get("use_classifier", task.name):
@@ -544,10 +550,10 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
         setattr(model, "%s_mdl" % task.name, hid2voc)
     elif isinstance(task, LanguageModelingTask):
-        assert not input_module_uses_pytorch_transformers(args.input_module), (
-            "our LM Task does not support pytorch_transformers, if you need them, try to update",
+        assert not input_module_uses_transformers(args.input_module), (
+            "our LM Task does not support transformers, if you need them, try to update",
             "corresponding parts of the code. You may find get_pretrained_lm_head and",
-            "apply_lm_boundary_tokens from pytorch_transformer_interface.module useful,",
+            "apply_lm_boundary_tokens from huggingface_transformers_interface.module useful,",
             "do check if they are working correctly though.",
         )
         d_sent = args.d_hid + (args.skip_embs * d_emb)
@@ -817,7 +823,7 @@ class MultiTaskModel(nn.Module):
         self.uses_pair_embedding = input_module_uses_pair_embedding(args.input_module)
         self.uses_mirrored_pair = input_module_uses_mirrored_pair(args.input_module)
         self.project_before_pooling = not (
-            input_module_uses_pytorch_transformers(args.input_module)
+            input_module_uses_transformers(args.input_module)
             and args.transfer_paradigm == "finetune"
         )  # Rough heuristic. TODO: Make this directly user-controllable.
         self.sep_embs_for_skip = args.sep_embs_for_skip
@@ -1001,8 +1007,8 @@ class MultiTaskModel(nn.Module):
             # The assumption is that each space_token corresponds to multiple processed_tokens.
             # After we get the corresponding start/end space_token_indices, we can do " ".join
             #   to get the corresponding string that is definitely within the original input.
-            # One constraint here is that our predictions can only go up to a the granularity of space_tokens.
-            # This is not so bad because SQuAD-style scripts also remove punctuation.
+            # One constraint here is that our predictions can only go up to a the granularity of
+            # space_tokens. This is not so bad because SQuAD-style scripts also remove punctuation.
             pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
             pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
             pred_str_list.append(
@@ -1344,9 +1350,9 @@ def input_module_uses_pair_embedding(input_module):
     running on pair tasks, like what GPT / BERT do on MNLI.
     It seems redundant now, but it allows us to load similar models from other sources later on
     """
-    from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+    from jiant.huggingface_transformers_interface import input_module_uses_transformers
 
-    return input_module_uses_pytorch_transformers(input_module)
+    return input_module_uses_transformers(input_module)
 
 
 def input_module_uses_mirrored_pair(input_module):

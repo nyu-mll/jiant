@@ -21,7 +21,7 @@
         - run:
             name: check style
             command: |
-              pip install --user black
+              pip install --user black==19.3b0
               black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|jiant/modules/cove|venv)/"
         # Step 4: get data needed for demo.sh
         - run:

@@ -61,7 +61,7 @@ And the next time you start a notebook server, you should see `jiant` as an opti
 
 ### Optional
 
-If you'll be using GPT, BERT, or other models supplied by `pytorch-transformers`, then you may see speed gains from installing NVIDIA apex, following the instructions here:
+If you'll be using GPT, BERT, or other models supplied by `transformers`, then you may see speed gains from installing NVIDIA apex, following the instructions here:
 
 https://github.com/NVIDIA/apex#linux
 
