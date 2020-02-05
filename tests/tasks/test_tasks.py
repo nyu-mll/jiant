@@ -1,7 +1,7 @@
 import logging
 import unittest
 from unittest import mock
-from mock import patch
+from unittest.mock import patch
 import tempfile
 from jiant.tasks.registry import REGISTRY
 from jiant.preprocess import get_tasks

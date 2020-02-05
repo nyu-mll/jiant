@@ -554,12 +554,12 @@ def get_tasks(args: config.Params) -> (List[Task], List[str], List[str]):
             task.count_examples()
         utils.assert_for_log(
             (
-                task.example_counts["train"] % args.batch_size > 1
-                and task.example_counts["val"] % args.batch_size > 1
-                and task.example_counts["test"] % args.batch_size > 1
+                task.example_counts["train"] % args.batch_size > len(args.cuda) - 1
+                and task.example_counts["val"] % args.batch_size > len(args.cuda) - 1
+                and task.example_counts["test"] % args.batch_size > len(args.cuda) - 1
             )
             or not isinstance(args.cuda, list),
-            "In Multi-GPU setting, please make sure split_size % batch_size > 1 for alll splits ",
+            "In Multi-GPU setting, please make sure split_size % batch_size > number of GPUs used for alll splits ",
         )
         log.info(
             "\tTask '%s': %s",
