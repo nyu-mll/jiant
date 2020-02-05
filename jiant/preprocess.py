@@ -558,7 +558,7 @@ def get_tasks(args: config.Params) -> (List[Task], List[str], List[str]):
                 and task.example_counts["val"] % args.batch_size > 1
                 and task.example_counts["test"] % args.batch_size > 1
             )
-            or isinstance(args.cuda, int),
+            or not isinstance(args.cuda, list),
             "In Multi-GPU setting, please make sure split_size % batch_size > 1 for alll splits ",
         )
         log.info(
