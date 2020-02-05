@@ -1764,7 +1764,7 @@ class WinogenderTask(GLUEDiagnosticTask):
 
         self.train_data_text = None
         self.val_data_text = None
-        self.test_data = None
+        self.test_data_text = None
         self.acc_scorer = BooleanAccuracy()
         self.gender_parity_scorer = GenderParity()
         self.val_metric = "%s_accuracy" % name
@@ -2726,7 +2726,7 @@ class WiCTask(PairClassificationTask):
 
         def _process_preserving_word(sent, word):
             """ Find out the index of the [first] instance of the word in the original sentence,
-            and project the span containing marked word to the span containing tokens created from 
+            and project the span containing marked word to the span containing tokens created from
             the marked word. """
             token_aligner, sent_tok = aligner_fn(sent)
             raw_start_idx = len(sent.split(word)[0].split(" ")) - 1
