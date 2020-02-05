@@ -161,7 +161,8 @@ class MultiRCTask(Task):
         self.example_counts = example_counts
 
     def update_metrics(self, out, batch):
-        logits, labels, idxs = out["logits"], out["labels"], out["idxs"]
+        logits, labels = out["logits"], out["labels"]
+        idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
         tagmask = batch.get("taskmaster", None)
         """ A batch of logits, labels, and the passage+questions they go with """
         self.scorer1(logits, labels)

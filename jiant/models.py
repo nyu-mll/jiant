@@ -1104,7 +1104,6 @@ class MultiTaskModel(nn.Module):
             out["logits"] = None
             out["labels"] = target
             out["tagmask"] = target_mask[:, 1:].contiguous()
-            out["predictions"] = out["predictions"]
 
         return out
 
