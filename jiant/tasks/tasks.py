@@ -637,11 +637,12 @@ class HANSBaseTask(PairClassificationTask):
             skip_rows=1,
             return_indices=True
         )
+        print(len(self.train_data_text), len(self.val_data_text), len(self.test_data_text))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
-            + self.test_data_text[0]
-            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
         )
 
 @register_task("bert-heuristic-lexical_overlap", target_class='lexical_overlap', rel_path="HANS/")
@@ -733,9 +734,12 @@ class HANSTask(PairClassificationTask):
             return_indices=True,
             skip_rows=1,
         )
+        print(len(self.train_data_text), len(self.val_data_text), len(self.test_data_text))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
         )
 
 @register_task("sst", rel_path="SST-2/")
