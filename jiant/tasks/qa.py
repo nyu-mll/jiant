@@ -347,7 +347,8 @@ class ReCoRDTask(Task):
 
     def update_metrics(self, out, batch):
         """ A batch of logits+answer strings and the questions they go with """
-        logits, anss, idxs = out["logits"], out["anss"], out["idxs"]
+        logits, anss = out["logits"], out["anss"]
+        idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
         tagmask = batch.get("tagmask", None)
         logits = logits.detach().cpu()
         for idx, logit, ans in zip(idxs, logits, anss):

@@ -1305,6 +1305,7 @@ class MultiTaskModel(nn.Module):
             labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
             out["logits"] = logits
+            out["anss"] = batch["ans_str"]
             if not isinstance(task, ReCoRDTask):
                 out["labels"] = labels
         if predict:

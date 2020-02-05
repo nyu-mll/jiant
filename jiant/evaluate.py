@@ -122,7 +122,6 @@ def evaluate(
             if time.time() - last_log > LOG_INTERVAL:
                 log.info("\tTask %s: batch %d", task.name, batch_idx)
                 last_log = time.time()
-
         # task_preds will be a DataFrame with columns
         # ['preds'] + FIELDS_TO_EXPORT
         # for GLUE tasks, preds entries should be single scalars.
