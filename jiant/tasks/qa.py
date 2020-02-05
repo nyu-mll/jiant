@@ -770,8 +770,8 @@ class QAMRTask(SpanPredictionTask):
 
 def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer_name):
     # Start with PTB tokenized tokens
-    # The answer_span is also in ptb_token space. We first want to detokenize, and convert everything to
-    #   space-tokenization space.
+    # The answer_span is also in ptb_token space. We first want to detokenize, and convert
+    #   everything to space-tokenization space.
 
     # Detokenize the passage. Everything we do will be based on the detokenized input,
     #   INCLUDING evaluation.
