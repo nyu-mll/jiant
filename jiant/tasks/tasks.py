@@ -2875,7 +2875,12 @@ class MultipleChoiceTask(Task):
     where each example consists of a question and
     a (possibly variable) number of possible answers"""
 
-    pass
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 @register_task("SocialIQA", rel_path="SocialIQA/")
@@ -2986,7 +2991,6 @@ class SpanPredictionTask(Task):
     def update_metrics(self, out, batch):
         pred_str_list = out["pred_str_list"]
         gold_str_list = out["gold_str_list"]
-        tagmask = batch.get("taskmaster", None)
         """ A batch of logits+answer strings and the questions they go with """
         self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
         self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
@@ -3291,7 +3295,6 @@ class WinogradCoreferenceTask(SpanClassificationTask):
     def update_metrics(self, out, batch):
         logits = out["logits"]
         labels = out["labels"]
-        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
 

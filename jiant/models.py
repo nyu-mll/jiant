@@ -913,7 +913,6 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch["labels"].squeeze(-1)
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            tagmask = batch.get("tagmask", None)
             out["logits"] = logits
             out["labels"] = labels
 
@@ -1054,7 +1053,6 @@ class MultiTaskModel(nn.Module):
                 logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
-        tagmask = batch.get("tagmask", None)
         if "labels" in batch:
             labels = batch["labels"]
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
@@ -1103,7 +1101,6 @@ class MultiTaskModel(nn.Module):
             assert "predictions" in out
             out["logits"] = None
             out["labels"] = target
-            out["tagmask"] = target_mask[:, 1:].contiguous()
 
         return out
 
@@ -1223,10 +1220,8 @@ class MultiTaskModel(nn.Module):
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device, keyword="choice0")
         if "label" in batch:
-            labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
             out["logits"] = logits
-            out["labels"] = labels
 
         if predict:
             out["preds"] = logits.argmax(dim=-1)
@@ -1301,9 +1296,8 @@ class MultiTaskModel(nn.Module):
             logits = classifier(inp, inp_mask)
         out["logits"] = logits
         if "label" in batch:
-            labels = batch["label"]
-            out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            out["labels"] = labels
+            out["loss"] = format_output(F.cross_entropy(logits, batch["labels"]), self._cuda_device)
+
         if predict:
             if isinstance(task, ReCoRDTask):
                 # For ReCoRD, we want the logits to make
