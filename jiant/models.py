@@ -1096,7 +1096,7 @@ class MultiTaskModel(nn.Module):
             target_mask = out["target_mask"]
 
             assert "predictions" in out
-
+            import pdb; pdb.set_trace()
             task.update_metrics(
                 logits=None,
                 labels=target,
