@@ -2898,7 +2898,7 @@ class MultipleChoiceTask(Task):
 
     def update_metrics(self, out, batch):
         logits = out["logits"]
-        labels = batch["labels"]
+        labels = batch["label"]
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
