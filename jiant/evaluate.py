@@ -108,6 +108,7 @@ def evaluate(
             # get predictions
             if "preds" not in out:
                 continue
+            out["preds"] = task.handle_preds(out["preds"], batch)
             cols = _format_preds(out["preds"])
             if task.name in IDX_REQUIRED_TASK_NAMES:
                 assert "idx" in batch, f"'idx' field missing from batches " "for task {task.name}!"

@@ -291,6 +291,8 @@ class Task(object):
     def update_metrics(self, out, batch):
         raise NotImplementedError
 
+    def handle_preds(self, preds, batch):
+        return preds
 
 class ClassificationTask(Task):
     """ General classification task """
@@ -1094,9 +1096,7 @@ class SNLITask(PairClassificationTask):
     def load_data(self):
         """ Process the dataset located at path.  """
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
-        import pdb
 
-        pdb.set_trace()
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "train.tsv"),
@@ -2395,6 +2395,12 @@ class TaggingTask(Task):
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 @register_task("ccg", rel_path="CCG/")
 class CCGTaggingTask(TaggingTask):
@@ -2416,6 +2422,12 @@ class CCGTaggingTask(TaggingTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -2659,6 +2671,12 @@ class SpanClassificationTask(Task):
         metrics["f1"] = f1
         return metrics
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 @register_task("commitbank", rel_path="CB/")
 class CommitmentTask(PairClassificationTask):
@@ -2989,12 +3007,55 @@ class SpanPredictionTask(Task):
     n_classes = 2
 
     def update_metrics(self, out, batch):
-        pred_str_list = out["pred_str_list"]
-        gold_str_list = out["gold_str_list"]
+        batch_size = out["n_exs"]
+        logits_dict = out["logits"]
+        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1)
+        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1)
+        import pdb; pdb.set_trace()
+        pred_str_list = self.get_pred_str(out["logits"], batch, batch_size, pred_span_start, pred_span_end)
+        gold_str_list = batch["answer_str"]
+
         """ A batch of logits+answer strings and the questions they go with """
         self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
         self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
+    def get_pred_str(self, preds, batch, batch_size, pred_span_start, pred_span_end):
+        pred_str_list = []
+        for i in range(batch_size):
+
+            # Adjust for start_offset (e.g. [CLS] tokens).
+            pred_span_start_i = pred_span_start[i] - batch["start_offset"][i]
+            pred_span_end_i = pred_span_end[i] - batch["start_offset"][i]
+
+            # Ensure that predictions fit within the range of valid tokens
+            pred_span_start_i = min(
+                pred_span_start_i, len(batch["space_processed_token_map"][i]) - 1
+            )
+            pred_span_end_i = min(
+                max(pred_span_end_i, pred_span_start_i + 1),
+                len(batch["space_processed_token_map"][i]) - 1,
+            )
+
+            # space_processed_token_map is a list of tuples
+            #   (space_token, processed_token (e.g. BERT), space_token_index)
+            # The assumption is that each space_token corresponds to multiple processed_tokens.
+            # After we get the corresponding start/end space_token_indices, we can do " ".join
+            #   to get the corresponding string that is definitely within the original input.
+            # One constraint here is that our predictions can only go up to a the granularity of
+            # space_tokens. This is not so bad because SQuAD-style scripts also remove punctuation.
+            pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
+            pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
+            pred_str_list.append(
+                " ".join(
+                    batch["passage_str"][i].split()[pred_char_span_start:pred_char_span_end]
+                ).strip()
+            )
+        return pred_str_list
+
+    def handle_preds(self, preds, batch):
+        batch_size = len(preds["span_start"])
+        preds["span_str"] = self.get_pred_str(preds, batch, batch_size, preds["span_start"], preds["span_end"])
+        return preds
 
 @register_task("copa", rel_path="COPA/")
 class COPATask(MultipleChoiceTask):
@@ -3294,7 +3355,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
 
     def update_metrics(self, out, batch):
         logits = out["logits"]
-        labels = out["labels"]
+        labels = batch["labels"]
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
 

@@ -913,7 +913,6 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch["labels"].squeeze(-1)
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            out["logits"] = logits
             out["labels"] = labels
 
         if predict:
@@ -963,7 +962,7 @@ class MultiTaskModel(nn.Module):
     def _span_forward(self, batch, task, predict):
         sent_embs, sent_mask = self.sent_encoder(batch["input1"], task)
         module = getattr(self, "%s_mdl" % task.name)
-        out = module.forward(batch, sent_embs, sent_mask, task, predict)
+        out = module.forward(batch, sent_embs, sent_mask, task, predict, self._cuda_device)
         return out
 
     def _span_prediction_forward(self, batch, task, predict):
@@ -983,47 +982,14 @@ class MultiTaskModel(nn.Module):
         out["loss"] = (out["start_loss"] + out["end_loss"]) / 2
 
         # Form string predictions
-        pred_str_list = []
         pred_span_start = torch.argmax(logits_dict["span_start"], dim=1)
         pred_span_end = torch.argmax(logits_dict["span_end"], dim=1)
-        batch_size = sent_embs.shape[0]
-        for i in range(batch_size):
 
-            # Adjust for start_offset (e.g. [CLS] tokens).
-            pred_span_start_i = pred_span_start[i] - batch["start_offset"][i]
-            pred_span_end_i = pred_span_end[i] - batch["start_offset"][i]
-
-            # Ensure that predictions fit within the range of valid tokens
-            pred_span_start_i = min(
-                pred_span_start_i, len(batch["space_processed_token_map"][i]) - 1
-            )
-            pred_span_end_i = min(
-                max(pred_span_end_i, pred_span_start_i + 1),
-                len(batch["space_processed_token_map"][i]) - 1,
-            )
-
-            # space_processed_token_map is a list of tuples
-            #   (space_token, processed_token (e.g. BERT), space_token_index)
-            # The assumption is that each space_token corresponds to multiple processed_tokens.
-            # After we get the corresponding start/end space_token_indices, we can do " ".join
-            #   to get the corresponding string that is definitely within the original input.
-            # One constraint here is that our predictions can only go up to a the granularity of
-            # space_tokens. This is not so bad because SQuAD-style scripts also remove punctuation.
-            pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
-            pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
-            pred_str_list.append(
-                " ".join(
-                    batch["passage_str"][i].split()[pred_char_span_start:pred_char_span_end]
-                ).strip()
-            )
-        out["pred_str_list"] = pred_str_list
-        out["gold_str_list"] = batch["answer_str"]
-
+        import pdb; pdb.set_trace()
         if predict:
             out["preds"] = {
                 "span_start": pred_span_start,
                 "span_end": pred_span_end,
-                "span_str": pred_str_list,
             }
         return out
 
@@ -1051,7 +1017,7 @@ class MultiTaskModel(nn.Module):
                 logits = classifier(sent1, sent2, mask1, mask2, [batch["idx1"]], [batch["idx2"]])
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
-        out["logits"] = logits
+        logits_np = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
         if "labels" in batch:
             labels = batch["labels"]
@@ -1063,11 +1029,10 @@ class MultiTaskModel(nn.Module):
                 logits_np = logits.detach()
             else:
                 out["loss"] = F.cross_entropy(logits, labels)
-                logits_np = logits
                 labels_np = labels
+            out["labels"] = labels_np
 
         out["loss"] = format_output(out["loss"], self._cuda_device)
-        out["labels"] = labels_np
         out["logits"] = logits_np
         if predict:
             if isinstance(task, RegressionTask):
@@ -1127,7 +1092,6 @@ class MultiTaskModel(nn.Module):
         hid2tag = self._get_classifier(task)
         logits = hid2tag(sent[:, 1:-1, :]).view(b_size * seq_len, -1)
         out["logits"] = logits
-        targs = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
         if "mask" in batch:
             # Prevent backprop for tags generated for tokenization-introduced tokens
             # such as word boundaries
@@ -1136,7 +1100,6 @@ class MultiTaskModel(nn.Module):
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
         out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
-        task.scorer1(logits, targs)
         return out
 
     def _lm_forward(self, batch, task, predict):
@@ -1220,8 +1183,8 @@ class MultiTaskModel(nn.Module):
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device, keyword="choice0")
         if "label" in batch:
+            labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            out["logits"] = logits
 
         if predict:
             out["preds"] = logits.argmax(dim=-1)
@@ -1296,7 +1259,7 @@ class MultiTaskModel(nn.Module):
             logits = classifier(inp, inp_mask)
         out["logits"] = logits
         if "label" in batch:
-            out["loss"] = format_output(F.cross_entropy(logits, batch["labels"]), self._cuda_device)
+            out["loss"] = format_output(F.cross_entropy(logits, batch["label"]), self._cuda_device)
 
         if predict:
             if isinstance(task, ReCoRDTask):
