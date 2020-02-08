@@ -294,6 +294,7 @@ class Task(object):
     def handle_preds(self, preds, batch):
         return preds
 
+
 class ClassificationTask(Task):
     """ General classification task """
 
@@ -2402,6 +2403,7 @@ class TaggingTask(Task):
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
+
 @register_task("ccg", rel_path="CCG/")
 class CCGTaggingTask(TaggingTask):
     """ CCG supertagging as a task.
@@ -2677,6 +2679,7 @@ class SpanClassificationTask(Task):
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
+
 
 @register_task("commitbank", rel_path="CB/")
 class CommitmentTask(PairClassificationTask):
@@ -3007,12 +3010,14 @@ class SpanPredictionTask(Task):
     n_classes = 2
 
     def update_metrics(self, out, batch):
-        batch_size = out["n_exs"]
+        batch_size = sum(out["n_exs"]).item()
         logits_dict = out["logits"]
-        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1)
-        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1)
-        import pdb; pdb.set_trace()
-        pred_str_list = self.get_pred_str(out["logits"], batch, batch_size, pred_span_start, pred_span_end)
+        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1).cpu().data().numpy()
+        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1).cpu().data().numpy()
+
+        pred_str_list = self.get_pred_str(
+            out["logits"], batch, batch_size, pred_span_start, pred_span_end
+        )
         gold_str_list = batch["answer_str"]
 
         """ A batch of logits+answer strings and the questions they go with """
@@ -3054,8 +3059,11 @@ class SpanPredictionTask(Task):
 
     def handle_preds(self, preds, batch):
         batch_size = len(preds["span_start"])
-        preds["span_str"] = self.get_pred_str(preds, batch, batch_size, preds["span_start"], preds["span_end"])
+        preds["span_str"] = self.get_pred_str(
+            preds, batch, batch_size, preds["span_start"], preds["span_end"]
+        )
         return preds
+
 
 @register_task("copa", rel_path="COPA/")
 class COPATask(MultipleChoiceTask):

@@ -161,7 +161,7 @@ class MultiRCTask(Task):
         self.example_counts = example_counts
 
     def update_metrics(self, out, batch):
-        logits, labels = out["logits"], batch["labels"]
+        logits, labels = out["logits"], batch["label"]
         idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
         """ A batch of logits, labels, and the passage+questions they go with """
         self.scorer1(logits, labels)

@@ -985,12 +985,8 @@ class MultiTaskModel(nn.Module):
         pred_span_start = torch.argmax(logits_dict["span_start"], dim=1)
         pred_span_end = torch.argmax(logits_dict["span_end"], dim=1)
 
-        import pdb; pdb.set_trace()
         if predict:
-            out["preds"] = {
-                "span_start": pred_span_start,
-                "span_end": pred_span_end,
-            }
+            out["preds"] = {"span_start": pred_span_start, "span_end": pred_span_end}
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):

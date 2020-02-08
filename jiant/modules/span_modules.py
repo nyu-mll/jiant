@@ -11,6 +11,7 @@ from jiant.tasks.tasks import Task
 from jiant.modules.simple_modules import Classifier
 from jiant.utils.utils import get_batch_size, format_output
 
+
 class SpanClassifierModule(nn.Module):
     """
         Build span classifier components as a sub-module.
@@ -78,7 +79,7 @@ class SpanClassifierModule(nn.Module):
         sent_mask: torch.Tensor,
         task: Task,
         predict: bool,
-        cuda_devices: Any
+        cuda_devices: Any,
     ) -> Dict:
         """
         Run forward pass.
@@ -130,7 +131,9 @@ class SpanClassifierModule(nn.Module):
         if "labels" in batch:
             logits = logits.squeeze(dim=1)
             out["logits"] = logits
-            out["loss"] = format_output(self.compute_loss(logits, batch["labels"], task), cuda_devices)
+            out["loss"] = format_output(
+                self.compute_loss(logits, batch["labels"], task), cuda_devices
+            )
             tagmask = batch.get("tagmask", None)
 
         if predict:
