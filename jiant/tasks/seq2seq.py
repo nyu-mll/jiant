@@ -22,63 +22,6 @@ from .tasks import (
 )
 
 
-@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000)
-class MTTask(Seq2SeqTask):
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
-        super().__init__(name, **kw)
-        self.tokenizer = get_tokenizer(tokenizer_name)
-        exclusion_index_set = [
-            self.tokenizer.pad_token,
-            self.tokenizer.bos_token,
-            self.tokenizer.eos_token,
-            self.tokenizer.unk_token,
-        ]
-        self.scorer2 = BLEU(exclude_indices=set(exclusion_index_set))
-        self.scorers.append(self.scorer2)
-        self.val_metric_decreases = False
-        self.val_metric = "%s_bleu" % name
-        self.max_seq_len = max_seq_len
-        self._label_namespace = self.name + "_tokens"
-        self.max_targ_v_size = max_targ_v_size
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
-        self.files_by_split = {
-            split: os.path.join(path, "%s.tsv" % split) for split in ["train", "val", "test"]
-        }
-
-    def get_data_iter(self, path):
-        """ Load data """
-        with codecs.open(path, "r", "utf-8", errors="ignore") as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split("\t")
-                if len(row) < 2 or not row[0] or not row[1]:
-                    continue
-                src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
-                tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
-                yield (src_sent, tgt_sent)
-
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-        avg_nll = self.scorer1.get_metric(reset)
-        val_metric = self.scorer2.get_metric(reset)
-        return {"perplexity": math.exp(avg_nll), "blue": val_metric["BLEU"]}
-
-    def update_metrics(self, logits, labels, tagmask=None, predictions=None):
-        # This doesn't require logits for now, since loss is updated in another part.
-        assert logits is None and predictions is not None
-
-        if labels.shape[1] < predictions.shape[2]:
-            predictions = predictions[:, 0, : labels.shape[1]]
-        else:
-            predictions = predictions[:, 0, :]
-            # Cut labels if predictions (without gold target) are shorter.
-            labels = labels[:, : predictions.shape[1]]
-            tagmask = tagmask[:, : predictions.shape[1]]
-        self.scorer2(predictions, labels)
-
-    def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
-        return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
-
-
 @register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
@@ -183,7 +126,8 @@ class Seq2SeqTask(SequenceGenerationTask):
             labels = labels[:, : predictions.shape[1]]
             tagmask = tagmask[:, : predictions.shape[1]]
         self.scorer2(predictions, labels, tagmask)
-
+        return
+        
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
         return self._get_char_prediction(voc_src, voc_trg, inputs, gold, output)
 
@@ -215,3 +159,60 @@ class Seq2SeqTask(SequenceGenerationTask):
         )[0]
 
         return input_string, gold_string, output_string
+
+@register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000)
+class MTTask(Seq2SeqTask):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
+        super().__init__(name, max_seq_len, max_targ_v_size, name, **kw)
+        self.tokenizer = get_tokenizer(self._tokenizer_name)
+        exclusion_index_set = [
+            self.tokenizer.pad_token,
+            self.tokenizer.bos_token,
+            self.tokenizer.eos_token,
+            self.tokenizer.unk_token,
+        ]
+        self.scorer2 = BLEU(exclude_indices=set(exclusion_index_set))
+        self.scorers.append(self.scorer2)
+        self.val_metric_decreases = False
+        self.val_metric = "%s_bleu" % name
+        self.max_seq_len = max_seq_len
+        self._label_namespace = self.name + "_tokens"
+        self.max_targ_v_size = max_targ_v_size
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
+        self.files_by_split = {
+            split: os.path.join(path, "%s.tsv" % split) for split in ["train", "val", "test"]
+        }
+
+    def get_data_iter(self, path):
+        """ Load data """
+        with codecs.open(path, "r", "utf-8", errors="ignore") as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split("\t")
+                if len(row) < 2 or not row[0] or not row[1]:
+                    continue
+                src_sent = tokenize_and_truncate(self._tokenizer_name, row[0], self.max_seq_len)
+                tgt_sent = tokenize_and_truncate(self._tokenizer_name, row[1], self.max_seq_len)
+                yield (src_sent, tgt_sent)
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        avg_nll = self.scorer1.get_metric(reset)
+        val_metric = self.scorer2.get_metric(reset)
+        return {"perplexity": math.exp(avg_nll), "blue": val_metric["BLEU"]}
+
+    def update_metrics(self, logits, labels, tagmask=None, predictions=None):
+        # This doesn't require logits for now, since loss is updated in another part.
+        assert logits is None and predictions is not None
+
+        if labels.shape[1] < predictions.shape[2]:
+            predictions = predictions[:, 0, : labels.shape[1]]
+        else:
+            predictions = predictions[:, 0, :]
+            # Cut labels if predictions (without gold target) are shorter.
+            labels = labels[:, : predictions.shape[1]]
+            tagmask = tagmask[:, : predictions.shape[1]]
+        self.scorer2(predictions, labels)
+
+    def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
+        return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
+
