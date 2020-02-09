@@ -259,8 +259,7 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     word2freq, char2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
-        # TODO: surface more docs for add_task_label_vocab:
-        add_task_label_vocab(vocab, task)
+        add_task_label_vocab(vocab, task, args.max_targ_word_v_size)
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
@@ -637,7 +636,7 @@ def get_vocab(
     return vocab
 
 
-def add_task_label_vocab(vocab, task):
+def add_task_label_vocab(vocab, task, max_targ_v_size):
     """Add custom task labels to a separate namespace.
 
     If task has a 'get_all_labels' method, call that to get a list of labels
@@ -665,6 +664,7 @@ def add_task_label_vocab(vocab, task):
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
 
     if isinstance(task, SequenceGenerationTask):
+        task.max_targ_v_size = max_targ_v_size
         for special in SPECIALS:
             vocab.add_token_to_namespace(special, namespace)
 
