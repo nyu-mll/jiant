@@ -743,6 +743,91 @@ class ModelPreprocessingInterface(object):
 
     """
 
+    @staticmethod
+    def _apply_boundary_tokens(apply_boundary_tokens, max_tokens):
+        """
+        Takes a function that applies boundary tokens and modifies it to respect a max_seq_len arg.
+
+        Parameters
+        ----------
+        apply_boundary_tokens : function
+            Takes a function that adds boundary tokens and implements the common boundary token
+            adding function interface. TODO: describe this interface.
+        max_tokens : int
+            The maximum number of tokens to allow in the output sequence.
+
+        Returns
+        -------
+        apply_boundary_tokens_with_trunc_strategy : function
+            Function w/ the common boundary token adding interface (TODO: describe this interface),
+            but also implementing a truncation strategy.
+        """
+
+        def _apply_boundary_tokens_with_trunc_strategy(*args, trunc_strategy="trunc_s2", **kwargs):
+            """
+            Calls the apply_boundary_tokens function provided in the parent function and, if the
+            output exceeds the max number of tokens, applies a truncation strategy to the inputs,
+            then re-applies the apply_boundary_tokens function on the truncated inputs and returns
+            the result.
+
+            Parameters
+            ----------
+            args : tuple
+                see args docs for apply_boundary_tokens and apply_lm_boundary_tokens in
+                huggingface_transformers_interface.modules
+            trunc_strategy : str
+                Strategy (e.g., default trunc_s2, or optionally trunc_s1) determining which input
+                to truncate to reduce the total number of tokens returned to within max_tokens.
+            kwargs : dict
+                see args docs for apply_boundary_tokens and apply_lm_boundary_tokens in
+                huggingface_transformers_interface.modules
+
+            Returns
+            -------
+            seq_w_boundry_tokens : List[str]
+                List of tokens returned by applying the specified apply_boundary_tokens function
+                to the inputs and using the specified truncation strategy.
+
+            """
+            seq_w_boundry_tokens = apply_boundary_tokens(*args, **kwargs)
+            # if after calling the apply_boundary_tokens function the number of tokens is greater
+            # than the model's max, a truncation strategy can reduce the number of tokens:
+            num_excess_tokens = len(seq_w_boundry_tokens) - max_tokens
+            if num_excess_tokens > 0:
+                log.warning(
+                    "After applying boundry tokens, sequence length for this example is "
+                    + str(len(seq_w_boundry_tokens))
+                    + ", max_seq_len is "
+                    + str(max_tokens)
+                    + ". Truncation strategy "
+                    + trunc_strategy
+                    + " will be applied."
+                )
+                if trunc_strategy == "trunc_s2":
+                    s2 = args[1]
+                    log.warning("Before truncation, s2 length = " + str(len(s2)))
+                    s2_truncated = s2[:-num_excess_tokens]
+                    log.warning("After truncation, s2 length = " + str(len(s2_truncated)))
+                    assert len(s2_truncated) > 0, "After truncation, s2 length would be 0."
+                    args = list(args)
+                    args[1] = s2_truncated
+                    return apply_boundary_tokens(*args, **kwargs)
+                elif trunc_strategy == "trunc_s1":
+                    s1 = args[0]
+                    log.warning("Before truncation, s1 length = " + str(len(s1)))
+                    s1_truncated = s1[:-num_excess_tokens]
+                    log.warning("After truncation, s1 length = " + str(len(s1_truncated)))
+                    assert len(s1_truncated) > 0, "After truncation, s1 length would be 0."
+                    args = list(args)
+                    args[0] = s1_truncated
+                    return apply_boundary_tokens(*args, **kwargs)
+                else:
+                    raise ValueError(trunc_strategy + " is not a valid truncation strategy.")
+            else:
+                return seq_w_boundry_tokens
+
+        return _apply_boundary_tokens_with_trunc_strategy
+
     def __init__(self, args):
         boundary_token_fn = None
         lm_boundary_token_fn = None
@@ -785,11 +870,15 @@ class ModelPreprocessingInterface(object):
         else:
             boundary_token_fn = utils.apply_standard_boundary_tokens
 
-        self.boundary_token_fn = boundary_token_fn
+        # TODO: consider the max_tokens from a model-specific config instead of args.max_seq_len?
+        self.boundary_token_fn = self._apply_boundary_tokens(boundary_token_fn, args.max_seq_len)
+
         if lm_boundary_token_fn is not None:
-            self.lm_boundary_token_fn = lm_boundary_token_fn
+            self.lm_boundary_token_fn = self._apply_boundary_tokens(
+                lm_boundary_token_fn, args.max_seq_len
+            )
         else:
-            self.lm_boundary_token_fn = boundary_token_fn
+            self.lm_boundary_token_fn = self.boundary_token_fn
 
         from jiant.models import input_module_uses_pair_embedding, input_module_uses_mirrored_pair
 
