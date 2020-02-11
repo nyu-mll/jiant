@@ -292,6 +292,9 @@ class Task(object):
         raise NotImplementedError
 
     def handle_preds(self, preds, batch):
+        """
+        Function that does task-specific processing of predictions.
+        """
         return preds
 
 
@@ -3025,6 +3028,11 @@ class SpanPredictionTask(Task):
         self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
     def get_pred_str(self, preds, batch, batch_size, pred_span_start, pred_span_end):
+        """
+        For span prediction, we compute metrics based on span strings. This function
+        gets the span string based on start and end index predictions. 
+
+        """
         pred_str_list = []
         for i in range(batch_size):
 
