@@ -4,7 +4,7 @@
 
 pushd "$(dirname $0)"
 
-kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/stable/nvidia-driver-installer/cos/daemonset-preloaded.yaml
+kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/master/nvidia-driver-installer/cos/daemonset-preloaded.yaml
 
 YAML_STREAM=$( jsonnet -S templates/nfs.jsonnet )
 echo "$YAML_STREAM"
