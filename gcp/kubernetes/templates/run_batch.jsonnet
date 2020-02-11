@@ -39,6 +39,10 @@ function(job_name, command, project_dir, uid, fsgroup,
           value: jiant_env.transformers_cache_path
         },
         {
+          name: "PYTORCH_TRANSFORMERS_CACHE",
+          value: jiant_env.transformers_cache_path
+        },
+        {
           name: "ELMO_SRC_DIR",
           value: jiant_env.elmo_src_dir,
         },

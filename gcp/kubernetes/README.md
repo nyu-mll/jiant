@@ -140,7 +140,7 @@ You should see some basic folders in `/nfs/jiant`. Take this opportunity to do s
 
 ### Kubernetes Configuration Update
 
-Now, go to `/path/to/jiant/gcp/kubernetes`. Modify [`templates/jiant_env.libsonnet`](templates/jiant_env.jsonnet):
+Now, go to ``/nfs/jiant/${USER}/gcp/kubernetes`. Modify [`templates/jiant_env.libsonnet`](templates/jiant_env.jsonnet):
 
 * Set `nfs_server_ip` to the Filestore IP Address.
 * Set `nfs_server_path` to the Filestore Fileshare name.
@@ -166,7 +166,7 @@ This does two things:
 
 ### Running Jobs
 
-To run jobs, ensure that you have NFS mounted at `/nfs/jiant`.
+To run jobs, ensure that you have NFS mounted at `/nfs/jiant`, and go to `/nfs/jiant/${USER}/gcp/kubernetes`
 
 We can schedule basic jobs on the cluster using `kubectl run` as in the "Hello World" example above, but in order to use GPUs and access NFS we need to use a full-fledged YAML config.
 
