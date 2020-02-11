@@ -342,7 +342,7 @@ def build_tasks(
         setattr(task, "_classifier_name", task_classifier if task_classifier else task.name)
 
     tokenizer_names = {task.name: task.tokenizer_name for task in tasks}
-    assert len(set(tokenizer_names.values())) == 1, (
+    assert not len(set(tokenizer_names.values())) > 1, (
         f"Error: mixing tasks with different tokenizers!" " Tokenizations: {tokenizer_names:s}"
     )
 
