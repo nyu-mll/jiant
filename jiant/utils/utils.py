@@ -343,7 +343,6 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
         not (skip_task_models and strict),
         "Can't skip task models while also strictly loading task models. Something is wrong.",
     )
-    strict = False
     for name, param in model.named_parameters():
         # Make sure no trainable params are missing.
         if param.requires_grad:

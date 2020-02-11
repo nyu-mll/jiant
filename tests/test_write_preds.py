@@ -23,7 +23,7 @@ def model_forward(task, batch, predict=True):
     if task.name == "sts-b":
         logits = torch.Tensor([0.6, 0.4])
         labels = torch.Tensor([0.875, 0.6])
-        out = {"logits": logits, "abels": labels, "n_exs": 2, "preds": [1.0, 0.8]}
+        out = {"logits": logits, "labels": labels, "n_exs": 2, "preds": [1.0, 0.8]}
     elif task.name == "wic":
         logits = torch.Tensor([[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
         labels = torch.LongTensor([0, 1, 1, 0])

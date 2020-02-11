@@ -34,7 +34,6 @@ from jiant.utils.utils import (
     get_model_attribute,
     uses_cuda,
 )  # pylint: disable=import-error
-from jiant.tasks.qa import ReCoRDTask
 from allennlp.nn.util import move_to_device
 
 

@@ -1013,7 +1013,6 @@ class MultiTaskModel(nn.Module):
                 logits = classifier(sent1, sent2, mask1, mask2, [batch["idx1"]], [batch["idx2"]])
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
-        logits_np = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
         if "labels" in batch:
             labels = batch["labels"]
@@ -1021,15 +1020,15 @@ class MultiTaskModel(nn.Module):
             if isinstance(task, RegressionTask):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out["loss"] = F.mse_loss(logits, labels)
-                labels_np = labels.detach()
-                logits_np = logits.detach()
+                labels = labels.detach()
+                logits = logits.detach()
             else:
                 out["loss"] = F.cross_entropy(logits, labels)
-                labels_np = labels
-            out["labels"] = labels_np
+                labels = labels
+            out["labels"] = labels
 
         out["loss"] = format_output(out["loss"], self._cuda_device)
-        out["logits"] = logits_np
+        out["logits"] = logits
         if predict:
             if isinstance(task, RegressionTask):
                 if logits.ndimension() > 1:
@@ -1088,6 +1087,7 @@ class MultiTaskModel(nn.Module):
         hid2tag = self._get_classifier(task)
         logits = hid2tag(sent[:, 1:-1, :]).view(b_size * seq_len, -1)
         out["logits"] = logits
+        targs = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
         if "mask" in batch:
             # Prevent backprop for tags generated for tokenization-introduced tokens
             # such as word boundaries
@@ -1095,6 +1095,7 @@ class MultiTaskModel(nn.Module):
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
+        out["labels"] = targs
         out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
         return out
 

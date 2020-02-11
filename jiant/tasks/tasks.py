@@ -337,7 +337,6 @@ class SingleClassificationTask(ClassificationTask):
     def update_metrics(self, out, batch):
         logits = out["logits"]
         labels = out["labels"]
-        tagmask = batch.get("tagmask", None)
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
@@ -371,7 +370,6 @@ class PairClassificationTask(ClassificationTask):
     def update_metrics(self, out, batch):
         logits = out["logits"]
         labels = out["labels"]
-        tagmask = batch.get("tagmask", None)
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
@@ -404,7 +402,6 @@ class PairRegressionTask(RegressionTask):
     def update_metrics(self, out, batch):
         logits = out["logits"]
         labels = out["labels"]
-        tagmask = batch.get("tagmask", None)
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
@@ -440,7 +437,6 @@ class PairOrdinalRegressionTask(RegressionTask):
     def update_metrics(self, out, batch):
         logits = out["logits"]
         labels = out["labels"]
-        tagmask = batch.get("tagmask", None)
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
@@ -631,7 +627,6 @@ class CoLANPITask(SingleClassificationTask):
     def update_metrics(self, out, batch):
         logits = out["logits"]
         labels = out["labels"]
-        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -696,7 +691,6 @@ class CoLATask(SingleClassificationTask):
     def update_metrics(self, out, batch):
         logits = out["logits"]
         labels = out["labels"]
-        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -2429,8 +2423,7 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = None
 
     def update_metrics(self, out, batch):
-        logits = out["logits"]
-        labels = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
+        logits, labels = out["logits"], out["labels"]
         for scorer in self.get_scorers():
             scorer(logits, labels)
 

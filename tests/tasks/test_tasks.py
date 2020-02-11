@@ -20,22 +20,6 @@ class Record:
 
 
 class TestTasks(unittest.TestCase):
-    def setUp(self):
-        self.temp_dir = tempfile.mkdtemp()
-        self.args = mock.Mock()
-        self.args.batch_size = 4
-        self.args.cuda = -1
-        self.args.run_dir = self.temp_dir
-        self.args.exp_dir = ""
-        self.args.reload_tasks = 1
-        self.args.data_dir = ""
-        self.args.pretrain_tasks = "record"
-        self.args.target_tasks = "record"
-        self.args.batch_size = 4
-        self.args.cuda = [0, 1]
-        self.args.tokenizer = "roberta-large"
-        self.args.max_seq_len = 99
-
     def test_instantiate_all_tasks(self):
         """
         All tasks should be able to be instantiated without needing to access actual data
@@ -54,6 +38,20 @@ class TestTasks(unittest.TestCase):
             )
 
     def test_batch_size(self):
+        self.temp_dir = tempfile.mkdtemp()
+        args = mock.Mock()
+        args.batch_size = 4
+        args.cuda = -1
+        args.run_dir = self.temp_dir
+        args.exp_dir = ""
+        args.reload_tasks = 1
+        args.data_dir = ""
+        args.pretrain_tasks = "record"
+        args.target_tasks = "record"
+        args.batch_size = 4
+        args.cuda = [0, 1]
+        args.tokenizer = "roberta-large"
+        args.max_seq_len = 99
         with patch.dict(REGISTRY, {"record": (Record, "", {})}, clear=True):
             with self.assertRaises(AssertionError) as error:
-                get_tasks(self.args)
+                get_tasks(args)

@@ -134,7 +134,6 @@ class SpanClassifierModule(nn.Module):
             out["loss"] = format_output(
                 self.compute_loss(logits, batch["labels"], task), cuda_devices
             )
-            tagmask = batch.get("tagmask", None)
 
         if predict:
             # Return preds as a list.
