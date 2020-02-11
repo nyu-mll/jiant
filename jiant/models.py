@@ -1024,7 +1024,6 @@ class MultiTaskModel(nn.Module):
                 logits = logits.detach()
             else:
                 out["loss"] = F.cross_entropy(logits, labels)
-                labels = labels
             out["labels"] = labels
 
         out["loss"] = format_output(out["loss"], self._cuda_device)
