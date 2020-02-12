@@ -127,7 +127,7 @@ class Seq2SeqTask(SequenceGenerationTask):
             tagmask = tagmask[:, : predictions.shape[1]]
         self.scorer2(predictions, labels, tagmask)
         return
-        
+
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
         return self._get_char_prediction(voc_src, voc_trg, inputs, gold, output)
 
@@ -160,16 +160,17 @@ class Seq2SeqTask(SequenceGenerationTask):
 
         return input_string, gold_string, output_string
 
+
 @register_task("wmt14_en_de", rel_path="wmt14/en_de/", max_targ_v_size=40000)
 class MTTask(Seq2SeqTask):
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         super().__init__(name, max_seq_len, max_targ_v_size, name, **kw)
         self.tokenizer = get_tokenizer(self._tokenizer_name)
         exclusion_index_set = [
-            self.tokenizer.pad_token,
-            self.tokenizer.bos_token,
-            self.tokenizer.eos_token,
-            self.tokenizer.unk_token,
+            self.tokenizer.convert_tokens_to_ids(self.tokenizer.pad_token),
+            self.tokenizer.convert_tokens_to_ids(self.tokenizer.bos_token),
+            self.tokenizer.convert_tokens_to_ids(self.tokenizer.eos_token),
+            self.tokenizer.convert_tokens_to_ids(self.tokenizer.unk_token),
         ]
         self.scorer2 = BLEU(exclude_indices=set(exclusion_index_set))
         self.scorers.append(self.scorer2)
@@ -198,7 +199,7 @@ class MTTask(Seq2SeqTask):
         """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
         val_metric = self.scorer2.get_metric(reset)
-        return {"perplexity": math.exp(avg_nll), "blue": val_metric["BLEU"]}
+        return {"perplexity": math.exp(avg_nll), "bleu": val_metric["BLEU"]}
 
     def update_metrics(self, logits, labels, tagmask=None, predictions=None):
         # This doesn't require logits for now, since loss is updated in another part.
@@ -215,4 +216,3 @@ class MTTask(Seq2SeqTask):
 
     def get_prediction(self, voc_src, voc_trg, inputs, gold, output):
         return self._get_mt_prediction(voc_src, voc_trg, inputs, gold, output)
-

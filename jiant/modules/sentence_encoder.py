@@ -81,7 +81,6 @@ class SentenceEncoder(Model):
         """
         if reset:
             self.reset_states()
-
         # General sentence embeddings (for sentence encoder).
         # Make sent_mask first, transformers text_field_embedder will change the token index
         sent_mask = util.get_text_field_mask(sent).float()
