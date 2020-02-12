@@ -1,4 +1,4 @@
-# jiant on GKE
+# `jiant` on GKE
 
 This directory contains configuration files and scripts for running a Kubernetes cluster on Google Kubernetes Engine (GKE) that can run our training and evaluation code. This is a convenient way to get an auto-scaling batch scheduler.
 
@@ -17,7 +17,7 @@ For more on Kubernetes, see [this comic](https://cloud.google.com/kubernetes-eng
 
 ### Workstation
 
-All setup instructions assume COS (Container OS) running on a Google Compute Engine (GCE) instance, but should also work on any Ubuntu machine with the Google Cloud SDK installed.
+All setup instructions for the work station assume you are using a Google Compute Engine (GCE) instance (e.g. "Deep Learning with Linux" for the OS), but should also work on any Ubuntu machine with the Google Cloud SDK installed.
 
 We recommend that you create a lightweight GCP instance in the same region as your desired cluster. Select "Allow full access to all Cloud APIs" if possible.
 
@@ -135,12 +135,12 @@ Go to `/path/to/jiant/gcp` and run
 You should see some basic folders in `/nfs/jiant`. Take this opportunity to do some setup of the NFS, such as:
 
 1. Pull in the relevant task data and save them to `/nfs/jiant/data_dir`
-2. Create `/nfs/jiant/home/${USER}` folder, and git clone jiant. This should be your working copy of jiant hereafter (including for the subsequent step). You may want to repeat the above modification of [`config/auto.nfs`](config/auto.nfs) for that copy of jiant too.
+2. Create `/nfs/jiant/home/${USER}` folder, and git clone `jiant`. This should be your working copy of `jiant` hereafter (including for the subsequent step). You may want to repeat the above modification of [`config/auto.nfs`](config/auto.nfs) for that copy of `jiant` too.
 3. Create `/nfs/jiant/exp/${USER}` folder
 
 ### Kubernetes Configuration Update
 
-Now, go to ``/nfs/jiant/${USER}/gcp/kubernetes`. Modify [`templates/jiant_env.libsonnet`](templates/jiant_env.jsonnet):
+Now, go to ``/nfs/jiant/${USER}/gcp/kubernetes``. Modify [`templates/jiant_env.libsonnet`](templates/jiant_env.jsonnet):
 
 * Set `nfs_server_ip` to the Filestore IP Address.
 * Set `nfs_server_path` to the Filestore Fileshare name.
@@ -186,11 +186,11 @@ There are also additional options, such as for sending jobs to different GPU typ
 
 ### Using an existing GKE cluster
 
-If someone has already set up a GKE cluster for jiant, and you have a different set of things to do:
+If someone has already set up a GKE cluster for `jiant`, and you have a different set of things to do:
 
-1. Create a lightweight GCP instance and SSH into it. git clone jiant.
-2. Get the Filestore IP Address and Fileshare name from the cluster owner, and mount the NFS as in [NFS Setup](#nfs-setup).
-3. Setup up your home folder in `/nfs/jiant/home/${USER}`, and clone jiant. This will be your working copy of jiant hereafter.
+1. Create a lightweight GCP instance and SSH into it. git clone `jiant`.
+2. Get the Filestore IP Address and Fileshare name from the cluster owner, and mount the NFS as in [NFS Setup](#nfs-setup). This includes modifying [`config/auto.nfs`](config/auto.nfs) as directed.
+3. Set up up your home folder in `/nfs/jiant/home/${USER}`, and clone jiant to `/nfs/jiant/home/${USER}/jiant`. This will be your working copy of `jiant` hereafter.
 4. Create `/nfs/jiant/exp/${USER}`
 5. Authenticate to the cluster:
     ```sh
