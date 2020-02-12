@@ -101,7 +101,12 @@ def evaluate(
             with torch.no_grad():
                 if isinstance(cuda_device, int):
                     batch = move_to_device(batch, cuda_device)
-                out = model.forward(task, batch, predict=True)
+                try:
+                    out = model.forward(task, batch, predict=True)
+                except:
+                    import pdb
+
+                    pdb.set_trace()
             if task is not None:
                 task.update_metrics(out, batch)
             n_task_examples += get_output_attribute(out, "n_exs", cuda_device)

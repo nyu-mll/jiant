@@ -3008,8 +3008,8 @@ class SpanPredictionTask(Task):
     def update_metrics(self, out, batch):
         batch_size = sum(out["n_exs"]).item()
         logits_dict = out["logits"]
-        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1).cpu().data().numpy()
-        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1).cpu().data().numpy()
+        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1).cpu().numpy()
+        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1).cpu().numpy()
 
         pred_str_list = self.get_pred_str(
             out["logits"], batch, batch_size, pred_span_start, pred_span_end
