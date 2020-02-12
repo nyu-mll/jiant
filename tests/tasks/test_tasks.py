@@ -52,6 +52,7 @@ class TestTasks(unittest.TestCase):
         args.cuda = [0, 1]
         args.tokenizer = "roberta-large"
         args.max_seq_len = 99
+        cuda_device = [0, 1]
         with patch.dict(REGISTRY, {"record": (Record, "", {})}, clear=True):
             with self.assertRaises(AssertionError) as error:
-                get_tasks(args)
+                get_tasks(args, cuda_device)
