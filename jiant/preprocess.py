@@ -764,7 +764,7 @@ class ModelPreprocessingInterface(object):
         """
 
         def _apply_boundary_tokens_with_trunc_strategy(
-            *args, trunc_strategy="trunc_s2", trunc_side="right", **kwargs
+            *args, trunc_strategy=None, trunc_side=None, **kwargs
         ):
             """
             Calls the apply_boundary_tokens function provided in the parent function and, if the
@@ -778,8 +778,10 @@ class ModelPreprocessingInterface(object):
                 see args docs for apply_boundary_tokens and apply_lm_boundary_tokens in
                 huggingface_transformers_interface.modules
             trunc_strategy : str
-                Strategy (e.g., default trunc_s2, or optionally trunc_s1) determining which input
-                to truncate to reduce the total number of tokens returned to within max_tokens.
+                Strategy (e.g., default "trunc_s2", or optionally "trunc_s1") determining which
+                input to trunc to reduce the total number of tokens returned to within max_tokens.
+            trunc_side : str
+                Which side of the sequence to truncate: "left" or "right".
             kwargs : dict
                 see args docs for apply_boundary_tokens and apply_lm_boundary_tokens in
                 huggingface_transformers_interface.modules
@@ -796,6 +798,13 @@ class ModelPreprocessingInterface(object):
             # than the model's max, a truncation strategy can reduce the number of tokens:
             num_excess_tokens = len(seq_w_boundry_tokens) - max_tokens
             if num_excess_tokens > 0:
+                if not (trunc_strategy and trunc_side):
+                    raise ValueError(
+                        "Input(s) will exceed model capacity or max_seq_len. "
+                        + "Adjust settings as necessary, or to automatically truncate "
+                        + "inputs in apply_boundary_tokens, call apply_boundary_tokens"
+                        + "with trunc_strategy and trunc_side keyword args."
+                    )
                 log.warning(
                     "After applying boundry tokens, sequence length for this example is "
                     + str(len(seq_w_boundry_tokens))
