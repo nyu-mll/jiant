@@ -141,9 +141,19 @@ class TestModelPreprocessingInterface(unittest.TestCase):
             seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "Xray", "you", "zoo", "[SEP]"]
         )
 
+    def test_boundary_token_fn_throws_exception_when_trunc_is_needed_but_strat_unspecified(self):
+        args = config.Params(max_seq_len=1, input_module="bert-base-uncased")
+        mpi = ModelPreprocessingInterface(args)
+        self.assertRaises(ValueError, mpi.boundary_token_fn, ["Apple", "buy", "call"], s2=["Xray"])
+
     def test_boundary_token_fn_throws_exception_when_trunc_beyond_input_length(self):
         args = config.Params(max_seq_len=1, input_module="bert-base-uncased")
         mpi = ModelPreprocessingInterface(args)
         self.assertRaises(
-            AssertionError, mpi.boundary_token_fn, ["Apple", "buy", "call"], s2=["Xray"]
+            AssertionError,
+            mpi.boundary_token_fn,
+            ["Apple", "buy", "call"],
+            s2=["Xray"],
+            trunc_strategy="trunc_s2",
+            trunc_side="right",
         )
