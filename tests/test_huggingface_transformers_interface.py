@@ -23,7 +23,7 @@ class TestHuggingfaceTransformersInterface(unittest.TestCase):
             BertEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
         )
         self.assertListEqual(
-            BertEmbedderModule.apply_boundary_tokens(s1, s2),
+            BertEmbedderModule.apply_boundary_tokens(s1, s2=s2),
             ["[CLS]", "A", "B", "C", "[SEP]", "D", "E", "[SEP]"],
         )
 
@@ -34,7 +34,7 @@ class TestHuggingfaceTransformersInterface(unittest.TestCase):
             RobertaEmbedderModule.apply_boundary_tokens(s1), ["<s>", "A", "B", "C", "</s>"]
         )
         self.assertListEqual(
-            RobertaEmbedderModule.apply_boundary_tokens(s1, s2),
+            RobertaEmbedderModule.apply_boundary_tokens(s1, s2=s2),
             ["<s>", "A", "B", "C", "</s>", "</s>", "D", "E", "</s>"],
         )
 
@@ -45,7 +45,7 @@ class TestHuggingfaceTransformersInterface(unittest.TestCase):
             AlbertEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
         )
         self.assertListEqual(
-            AlbertEmbedderModule.apply_boundary_tokens(s1, s2),
+            AlbertEmbedderModule.apply_boundary_tokens(s1, s2=s2),
             ["[CLS]", "A", "B", "C", "[SEP]", "D", "E", "[SEP]"],
         )
 
@@ -56,7 +56,7 @@ class TestHuggingfaceTransformersInterface(unittest.TestCase):
             XLNetEmbedderModule.apply_boundary_tokens(s1), ["A", "B", "C", "<sep>", "<cls>"]
         )
         self.assertListEqual(
-            XLNetEmbedderModule.apply_boundary_tokens(s1, s2),
+            XLNetEmbedderModule.apply_boundary_tokens(s1, s2=s2),
             ["A", "B", "C", "<sep>", "D", "E", "<sep>", "<cls>"],
         )
 
@@ -68,7 +68,7 @@ class TestHuggingfaceTransformersInterface(unittest.TestCase):
             ["<start>", "A", "B", "C", "<extract>"],
         )
         self.assertListEqual(
-            OpenAIGPTEmbedderModule.apply_boundary_tokens(s1, s2),
+            OpenAIGPTEmbedderModule.apply_boundary_tokens(s1, s2=s2),
             ["<start>", "A", "B", "C", "<delim>", "D", "E", "<extract>"],
         )
 
@@ -79,7 +79,7 @@ class TestHuggingfaceTransformersInterface(unittest.TestCase):
             XLMEmbedderModule.apply_boundary_tokens(s1), ["</s>", "A", "B", "C", "</s>"]
         )
         self.assertListEqual(
-            XLMEmbedderModule.apply_boundary_tokens(s1, s2),
+            XLMEmbedderModule.apply_boundary_tokens(s1, s2=s2),
             ["</s>", "A", "B", "C", "</s>", "D", "E", "</s>"],
         )
 
