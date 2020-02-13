@@ -830,6 +830,31 @@ class ModelPreprocessingInterface(object):
                     args = list(args)
                     kwargs["s2"] = s2_truncated
                     return apply_boundary_tokens(*args, **kwargs)
+                elif trunc_strategy == "trunc_both":
+                    s1 = args[0]
+                    s2 = kwargs["s2"]
+                    if trunc_side == "right":
+                        s1_truncated = s1[: -num_excess_tokens // 2]
+                        s2_truncated = s2[: -num_excess_tokens // 2]
+                    elif trunc_side == "left":
+                        s1_truncated = s1[num_excess_tokens // 2 :]
+                        s2_truncated = s2[num_excess_tokens // 2 :]
+                    log.info(
+                        "Before truncation s1 length = "
+                        + str(len(s1))
+                        + " and s2 length = "
+                        + str(len(s2))
+                        + ". After truncation s1 length = "
+                        + str(len(s1_truncated))
+                        + " and s2 length = "
+                        + str(len(s2_truncated))
+                    )
+                    assert len(s1_truncated) > 0, "After truncation, s1 length would be 0."
+                    assert len(s2_truncated) > 0, "After truncation, s2 length would be 0."
+                    args = list(args)
+                    args[0] = s1_truncated
+                    kwargs["s2"] = s2_truncated
+                    return apply_boundary_tokens(*args, **kwargs)
                 elif trunc_strategy == "trunc_s1":
                     s1 = args[0]
                     if trunc_side == "right":
