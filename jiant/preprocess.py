@@ -752,15 +752,15 @@ class ModelPreprocessingInterface(object):
         ----------
         apply_boundary_tokens : function
             Takes a function that adds boundary tokens and implements the common boundary token
-            adding function interface. TODO: describe this interface.
+            adding function interface demonstated in HuggingfaceTransformersEmbedderModule.
         max_tokens : int
             The maximum number of tokens to allow in the output sequence.
 
         Returns
         -------
         apply_boundary_tokens_with_trunc_strategy : function
-            Function w/ the common boundary token adding interface (TODO: describe this interface),
-            but also implementing a truncation strategy.
+            Function w/ the common boundary token adding interface demonstrated in
+            HuggingfaceTransformersEmbedderModule, but also implementing a truncation strategy.
         """
 
         def _apply_boundary_tokens_with_trunc_strategy(
@@ -778,10 +778,13 @@ class ModelPreprocessingInterface(object):
                 see args docs for apply_boundary_tokens and apply_lm_boundary_tokens in
                 huggingface_transformers_interface.modules
             trunc_strategy : str
-                Strategy (e.g., default "trunc_s2", or optionally "trunc_s1") determining which
-                input to trunc to reduce the total number of tokens returned to within max_tokens.
+                Which strings to truncate. Options:
+                    `trunc_s1`: select s1 for truncation.
+                    `trunc_s2`: select s2 for truncation.
+                    `trunc_both`: truncate s1 and s2 equally.
             trunc_side : str
-                Which side of the sequence to truncate: "left" or "right".
+                Options are `right` or `left`. Indicates which side of the sequence to remove from.
+                e.g., if `left`, then the first element to be removed from ["A", "B", "C"] is "A".
             kwargs : dict
                 see args docs for apply_boundary_tokens and apply_lm_boundary_tokens in
                 huggingface_transformers_interface.modules
@@ -791,6 +794,12 @@ class ModelPreprocessingInterface(object):
             seq_w_boundry_tokens : List[str]
                 List of tokens returned by applying the specified apply_boundary_tokens function
                 to the inputs and using the specified truncation strategy.
+
+            Raises
+            ------
+            ValueError
+                If sequence requires truncation but trunc_strategy or trunc_side are unspecified
+                or invalid.
 
             """
             seq_w_boundry_tokens = apply_boundary_tokens(*args, **kwargs)
