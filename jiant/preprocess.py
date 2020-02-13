@@ -831,47 +831,57 @@ class ModelPreprocessingInterface(object):
     def __init__(self, args):
         boundary_token_fn = None
         lm_boundary_token_fn = None
+        max_pos: int = None
 
         if args.input_module.startswith("bert-"):
             from jiant.huggingface_transformers_interface.modules import BertEmbedderModule
 
             boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
+            max_pos = BertTokenizer.max_model_input_sizes.get(args.input_module, None)
         elif args.input_module.startswith("roberta-"):
             from jiant.huggingface_transformers_interface.modules import RobertaEmbedderModule
 
             boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
+            max_pos = RobertaTokenizer.max_model_input_sizes.get(args.input_module, None)
         elif args.input_module.startswith("albert-"):
             from jiant.huggingface_transformers_interface.modules import AlbertEmbedderModule
 
             boundary_token_fn = AlbertEmbedderModule.apply_boundary_tokens
+            max_pos = AlbertTokenizer.max_model_input_sizes.get(args.input_module, None)
         elif args.input_module.startswith("xlnet-"):
             from jiant.huggingface_transformers_interface.modules import XLNetEmbedderModule
 
             boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
+            max_pos = XLNetTokenizer.max_model_input_sizes.get(args.input_module, None)
         elif args.input_module.startswith("openai-gpt"):
             from jiant.huggingface_transformers_interface.modules import OpenAIGPTEmbedderModule
 
             boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = OpenAIGPTEmbedderModule.apply_lm_boundary_tokens
+            max_pos = OpenAIGPTTokenizer.max_model_input_sizes.get(args.input_module, None)
         elif args.input_module.startswith("gpt2"):
             from jiant.huggingface_transformers_interface.modules import GPT2EmbedderModule
 
             boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = GPT2EmbedderModule.apply_lm_boundary_tokens
+            max_pos = GPT2Tokenizer.max_model_input_sizes.get(args.input_module, None)
         elif args.input_module.startswith("transfo-xl-"):
             from jiant.huggingface_transformers_interface.modules import TransfoXLEmbedderModule
 
             boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
+            max_pos = TransfoXLTokenizer.max_model_input_sizes.get(args.input_module, None)
         elif args.input_module.startswith("xlm-"):
             from jiant.huggingface_transformers_interface.modules import XLMEmbedderModule
 
             boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
+            max_pos = XLMTokenizer.max_model_input_sizes.get(args.input_module, None)
         else:
             boundary_token_fn = utils.apply_standard_boundary_tokens
 
-        # TODO: consider the max_tokens from a model-specific config instead of args.max_seq_len?
-        self.boundary_token_fn = self._apply_boundary_tokens(boundary_token_fn, args.max_seq_len)
+        self.max_tokens = min(x for x in [max_pos, args.max_seq_len] if x is not None)
+
+        self.boundary_token_fn = self._apply_boundary_tokens(boundary_token_fn, self.max_tokens)
 
         if lm_boundary_token_fn is not None:
             self.lm_boundary_token_fn = self._apply_boundary_tokens(
