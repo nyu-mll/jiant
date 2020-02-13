@@ -98,7 +98,7 @@ def select_pool_type(args):
     return pool_type
 
 
-def apply_standard_boundary_tokens(s1, s2=None):
+def apply_standard_boundary_tokens(s1, *, s2=None):
     """Apply <SOS> and <EOS> to sequences of string-valued tokens.
     Corresponds to more complex functions used with models like XLNet and BERT.
     """
