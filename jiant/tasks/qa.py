@@ -120,7 +120,7 @@ class MultiRCTask(Task):
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(para, question + answer)
+                inp = model_preprocessing_interface.boundary_token_fn(para, s2=question + answer)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
                 d["psg"] = sentence_to_text_field(
@@ -306,7 +306,7 @@ class ReCoRDTask(Task):
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(psg, qst)
+                inp = model_preprocessing_interface.boundary_token_fn(psg, s2=qst)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
                 d["psg"] = sentence_to_text_field(
@@ -458,7 +458,7 @@ class QASRLTask(SpanPredictionTask):
 
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
-                    example["passage"], example["question"], get_offset=True
+                    example["passage"], s2=example["question"], get_offset=True
                 )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
@@ -619,7 +619,7 @@ class QAMRTask(SpanPredictionTask):
 
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
-                    example["passage"], example["question"], get_offset=True
+                    example["passage"], s2=example["question"], get_offset=True
                 )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
@@ -894,7 +894,7 @@ class CommonsenseQATask(MultipleChoiceTask):
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    model_preprocessing_interface.boundary_token_fn(question, s2=choice)
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
@@ -992,7 +992,7 @@ class CosmosQATask(MultipleChoiceTask):
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(context, choice)
+                    model_preprocessing_interface.boundary_token_fn(context, s2=choice)
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
