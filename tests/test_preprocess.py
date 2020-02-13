@@ -133,6 +133,19 @@ class TestModelPreprocessingInterface(unittest.TestCase):
         self.assertEqual(len(seq), MAX_SEQ_LEN)
         self.assertEqual(seq, ["[CLS]", "call", "[SEP]", "Xray", "you", "zoo", "[SEP]"])
 
+    def test_boundary_token_fn_trunc_both(self):
+        MAX_SEQ_LEN = 7
+        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
+        mpi = ModelPreprocessingInterface(args)
+        seq = mpi.boundary_token_fn(
+            ["Apple", "buy", "call"],
+            s2=["Xray", "you", "zoo"],
+            trunc_strategy="trunc_both",
+            trunc_side="left",
+        )
+        self.assertEqual(len(seq), MAX_SEQ_LEN)
+        self.assertEqual(seq, ["[CLS]", "buy", "call", "[SEP]", "you", "zoo", "[SEP]"])
+
     def test_boundary_token_fn_trunc_with_short_sequence_an_no_max_seq_len(self):
         args = config.Params(max_seq_len=None, input_module="bert-base-uncased")
         mpi = ModelPreprocessingInterface(args)
