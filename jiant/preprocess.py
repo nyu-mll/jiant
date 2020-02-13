@@ -809,42 +809,39 @@ class ModelPreprocessingInterface(object):
             if num_excess_tokens > 0:
                 if not (trunc_strategy and trunc_side):
                     raise ValueError(
-                        "Input(s) will exceed model capacity or max_seq_len. "
-                        + "Adjust settings as necessary, or to automatically truncate "
-                        + "inputs in apply_boundary_tokens, call apply_boundary_tokens"
-                        + "with trunc_strategy and trunc_side keyword args."
+                        "Input(s) length will exceed model capacity or max_seq_len. "
+                        + "Adjust settings as necessary, or, to automatically truncate "
+                        + "inputs in `apply_boundary_tokens`, call `apply_boundary_tokens` "
+                        + "with `trunc_strategy` and `trunc_side` keyword args."
                     )
-                log.warning(
-                    "After applying boundry tokens, sequence length for this example is "
-                    + str(len(seq_w_boundry_tokens))
-                    + ", max_seq_len is "
-                    + str(max_tokens)
-                    + ". Truncation strategy "
-                    + trunc_strategy
-                    + " will be applied, removing elements from the "
-                    + trunc_side
-                    + " side of the input."
-                )
                 if trunc_strategy == "trunc_s2":
                     s2 = kwargs["s2"]
-                    log.warning("Before truncation, s2 length = " + str(len(s2)))
                     if trunc_side == "right":
                         s2_truncated = s2[:-num_excess_tokens]
                     elif trunc_side == "left":
                         s2_truncated = s2[num_excess_tokens:]
-                    log.warning("After truncation, s2 length = " + str(len(s2_truncated)))
+                    log.info(
+                        "Before truncation s2 length = "
+                        + str(len(s2))
+                        + ", after truncation s2 length = "
+                        + str(len(s2_truncated))
+                    )
                     assert len(s2_truncated) > 0, "After truncation, s2 length would be 0."
                     args = list(args)
                     kwargs["s2"] = s2_truncated
                     return apply_boundary_tokens(*args, **kwargs)
                 elif trunc_strategy == "trunc_s1":
                     s1 = args[0]
-                    log.warning("Before truncation, s1 length = " + str(len(s1)))
                     if trunc_side == "right":
                         s1_truncated = s1[:-num_excess_tokens]
                     elif trunc_side == "left":
                         s1_truncated = s1[num_excess_tokens:]
-                    log.warning("After truncation, s1 length = " + str(len(s1_truncated)))
+                    log.info(
+                        "Before truncation s1 length = "
+                        + str(len(s1))
+                        + ", after truncation s1 length = "
+                        + str(len(s1_truncated))
+                    )
                     assert len(s1_truncated) > 0, "After truncation, s1 length would be 0."
                     args = list(args)
                     args[0] = s1_truncated
