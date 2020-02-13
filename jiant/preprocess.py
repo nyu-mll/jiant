@@ -763,7 +763,9 @@ class ModelPreprocessingInterface(object):
             but also implementing a truncation strategy.
         """
 
-        def _apply_boundary_tokens_with_trunc_strategy(*args, trunc_strategy="trunc_s2", **kwargs):
+        def _apply_boundary_tokens_with_trunc_strategy(
+            *args, trunc_strategy="trunc_s2", trunc_side="right", **kwargs
+        ):
             """
             Calls the apply_boundary_tokens function provided in the parent function and, if the
             output exceeds the max number of tokens, applies a truncation strategy to the inputs,
@@ -801,21 +803,29 @@ class ModelPreprocessingInterface(object):
                     + str(max_tokens)
                     + ". Truncation strategy "
                     + trunc_strategy
-                    + " will be applied."
+                    + " will be applied, removing elements from the "
+                    + trunc_side
+                    + " side of the input."
                 )
                 if trunc_strategy == "trunc_s2":
-                    s2 = args[1]
+                    s2 = kwargs["s2"]
                     log.warning("Before truncation, s2 length = " + str(len(s2)))
-                    s2_truncated = s2[:-num_excess_tokens]
+                    if trunc_side == "right":
+                        s2_truncated = s2[:-num_excess_tokens]
+                    elif trunc_side == "left":
+                        s2_truncated = s2[num_excess_tokens:]
                     log.warning("After truncation, s2 length = " + str(len(s2_truncated)))
                     assert len(s2_truncated) > 0, "After truncation, s2 length would be 0."
                     args = list(args)
-                    args[1] = s2_truncated
+                    kwargs["s2"] = s2_truncated
                     return apply_boundary_tokens(*args, **kwargs)
                 elif trunc_strategy == "trunc_s1":
                     s1 = args[0]
                     log.warning("Before truncation, s1 length = " + str(len(s1)))
-                    s1_truncated = s1[:-num_excess_tokens]
+                    if trunc_side == "right":
+                        s1_truncated = s1[:-num_excess_tokens]
+                    elif trunc_side == "left":
+                        s1_truncated = s1[num_excess_tokens:]
                     log.warning("After truncation, s1 length = " + str(len(s1_truncated)))
                     assert len(s1_truncated) > 0, "After truncation, s1 length would be 0."
                     args = list(args)
