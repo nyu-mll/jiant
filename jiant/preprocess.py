@@ -17,7 +17,7 @@ import logging as log
 import os
 import sys
 from collections import defaultdict
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 
 import numpy as np
 import torch
@@ -304,7 +304,7 @@ def build_indexers(args):
 
 
 def build_tasks(
-    args: config.Params,
+    args: config.Params, cuda_device: Any
 ) -> (List[Task], List[Task], Vocabulary, Union[np.ndarray, float]):
     """Main logic for preparing tasks:
 
@@ -336,13 +336,13 @@ def build_tasks(
 
     """
     # 1) create / load tasks
-    tasks, pretrain_task_names, target_task_names = get_tasks(args)
+    tasks, pretrain_task_names, target_task_names = get_tasks(args, cuda_device)
     for task in tasks:
         task_classifier = config.get_task_attr(args, task.name, "use_classifier")
         setattr(task, "_classifier_name", task_classifier if task_classifier else task.name)
 
     tokenizer_names = {task.name: task.tokenizer_name for task in tasks}
-    assert len(set(tokenizer_names.values())) == 1, (
+    assert not len(set(tokenizer_names.values())) > 1, (
         f"Error: mixing tasks with different tokenizers!" " Tokenizations: {tokenizer_names:s}"
     )
 
@@ -506,7 +506,7 @@ def get_task_without_loading_data(task_name, args):
     return task
 
 
-def get_tasks(args: config.Params) -> (List[Task], List[str], List[str]):
+def get_tasks(args: config.Params, cuda_device: Any) -> (List[Task], List[str], List[str]):
     """Get and save tasks:
 
     1. Set up task storage file paths
@@ -552,6 +552,15 @@ def get_tasks(args: config.Params) -> (List[Task], List[str], List[str]):
         # Count examples, store in example_counts.
         if task.example_counts is None:
             task.count_examples()
+        utils.assert_for_log(
+            not isinstance(cuda_device, list)
+            or (
+                task.example_counts["train"] % args.batch_size >= len(cuda_device)
+                and task.example_counts["val"] % args.batch_size >= len(cuda_device)
+                and task.example_counts["test"] % args.batch_size >= len(cuda_device)
+            ),
+            "In Multi-GPU setting, please make sure split_size % batch_size > number of GPUs used for alll splits ",
+        )
         log.info(
             "\tTask '%s': %s",
             task.name,

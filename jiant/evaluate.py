@@ -102,10 +102,13 @@ def evaluate(
                 if isinstance(cuda_device, int):
                     batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
+            if task is not None:
+                task.update_metrics(out, batch)
             n_task_examples += get_output_attribute(out, "n_exs", cuda_device)
             # get predictions
             if "preds" not in out:
                 continue
+            out["preds"] = task.handle_preds(out["preds"], batch)
             cols = _format_preds(out["preds"])
             if task.name in IDX_REQUIRED_TASK_NAMES:
                 assert "idx" in batch, f"'idx' field missing from batches " "for task {task.name}!"
@@ -120,7 +123,6 @@ def evaluate(
             if time.time() - last_log > LOG_INTERVAL:
                 log.info("\tTask %s: batch %d", task.name, batch_idx)
                 last_log = time.time()
-
         # task_preds will be a DataFrame with columns
         # ['preds'] + FIELDS_TO_EXPORT
         # for GLUE tasks, preds entries should be single scalars.
