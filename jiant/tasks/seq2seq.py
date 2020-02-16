@@ -166,12 +166,15 @@ class MTTask(Seq2SeqTask):
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         super().__init__(name, max_seq_len, max_targ_v_size, name, **kw)
         self.tokenizer = get_tokenizer(self._tokenizer_name)
-        exclusion_index_set = [
-            self.tokenizer.convert_tokens_to_ids(self.tokenizer.pad_token),
-            self.tokenizer.convert_tokens_to_ids(self.tokenizer.bos_token),
-            self.tokenizer.convert_tokens_to_ids(self.tokenizer.eos_token),
-            self.tokenizer.convert_tokens_to_ids(self.tokenizer.unk_token),
-        ]
+        if "MosesTokenizer" in self._tokenizer_name:
+            exclusion_index_set = [0, 1, 2,3]
+        else:
+            exclusion_index_set = [
+                self.tokenizer.convert_tokens_to_ids(self.tokenizer.pad_token),
+                self.tokenizer.convert_tokens_to_ids(self.tokenizer.bos_token),
+                self.tokenizer.convert_tokens_to_ids(self.tokenizer.eos_token),
+                self.tokenizer.convert_tokens_to_ids(self.tokenizer.unk_token),
+            ]
         self.scorer2 = BLEU(exclude_indices=set(exclusion_index_set))
         self.scorers.append(self.scorer2)
         self.val_metric_decreases = False
