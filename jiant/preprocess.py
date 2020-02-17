@@ -552,16 +552,6 @@ def get_tasks(args: config.Params, cuda_device: Any) -> (List[Task], List[str], 
         # Count examples, store in example_counts.
         if task.example_counts is None:
             task.count_examples()
-        import pdb; pdb.set_trace()
-        utils.assert_for_log(
-            not isinstance(cuda_device, list)
-            or (
-                task.example_counts["train"] % args.batch_size >= len(cuda_device)
-                and task.example_counts["val"] % args.batch_size >= len(cuda_device)
-                and task.example_counts["test"] % args.batch_size >= len(cuda_device)
-            ),
-            "In Multi-GPU setting, please make sure split_size % batch_size > number of GPUs used for alll splits ",
-        )
         log.info(
             "\tTask '%s': %s",
             task.name,
