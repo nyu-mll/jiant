@@ -20,13 +20,11 @@ class TestUpdateMetricsAccuracy(unittest.TestCase):
 
         one_batch_predictions = torch.Tensor([[0], [1]])
         one_batch_true = torch.Tensor([[1], [0]])
-        # thi will hav eto beoutsourced more.
-        out = {"logits": predictions, "labels": true_labels}
-        batch = {"tagmask": None}
-        self.task.update_metrics(out, batch)
+        self.task.update_metrics(predictions[0], true_labels[0], tagmask=None)
+        self.task.update_metrics(predictions[1], true_labels[1], tagmask=None)
         self.imperfect_metrics = self.task.get_metrics(reset=True)
-        out = {"logits": perfect_predictions, "labels": true_labels}
-        self.task.update_metrics(out, batch)
+        self.task.update_metrics(perfect_predictions[0], true_labels[0], tagmask=None)
+        self.task.update_metrics(perfect_predictions[1], true_labels[1], tagmask=None)
         self.perfect_metrics = self.task.get_metrics(reset=True)
 
     def test_accuracy(self):

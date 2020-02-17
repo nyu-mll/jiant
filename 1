@@ -1274,7 +1274,7 @@ class MultiTaskModel(nn.Module):
             F.cross_entropy(logits.view(-1, 50265), labels.view(-1)), self._cuda_device
         )
         out["n_exs"] = format_output(b_size, self._cuda_device)
-        task.update_metrics(out["loss"])
+        task.update_metrics(logits.view(-1, 50265), labels.view(-1))
         #task.scorer1(out["loss"].item())
         return out
 

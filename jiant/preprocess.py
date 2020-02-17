@@ -552,6 +552,7 @@ def get_tasks(args: config.Params, cuda_device: Any) -> (List[Task], List[str], 
         # Count examples, store in example_counts.
         if task.example_counts is None:
             task.count_examples()
+        import pdb; pdb.set_trace()
         utils.assert_for_log(
             not isinstance(cuda_device, list)
             or (

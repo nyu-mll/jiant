@@ -160,9 +160,7 @@ class MultiRCTask(Task):
 
         self.example_counts = example_counts
 
-    def update_metrics(self, out, batch):
-        logits, labels = out["logits"], batch["label"]
-        idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
+    def update_metrics(self, logits, labels, idxs, tagmask=None):
         """ A batch of logits, labels, and the passage+questions they go with """
         self.scorer1(logits, labels)
         logits, labels = logits.detach().cpu(), labels.detach().cpu()
@@ -345,11 +343,8 @@ class ReCoRDTask(Task):
             example_counts[split] = sum([len(d["passage"]["entities"]) for d in data])
         self.example_counts = example_counts
 
-    def update_metrics(self, out, batch):
+    def update_metrics(self, logits, anss, idxs, tagmask=None):
         """ A batch of logits+answer strings and the questions they go with """
-        logits = out["logits"]
-        anss = batch["ans_str"]
-        idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
         logits = logits.detach().cpu()
         for idx, logit, ans in zip(idxs, logits, anss):
             self._score_tracker[idx].append((logit, ans))
@@ -413,6 +408,11 @@ class QASRLTask(SpanPredictionTask):
     def count_examples(self, splits=["train", "val", "test"]):
         """ Count examples in the dataset. """
         pass
+
+    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
     def get_metrics(self, reset: bool = False) -> Dict:
         f1 = self.f1_metric.get_metric(reset)
@@ -591,6 +591,11 @@ class QAMRTask(SpanPredictionTask):
 
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
+
+    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
     def get_metrics(self, reset: bool = False) -> Dict:
         f1 = self.f1_metric.get_metric(reset)

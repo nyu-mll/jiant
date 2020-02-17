@@ -1,6 +1,6 @@
 # Implementation of span classification modules
 
-from typing import Dict, Any
+from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -9,7 +9,6 @@ from allennlp.modules.span_extractors import EndpointSpanExtractor, SelfAttentiv
 
 from jiant.tasks.tasks import Task
 from jiant.modules.simple_modules import Classifier
-from jiant.utils.utils import get_batch_size, format_output
 
 
 class SpanClassifierModule(nn.Module):
@@ -79,7 +78,6 @@ class SpanClassifierModule(nn.Module):
         sent_mask: torch.Tensor,
         task: Task,
         predict: bool,
-        cuda_devices: Any,
     ) -> Dict:
         """
         Run forward pass.
@@ -107,6 +105,7 @@ class SpanClassifierModule(nn.Module):
             out: dict(str -> Tensor)
         """
         out = {}
+        batch_size = sent_embs.shape[0]
 
         # Apply projection CNN layer for each span of the input sentence
         sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
@@ -116,7 +115,7 @@ class SpanClassifierModule(nn.Module):
             se_projs.append(se_proj)
 
         span_embs = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
-        out["n_exs"] = get_batch_size(batch, cuda_devices)
+        out["n_exs"] = batch_size
         _kw = dict(sequence_mask=sent_mask.long())
         for i in range(self.num_spans):
             # spans are [batch_size, num_targets, span_modules]
@@ -130,10 +129,9 @@ class SpanClassifierModule(nn.Module):
         # Compute loss if requested.
         if "labels" in batch:
             logits = logits.squeeze(dim=1)
-            out["logits"] = logits
-            out["loss"] = format_output(
-                self.compute_loss(logits, batch["labels"], task), cuda_devices
-            )
+            out["loss"] = self.compute_loss(logits, batch["labels"], task)
+            tagmask = batch.get("tagmask", None)
+            task.update_metrics(logits, batch["labels"], tagmask=tagmask)
 
         if predict:
             # Return preds as a list.
