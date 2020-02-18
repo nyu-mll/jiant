@@ -3006,7 +3006,7 @@ class SpanPredictionTask(Task):
     n_classes = 2
 
     def update_metrics(self, out, batch):
-        batch_size = sum(out["n_exs"]).item()
+        batch_size = len(out["logits"]["span_start"])
         logits_dict = out["logits"]
         pred_span_start = torch.argmax(logits_dict["span_start"], dim=1).cpu().numpy()
         pred_span_end = torch.argmax(logits_dict["span_end"], dim=1).cpu().numpy()
