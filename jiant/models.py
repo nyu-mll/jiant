@@ -950,8 +950,6 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch["labels"].squeeze(-1)
             out["loss"] = F.cross_entropy(logits, labels)
-            # task.update_diagnostic_metrics(predicted, labels, batch)
-            task.update_diagnostic_metrics(logits, labels, batch)
 
         if predict:
             _, predicted = logits.max(dim=1)
@@ -1085,7 +1083,6 @@ class MultiTaskModel(nn.Module):
         sent, mask = self.sent_encoder(batch["inputs"], task)
         hid2tag = self._get_classifier(task)
         logits = hid2tag(sent[:, 1:-1, :]).view(b_size * seq_len, -1)
-        out["logits"] = logits
         targs = batch["targs"]["words"][:, :seq_len].contiguous().view(-1)
         if "mask" in batch:
             # Prevent backprop for tags generated for tokenization-introduced tokens
@@ -1094,7 +1091,8 @@ class MultiTaskModel(nn.Module):
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
-        out["labels"] = targs
+            out["labels"] = targs
+            out["logits"] = logits
         out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
         return out
 

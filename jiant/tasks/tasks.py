@@ -1555,6 +1555,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
+    def update_metrics(self, out, batch):
+        self.update_diagnostic_metrics(out["logits"], batch["labels"], batch)
+
     def update_diagnostic_metrics(self, logits, labels, batch):
         # Updates scorer for every tag in a given column (tag_group) and also the
         # the scorer for the column itself.
@@ -2375,6 +2378,7 @@ class TaggingTask(Task):
         assert num_tags > 0
         self.num_tags = num_tags
         self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.all_labels = [str(i) for i in range(self.num_tags)]
