@@ -45,7 +45,7 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.huggingface_transformers_interface import input_module_uses_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.tasks.lm import LanguageModelingTask
+from jiant.tasks.lm import LanguageModelingTask, MaskedLanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.seq2seq import Seq2SeqTask
@@ -881,6 +881,8 @@ class MultiTaskModel(nn.Module):
             task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)
         ):
             out = self._pair_sentence_forward(batch, task, predict)
+        elif isinstance(task, MaskedLanguageModelingTask):
+            out = self._masked_lm_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or isinstance(
                 self.sent_encoder._phrase_layer, PRPN
@@ -932,7 +934,7 @@ class MultiTaskModel(nn.Module):
         logits = classifier(word_embs_in_context, sent_mask)
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
-
+        out["labels"] = batch["labels"]
         if "labels" in batch:  # means we should compute loss
             if batch["labels"].dim() == 0:
                 labels = batch["labels"].unsqueeze(0)
@@ -942,7 +944,8 @@ class MultiTaskModel(nn.Module):
                 labels = batch["labels"].squeeze(-1)
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
             tagmask = batch.get("tagmask", None)
-            task.update_metrics(logits, labels, tagmask=tagmask)
+            task.update_metrics(out, batch)
+            out["labels"]=labels
 
         if predict:
             if isinstance(task, RegressionTask):
@@ -1274,7 +1277,8 @@ class MultiTaskModel(nn.Module):
             F.cross_entropy(logits.view(-1, 50265), labels.view(-1)), self._cuda_device
         )
         out["n_exs"] = format_output(b_size, self._cuda_device)
-        task.update_metrics(out["loss"])
+        #task.update_metrics(logits.view(-1, 50265), labels.view(-1))
+        task.update_metrics(out, None)
         #task.scorer1(out["loss"].item())
         return out
 

@@ -200,8 +200,9 @@ class MLMTask(MaskedLanguageModelingTask):
             "test": os.path.join(path, "test.sentences.txt"),
         }
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        self.scorer1(logits,labels())
+    def update_metrics(self, out, batch=None):
+        #self.scorer1(logits,labels)
+        self.scorer1(out["loss"].mean())
         return
 
     def process_split(

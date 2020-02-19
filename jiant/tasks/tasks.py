@@ -288,10 +288,14 @@ class Task(object):
     def get_scorers(self):
         return self.scorers
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        assert len(self.get_scorers()) > 0, "Please specify a score metric"
-        for scorer in self.get_scorers():
-            scorer(logits, labels)
+    def update_metrics(self, out, batch):
+        raise NotImplementedError
+
+    def handle_preds(self, preds, batch):
+        """
+        Function that does task-specific processing of predictions.
+        """
+        return preds
 
 
 class ClassificationTask(Task):
@@ -330,6 +334,13 @@ class SingleClassificationTask(ClassificationTask):
             split, indexers, model_preprocessing_interface, is_pair=False
         )
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 class PairClassificationTask(ClassificationTask):
     """ Generic sentence pair classification """
@@ -356,6 +367,13 @@ class PairClassificationTask(ClassificationTask):
             split, indexers, model_preprocessing_interface, is_pair=True
         )
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 class PairRegressionTask(RegressionTask):
     """ Generic sentence pair classification """
@@ -380,6 +398,13 @@ class PairRegressionTask(RegressionTask):
         return process_single_pair_task_split(
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
         )
+
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 class PairOrdinalRegressionTask(RegressionTask):
@@ -409,10 +434,12 @@ class PairOrdinalRegressionTask(RegressionTask):
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
         )
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        self.scorer1(mean_squared_error(logits, labels))  # update average MSE
-        self.scorer2(logits, labels)
-        return
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 class SequenceGenerationTask(Task):
@@ -434,7 +461,7 @@ class SequenceGenerationTask(Task):
         bleu = self.scorer1.get_metric(reset)
         return {"bleu": bleu}
 
-    def update_metrics(self):
+    def update_metrics(self, out, batch):
         # currently don't support metrics for regression task
         # TODO(Yada): support them!
         return
@@ -597,7 +624,9 @@ class CoLANPITask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         return {"mcc": self.scorer1.get_metric(reset), "accuracy": self.scorer2.get_metric(reset)}
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -659,7 +688,9 @@ class CoLATask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         return {"mcc": self.scorer1.get_metric(reset), "accuracy": self.scorer2.get_metric(reset)}
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -773,7 +804,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -1060,6 +1094,7 @@ class SNLITask(PairClassificationTask):
     def load_data(self):
         """ Process the dataset located at path.  """
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "train.tsv"),
@@ -2358,6 +2393,13 @@ class TaggingTask(Task):
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 @register_task("ccg", rel_path="CCG/")
 class CCGTaggingTask(TaggingTask):
@@ -2379,6 +2421,11 @@ class CCGTaggingTask(TaggingTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+
+    def update_metrics(self, out, batch):
+        logits, labels = out["logits"], out["labels"]
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -2622,6 +2669,13 @@ class SpanClassificationTask(Task):
         metrics["f1"] = f1
         return metrics
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 @register_task("commitbank", rel_path="CB/")
 class CommitmentTask(PairClassificationTask):
@@ -2838,7 +2892,12 @@ class MultipleChoiceTask(Task):
     where each example consists of a question and
     a (possibly variable) number of possible answers"""
 
-    pass
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["label"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 @register_task("SocialIQA", rel_path="SocialIQA/")
@@ -2945,6 +3004,66 @@ class SpanPredictionTask(Task):
     """ Generic task class for predicting a span """
 
     n_classes = 2
+
+    def update_metrics(self, out, batch):
+        batch_size = sum(out["n_exs"]).item()
+        logits_dict = out["logits"]
+        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1).cpu().numpy()
+        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1).cpu().numpy()
+
+        pred_str_list = self.get_pred_str(
+            out["logits"], batch, batch_size, pred_span_start, pred_span_end
+        )
+        gold_str_list = batch["answer_str"]
+
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+
+    def get_pred_str(self, preds, batch, batch_size, pred_span_start, pred_span_end):
+        """
+        For span prediction, we compute metrics based on span strings. This function
+        gets the span string based on start and end index predictions. 
+
+        """
+        pred_str_list = []
+        for i in range(batch_size):
+
+            # Adjust for start_offset (e.g. [CLS] tokens).
+            pred_span_start_i = pred_span_start[i] - batch["start_offset"][i]
+            pred_span_end_i = pred_span_end[i] - batch["start_offset"][i]
+
+            # Ensure that predictions fit within the range of valid tokens
+            pred_span_start_i = min(
+                pred_span_start_i, len(batch["space_processed_token_map"][i]) - 1
+            )
+            pred_span_end_i = min(
+                max(pred_span_end_i, pred_span_start_i + 1),
+                len(batch["space_processed_token_map"][i]) - 1,
+            )
+
+            # space_processed_token_map is a list of tuples
+            #   (space_token, processed_token (e.g. BERT), space_token_index)
+            # The assumption is that each space_token corresponds to multiple processed_tokens.
+            # After we get the corresponding start/end space_token_indices, we can do " ".join
+            #   to get the corresponding string that is definitely within the original input.
+            # One constraint here is that our predictions can only go up to a the granularity of
+            # space_tokens. This is not so bad because SQuAD-style scripts also remove punctuation.
+            pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
+            pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
+            pred_str_list.append(
+                " ".join(
+                    batch["passage_str"][i].split()[pred_char_span_start:pred_char_span_end]
+                ).strip()
+            )
+        return pred_str_list
+
+    def handle_preds(self, preds, batch):
+        batch_size = len(preds["span_start"])
+        preds["span_str"] = self.get_pred_str(
+            preds, batch, batch_size, preds["span_start"], preds["span_end"]
+        )
+        return preds
 
 
 @register_task("copa", rel_path="COPA/")
@@ -3243,7 +3362,9 @@ class WinogradCoreferenceTask(SpanClassificationTask):
                 )
         self._iters_by_split = iters_by_split
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
 
