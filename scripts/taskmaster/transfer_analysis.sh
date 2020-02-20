@@ -53,6 +53,7 @@ function run_exp() {
     args+=( --config_file "${CONFIG_FILE}" )
     args+=( -o "${OVERRIDES}" )
    
+    echo "${CONFIG_FILE}"
     echo "${OVERRIDES}"
     # Run
     #python main.py "${args[@]}"
@@ -374,9 +375,6 @@ function first_intermediate_exp() {
     OVERRIDES="exp_name=roberta-large, run_name=$1_$5_$2, batch_size=$3, reload_vocab=1"
     OVERRIDES+=", target_tasks=$1, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     OVERRIDES+=", do_full_eval=1"
-    echo "$1"
-    echo "$5"
-    echo "$2"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
 }
 
@@ -453,7 +451,6 @@ function ez_first_intermediate_exp_limited_size() {
     # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccgS1
     IFS="S" read -ra ADDR <<< "${2}"
     TASK_NAME=${ADDR[0]}
-    echo $TASK_NAME
     first_intermediate_exp_limited_size ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 

@@ -245,10 +245,6 @@ class Task(object):
             count = self.get_num_examples(st)
             self.example_counts[split] = count
 
-    def tokenizer_is_supported(self, tokenizer_name):
-        """ Check if the tokenizer is supported for this task. """
-        return get_tokenizer(tokenizer_name) is not None
-
     @property
     def tokenizer_name(self):
         return self._tokenizer_name
@@ -1555,6 +1551,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
+    def update_metrics(self, out, batch):
+        self.update_diagnostic_metrics(out["logits"], batch["labels"], batch)
+
     def update_diagnostic_metrics(self, logits, labels, batch):
         # Updates scorer for every tag in a given column (tag_group) and also the
         # the scorer for the column itself.
@@ -2375,6 +2374,7 @@ class TaggingTask(Task):
         assert num_tags > 0
         self.num_tags = num_tags
         self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.all_labels = [str(i) for i in range(self.num_tags)]
@@ -2526,12 +2526,6 @@ class SpanClassificationTask(Task):
     half-open token intervals [i, j).
     The number of spans is constant across examples.
     """
-
-    def tokenizer_is_supported(self, tokenizer_name):
-        """ Check if the tokenizer is supported for this task. """
-        # Assume all tokenizers supported; if retokenized data not found
-        # for this particular task, we'll just crash on file loading.
-        return True
 
     def __init__(
         self,
@@ -2780,7 +2774,7 @@ class WiCTask(PairClassificationTask):
 
         def _process_preserving_word(sent, word):
             """ Find out the index of the [first] instance of the word in the original sentence,
-            and project the span containing marked word to the span containing tokens created from 
+            and project the span containing marked word to the span containing tokens created from
             the marked word. """
             token_aligner, sent_tok = aligner_fn(sent)
             raw_start_idx = len(sent.split(word)[0].split(" ")) - 1
@@ -3006,7 +3000,7 @@ class SpanPredictionTask(Task):
     n_classes = 2
 
     def update_metrics(self, out, batch):
-        batch_size = sum(out["n_exs"]).item()
+        batch_size = len(out["logits"]["span_start"])
         logits_dict = out["logits"]
         pred_span_start = torch.argmax(logits_dict["span_start"], dim=1).cpu().numpy()
         pred_span_end = torch.argmax(logits_dict["span_end"], dim=1).cpu().numpy()
