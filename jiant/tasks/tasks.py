@@ -2476,12 +2476,6 @@ class SpanClassificationTask(Task):
     The number of spans is constant across examples.
     """
 
-    def tokenizer_is_supported(self, tokenizer_name):
-        """ Check if the tokenizer is supported for this task. """
-        # Assume all tokenizers supported; if retokenized data not found
-        # for this particular task, we'll just crash on file loading.
-        return True
-
     def __init__(
         self,
         path: str,
