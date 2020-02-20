@@ -547,7 +547,7 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     cuda_device = parse_cuda_list_arg(args.cuda)
-    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
+    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args, cuda_device)
     tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
     log.info("\tFinished loading tasks in %.3fs", time.time() - start_time)
     log.info("\t Tasks: {}".format([task.name for task in tasks]))
