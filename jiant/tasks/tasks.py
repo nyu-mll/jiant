@@ -245,10 +245,6 @@ class Task(object):
             count = self.get_num_examples(st)
             self.example_counts[split] = count
 
-    def tokenizer_is_supported(self, tokenizer_name):
-        """ Check if the tokenizer is supported for this task. """
-        return get_tokenizer(tokenizer_name) is not None
-
     @property
     def tokenizer_name(self):
         return self._tokenizer_name
@@ -2531,12 +2527,6 @@ class SpanClassificationTask(Task):
     The number of spans is constant across examples.
     """
 
-    def tokenizer_is_supported(self, tokenizer_name):
-        """ Check if the tokenizer is supported for this task. """
-        # Assume all tokenizers supported; if retokenized data not found
-        # for this particular task, we'll just crash on file loading.
-        return True
-
     def __init__(
         self,
         path: str,
@@ -2784,7 +2774,7 @@ class WiCTask(PairClassificationTask):
 
         def _process_preserving_word(sent, word):
             """ Find out the index of the [first] instance of the word in the original sentence,
-            and project the span containing marked word to the span containing tokens created from 
+            and project the span containing marked word to the span containing tokens created from
             the marked word. """
             token_aligner, sent_tok = aligner_fn(sent)
             raw_start_idx = len(sent.split(word)[0].split(" ")) - 1
