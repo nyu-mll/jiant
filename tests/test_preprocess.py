@@ -107,18 +107,31 @@ class TestModelPreprocessingInterface(unittest.TestCase):
         self.assertEqual(len(seq), MAX_SEQ_LEN)
         self.assertEqual(seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "Xray", "[SEP]"])
 
-    def test_boundary_token_fn_trunc_s1_left_side(self):
+    def test_boundary_token_fn_trunc_s2_left_side(self):
         MAX_SEQ_LEN = 7
         args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
         mpi = ModelPreprocessingInterface(args)
         seq = mpi.boundary_token_fn(
             ["Apple", "buy", "call"],
             s2=["Xray", "you", "zoo"],
-            trunc_strategy="trunc_s1",
+            trunc_strategy="trunc_s2",
             trunc_side="left",
         )
         self.assertEqual(len(seq), MAX_SEQ_LEN)
-        self.assertEqual(seq, ["[CLS]", "call", "[SEP]", "Xray", "you", "zoo", "[SEP]"])
+        self.assertEqual(seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "zoo", "[SEP]"])
+
+    def test_boundary_token_fn_trunc_s2_right_side(self):
+        MAX_SEQ_LEN = 7
+        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
+        mpi = ModelPreprocessingInterface(args)
+        seq = mpi.boundary_token_fn(
+            ["Apple", "buy", "call"],
+            s2=["Xray", "you", "zoo"],
+            trunc_strategy="trunc_s2",
+            trunc_side="right",
+        )
+        self.assertEqual(len(seq), MAX_SEQ_LEN)
+        self.assertEqual(seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "Xray", "[SEP]"])
 
     def test_boundary_token_fn_trunc_s1_left_side(self):
         MAX_SEQ_LEN = 7
@@ -132,6 +145,19 @@ class TestModelPreprocessingInterface(unittest.TestCase):
         )
         self.assertEqual(len(seq), MAX_SEQ_LEN)
         self.assertEqual(seq, ["[CLS]", "call", "[SEP]", "Xray", "you", "zoo", "[SEP]"])
+
+    def test_boundary_token_fn_trunc_s1_right_side(self):
+        MAX_SEQ_LEN = 7
+        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
+        mpi = ModelPreprocessingInterface(args)
+        seq = mpi.boundary_token_fn(
+            ["Apple", "buy", "call"],
+            s2=["Xray", "you", "zoo"],
+            trunc_strategy="trunc_s1",
+            trunc_side="right",
+        )
+        self.assertEqual(len(seq), MAX_SEQ_LEN)
+        self.assertEqual(seq, ["[CLS]", "Apple", "[SEP]", "Xray", "you", "zoo", "[SEP]"])
 
     def test_boundary_token_fn_trunc_both(self):
         MAX_SEQ_LEN = 7
@@ -146,7 +172,7 @@ class TestModelPreprocessingInterface(unittest.TestCase):
         self.assertEqual(len(seq), MAX_SEQ_LEN)
         self.assertEqual(seq, ["[CLS]", "buy", "call", "[SEP]", "you", "zoo", "[SEP]"])
 
-    def test_boundary_token_fn_trunc_with_short_sequence_an_no_max_seq_len(self):
+    def test_boundary_token_fn_trunc_with_short_sequence_and_no_max_seq_len(self):
         args = config.Params(max_seq_len=None, input_module="bert-base-uncased")
         mpi = ModelPreprocessingInterface(args)
         seq = mpi.boundary_token_fn(["Apple", "buy", "call"], s2=["Xray", "you", "zoo"])
