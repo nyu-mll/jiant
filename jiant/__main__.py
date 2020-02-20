@@ -181,14 +181,14 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
     if args.do_pretrain:
         assert_for_log(
-            args.pretrain_tasks != "none",
+            args.pretrain_tasks not in ("none", "", None),
             "Error: Must specify at least one pretraining task: [%s]" % args.pretrain_tasks,
         )
         steps_log.write("Training model on tasks: %s \n" % args.pretrain_tasks)
 
     if args.do_target_task_training:
         assert_for_log(
-            args.target_tasks != "none",
+            args.target_tasks not in ("none", "", None),
             "Error: Must specify at least one target task: [%s]" % args.target_tasks,
         )
         steps_log.write("Re-training model for individual target tasks \n")
@@ -547,7 +547,7 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     cuda_device = parse_cuda_list_arg(args.cuda)
-    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
+    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args, cuda_device)
     tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
     log.info("\tFinished loading tasks in %.3fs", time.time() - start_time)
     log.info("\t Tasks: {}".format([task.name for task in tasks]))
