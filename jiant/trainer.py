@@ -564,7 +564,6 @@ class SamplingMultiTaskTrainer:
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=self._val_interval)
-
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
@@ -575,7 +574,6 @@ class SamplingMultiTaskTrainer:
             if task_info["stopped"]:
                 offset += 1
                 continue
-
             # gradients are accumulated for accumulation_steps-many batches before an opt. step:
             for batch in itertools.islice(task_info["tr_generator"], self._accumulation_steps):
                 output_dict = self._forward(batch, task=task)
@@ -843,6 +841,7 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
+
             loss = get_output_attribute(out, "loss", self._cuda_device, "mean")
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
@@ -1033,6 +1032,7 @@ class SamplingMultiTaskTrainer:
         if isinstance(self._cuda_device, int) and self._cuda_device >= 0:
             batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, batch)
+        task.update_metrics(model_out, batch)
         return model_out
 
     def _description_from_metrics(self, metrics):
