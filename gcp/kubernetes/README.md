@@ -17,7 +17,7 @@ For more on Kubernetes, see [this comic](https://cloud.google.com/kubernetes-eng
 
 ### Workstation
 
-All setup instructions for the work station assume you are using a Google Compute Engine (GCE) instance (e.g. "Deep Learning with Linux" for the OS), but should also work on any Ubuntu machine with the Google Cloud SDK installed.
+All setup instructions for the work station assume you are using a Google Compute Engine (GCE) instance (e.g. "Deep Learning with Linux" for the OS), but should also work on any Ubuntu machine with the Google Cloud SDK installed. We suggest you search for one with Docker, nvidia-docker, kubectl, and Pytorch installed, such as "Deep Learning Image: PyTorch 1.2.0" image. 
 
 We recommend that you create a lightweight GCP instance in the same region as your desired cluster. Select "Allow full access to all Cloud APIs" if possible.
 
@@ -79,7 +79,7 @@ cd /path/to/jiant
 sudo docker build -t gcr.io/<project_id>/jiant:v1 .
 ```
 
-Authenticate to Google Cloud so we can push containers to Google Container Registry (GCR), where they are accessible to Kubernetes nodes:
+You may have to use `sudo` for the following. Authenticate to Google Cloud so we can push containers to Google Container Registry (GCR), where they are accessible to Kubernetes nodes:
 ```sh
 gcloud auth configure-docker
 ```
@@ -100,7 +100,7 @@ Before starting this section, you should have a URL (`gcr.io/XXXX`) to a Docker 
 
 ### GKE Cluster
 
-Go to [Google Cloud Console](cloud.google.com/console) in your browser, go to **Kubernetes Engine**, and create a cluster. We recommend giving each node at least 13 GB of RAM, or 26 GB for GPU workers. If you want to run on GPUs, we recommend creating a pool with either P100s or K80s, and enabling autoscaling.
+Go to [Google Cloud Console](https://cloud.google.com/console) in your browser, go to **Kubernetes Engine**, and create a cluster. We recommend giving each node at least 13 GB of RAM, or 26 GB for GPU workers. If you want to run on GPUs, we recommend creating a pool with either P100s or K80s, and enabling autoscaling.
 
 Authenticate to the cluster:
 ```sh
@@ -115,6 +115,8 @@ kubectl run hello-world --generator=job/v1 --image gcr.io/XXXX --restart=Never -
 ```
 
 You should see a workload named `hello-world` in the Kubernetes Engine -> Workloads page, and if you click through to container logs you should see the output of your command.
+
+If you want to scale back your cluster, follow these [instructions](https://stackoverflow.com/questions/46838221/how-to-stop-a-kubernetes-cluster). 
 
 ### NFS Setup
 
