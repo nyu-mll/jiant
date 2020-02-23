@@ -51,6 +51,7 @@ from jiant.tasks import (
     ALL_NLI_PROBING_TASKS,
     ALL_SEQ2SEQ_TASKS,
 )
+from jiant.tasks.lm import MLMTask
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask, Task
@@ -258,16 +259,17 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     max_v_sizes = {"word": args.max_word_v_size, "char": args.max_char_v_size}
     word2freq, char2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
-    for task in tasks:  # add custom label namespaces
-        # TODO: surface more docs for add_task_label_vocab:
-        add_task_label_vocab(vocab, task)
+
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
     if input_module_uses_transformers(args.input_module):
         # Add pre-computed vocabulary of corresponding tokenizer for transformers models.
         add_transformers_vocab(vocab, args.tokenizer)
-
+    for task in tasks:  # add custom label namespaces
+        # TODO: surface more docs for add_task_label_vocab:
+        add_task_label_vocab(vocab, task)
+           
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
@@ -653,6 +655,9 @@ def add_task_label_vocab(vocab, task):
     This can then be accessed when generating Instances, either via a custom
     Indexer or by invoking the namespace when creating a LabelField.
     """
+    if isinstance(task, MLMTask):
+        for i in range(len(vocab.get_token_to_index_vocabulary())):
+                vocab.add_token_to_namespace(vocab.get_token_from_index(i), task._label_namespace)
     if not hasattr(task, "get_all_labels"):
         return
     utils.assert_for_log(

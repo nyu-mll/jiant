@@ -1226,9 +1226,7 @@ class MultiTaskModel(nn.Module):
         logits = module.forward(sent_embs)
 
         out["logits"] = logits
-        out["loss"] = format_output(
-            F.cross_entropy(logits.view(-1, 50265), labels.view(-1)), self._cuda_device
-        )
+        out["loss"] = F.cross_entropy(logits.view(-1, 50265), labels.view(-1))
         out["n_exs"] = format_output(b_size, self._cuda_device)
         #task.update_metrics(logits.view(-1, 50265), labels.view(-1))
         task.update_metrics(out, None)
@@ -1261,7 +1259,7 @@ class MultiTaskModel(nn.Module):
         if "label" in batch:
             labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-
+        
         if predict:
             out["preds"] = logits.argmax(dim=-1)
         return out

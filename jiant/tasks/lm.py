@@ -7,6 +7,7 @@ from typing import Iterable, Sequence, Type
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
+from allennlp.data.fields import SequenceLabelField
 
 from jiant.utils.data_loaders import tokenize_and_truncate
 from jiant.tasks.registry import register_task
@@ -17,6 +18,7 @@ from jiant.tasks.tasks import (
     atomic_tokenize,
     sentence_to_text_field,
 )
+from transformers import XLMRobertaTokenizer
 
 
 class LanguageModelingTask(SequenceGenerationTask):
@@ -39,6 +41,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         super().__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = None
+        self._label_namespace = self.name + "_tags"
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
@@ -76,11 +79,13 @@ class LanguageModelingTask(SequenceGenerationTask):
         Args:
             path: (str) data file path
         """
+        import pdb; pdb.set_trace()
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
+                # Segment text. 
                 yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(
@@ -195,15 +200,30 @@ class MLMTask(MaskedLanguageModelingTask):
     def __init__(self, path, *args, **kw):
         super().__init__(path, *args, **kw)
         self.files_by_split = {
-            "train": os.path.join(path, "train.sentences.txt"),
-            "val": os.path.join(path, "valid.sentences.txt"),
-            "test": os.path.join(path, "test.sentences.txt"),
+            "train": os.path.join(path, "wiki.train.tokens"),
+            "val": os.path.join(path, "wiki.valid.tokens"),
+            "test": os.path.join(path, "wiki.test.tokens"),
         }
 
     def update_metrics(self, out, batch=None):
         #self.scorer1(logits,labels)
         self.scorer1(out["loss"].mean())
         return
+
+    def get_data_iter(self, path):
+        """Loading data file and tokenizing the text
+        Args:
+            path: (str) data file path
+        """
+        import pandas as pd
+        text = pd.read_csv(path, sep="\n", header=None)[:100]
+        for i in range(len(text)):
+            row = text.iloc[i]
+            if len(row[0].split()) > 10:
+                # approximation for paragraph
+                toks = row[0]
+                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -220,9 +240,10 @@ class MLMTask(MaskedLanguageModelingTask):
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
             sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+            input_sent = sentence_to_text_field(sent_, indexers)
             d = {
-                "input": sentence_to_text_field(sent_, indexers),
-                "targs": sentence_to_text_field(sent_, indexers),
+                "input": input_sent,
+                "targs": SequenceLabelField(sent_, input_sent, label_namespace=self._label_namespace),
             }
             return Instance(d)
 
