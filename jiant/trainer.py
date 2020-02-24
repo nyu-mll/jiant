@@ -437,7 +437,7 @@ class SamplingMultiTaskTrainer:
         elif weighting_method == "inverse_log_example":
             sample_weights = 1 / np.log(task_n_train_examples)
         elif "examples-proportional-mixing" in weighting_method:
-            K = weighting_method.split("K=")[1]
+            K = int(weighting_method.split("K=")[1])
             sample_weights = [min(num_examples, K) for num_examples in task_n_train_examples]
         elif weighting_method == "inverse_log_batch":
             sample_weights = 1 / np.log(task_n_train_batches)
