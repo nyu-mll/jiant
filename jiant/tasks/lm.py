@@ -79,7 +79,6 @@ class LanguageModelingTask(SequenceGenerationTask):
         Args:
             path: (str) data file path
         """
-        import pdb; pdb.set_trace()
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -187,7 +186,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     pass
 
 
-@register_task("mlm", rel_path="WikiText103/")
+@register_task("mlm", rel_path="WikiText103_toy/")
 class MLMTask(MaskedLanguageModelingTask):
     """
     Masked language modeling task on Toronto Books dataset
@@ -200,9 +199,9 @@ class MLMTask(MaskedLanguageModelingTask):
     def __init__(self, path, *args, **kw):
         super().__init__(path, *args, **kw)
         self.files_by_split = {
-            "train": os.path.join(path, "wiki.train.tokens"),
-            "val": os.path.join(path, "wiki.valid.tokens"),
-            "test": os.path.join(path, "wiki.test.tokens"),
+            "train": os.path.join(path, "train.sentences.txt"),
+            "val": os.path.join(path, "valid.sentences.txt"),
+            "test": os.path.join(path, "test.sentences.txt"),
         }
 
     def update_metrics(self, out, batch=None):
@@ -219,10 +218,9 @@ class MLMTask(MaskedLanguageModelingTask):
         text = pd.read_csv(path, sep="\n", header=None)[:100]
         for i in range(len(text)):
             row = text.iloc[i]
-            if len(row[0].split()) > 10:
-                # approximation for paragraph
-                toks = row[0]
-                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+            # approximation for paragraph
+            toks = row[0]
+            yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
 
     def process_split(

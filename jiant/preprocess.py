@@ -656,8 +656,13 @@ def add_task_label_vocab(vocab, task):
     Indexer or by invoking the namespace when creating a LabelField.
     """
     if isinstance(task, MLMTask):
-        for i in range(len(vocab.get_token_to_index_vocabulary())):
-                vocab.add_token_to_namespace(vocab.get_token_from_index(i), task._label_namespace)
+        tokenizer =  RobertaTokenizer.from_pretrained("roberta-large")
+        vocab_size = len(tokenizer)
+        ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
+        for word in ordered_vocab:
+            vocab.add_token_to_namespace(word, task._label_namespace)
+ 
+         
     if not hasattr(task, "get_all_labels"):
         return
     utils.assert_for_log(

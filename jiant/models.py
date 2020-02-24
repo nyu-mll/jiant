@@ -1192,10 +1192,10 @@ class MultiTaskModel(nn.Module):
         # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
         mask_idx = tokenizer.convert_tokens_to_ids("<mask>")
         pad_idx = tokenizer.convert_tokens_to_ids("<pad>")
-        b_size, seq_len = batch["targs"]["roberta"].size()
+        b_size, seq_len = batch["targs"].size()
 
         inputs = batch["input"]["roberta"]
-        labels = batch["targs"]["roberta"]
+        labels = batch["targs"]
 
         probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
         padding_mask = labels.eq(pad_idx)
@@ -1224,7 +1224,6 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
-
         out["logits"] = logits
         out["loss"] = F.cross_entropy(logits.view(-1, 50265), labels.view(-1))
         out["n_exs"] = format_output(b_size, self._cuda_device)
