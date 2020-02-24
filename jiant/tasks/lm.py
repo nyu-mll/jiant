@@ -186,7 +186,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     pass
 
 
-@register_task("mlm", rel_path="WikiText103_toy/")
+@register_task("mlm", rel_path="WikiText103/")
 class MLMTask(MaskedLanguageModelingTask):
     """
     Masked language modeling task on Toronto Books dataset
@@ -214,12 +214,13 @@ class MLMTask(MaskedLanguageModelingTask):
         Args:
             path: (str) data file path
         """
-        import pandas as pd
-        text = pd.read_csv(path, sep="\n", header=None)[:100]
+        import csv
+        f = open(path, "r")
+        reader = csv.reader(f)
+        text = list(reader)
         for i in range(len(text)):
-            row = text.iloc[i]
-            # approximation for paragraph
-            toks = row[0]
+            row = text[i]
+            toks = "".join(row)
             yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
 
