@@ -27,8 +27,8 @@ class SomeDataClassificationTask(PairClassificationTask):
         '''Process the dataset located at data_file.'''
     def _make_instance(input1, input2, label):
     	''' Make Allennlp instances from records '''
-    def update_metrics(self, labels, logits, tagmask=None):
-        '''Get metrics specific to the task'''
+    def update_metrics(self, out, batch):
+        '''Update metrics specific to the task'''
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
 ```
@@ -70,8 +70,15 @@ A lot of the following functions may already be written for your task type (espe
         d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         return Instance(d)
  ```
-3. `update_metrics` (inheritable) is a function to update scorers, which are configerable scorers (mostly from AllenNLP) such as F1Measure or BooleanAccuracy that keeps track of task-specific scores. Let us say that we want to only update F1 and ignore accuracy. In that case, you can set self.scorers = [self.f1_scorer], and this will automatically set the inherited update_metrics function to only update the F1 scorer.
+3. `update_metrics` (inheritable) is a function to update scorers, which are configerable scorers (mostly from AllenNLP) such as F1Measure or BooleanAccuracy that keeps track of task-specific scores. Let us say that we want to only update F1 and ignore accuracy. In that case, you can set self.scorers = [self.f1_scorer]. You will have to implement `update_metrics` for your task, which can look something like this (if you're just updating F1).  
 
+```python
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+```
 4. `get_metrics` (inheritable) is a function that returns the metrics from the updated scorers in dictionary form. Since we're only getting F1, we should set the get_metrics function to be:
 ```python
     def get_metrics(self, reset=False):
@@ -153,7 +160,7 @@ You will also need to modify the `forward` function in `jiant/models.py` (again,
         out = self._new_task_forward(batch, task, predict)
 ```
 
-Of course, don't forget to define your task-specific module building function!
+Of course, don't forget to define your task-specific module building function! You should pass whatever you need to update_metrics into the `out` dictionary, since this is what's getting passed into `update_metrics` by the trainer.
 
 ```python
     def _new_task_forward(self, batch, task, predict):
@@ -162,8 +169,7 @@ Of course, don't forget to define your task-specific module building function!
         classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['loss'] = F.mse_loss(logits, labels)
-        tagmask = batch.get("tagmask", None)
-        task.update_metrics(logits, batch["labels"], tagmask=tagmask)
+	out["logits"] = logits      
         return out
 ```
 Finally, all you have to do is add the task to either the `pretrain_tasks` or `target_tasks` parameter in the config file, and viola! Your task is added.
