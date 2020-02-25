@@ -108,18 +108,25 @@ def process_single_pair_task_split(
         d = {}
         d["sent1_str"] = MetadataField(" ".join(input1))
         if model_preprocessing_interface.model_flags["uses_pair_embedding"] and is_pair:
-            inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
+            inp = model_preprocessing_interface.boundary_token_fn(
+                input1, s2=input2, trunc_strategy="trunc_s1", trunc_side="right"
+            )
             d["inputs"] = sentence_to_text_field(inp, indexers)
             d["sent2_str"] = MetadataField(" ".join(input2))
             if (
                 model_preprocessing_interface.model_flags["uses_mirrored_pair"]
                 and is_symmetrical_pair
             ):
-                inp_m = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                inp_m = model_preprocessing_interface.boundary_token_fn(
+                    input1, s2=input2, trunc_strategy="trunc_s1", trunc_side="right"
+                )
                 d["inputs_m"] = sentence_to_text_field(inp_m, indexers)
         else:
             d["input1"] = sentence_to_text_field(
-                model_preprocessing_interface.boundary_token_fn(input1), indexers
+                model_preprocessing_interface.boundary_token_fn(
+                    input1, trunc_strategy="trunc_s1", trunc_side="right"
+                ),
+                indexers,
             )
             if input2:
                 d["input2"] = sentence_to_text_field(
@@ -788,7 +795,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
             """ from multiple types in one column create multiple fields """
             d = {}
             d["input1"] = sentence_to_text_field(
-                model_preprocessing_interface.boundary_token_fn(input1), indexers
+                model_preprocessing_interface.boundary_token_fn(
+                    input1, trunc_strategy="trunc_s1", trunc_side="right"
+                ),
+                indexers,
             )
             d["sent1_str"] = MetadataField(" ".join(input1))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
@@ -1621,11 +1631,16 @@ class GLUEDiagnosticTask(PairClassificationTask):
             """ from multiple types in one column create multiple fields """
             d = {}
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                inp = model_preprocessing_interface.boundary_token_fn(
+                    input1, s2=input2, trunc_strategy="trunc_s1", trunc_side="right"
+                )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        input1, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
                 d["input2"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(input2), indexers
@@ -1829,12 +1844,17 @@ class WinogenderTask(GLUEDiagnosticTask):
             d = {}
             d["sent1_str"] = MetadataField(" ".join(input1))
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                inp = model_preprocessing_interface.boundary_token_fn(
+                    input1, s2=input2, trunc_strategy="trunc_s1", trunc_side="right"
+                )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
                 d["sent2_str"] = MetadataField(" ".join(input2))
             else:
                 d["input1"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        input1, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
                 if input2:
                     d["input2"] = sentence_to_text_field(
@@ -2191,7 +2211,10 @@ class Wiki103Classification(PairClassificationTask):
         def _make_instance(input1, input2, labels):
             d = {}
             d["input1"] = sentence_to_text_field(
-                model_preprocessing_interface.boundary_token_fn(input1), indexers
+                model_preprocessing_interface.boundary_token_fn(
+                    input1, trunc_strategy="trunc_s1", trunc_side="right"
+                ),
+                indexers,
             )
             d["input2"] = sentence_to_text_field(
                 model_preprocessing_interface.boundary_token_fn(input2), indexers
@@ -2291,12 +2314,15 @@ class DisSentTask(PairClassificationTask):
             d = {}
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp = model_preprocessing_interface.boundary_token_fn(
-                    input1, input2
+                    input1, s2=input2, trunc_strategy="trunc_s1", trunc_side="right"
                 )  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(input1), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        input1, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
                 d["input2"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(input2), indexers
@@ -2435,7 +2461,10 @@ class CCGTaggingTask(TaggingTask):
         def _make_instance(input1, input2, target, mask):
             d = {}
             d["inputs"] = sentence_to_text_field(
-                model_preprocessing_interface.boundary_token_fn(input1), indexers
+                model_preprocessing_interface.boundary_token_fn(
+                    input1, trunc_strategy="trunc_s1", trunc_side="right"
+                ),
+                indexers,
             )
             d["sent1_str"] = MetadataField(" ".join(input1))
             d["targs"] = sentence_to_text_field(target, self.target_indexer)
@@ -2617,7 +2646,9 @@ class SpanClassificationTask(Task):
     def make_instance(self, record, idx, indexers, model_preprocessing_interface) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record["text"].split()
-        tokens, offset = model_preprocessing_interface.boundary_token_fn(tokens, get_offset=True)
+        tokens, offset = model_preprocessing_interface.boundary_token_fn(
+            tokens, trunc_strategy="trunc_s1", trunc_side="right", get_offset=True
+        )
         text_field = sentence_to_text_field(tokens, indexers)
 
         example = {}
@@ -2835,12 +2866,16 @@ class WiCTask(PairClassificationTask):
             d["sent2_str"] = MetadataField(" ".join(input2))
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp, offset1, offset2 = model_preprocessing_interface.boundary_token_fn(
-                    input1, input2, get_offset=True
+                    input1,
+                    s2=input2,
+                    trunc_strategy="trunc_s1",
+                    trunc_side="right",
+                    get_offset=True,
                 )
                 d["inputs"] = sentence_to_text_field(inp[: self.max_seq_len], indexers)
             else:
                 inp1, offset1 = model_preprocessing_interface.boundary_token_fn(
-                    input1, get_offset=True
+                    input1, trunc_strategy="trunc_s1", trunc_side="right", get_offset=True
                 )
                 inp2, offset2 = model_preprocessing_interface.boundary_token_fn(
                     input2, get_offset=True
@@ -2968,11 +3003,16 @@ class SocialIQATask(MultipleChoiceTask):
             d["question_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(context), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        context, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(context, question + choice)
+                    model_preprocessing_interface.boundary_token_fn(
+                        context, s2=question + choice, trunc_strategy="trunc_s1", trunc_side="right"
+                    )
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
@@ -3131,11 +3171,16 @@ class COPATask(MultipleChoiceTask):
             d["question_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(context), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        context, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(context, question + choice)
+                    model_preprocessing_interface.boundary_token_fn(
+                        context, s2=question + choice, trunc_strategy="trunc_s1", trunc_side="right"
+                    )
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
@@ -3217,11 +3262,16 @@ class SWAGTask(MultipleChoiceTask):
             d["question_str"] = MetadataField(" ".join(question))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        question, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    model_preprocessing_interface.boundary_token_fn(
+                        question, s2=choice, trunc_strategy="trunc_s1", trunc_side="right"
+                    )
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
@@ -3308,11 +3358,16 @@ class HellaSwagTask(MultipleChoiceTask):
             d["question_str"] = MetadataField(" ".join(question))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(question), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        question, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(question, choice)
+                    model_preprocessing_interface.boundary_token_fn(
+                        question, s2=choice, trunc_strategy="trunc_s1", trunc_side="right"
+                    )
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
@@ -3431,14 +3486,17 @@ class BooleanQuestionTask(PairClassificationTask):
             new_d["passage_str"] = MetadataField(" ".join(d["passage"]))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 new_d["input1"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(d["passage"]), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        d["passage"], trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
                 new_d["input2"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(d["question"]), indexers
                 )
             else:  # BERT/XLNet
                 psg_qst = model_preprocessing_interface.boundary_token_fn(
-                    d["passage"], d["question"]
+                    d["passage"], s2=d["question"], trunc_strategy="trunc_s1", trunc_side="right"
                 )
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
@@ -3561,7 +3619,7 @@ class AlphaNLITask(MultipleChoiceTask):
             else:
                 for hyp_idx, hyp in enumerate([hyp1, hyp2]):
                     inp = (
-                        model_preprocessing_interface.boundary_token_fn(obs1 + hyp, obs2)
+                        model_preprocessing_interface.boundary_token_fn(obs1 + hyp, s2=obs2)
                         if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                         else model_preprocessing_interface.boundary_token_fn(hyp)
                     )
@@ -3709,11 +3767,16 @@ class WinograndeTask(MultipleChoiceTask):
             d["question_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(context), indexers
+                    model_preprocessing_interface.boundary_token_fn(
+                        context, trunc_strategy="trunc_s1", trunc_side="right"
+                    ),
+                    indexers,
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(context, choice)
+                    model_preprocessing_interface.boundary_token_fn(
+                        context, s2=choice, trunc_strategy="trunc_s1", trunc_side="right"
+                    )
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
