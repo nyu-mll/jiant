@@ -8,14 +8,8 @@ import unittest
 from unittest import mock
 
 import jiant.tasks.tasks as tasks
-from jiant.utils import config
 from jiant.utils.config import params_from_file
-from jiant.preprocess import (
-    get_task_without_loading_data,
-    build_indexers,
-    get_vocab,
-    ModelPreprocessingInterface,
-)
+from jiant.preprocess import get_task_without_loading_data, build_indexers, get_vocab
 
 
 class TestProprocess(unittest.TestCase):
@@ -80,119 +74,4 @@ class TestProprocess(unittest.TestCase):
         assert len(vocab.get_index_to_token_vocabulary("chars")) == 5
         assert set(vocab.get_index_to_token_vocabulary("chars").values()) == set(
             ["@@PADDING@@", "@@UNKNOWN@@", "a", "b", "c"]
-        )
-
-
-class TestModelPreprocessingInterface(unittest.TestCase):
-    def test_max_tokens_limited_by_small_max_seq_len(self):
-        args = config.Params(max_seq_len=7, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        self.assertEqual(mpi.max_tokens, 7)
-
-    def test_max_tokens_limited_by_bert_model_max(self):
-        args = config.Params(max_seq_len=None, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        self.assertEqual(mpi.max_tokens, 512)
-
-    def test_boundary_token_fn_trunc_w_default_strategies(self):
-        MAX_SEQ_LEN = 7
-        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        seq = mpi.boundary_token_fn(
-            ["Apple", "buy", "call"],
-            s2=["Xray", "you", "zoo"],
-            trunc_strategy="trunc_s2",
-            trunc_side="right",
-        )
-        self.assertEqual(len(seq), MAX_SEQ_LEN)
-        self.assertEqual(seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "Xray", "[SEP]"])
-
-    def test_boundary_token_fn_trunc_s2_left_side(self):
-        MAX_SEQ_LEN = 7
-        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        seq = mpi.boundary_token_fn(
-            ["Apple", "buy", "call"],
-            s2=["Xray", "you", "zoo"],
-            trunc_strategy="trunc_s2",
-            trunc_side="left",
-        )
-        self.assertEqual(len(seq), MAX_SEQ_LEN)
-        self.assertEqual(seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "zoo", "[SEP]"])
-
-    def test_boundary_token_fn_trunc_s2_right_side(self):
-        MAX_SEQ_LEN = 7
-        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        seq = mpi.boundary_token_fn(
-            ["Apple", "buy", "call"],
-            s2=["Xray", "you", "zoo"],
-            trunc_strategy="trunc_s2",
-            trunc_side="right",
-        )
-        self.assertEqual(len(seq), MAX_SEQ_LEN)
-        self.assertEqual(seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "Xray", "[SEP]"])
-
-    def test_boundary_token_fn_trunc_s1_left_side(self):
-        MAX_SEQ_LEN = 7
-        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        seq = mpi.boundary_token_fn(
-            ["Apple", "buy", "call"],
-            s2=["Xray", "you", "zoo"],
-            trunc_strategy="trunc_s1",
-            trunc_side="left",
-        )
-        self.assertEqual(len(seq), MAX_SEQ_LEN)
-        self.assertEqual(seq, ["[CLS]", "call", "[SEP]", "Xray", "you", "zoo", "[SEP]"])
-
-    def test_boundary_token_fn_trunc_s1_right_side(self):
-        MAX_SEQ_LEN = 7
-        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        seq = mpi.boundary_token_fn(
-            ["Apple", "buy", "call"],
-            s2=["Xray", "you", "zoo"],
-            trunc_strategy="trunc_s1",
-            trunc_side="right",
-        )
-        self.assertEqual(len(seq), MAX_SEQ_LEN)
-        self.assertEqual(seq, ["[CLS]", "Apple", "[SEP]", "Xray", "you", "zoo", "[SEP]"])
-
-    def test_boundary_token_fn_trunc_both(self):
-        MAX_SEQ_LEN = 7
-        args = config.Params(max_seq_len=MAX_SEQ_LEN, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        seq = mpi.boundary_token_fn(
-            ["Apple", "buy", "call"],
-            s2=["Xray", "you", "zoo"],
-            trunc_strategy="trunc_both",
-            trunc_side="left",
-        )
-        self.assertEqual(len(seq), MAX_SEQ_LEN)
-        self.assertEqual(seq, ["[CLS]", "buy", "call", "[SEP]", "you", "zoo", "[SEP]"])
-
-    def test_boundary_token_fn_trunc_with_short_sequence_and_no_max_seq_len(self):
-        args = config.Params(max_seq_len=None, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        seq = mpi.boundary_token_fn(["Apple", "buy", "call"], s2=["Xray", "you", "zoo"])
-        self.assertEqual(
-            seq, ["[CLS]", "Apple", "buy", "call", "[SEP]", "Xray", "you", "zoo", "[SEP]"]
-        )
-
-    def test_boundary_token_fn_throws_exception_when_trunc_is_needed_but_strat_unspecified(self):
-        args = config.Params(max_seq_len=1, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        self.assertRaises(ValueError, mpi.boundary_token_fn, ["Apple", "buy", "call"], s2=["Xray"])
-
-    def test_boundary_token_fn_throws_exception_when_trunc_beyond_input_length(self):
-        args = config.Params(max_seq_len=1, input_module="bert-base-uncased")
-        mpi = ModelPreprocessingInterface(args)
-        self.assertRaises(
-            AssertionError,
-            mpi.boundary_token_fn,
-            ["Apple", "buy", "call"],
-            s2=["Xray"],
-            trunc_strategy="trunc_s2",
-            trunc_side="right",
         )
