@@ -1798,7 +1798,7 @@ class WinogenderTask(GLUEDiagnosticTask):
 
         self.train_data_text = None
         self.val_data_text = None
-        self.test_data = None
+        self.test_data_text = None
         self.acc_scorer = BooleanAccuracy()
         self.gender_parity_scorer = GenderParity()
         self.val_metric = "%s_accuracy" % name
