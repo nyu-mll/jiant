@@ -120,16 +120,11 @@ class MultiRCTask(Task):
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(
-                    para, s2=question + answer, trunc_strategy="trunc_s1", trunc_side="right"
-                )
+                inp = model_preprocessing_interface.boundary_token_fn(para, question + answer)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
                 d["psg"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(
-                        passage, trunc_strategy="trunc_s1", trunc_side="right"
-                    ),
-                    indexers,
+                    model_preprocessing_interface.boundary_token_fn(passage), indexers
                 )
                 d["qst"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(question), indexers
@@ -313,16 +308,11 @@ class ReCoRDTask(Task):
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(
-                    psg, s2=qst, trunc_strategy="trunc_s1", trunc_side="right"
-                )
+                inp = model_preprocessing_interface.boundary_token_fn(psg, qst)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
                 d["psg"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(
-                        psg, trunc_strategy="trunc_s1", trunc_side="right"
-                    ),
-                    indexers,
+                    model_preprocessing_interface.boundary_token_fn(psg), indexers
                 )
                 d["qst"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(qst), indexers
@@ -468,19 +458,12 @@ class QASRLTask(SpanPredictionTask):
 
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
-                    example["passage"],
-                    s2=example["question"],
-                    trunc_strategy="trunc_s1",
-                    trunc_side="right",
-                    get_offset=True,
+                    example["passage"], example["question"], get_offset=True
                 )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["passage"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(
-                        example["passage"], trunc_strategy="trunc_s1", trunc_side="right"
-                    ),
-                    indexers,
+                    model_preprocessing_interface.boundary_token_fn(example["passage"]), indexers
                 )
                 d["question"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
@@ -631,19 +614,12 @@ class QAMRTask(SpanPredictionTask):
 
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
-                    example["passage"],
-                    s2=example["question"],
-                    trunc_strategy="trunc_s1",
-                    trunc_side="right",
-                    get_offset=True,
+                    example["passage"], example["question"], get_offset=True
                 )
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["passage"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(
-                        example["passage"], trunc_strategy="trunc_s1", trunc_side="right"
-                    ),
-                    indexers,
+                    model_preprocessing_interface.boundary_token_fn(example["passage"]), indexers
                 )
                 d["question"] = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(example["question"]), indexers
@@ -909,16 +885,11 @@ class CommonsenseQATask(MultipleChoiceTask):
             d["question_str"] = MetadataField(" ".join(question))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["question"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(
-                        question, trunc_strategy="trunc_s1", trunc_side="right"
-                    ),
-                    indexers,
+                    model_preprocessing_interface.boundary_token_fn(question), indexers
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(
-                        question, s2=choice, trunc_strategy="trunc_s1", trunc_side="right"
-                    )
+                    model_preprocessing_interface.boundary_token_fn(question, choice)
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )
@@ -1012,16 +983,11 @@ class CosmosQATask(MultipleChoiceTask):
             d["context_str"] = MetadataField(" ".join(context))
             if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 d["context"] = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(
-                        context, trunc_strategy="trunc_s1", trunc_side="right"
-                    ),
-                    indexers,
+                    model_preprocessing_interface.boundary_token_fn(context), indexers
                 )
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    model_preprocessing_interface.boundary_token_fn(
-                        context, s2=choice, trunc_strategy="trunc_s1", trunc_side="right"
-                    )
+                    model_preprocessing_interface.boundary_token_fn(context, choice)
                     if model_preprocessing_interface.model_flags["uses_pair_embedding"]
                     else model_preprocessing_interface.boundary_token_fn(choice)
                 )

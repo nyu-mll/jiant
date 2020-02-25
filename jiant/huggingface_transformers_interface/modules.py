@@ -189,7 +189,7 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
         return seg_ids
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         """
         A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to token sequence or
         token sequence pair for most tasks.
@@ -274,7 +274,7 @@ class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # BERT-style boundary token padding on string token sequences
         if s2:
             s = ["[CLS]"] + s1 + ["[SEP]"] + s2 + ["[SEP]"]
@@ -331,7 +331,7 @@ class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # RoBERTa-style boundary token padding on string token sequences
         if s2:
             s = ["<s>"] + s1 + ["</s>", "</s>"] + s2 + ["</s>"]
@@ -385,7 +385,7 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # ALBERT-style boundary token padding on string token sequences
         if s2:
             s = ["[CLS]"] + s1 + ["[SEP]"] + s2 + ["[SEP]"]
@@ -448,7 +448,7 @@ class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._SEG_ID_SEP = 3
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # XLNet-style boundary token marking on string token sequences
         if s2:
             s = s1 + ["<sep>"] + s2 + ["<sep>", "<cls>"]
@@ -506,7 +506,7 @@ class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # OpenAI-GPT-style boundary token marking on string token sequences
         if s2:
             s = ["<start>"] + s1 + ["<delim>"] + s2 + ["<extract>"]
@@ -568,7 +568,7 @@ class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # GPT-2-style boundary token marking on string token sequences
         if s2:
             s = ["<start>"] + s1 + ["<delim>"] + s2 + ["<extract>"]
@@ -630,7 +630,7 @@ class TransfoXLEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # TransformerXL-style boundary token marking on string token sequences
         if s2:
             s = ["<start>"] + s1 + ["<delim>"] + s2 + ["<extract>"]
@@ -697,7 +697,7 @@ class XLMEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self.parameter_setup(args)
 
     @staticmethod
-    def apply_boundary_tokens(s1, *, s2=None, get_offset=False):
+    def apply_boundary_tokens(s1, s2=None, get_offset=False):
         # XLM-style boundary token marking on string token sequences
         if s2:
             s = ["</s>"] + s1 + ["</s>"] + s2 + ["</s>"]
