@@ -36,8 +36,10 @@ from jiant.utils.data_loaders import (
     load_pair_nli_jsonl,
 )
 from jiant.utils.tokenizers import get_tokenizer
+from jiant.utils.retokenize import get_aligner_fn
 from jiant.tasks.registry import register_task  # global task registry
 from jiant.metrics.winogender_metrics import GenderParity
+from jiant.metrics.nli_metrics import NLITwoClassAccuracy
 
 """Define the tasks and code for loading their data.
 
@@ -243,10 +245,6 @@ class Task(object):
             count = self.get_num_examples(st)
             self.example_counts[split] = count
 
-    def tokenizer_is_supported(self, tokenizer_name):
-        """ Check if the tokenizer is supported for this task. """
-        return get_tokenizer(tokenizer_name) is not None
-
     @property
     def tokenizer_name(self):
         return self._tokenizer_name
@@ -286,10 +284,14 @@ class Task(object):
     def get_scorers(self):
         return self.scorers
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        assert len(self.get_scorers()) > 0, "Please specify a score metric"
-        for scorer in self.get_scorers():
-            scorer(logits, labels)
+    def update_metrics(self, out, batch):
+        raise NotImplementedError
+
+    def handle_preds(self, preds, batch):
+        """
+        Function that does task-specific processing of predictions.
+        """
+        return preds
 
 
 class ClassificationTask(Task):
@@ -328,6 +330,13 @@ class SingleClassificationTask(ClassificationTask):
             split, indexers, model_preprocessing_interface, is_pair=False
         )
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 class PairClassificationTask(ClassificationTask):
     """ Generic sentence pair classification """
@@ -354,6 +363,13 @@ class PairClassificationTask(ClassificationTask):
             split, indexers, model_preprocessing_interface, is_pair=True
         )
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 class PairRegressionTask(RegressionTask):
     """ Generic sentence pair classification """
@@ -378,6 +394,13 @@ class PairRegressionTask(RegressionTask):
         return process_single_pair_task_split(
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
         )
+
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 class PairOrdinalRegressionTask(RegressionTask):
@@ -407,10 +430,12 @@ class PairOrdinalRegressionTask(RegressionTask):
             split, indexers, model_preprocessing_interface, is_pair=True, classification=False
         )
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        self.scorer1(mean_squared_error(logits, labels))  # update average MSE
-        self.scorer2(logits, labels)
-        return
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 class SequenceGenerationTask(Task):
@@ -432,7 +457,7 @@ class SequenceGenerationTask(Task):
         bleu = self.scorer1.get_metric(reset)
         return {"bleu": bleu}
 
-    def update_metrics(self):
+    def update_metrics(self, out, batch):
         # currently don't support metrics for regression task
         # TODO(Yada): support them!
         return
@@ -595,7 +620,9 @@ class CoLANPITask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         return {"mcc": self.scorer1.get_metric(reset), "accuracy": self.scorer2.get_metric(reset)}
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -657,7 +684,9 @@ class CoLATask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         return {"mcc": self.scorer1.get_metric(reset), "accuracy": self.scorer2.get_metric(reset)}
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -771,7 +800,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        tagmask = batch.get("tagmask", None)
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -1058,6 +1090,7 @@ class SNLITask(PairClassificationTask):
     def load_data(self):
         """ Process the dataset located at path.  """
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "train.tsv"),
@@ -1193,7 +1226,11 @@ class AdversarialNLITask(PairClassificationTask):
 
 
 @register_task("mnli", rel_path="MNLI/")
-# second copy for different params
+# Alternate version with a modified evaluation metric. For use in transfer evaluations on
+# two-class test sets like RTE. Example config override:
+#   pretrain_tasks = mnli, target_tasks = \"mnli-two,rte\", rte += {use_classifier = mnli-two}
+@register_task("mnli-two", rel_path="MNLI/", two_class_evaluation=True)
+# Second copy that can be assigned separate task-specific config options.
 @register_task("mnli-alt", rel_path="MNLI/")
 @register_task("mnli-fiction", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate", rel_path="MNLI/", genre="slate")
@@ -1203,17 +1240,23 @@ class AdversarialNLITask(PairClassificationTask):
 class MultiNLITask(PairClassificationTask):
     """ Task class for Multi-Genre Natural Language Inference. """
 
-    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+    def __init__(self, path, max_seq_len, name, genre=None, two_class_evaluation=False, **kw):
         """Set up the MNLI task object.
 
         When genre is set to one of the ten MNLI genres, only examples matching that genre will be
         loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
         being empty.
+
+        When two_class_evaluation is set, merge the contradiction and neutral labels, for both
+        predictions and gold labels, in the metric when evaluating on this task.
         """
         super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self.genre = genre
+        if two_class_evaluation:
+            self.scorer1 = NLITwoClassAccuracy()
+            self.scorers = [self.scorer1]
 
         self.train_data_text = None
         self.val_data_text = None
@@ -1303,6 +1346,7 @@ class MultiNLITask(PairClassificationTask):
 
 
 @register_task("mnli-ho", rel_path="MNLI/")
+@register_task("mnli-two-ho", rel_path="MNLI/", two_class_evaluation=True)
 @register_task("mnli-fiction-ho", rel_path="MNLI/", genre="fiction")
 @register_task("mnli-slate-ho", rel_path="MNLI/", genre="slate")
 @register_task("mnli-government-ho", rel_path="MNLI/", genre="government")
@@ -1311,17 +1355,24 @@ class MultiNLITask(PairClassificationTask):
 class MultiNLIHypothesisOnlyTask(SingleClassificationTask):
     """ Task class for MultiNLI hypothesis-only classification. """
 
-    def __init__(self, path, max_seq_len, name, genre=None, **kw):
+    def __init__(self, path, max_seq_len, name, genre=None, two_class_evaluation=False, **kw):
         """Set up the MNLI-HO task object.
 
         When genre is set to one of the ten MNLI genres, only examples matching that genre will be
         loaded in any split. That may result in some of the sections (train, dev mismatched, ...)
         being empty.
+
+        When two_class_evaluation is set, merge the contradiction and neutral labels, for both
+        predictions and gold labels, in the metric when evaluating on this task.
         """
         super(MultiNLIHypothesisOnlyTask, self).__init__(name, n_classes=3, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self.genre = genre
+
+        if two_class_evaluation:
+            self.scorer1 = NLITwoClassAccuracy()
+            self.scorers = [self.scorer1]
 
         self.train_data_text = None
         self.val_data_text = None
@@ -1499,6 +1550,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self._scorer_all_mcc = Correlation("matthews")  # score all examples according to MCC
         self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
+
+    def update_metrics(self, out, batch):
+        self.update_diagnostic_metrics(out["logits"], batch["labels"], batch)
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         # Updates scorer for every tag in a given column (tag_group) and also the
@@ -1744,7 +1798,7 @@ class WinogenderTask(GLUEDiagnosticTask):
 
         self.train_data_text = None
         self.val_data_text = None
-        self.test_data = None
+        self.test_data_text = None
         self.acc_scorer = BooleanAccuracy()
         self.gender_parity_scorer = GenderParity()
         self.val_metric = "%s_accuracy" % name
@@ -2320,6 +2374,7 @@ class TaggingTask(Task):
         assert num_tags > 0
         self.num_tags = num_tags
         self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.all_labels = [str(i) for i in range(self.num_tags)]
@@ -2338,6 +2393,13 @@ class TaggingTask(Task):
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 @register_task("ccg", rel_path="CCG/")
 class CCGTaggingTask(TaggingTask):
@@ -2346,9 +2408,9 @@ class CCGTaggingTask(TaggingTask):
 
     def __init__(self, path, max_seq_len, name, tokenizer_name, **kw):
         """ There are 1363 supertags in CCGBank without introduced token. """
-        from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+        from jiant.huggingface_transformers_interface import input_module_uses_transformers
 
-        subword_tokenization = input_module_uses_pytorch_transformers(tokenizer_name)
+        subword_tokenization = input_module_uses_transformers(tokenizer_name)
         super().__init__(
             name, 1363 + int(subword_tokenization), tokenizer_name=tokenizer_name, **kw
         )
@@ -2359,6 +2421,11 @@ class CCGTaggingTask(TaggingTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+
+    def update_metrics(self, out, batch):
+        logits, labels = out["logits"], out["labels"]
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -2459,12 +2526,6 @@ class SpanClassificationTask(Task):
     half-open token intervals [i, j).
     The number of spans is constant across examples.
     """
-
-    def tokenizer_is_supported(self, tokenizer_name):
-        """ Check if the tokenizer is supported for this task. """
-        # Assume all tokenizers supported; if retokenized data not found
-        # for this particular task, we'll just crash on file loading.
-        return True
 
     def __init__(
         self,
@@ -2602,6 +2663,13 @@ class SpanClassificationTask(Task):
         metrics["f1"] = f1
         return metrics
 
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
+
 
 @register_task("commitbank", rel_path="CB/")
 class CommitmentTask(PairClassificationTask):
@@ -2702,16 +2770,18 @@ class WiCTask(PairClassificationTask):
 
         trg_map = {"true": 1, "false": 0, True: 1, False: 0}
 
+        aligner_fn = get_aligner_fn(self._tokenizer_name)
+
         def _process_preserving_word(sent, word):
-            """ Tokenize the subsequence before the [first] instance of the word and after,
-            then concatenate everything together. This allows us to track where in the tokenized
-            sequence the marked word is located. """
-            sent_parts = sent.split(word)
-            sent_tok1 = tokenize_and_truncate(self._tokenizer_name, sent_parts[0], self.max_seq_len)
-            sent_mid = tokenize_and_truncate(self._tokenizer_name, word, self.max_seq_len)
-            sent_tok = tokenize_and_truncate(self._tokenizer_name, sent, self.max_seq_len)
-            start_idx = len(sent_tok1)
-            end_idx = start_idx + len(sent_mid)
+            """ Find out the index of the [first] instance of the word in the original sentence,
+            and project the span containing marked word to the span containing tokens created from
+            the marked word. """
+            token_aligner, sent_tok = aligner_fn(sent)
+            raw_start_idx = len(sent.split(word)[0].split(" ")) - 1
+            # after spliting, there could be three cases, 1. a tailing space, 2. characters in front
+            # of the keyword, 3. the sentence starts with the keyword
+            raw_end_idx = len(word.split()) + raw_start_idx
+            start_idx, end_idx = token_aligner.project_span(raw_start_idx, raw_end_idx)
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
             return sent_tok, start_idx, end_idx
 
@@ -2767,7 +2837,7 @@ class WiCTask(PairClassificationTask):
                 inp, offset1, offset2 = model_preprocessing_interface.boundary_token_fn(
                     input1, input2, get_offset=True
                 )
-                d["inputs"] = sentence_to_text_field(inp, indexers)
+                d["inputs"] = sentence_to_text_field(inp[: self.max_seq_len], indexers)
             else:
                 inp1, offset1 = model_preprocessing_interface.boundary_token_fn(
                     input1, get_offset=True
@@ -2775,13 +2845,25 @@ class WiCTask(PairClassificationTask):
                 inp2, offset2 = model_preprocessing_interface.boundary_token_fn(
                     input2, get_offset=True
                 )
-                d["input1"] = sentence_to_text_field(inp1, indexers)
-                d["input2"] = sentence_to_text_field(inp2, indexers)
+                d["input1"] = sentence_to_text_field(inp1[: self.max_seq_len], indexers)
+                d["input2"] = sentence_to_text_field(inp2[: self.max_seq_len], indexers)
             d["idx1"] = ListField(
-                [NumericField(i) for i in range(idxs1[0] + offset1, idxs1[1] + offset1)]
+                [
+                    NumericField(i)
+                    for i in range(
+                        min(idxs1[0] + offset1, self.max_seq_len - 1),
+                        min(idxs1[1] + offset1, self.max_seq_len),
+                    )
+                ]
             )
             d["idx2"] = ListField(
-                [NumericField(i) for i in range(idxs2[0] + offset2, idxs2[1] + offset2)]
+                [
+                    NumericField(i)
+                    for i in range(
+                        min(idxs2[0] + offset2, self.max_seq_len - 1),
+                        min(idxs2[1] + offset2, self.max_seq_len),
+                    )
+                ]
             )
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
@@ -2804,7 +2886,12 @@ class MultipleChoiceTask(Task):
     where each example consists of a question and
     a (possibly variable) number of possible answers"""
 
-    pass
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["label"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 
 @register_task("SocialIQA", rel_path="SocialIQA/")
@@ -2911,6 +2998,66 @@ class SpanPredictionTask(Task):
     """ Generic task class for predicting a span """
 
     n_classes = 2
+
+    def update_metrics(self, out, batch):
+        batch_size = len(out["logits"]["span_start"])
+        logits_dict = out["logits"]
+        pred_span_start = torch.argmax(logits_dict["span_start"], dim=1).cpu().numpy()
+        pred_span_end = torch.argmax(logits_dict["span_end"], dim=1).cpu().numpy()
+
+        pred_str_list = self.get_pred_str(
+            out["logits"], batch, batch_size, pred_span_start, pred_span_end
+        )
+        gold_str_list = batch["answer_str"]
+
+        """ A batch of logits+answer strings and the questions they go with """
+        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
+
+    def get_pred_str(self, preds, batch, batch_size, pred_span_start, pred_span_end):
+        """
+        For span prediction, we compute metrics based on span strings. This function
+        gets the span string based on start and end index predictions. 
+
+        """
+        pred_str_list = []
+        for i in range(batch_size):
+
+            # Adjust for start_offset (e.g. [CLS] tokens).
+            pred_span_start_i = pred_span_start[i] - batch["start_offset"][i]
+            pred_span_end_i = pred_span_end[i] - batch["start_offset"][i]
+
+            # Ensure that predictions fit within the range of valid tokens
+            pred_span_start_i = min(
+                pred_span_start_i, len(batch["space_processed_token_map"][i]) - 1
+            )
+            pred_span_end_i = min(
+                max(pred_span_end_i, pred_span_start_i + 1),
+                len(batch["space_processed_token_map"][i]) - 1,
+            )
+
+            # space_processed_token_map is a list of tuples
+            #   (space_token, processed_token (e.g. BERT), space_token_index)
+            # The assumption is that each space_token corresponds to multiple processed_tokens.
+            # After we get the corresponding start/end space_token_indices, we can do " ".join
+            #   to get the corresponding string that is definitely within the original input.
+            # One constraint here is that our predictions can only go up to a the granularity of
+            # space_tokens. This is not so bad because SQuAD-style scripts also remove punctuation.
+            pred_char_span_start = batch["space_processed_token_map"][i][pred_span_start_i][2]
+            pred_char_span_end = batch["space_processed_token_map"][i][pred_span_end_i][2]
+            pred_str_list.append(
+                " ".join(
+                    batch["passage_str"][i].split()[pred_char_span_start:pred_char_span_end]
+                ).strip()
+            )
+        return pred_str_list
+
+    def handle_preds(self, preds, batch):
+        batch_size = len(preds["span_start"])
+        preds["span_str"] = self.get_pred_str(
+            preds, batch, batch_size, preds["span_start"], preds["span_end"]
+        )
+        return preds
 
 
 @register_task("copa", rel_path="COPA/")
@@ -3209,7 +3356,9 @@ class WinogradCoreferenceTask(SpanClassificationTask):
                 )
         self._iters_by_split = iters_by_split
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = batch["labels"]
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
 
@@ -3476,3 +3625,109 @@ class SciTailTask(PairClassificationTask):
             + self.val_data_text[1]
         )
         log.info("\tFinished loading SciTail")
+
+
+@register_task("winogrande", rel_path="Winogrande/", train_size="xl")
+# For experiment record management convenience, we use winogrande as an alias of winogrande-xl
+@register_task("winogrande-xl", rel_path="Winogrande/", train_size="xl")
+@register_task("winogrande-l", rel_path="Winogrande/", train_size="l")
+@register_task("winogrande-m", rel_path="Winogrande/", train_size="m")
+@register_task("winogrande-s", rel_path="Winogrande/", train_size="s")
+@register_task("winogrande-xs", rel_path="Winogrande/", train_size="xs")
+class WinograndeTask(MultipleChoiceTask):
+    def __init__(self, path, max_seq_len, name, train_size, **kw):
+        """
+        Task class for Winogrande dataset.
+
+        Paper: https://arxiv.org/abs/1907.10641
+        Website (data download): https://mosaic.allenai.org/projects/winogrande
+        Reference code: https://github.com/allenai/winogrande
+        """
+        super().__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.train_size = train_size
+        self.n_choices = 2
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+
+    def load_data(self):
+        def _load_data(data_file):
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+            contexts, choices, labels, idxs = [], [], [], []
+            for i, example in enumerate(data):
+                sent_part1, sent_part2 = example["sentence"].split("_")
+                sent_part1_tokens = tokenize_and_truncate(
+                    self._tokenizer_name, sent_part1, self.max_seq_len
+                )
+                choice_tokens = [
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["option1"] + sent_part2, self.max_seq_len
+                    ),
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["option2"] + sent_part2, self.max_seq_len
+                    ),
+                ]
+                contexts.append(sent_part1_tokens)
+                choices.append(choice_tokens)
+                labels.append(int(example["answer"] if "answer" in example else "1") - 1)
+                idxs.append(example["qID"])
+            return [contexts, choices, labels, idxs]
+
+        self.train_data_text = _load_data(
+            os.path.join(self.path, "train_%s.jsonl" % self.train_size)
+        )
+        self.val_data_text = _load_data(os.path.join(self.path, "dev.jsonl"))
+        self.test_data_text = _load_data(os.path.join(self.path, "test.jsonl"))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.val_data_text[0]
+            + self.train_data_text[1][0]
+            + self.train_data_text[1][1]
+            + self.val_data_text[1][0]
+            + self.val_data_text[1][1]
+        )
+
+        log.info("\tFinished loading Winogrande data.")
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+
+        def _make_instance(context, choices, label, idx):
+            # because Winogrande uses MultiTaskModel._mc_forward as its forward funcion, we adapt
+            # to the keywords specified in _mc_forward, i.e. "question", "choice1" and "choice2".
+            d = {}
+            d["question_str"] = MetadataField(" ".join(context))
+            if not model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                d["question"] = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(context), indexers
+                )
+            for choice_idx, choice in enumerate(choices):
+                inp = (
+                    model_preprocessing_interface.boundary_token_fn(context, choice)
+                    if model_preprocessing_interface.model_flags["uses_pair_embedding"]
+                    else model_preprocessing_interface.boundary_token_fn(choice)
+                )
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = MetadataField(idx)
+            return Instance(d)
+
+        split = list(split)
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.scorer1.get_metric(reset)
+        return {"accuracy": acc}

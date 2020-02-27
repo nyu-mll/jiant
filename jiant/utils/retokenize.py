@@ -95,35 +95,6 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]], n_chars: int) -> Ma
     return sparse.csr_matrix((data, (ridxs, cidxs)), shape=(len(spans), n_chars))
 
 
-def create_tokenization_alignment(
-    tokens: Sequence[str], tokenizer_name: str
-) -> Sequence[Tuple[str, str]]:
-    """
-    Builds alignment mapping between space tokenization and tokenization of 
-    choice. 
-    
-    Example:
-        Input: ['Larger', 'than', 'life.']
-        Output: [('Larger', ['ĠL', 'arger']), ('than', ['Ġthan']), ('life.', ['Ġlife', '.'])]
-
-    Parameters
-    -----------------------
-        tokens: list[(str)]. list of tokens, 
-        tokenizer_name: str
-
-    Returns
-    -----------------------
-        tokenization_mapping: list[(str, str)], list of tuples with (orig_token, tokenized_token).
-
-    """
-    tokenizer = get_tokenizer(tokenizer_name)
-    tokenization_mapping = []
-    for tok in tokens:
-        aligned_tok = tokenizer.tokenize(tok)
-        tokenization_mapping.append((tok, aligned_tok))
-    return tokenization_mapping
-
-
 def realign_spans(record, tokenizer_name):
     """
     Builds the indices alignment while also tokenizing the input
@@ -336,7 +307,7 @@ def process_sentencepiece_for_alignment(t):
 
 def process_bytebpe_for_alignment(t):
     """Add <w> markers to ensure word-boundary alignment."""
-    if t.startswith("▁"):
+    if t.startswith("Ġ"):
         return "<w>" + re.sub(r"^Ġ", "", t)
     else:
         return t
@@ -375,7 +346,7 @@ def align_wpm(
 def align_sentencepiece(
     text: Text, sentencepiece_tokenizer: Tokenizer
 ) -> Tuple[TokenAligner, List[Text]]:
-    """Alignment fn for SentencePiece Tokenizer, used in XLNET
+    """Alignment fn for SentencePiece Tokenizer, used in XLNET and ALBERT
     """
     bow_tokens = space_tokenize_with_bow(text)
     sentencepiece_tokens = sentencepiece_tokenizer.tokenize(text)
@@ -402,8 +373,12 @@ def align_bytebpe(text: Text, bytebpe_tokenizer: Tokenizer) -> Tuple[TokenAligne
     bow_tokens = space_tokenize_with_bow(text)
     bytebpe_tokens = bytebpe_tokenizer.tokenize(text)
 
+    if len(bytebpe_tokens) > 0:
+        bytebpe_tokens[0] = "Ġ" + bytebpe_tokens[0]
     modified_bytebpe_tokens = list(map(process_bytebpe_for_alignment, bytebpe_tokens))
     ta = TokenAligner(bow_tokens, modified_bytebpe_tokens)
+    if len(bytebpe_tokens) > 0:
+        bytebpe_tokens[0] = re.sub(r"^Ġ", "", bytebpe_tokens[0])
     return ta, bytebpe_tokens
 
 
@@ -425,7 +400,7 @@ def get_aligner_fn(tokenizer_name: Text):
     elif tokenizer_name.startswith("openai-gpt") or tokenizer_name.startswith("xlm-mlm-en-"):
         bpe_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(align_bpe, bpe_tokenizer=bpe_tokenizer)
-    elif tokenizer_name.startswith("xlnet-"):
+    elif tokenizer_name.startswith("xlnet-") or tokenizer_name.startswith("albert-"):
         sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(
             align_sentencepiece, sentencepiece_tokenizer=sentencepiece_tokenizer

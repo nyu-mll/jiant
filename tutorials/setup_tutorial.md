@@ -10,13 +10,13 @@ First off, let's make sure you've the full repository, including all the git sub
 This project uses submodules to manage some dependencies on other research code, in particular for loading CoVe, GPT, and BERT. To make sure you get these repos when you download `jiant`, add `--recursive` to your `clone` command:
 
 ```
-git clone --branch v1.2.1  --recursive https://github.com/nyu-mll/jiant.git jiant
+git clone --branch v1.3.0  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
-This will download the full repository and load the 1.2 release of `jiant`. If you already have `jiant` downloaded locally, you can switch to the 1.2.1 release with
+This will download the full repository and load the 1.2 release of `jiant`. If you already have `jiant` downloaded locally, you can switch to the 1.3.0 release with
 ```
-git checkout tags/v1.2.1 -b 1.2.1_master
+git checkout tags/v1.3.0 -b 1.3.0_master
 ```
-This will create a branch called 1.2.1_master with HEAD at version 1.2.1. If you already cloned and just need to get the submodules, you can run:
+This will create a branch called 1.3.0_master with HEAD at version 1.3.0. If you already cloned and just need to get the submodules, you can run:
 
 ```
 git submodule update --init --recursive
@@ -61,7 +61,7 @@ And the next time you start a notebook server, you should see `jiant` as an opti
 
 ### Optional
 
-If you'll be using GPT, BERT, or other models supplied by `pytorch-transformers`, then you may see speed gains from installing NVIDIA apex, following the instructions here:
+If you'll be using GPT, BERT, or other models supplied by `transformers`, then you may see speed gains from installing NVIDIA apex, following the instructions here:
 
 https://github.com/NVIDIA/apex#linux
 

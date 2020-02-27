@@ -27,11 +27,7 @@ from jiant.utils.tokenizers import MosesTokenizer
 from jiant.tasks.tasks import Task, SpanPredictionTask, MultipleChoiceTask
 from jiant.tasks.tasks import sentence_to_text_field
 from jiant.tasks.registry import register_task
-from ..utils.retokenize import (
-    space_tokenize_with_spans,
-    find_space_token_span,
-    create_tokenization_alignment,
-)
+from ..utils.retokenize import space_tokenize_with_spans, find_space_token_span, get_aligner_fn
 
 
 @register_task("multirc", rel_path="MultiRC/")
@@ -164,7 +160,9 @@ class MultiRCTask(Task):
 
         self.example_counts = example_counts
 
-    def update_metrics(self, logits, labels, idxs, tagmask=None):
+    def update_metrics(self, out, batch):
+        logits, labels = out["logits"], batch["label"]
+        idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
         """ A batch of logits, labels, and the passage+questions they go with """
         self.scorer1(logits, labels)
         logits, labels = logits.detach().cpu(), labels.detach().cpu()
@@ -232,20 +230,6 @@ class ReCoRDTask(Task):
     def load_data_for_path(self, path, split):
         """ Load data """
 
-        def tokenize_preserve_placeholder(sent, max_ent_length):
-            """ Tokenize questions while preserving @placeholder token """
-            sent_parts = sent.split("@placeholder")
-            assert len(sent_parts) == 2
-            placeholder_loc = len(
-                tokenize_and_truncate(
-                    self.tokenizer_name, sent_parts[0], self.max_seq_len - max_ent_length
-                )
-            )
-            sent_tok = tokenize_and_truncate(
-                self.tokenizer_name, sent, self.max_seq_len - max_ent_length
-            )
-            return sent_tok[:placeholder_loc] + ["@placeholder"] + sent_tok[placeholder_loc:]
-
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
@@ -255,10 +239,9 @@ class ReCoRDTask(Task):
             )
             ent_idxs = item["passage"]["entities"]
             ents = [item["passage"]["text"][idx["start"] : idx["end"] + 1] for idx in ent_idxs]
-            max_ent_length = max([idx["end"] - idx["start"] + 1 for idx in ent_idxs])
             qas = item["qas"]
             for qa in qas:
-                qst = tokenize_preserve_placeholder(qa["query"], max_ent_length)
+                qst = qa["query"]
                 qst_id = qa["idx"]
                 if "answers" in qa:
                     anss = [a["text"] for a in qa["answers"]]
@@ -311,9 +294,8 @@ class ReCoRDTask(Task):
 
         def insert_ent(ent, template):
             """ Replace ent into template (query with @placeholder) """
-            assert "@placeholder" in template, "No placeholder detected!"
-            split_idx = template.index("@placeholder")
-            return template[:split_idx] + ent + template[split_idx + 1 :]
+            len(template.split("@placeholder")) == 2, "No placeholder detected!"
+            return template.replace("@placeholder", ent)
 
         def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
             """ pq_id: passage-question ID """
@@ -343,19 +325,17 @@ class ReCoRDTask(Task):
             psg = example["passage"]
             qst_template = example["query"]
 
-            ent_strs = example["ents"]
-            ents = [
-                tokenize_and_truncate(self._tokenizer_name, ent, self.max_seq_len)
-                for ent in ent_strs
-            ]
+            ents = example["ents"]
 
             anss = example["answers"]
             par_idx = example["psg_id"]
             qst_idx = example["qst_id"]
-            for ent_idx, (ent, ent_str) in enumerate(zip(ents, ent_strs)):
-                label = is_answer(ent_str, anss)
-                qst = insert_ent(ent, qst_template)
-                yield _make_instance(psg, qst, ent_str, label, par_idx, qst_idx, ent_idx)
+            for ent_idx, ent in enumerate(ents):
+                label = is_answer(ent, anss)
+                qst = tokenize_and_truncate(
+                    self.tokenizer_name, insert_ent(ent, qst_template), self.max_seq_len
+                )
+                yield _make_instance(psg, qst, ent, label, par_idx, qst_idx, ent_idx)
 
     def count_examples(self):
         """ Compute here b/c we're streaming the sentences. """
@@ -365,8 +345,11 @@ class ReCoRDTask(Task):
             example_counts[split] = sum([len(d["passage"]["entities"]) for d in data])
         self.example_counts = example_counts
 
-    def update_metrics(self, logits, anss, idxs, tagmask=None):
+    def update_metrics(self, out, batch):
         """ A batch of logits+answer strings and the questions they go with """
+        logits = out["logits"]
+        anss = batch["ans_str"]
+        idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
         logits = logits.detach().cpu()
         for idx, logit, ans in zip(idxs, logits, anss):
             self._score_tracker[idx].append((logit, ans))
@@ -417,9 +400,9 @@ class QASRLTask(SpanPredictionTask):
         self.path = path
         self.max_seq_len = max_seq_len
 
-        self.train_data = None
-        self.val_data = None
-        self.test_data = None
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
 
         self.f1_metric = F1SpanMetric()
         self.em_metric = ExactMatchSpanMetric()
@@ -431,11 +414,6 @@ class QASRLTask(SpanPredictionTask):
         """ Count examples in the dataset. """
         pass
 
-    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
-        """ A batch of logits+answer strings and the questions they go with """
-        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
-        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
-
     def get_metrics(self, reset: bool = False) -> Dict:
         f1 = self.f1_metric.get_metric(reset)
         em = self.em_metric.get_metric(reset)
@@ -443,25 +421,25 @@ class QASRLTask(SpanPredictionTask):
         return collected_metrics
 
     def load_data(self):
-        self.train_data = self._load_file(os.path.join(self.path, "orig", "train.jsonl.gz"))
+        self.train_data_text = self._load_file(os.path.join(self.path, "orig", "train.jsonl.gz"))
 
         # Shuffle val_data to ensure diversity in periodic validation with val_data_limit
-        self.val_data = self._load_file(
+        self.val_data_text = self._load_file(
             os.path.join(self.path, "orig", "dev.jsonl.gz"), shuffle=True
         )
 
-        self.test_data = self._load_file(os.path.join(self.path, "orig", "test.jsonl.gz"))
+        self.test_data_text = self._load_file(os.path.join(self.path, "orig", "test.jsonl.gz"))
 
         self.sentences = (
-            [example["passage"] for example in self.train_data]
-            + [example["question"] for example in self.train_data]
-            + [example["passage"] for example in self.val_data]
-            + [example["question"] for example in self.val_data]
+            [example["passage"] for example in self.train_data_text]
+            + [example["question"] for example in self.train_data_text]
+            + [example["passage"] for example in self.val_data_text]
+            + [example["question"] for example in self.val_data_text]
         )
         self.example_counts = {
-            "train": len(self.train_data),
-            "val": len(self.val_data),
-            "test": len(self.test_data),
+            "train": len(self.train_data_text),
+            "val": len(self.val_data_text),
+            "test": len(self.test_data_text),
         }
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -604,20 +582,15 @@ class QAMRTask(SpanPredictionTask):
         super(QAMRTask, self).__init__(name, **kw)
         self.max_seq_len = max_seq_len
 
-        self.train_data = None
-        self.val_data = None
-        self.test_data = None
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
 
         self.f1_metric = F1SpanMetric()
         self.em_metric = ExactMatchSpanMetric()
 
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
-
-    def update_metrics(self, pred_str_list, gold_str_list, tagmask=None):
-        """ A batch of logits+answer strings and the questions they go with """
-        self.f1_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
-        self.em_metric(pred_str_list=pred_str_list, gold_str_list=gold_str_list)
 
     def get_metrics(self, reset: bool = False) -> Dict:
         f1 = self.f1_metric.get_metric(reset)
@@ -735,33 +708,33 @@ class QAMRTask(SpanPredictionTask):
 
     def load_data(self):
         wiki_dict = self.load_wiki_dict(os.path.join(self.path, "qamr/data/wiki-sentences.tsv"))
-        self.train_data = self.process_dataset(
+        self.train_data_text = self.process_dataset(
             self.load_tsv_dataset(
                 path=os.path.join(self.path, "qamr/data/filtered/train.tsv"), wiki_dict=wiki_dict
             )
         )
-        self.val_data = self.process_dataset(
+        self.val_data_text = self.process_dataset(
             self.load_tsv_dataset(
                 path=os.path.join(self.path, "qamr/data/filtered/dev.tsv"), wiki_dict=wiki_dict
             ),
             shuffle=True,
         )
-        self.test_data = self.process_dataset(
+        self.test_data_text = self.process_dataset(
             self.load_tsv_dataset(
                 path=os.path.join(self.path, "qamr/data/filtered/test.tsv"), wiki_dict=wiki_dict
             )
         )
 
         self.sentences = (
-            [example["passage"] for example in self.train_data]
-            + [example["question"] for example in self.train_data]
-            + [example["passage"] for example in self.val_data]
-            + [example["question"] for example in self.val_data]
+            [example["passage"] for example in self.train_data_text]
+            + [example["question"] for example in self.train_data_text]
+            + [example["passage"] for example in self.val_data_text]
+            + [example["question"] for example in self.val_data_text]
         )
         self.example_counts = {
-            "train": len(self.train_data),
-            "val": len(self.val_data),
-            "test": len(self.test_data),
+            "train": len(self.train_data_text),
+            "val": len(self.val_data_text),
+            "test": len(self.test_data_text),
         }
 
     @staticmethod
@@ -792,8 +765,8 @@ class QAMRTask(SpanPredictionTask):
 
 def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer_name):
     # Start with PTB tokenized tokens
-    # The answer_span is also in ptb_token space. We first want to detokenize, and convert everything to
-    #   space-tokenization space.
+    # The answer_span is also in ptb_token space. We first want to detokenize, and convert
+    #   everything to space-tokenization space.
 
     # Detokenize the passage. Everything we do will be based on the detokenized input,
     #   INCLUDING evaluation.
@@ -819,21 +792,18 @@ def remap_ptb_passage_and_answer_spans(ptb_tokens, answer_span, moses, tokenizer
     )
     # We project the space-tokenized answer to processed-tokens (e.g. BERT).
     # The latter is used for training/predicting.
-    space_to_actual_token_map = create_tokenization_alignment(
-        tokens=detok_sent.split(), tokenizer_name=tokenizer_name
-    )
+    aligner_fn = get_aligner_fn(tokenizer_name)
+    token_aligner, actual_tokens = aligner_fn(detok_sent)
 
     # space_processed_token_map is a list of tuples
     #   (space_token, processed_token (e.g. BERT), space_token_index)
     # We will need this to map from token predictions to str spans
-    space_processed_token_map = []
-    for i, (space_token, actual_token_ls) in enumerate(space_to_actual_token_map):
-        for actual_token in actual_token_ls:
-            space_processed_token_map.append((actual_token, space_token, i))
-    ans_actual_token_span = (
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[0]]),
-        sum(len(_[1]) for _ in space_to_actual_token_map[: ans_space_token_span[1]]),
-    )
+    space_processed_token_map = [
+        (actual_tokens[actual_idx], space_token, space_idx)
+        for space_idx, (space_token, _, _) in enumerate(space_tokens_with_spans)
+        for actual_idx in token_aligner.project_tokens(space_idx)
+    ]
+    ans_actual_token_span = token_aligner.project_span(*ans_space_token_span)
 
     return {
         "detok_sent": detok_sent,
