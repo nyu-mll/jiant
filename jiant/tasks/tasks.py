@@ -1130,10 +1130,10 @@ class SNLITask(PairClassificationTask):
         log.info("\tFinished loading SNLI data.")
 
 
-@register_task("adversarial_nli_a1", rel_path="AdversarialNLI/", datasets=["R1"])
-@register_task("adversarial_nli_a2", rel_path="AdversarialNLI/", datasets=["R2"])
-@register_task("adversarial_nli_a3", rel_path="AdversarialNLI/", datasets=["R3"])
-@register_task("adversarial_nli", rel_path="AdversarialNLI/", datasets=["R1", "R2", "R3"])
+@register_task("adversarial-nli-a1", rel_path="AdversarialNLI/", datasets=["R1"])
+@register_task("adversarial-nli-a2", rel_path="AdversarialNLI/", datasets=["R2"])
+@register_task("adversarial-nli-a3", rel_path="AdversarialNLI/", datasets=["R3"])
+@register_task("adversarial-nli", rel_path="AdversarialNLI/", datasets=["R1", "R2", "R3"])
 class AdversarialNLITask(PairClassificationTask):
     """Task class for use with Adversarial Natural Language Inference dataset.
 
@@ -2894,7 +2894,7 @@ class MultipleChoiceTask(Task):
             scorer(logits, labels)
 
 
-@register_task("SocialIQA", rel_path="SocialIQA/")
+@register_task("socialiqa", rel_path="SocialIQA/")
 class SocialIQATask(MultipleChoiceTask):
     """ Task class for SocialIQA.
     Paper: https://homes.cs.washington.edu/~msap/pdfs/sap2019socialIQa.pdf
