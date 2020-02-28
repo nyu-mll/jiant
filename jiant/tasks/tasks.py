@@ -516,57 +516,57 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
-@register_task("npi_adv_li", rel_path="NPI/probing/adverbs/licensor")
-@register_task("npi_adv_sc", rel_path="NPI/probing/adverbs/scope_with_licensor")
-@register_task("npi_adv_pr", rel_path="NPI/probing/adverbs/npi_present")
-@register_task("npi_cond_li", rel_path="NPI/probing/conditionals/licensor")
-@register_task("npi_cond_sc", rel_path="NPI/probing/conditionals/scope_with_licensor")
-@register_task("npi_cond_pr", rel_path="NPI/probing/conditionals/npi_present")
-@register_task("npi_negdet_li", rel_path="NPI/probing/determiner_negation_biclausal/licensor")
+@register_task("npi-adv-li", rel_path="NPI/probing/adverbs/licensor")
+@register_task("npi-adv-sc", rel_path="NPI/probing/adverbs/scope_with_licensor")
+@register_task("npi-adv-pr", rel_path="NPI/probing/adverbs/npi_present")
+@register_task("npi-cond-li", rel_path="NPI/probing/conditionals/licensor")
+@register_task("npi-cond-sc", rel_path="NPI/probing/conditionals/scope_with_licensor")
+@register_task("npi-cond-pr", rel_path="NPI/probing/conditionals/npi_present")
+@register_task("npi-negdet-li", rel_path="NPI/probing/determiner_negation_biclausal/licensor")
 @register_task(
-    "npi_negdet_sc", rel_path="NPI/probing/determiner_negation_biclausal/scope_with_licensor"
+    "npi-negdet-sc", rel_path="NPI/probing/determiner_negation_biclausal/scope_with_licensor"
 )
-@register_task("npi_negdet_pr", rel_path="NPI/probing/determiner_negation_biclausal/npi_present")
-@register_task("npi_negsent_li", rel_path="NPI/probing/sentential_negation_biclausal/licensor")
+@register_task("npi-negdet-pr", rel_path="NPI/probing/determiner_negation_biclausal/npi_present")
+@register_task("npi-negsent-li", rel_path="NPI/probing/sentential_negation_biclausal/licensor")
 @register_task(
-    "npi_negsent_sc", rel_path="NPI/probing/sentential_negation_biclausal/scope_with_licensor"
+    "npi-negsent-sc", rel_path="NPI/probing/sentential_negation_biclausal/scope_with_licensor"
 )
-@register_task("npi_negsent_pr", rel_path="NPI/probing/sentential_negation_biclausal/npi_present")
-@register_task("npi_only_li", rel_path="NPI/probing/only/licensor")
-@register_task("npi_only_sc", rel_path="NPI/probing/only/scope_with_licensor")
-@register_task("npi_only_pr", rel_path="NPI/probing/only/npi_present")
-@register_task("npi_qnt_li", rel_path="NPI/probing/quantifiers/licensor")
-@register_task("npi_qnt_sc", rel_path="NPI/probing/quantifiers/scope_with_licensor")
-@register_task("npi_qnt_pr", rel_path="NPI/probing/quantifiers/npi_present")
-@register_task("npi_ques_li", rel_path="NPI/probing/questions/licensor")
-@register_task("npi_ques_sc", rel_path="NPI/probing/questions/scope_with_licensor")
-@register_task("npi_ques_pr", rel_path="NPI/probing/questions/npi_present")
-@register_task("npi_quessmp_li", rel_path="NPI/probing/simplequestions/licensor")
-@register_task("npi_quessmp_sc", rel_path="NPI/probing/simplequestions/scope_with_licensor")
-@register_task("npi_quessmp_pr", rel_path="NPI/probing/simplequestions/npi_present")
-@register_task("npi_sup_li", rel_path="NPI/probing/superlative/licensor")
-@register_task("npi_sup_sc", rel_path="NPI/probing/superlative/scope_with_licensor")
-@register_task("npi_sup_pr", rel_path="NPI/probing/superlative/npi_present")
-@register_task("cola_npi_adv", rel_path="NPI/splits/adverbs")
-@register_task("cola_npi_cond", rel_path="NPI/splits/conditionals")
-@register_task("cola_npi_negdet", rel_path="NPI/splits/determiner_negation_biclausal")
-@register_task("cola_npi_negsent", rel_path="NPI/splits/sentential_negation_biclausal")
-@register_task("cola_npi_only", rel_path="NPI/splits/only")
-@register_task("cola_npi_ques", rel_path="NPI/splits/questions")
-@register_task("cola_npi_quessmp", rel_path="NPI/splits/simplequestions")
-@register_task("cola_npi_qnt", rel_path="NPI/splits/quantifiers")
-@register_task("cola_npi_sup", rel_path="NPI/splits/superlative")
-@register_task("all_cola_npi", rel_path="NPI/combs/all_env")
-@register_task("wilcox_npi", rel_path="NPI/wilcox")
-@register_task("hd_cola_npi_adv", rel_path="NPI/combs/minus_adverbs")
-@register_task("hd_cola_npi_cond", rel_path="NPI/combs/minus_conditionals")
-@register_task("hd_cola_npi_negdet", rel_path="NPI/combs/minus_determiner_negation_biclausal")
-@register_task("hd_cola_npi_negsent", rel_path="NPI/combs/minus_sentential_negation_biclausal")
-@register_task("hd_cola_npi_only", rel_path="NPI/combs/minus_only")
-@register_task("hd_cola_npi_ques", rel_path="NPI/combs/minus_questions")
-@register_task("hd_cola_npi_quessmp", rel_path="NPI/combs/minus_simplequestions")
-@register_task("hd_cola_npi_qnt", rel_path="NPI/combs/minus_quantifiers")
-@register_task("hd_cola_npi_sup", rel_path="NPI/combs/minus_superlative")
+@register_task("npi-negsent-pr", rel_path="NPI/probing/sentential_negation_biclausal/npi_present")
+@register_task("npi-only-li", rel_path="NPI/probing/only/licensor")
+@register_task("npi-only-sc", rel_path="NPI/probing/only/scope_with_licensor")
+@register_task("npi-only-pr", rel_path="NPI/probing/only/npi_present")
+@register_task("npi-qnt-li", rel_path="NPI/probing/quantifiers/licensor")
+@register_task("npi-qnt-sc", rel_path="NPI/probing/quantifiers/scope_with_licensor")
+@register_task("npi-qnt-pr", rel_path="NPI/probing/quantifiers/npi_present")
+@register_task("npi-ques-li", rel_path="NPI/probing/questions/licensor")
+@register_task("npi-ques-sc", rel_path="NPI/probing/questions/scope_with_licensor")
+@register_task("npi-ques-pr", rel_path="NPI/probing/questions/npi_present")
+@register_task("npi-quessmp-li", rel_path="NPI/probing/simplequestions/licensor")
+@register_task("npi-quessmp-sc", rel_path="NPI/probing/simplequestions/scope_with_licensor")
+@register_task("npi-quessmp-pr", rel_path="NPI/probing/simplequestions/npi_present")
+@register_task("npi-sup-li", rel_path="NPI/probing/superlative/licensor")
+@register_task("npi-sup-sc", rel_path="NPI/probing/superlative/scope_with_licensor")
+@register_task("npi-sup-pr", rel_path="NPI/probing/superlative/npi_present")
+@register_task("cola-npi-adv", rel_path="NPI/splits/adverbs")
+@register_task("cola-npi-cond", rel_path="NPI/splits/conditionals")
+@register_task("cola-npi-negdet", rel_path="NPI/splits/determiner_negation_biclausal")
+@register_task("cola-npi-negsent", rel_path="NPI/splits/sentential_negation_biclausal")
+@register_task("cola-npi-only", rel_path="NPI/splits/only")
+@register_task("cola-npi-ques", rel_path="NPI/splits/questions")
+@register_task("cola-npi-quessmp", rel_path="NPI/splits/simplequestions")
+@register_task("cola-npi-qnt", rel_path="NPI/splits/quantifiers")
+@register_task("cola-npi-sup", rel_path="NPI/splits/superlative")
+@register_task("all-cola-npi", rel_path="NPI/combs/all_env")
+@register_task("wilcox-npi", rel_path="NPI/wilcox")
+@register_task("hd-cola-npi-adv", rel_path="NPI/combs/minus_adverbs")
+@register_task("hd-cola-npi-cond", rel_path="NPI/combs/minus_conditionals")
+@register_task("hd-cola-npi-negdet", rel_path="NPI/combs/minus_determiner_negation_biclausal")
+@register_task("hd-cola-npi-negsent", rel_path="NPI/combs/minus_sentential_negation_biclausal")
+@register_task("hd-cola-npi-only", rel_path="NPI/combs/minus_only")
+@register_task("hd-cola-npi-ques", rel_path="NPI/combs/minus_questions")
+@register_task("hd-cola-npi-quessmp", rel_path="NPI/combs/minus_simplequestions")
+@register_task("hd-cola-npi-qnt", rel_path="NPI/combs/minus_quantifiers")
+@register_task("hd-cola-npi-sup", rel_path="NPI/combs/minus_superlative")
 class CoLANPITask(SingleClassificationTask):
     """Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for
        test-set
@@ -1130,10 +1130,10 @@ class SNLITask(PairClassificationTask):
         log.info("\tFinished loading SNLI data.")
 
 
-@register_task("adversarial_nli_a1", rel_path="AdversarialNLI/", datasets=["R1"])
-@register_task("adversarial_nli_a2", rel_path="AdversarialNLI/", datasets=["R2"])
-@register_task("adversarial_nli_a3", rel_path="AdversarialNLI/", datasets=["R3"])
-@register_task("adversarial_nli", rel_path="AdversarialNLI/", datasets=["R1", "R2", "R3"])
+@register_task("adversarial-nli-a1", rel_path="AdversarialNLI/", datasets=["R1"])
+@register_task("adversarial-nli-a2", rel_path="AdversarialNLI/", datasets=["R2"])
+@register_task("adversarial-nli-a3", rel_path="AdversarialNLI/", datasets=["R3"])
+@register_task("adversarial-nli", rel_path="AdversarialNLI/", datasets=["R1", "R2", "R3"])
 class AdversarialNLITask(PairClassificationTask):
     """Task class for use with Adversarial Natural Language Inference dataset.
 
@@ -2126,7 +2126,7 @@ class JOCITask(PairOrdinalRegressionTask):
         log.info("\tFinished loading JOCI data.")
 
 
-@register_task("wiki103_classif", rel_path="WikiText103/")
+@register_task("wiki103-classif", rel_path="WikiText103/")
 class Wiki103Classification(PairClassificationTask):
     """Pair Classificaiton Task using Wiki103"""
 
@@ -2894,7 +2894,7 @@ class MultipleChoiceTask(Task):
             scorer(logits, labels)
 
 
-@register_task("SocialIQA", rel_path="SocialIQA/")
+@register_task("socialiqa", rel_path="SocialIQA/")
 class SocialIQATask(MultipleChoiceTask):
     """ Task class for SocialIQA.
     Paper: https://homes.cs.washington.edu/~msap/pdfs/sap2019socialIQa.pdf
@@ -3017,7 +3017,7 @@ class SpanPredictionTask(Task):
     def get_pred_str(self, preds, batch, batch_size, pred_span_start, pred_span_end):
         """
         For span prediction, we compute metrics based on span strings. This function
-        gets the span string based on start and end index predictions. 
+        gets the span string based on start and end index predictions.
 
         """
         pred_str_list = []
