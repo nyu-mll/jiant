@@ -141,7 +141,7 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
     See base class: LanguageModelingTask
     """
 
-    def __init__(self, path, max_seq_len, name="mnli_lm", **kw):
+    def __init__(self, path, max_seq_len, name="mnli-lm", **kw):
         """Init class
         Args:
             path: (str) path that the data files are stored
