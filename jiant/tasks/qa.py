@@ -540,7 +540,7 @@ class QASRLTask(SpanPredictionTask):
         )
 
     def get_split_text(self, split: str):
-        return getattr(self, "%s_data" % split)
+        return getattr(self, "%s_data_text" % split)
 
     @classmethod
     def preprocess_qasrl_datum(cls, datum):
@@ -641,7 +641,7 @@ class QAMRTask(SpanPredictionTask):
         return instances
 
     def get_split_text(self, split: str):
-        return getattr(self, "%s_data" % split)
+        return getattr(self, "%s_data_text" % split)
 
     @classmethod
     def load_tsv_dataset(cls, path, wiki_dict):
