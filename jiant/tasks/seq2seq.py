@@ -21,7 +21,7 @@ from .tasks import (
 )
 
 
-@register_task("seg_wix", rel_path="seg/wix/", max_targ_v_size=200)
+@register_task("seg-wix", rel_path="seg/wix/", max_targ_v_size=200)
 class Seq2SeqTask(SequenceGenerationTask):
     """Sequence-to-sequence Task"""
 

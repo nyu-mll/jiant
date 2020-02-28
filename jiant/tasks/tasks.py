@@ -2126,7 +2126,7 @@ class JOCITask(PairOrdinalRegressionTask):
         log.info("\tFinished loading JOCI data.")
 
 
-@register_task("wiki103_classif", rel_path="WikiText103/")
+@register_task("wiki103-classif", rel_path="WikiText103/")
 class Wiki103Classification(PairClassificationTask):
     """Pair Classificaiton Task using Wiki103"""
 
@@ -3017,7 +3017,7 @@ class SpanPredictionTask(Task):
     def get_pred_str(self, preds, batch, batch_size, pred_span_start, pred_span_end):
         """
         For span prediction, we compute metrics based on span strings. This function
-        gets the span string based on start and end index predictions. 
+        gets the span string based on start and end index predictions.
 
         """
         pred_str_list = []
