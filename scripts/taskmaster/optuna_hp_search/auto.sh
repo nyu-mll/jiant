@@ -1,0 +1,7 @@
+JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES="reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks=adversarial_nli, run_name=adversarial_nli, batch_size=8, max_epochs=1, patience=10000" sbatch ~/jp40.sbatch
+JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES="reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks=qqp, run_name=qqp, batch_size=8, max_epochs=1, patience=10000" sbatch ~/jp40.sbatch
+JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES="reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks=mnli, run_name=mnli, batch_size=8, max_epochs=1, patience=10000" sbatch ~/jp40.sbatch
+JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES="reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks=record, run_name=record, batch_size=8, max_epochs=1, patience=10000" sbatch ~/jp40.sbatch
+JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES="reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks=snli, run_name=mnli-snli-anli, batch_size=8, max_epochs=1, patience=10000" sbatch ~/jp40.sbatch
+
+JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES="reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks=cosmosqa, run_name=cosmosqa, batch_size=4, max_epochs=1, patience=10000" sbatch ~/jp40.sbatch

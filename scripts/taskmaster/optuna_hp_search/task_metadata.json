@@ -1,0 +1,242 @@
+[
+    {
+        "task_name": "sst",
+        "batch_size_limit": 32,
+        "training_size": 67349
+    },
+    {
+        "task_name": "socialiqa",
+        "batch_size_limit": 8,
+        "training_size": 33410
+    },
+    {
+        "task_name": "qqp",
+        "batch_size_limit": 8,
+        "training_size": 363846
+    },
+    {
+        "task_name": "mnli",
+        "batch_size_limit": 8,
+        "training_size": 392702
+    },
+    {
+        "task_name": "scitail",
+        "batch_size_limit": 32,
+        "training_size": 23596
+    },
+    {
+        "task_name": "qasrl",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "qamr",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "squad",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "cosmosqa",
+        "batch_size_limit": 4,
+        "training_size": 25262
+    },
+    {
+        "task_name": "hellaswag",
+        "batch_size_limit": 8,
+        "training_size": 39905
+    },
+    {
+        "task_name": "commonsenseqa",
+        "batch_size_limit": 8,
+        "training_size": 9741
+    },
+    {
+        "task_name": "cola",
+        "batch_size_limit": 32,
+        "training_size": 8551
+    },
+    {
+        "task_name": "rte",
+        "batch_size_limit": 32,
+        "training_size": 2490
+    },
+    {
+        "task_name": "boolq",
+        "batch_size_limit": 0,
+        "training_size": 9427
+    },
+    {
+        "task_name": "commitbank",
+        "batch_size_limit": 16,
+        "training_size": 250
+    },
+    {
+        "task_name": "copa",
+        "batch_size_limit": 32,
+        "training_size": 400
+    },
+    {
+        "task_name": "multirc",
+        "batch_size_limit": 8,
+        "training_size": 27243
+    },
+    {
+        "task_name": "record",
+        "batch_size_limit": 0,
+        "training_size": 1796856
+    },
+    {
+        "task_name": "wic",
+        "batch_size_limit": 32,
+        "training_size": 5428
+    },
+    {
+        "task_name": "ccg",
+        "batch_size_limit": 32,
+        "training_size": 38015
+    },
+    {
+        "task_name": "winograd-coreference",
+        "batch_size_limit": 32,
+        "training_size": 554
+    },
+    {
+        "task_name": "winogrande",
+        "batch_size_limit": 32,
+        "training_size": 40398
+    },
+    {
+        "task_name": "adversarial_nli",
+        "batch_size_limit": 8,
+        "training_size": 162865
+    },
+    {
+        "task_name": "mnli-snli-anli",
+        "batch_size_limit": 0,
+        "training_size": 1066278
+    },
+    {
+        "task_name": "edges-ner-ontonotes",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-srl-ontonotes",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-coref-ontonotes",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-spr1",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-spr2",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-dpr",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-rel-semeval",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-pos-ontonotes",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-nonterminal-ontonotes",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "edges-dep-ud-ewt",
+        "batch_size_limit": 0,
+        "training_size": -1
+    },
+    {
+        "task_name": "se-probing-word-content",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-tree-depth",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-top-constituents",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-bigram-shift",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-past-present",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-subj-number",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-obj-number",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-odd-man-out",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-coordination-inversion",
+        "batch_size_limit": 32,
+        "training_size": 100000
+    },
+    {
+        "task_name": "se-probing-sentence-length",
+        "batch_size_limit": 32,
+        "training_size": 99996
+    },
+    {
+        "task_name": "acceptability-wh",
+        "batch_size_limit": 32,
+        "training_size": 432
+    },
+    {
+        "task_name": "acceptability-def",
+        "batch_size_limit": 32,
+        "training_size": 404
+    },
+    {
+        "task_name": "acceptability-conj",
+        "batch_size_limit": 32,
+        "training_size": 332
+    },
+    {
+        "task_name": "acceptability-eos",
+        "batch_size_limit": 32,
+        "training_size": 382
+    }
+]
