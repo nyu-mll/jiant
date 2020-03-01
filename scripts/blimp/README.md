@@ -1,5 +1,5 @@
 # Instructions
-something general
+This repo contains scripts for evaluating GPT-2 and Transformer-XL on BLiMP.
 
 
 
