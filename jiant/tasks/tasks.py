@@ -646,6 +646,8 @@ class HANSBaseTask(PairClassificationTask):
         )
 
 @register_task("bert-heuristic-lexical_overlap", target_class='lexical_overlap', rel_path="HANS/")
+@register_task("disjunction", target_class='cn_disjunction', rel_path="HANS/")
+@register_task("all-the-same-label", target_class='something_random', rel_path="HANS/")
 @register_task("bert-syntax-ln_subject-object_swap", target_class='ln_subject/object_swap', rel_path="HANS/")
 class HANSTask(PairClassificationTask):
     """ Task class for Stanford Natural Language Inference """
