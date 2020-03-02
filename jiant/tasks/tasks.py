@@ -783,8 +783,8 @@ class HANSPerturbedTask(PairClassificationTask):
             s2_idx=2,
             label_idx=7,
             skip_rows=1,
+            shuffle=True,
         )
-        # TODO: None is breaking the code?
         self.val_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "val.tsv"),
@@ -794,6 +794,7 @@ class HANSPerturbedTask(PairClassificationTask):
             s2_idx=6,
             label_idx=7,
             skip_rows=1,
+            shuffle=True,
         )
         self.test_data_text = load_tsv(
             self._tokenizer_name,
@@ -805,6 +806,7 @@ class HANSPerturbedTask(PairClassificationTask):
             has_labels=False,
             return_indices=True,
             skip_rows=1,
+            shuffle=True,
         )
         self.sentences = (
             self.train_data_text[0]
