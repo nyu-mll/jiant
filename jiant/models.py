@@ -728,7 +728,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
     n_classes = task.n_classes if hasattr(task, "n_classes") else 1
     if model.uses_pair_embedding:
         # TODO: Fix/inspect what's going on.
-        d_out = d_inp
+        # d_out = d_inp
         
         
         # BERT/XLNet handle pair tasks by concatenating the inputs and classifying the joined
