@@ -93,6 +93,7 @@ def load_tsv(
     filter_value=None,
     tag_vocab=None,
     tag2idx_dict=None,
+    shuffle: bool=False,
 ):
     """
     Load a tsv.
@@ -127,6 +128,7 @@ def load_tsv(
             tags: wiki, reddit beneath source, and economics, politics beneath topic. The tsv will
             be: | wiki  | economics;politics|, with the tag2idx_dict as {"source": 0, "topic": 1}
                 | reddit| politics          |
+        shuffle (bool): If true, shuffle the rows of the dataset.
 
     Returns:
         List of first and second sentences, labels, and if applicable indices
@@ -146,6 +148,8 @@ def load_tsv(
         keep_default_na=False,
         encoding="utf-8",
     )
+    if shuffle:
+        rows = rows.sample(frac=1).reset_index(drop=True)
 
     if filter_idx and filter_value:
         rows = rows[rows[filter_idx] == filter_value]
