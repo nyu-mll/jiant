@@ -571,6 +571,10 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, EdgeProbingTask):
+        assert_for_log(
+            not isinstance(model._cuda_device, list),
+            "Error: Edge-probing does not currently work with Multi-GPU",
+        )
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, Seq2SeqTask):
@@ -868,7 +872,13 @@ class MultiTaskModel(nn.Module):
             # Just get embeddings and invoke task module.
             word_embs_in_context, sent_mask = self.sent_encoder(batch["input1"], task)
             module = getattr(self, "%s_mdl" % task.name)
-            out = module.forward(batch, word_embs_in_context, sent_mask, task, predict)
+            out = module.forward(
+                batch=batch,
+                word_embs_in_context=word_embs_in_context,
+                sent_mask=sent_mask,
+                task=task,
+                predict=predict,
+            )
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, (MultiRCTask, ReCoRDTask)):

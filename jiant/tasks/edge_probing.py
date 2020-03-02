@@ -3,6 +3,7 @@ import collections
 import itertools
 import logging as log
 import os
+import torch
 from typing import Dict, Iterable, List, Sequence, Type
 
 # Fields for instance processing
@@ -160,21 +161,20 @@ class EdgeProbingTask(Task):
         self._iters_by_split = iters_by_split
 
     def update_metrics(self, out, batch):
-        logits = out["logits"]
-        labels = out["labels"]
         span_mask = batch["span1s"][:, :, 0] != -1
-        logits = logits[span_mask]
+        logits = out["logits"][span_mask]
+        labels = batch["labels"][span_mask]
 
         binary_preds = logits.ge(0).long()  # {0,1}
 
         # Matthews coefficient and accuracy computed on {0,1} labels.
-        task.mcc_scorer(binary_preds, labels.long())
-        task.acc_scorer(binary_preds, labels.long())
+        self.mcc_scorer(binary_preds, labels.long())
+        self.acc_scorer(binary_preds, labels.long())
 
         # F1Measure() expects [total_num_targets, n_classes, 2]
         # to compute binarized F1.
         binary_scores = torch.stack([-1 * logits, logits], dim=2)
-        task.f1_scorer(binary_scores, labels)
+        self.f1_scorer(binary_scores, labels)
 
     def get_split_text(self, split: str):
         """ Get split text as iterable of records.
