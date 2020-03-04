@@ -371,7 +371,6 @@ def initial_setup(args: config.Params, cl_args: argparse.Namespace) -> (config.P
         random's and pytorch's random seed
 
     """
-    output = io.StringIO()
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)  # e.g. <project_dir>/jiant-demo
     maybe_make_dir(args.run_dir)  # e.g. <project_dir>/jiant-demo/sst
