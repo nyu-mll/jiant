@@ -17,13 +17,11 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import (  # pylint: disable=import-error
     LearningRateScheduler,
 )
-from allennlp.nn.util import device_mapping
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from tensorboardX import SummaryWriter  # pylint: disable=import-error
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from jiant.evaluate import evaluate
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -32,7 +30,6 @@ from jiant.utils.utils import (
     check_for_previous_checkpoints,
     get_output_attribute,
     get_model_attribute,
-    uses_cuda,
 )  # pylint: disable=import-error
 from allennlp.nn.util import move_to_device
 
@@ -149,7 +146,6 @@ def build_trainer(
             "grad_norm": params["max_grad_norm"],
             "val_interval": params["val_interval"],
             "max_vals": params["max_vals"],
-            "lr_decay": 0.99,
             "min_lr": params["min_lr"],
             "keep_all_checkpoints": params["keep_all_checkpoints"],
             "val_data_limit": params["val_data_limit"],
@@ -235,7 +231,6 @@ class SamplingMultiTaskTrainer:
         self._cuda_device = cuda_device
         self._grad_norm = grad_norm
         self._grad_clipping = grad_clipping
-        self._lr_decay = lr_decay
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
@@ -1277,7 +1272,6 @@ class SamplingMultiTaskTrainer:
         cuda_device = params.pop("cuda_device", -1)
         grad_norm = params.pop("grad_norm", None)
         grad_clipping = params.pop("grad_clipping", None)
-        lr_decay = params.pop("lr_decay", None)
         min_lr = params.pop("min_lr", None)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
@@ -1296,7 +1290,6 @@ class SamplingMultiTaskTrainer:
             cuda_device=cuda_device,
             grad_norm=grad_norm,
             grad_clipping=grad_clipping,
-            lr_decay=lr_decay,
             min_lr=min_lr,
             keep_all_checkpoints=keep_all_checkpoints,
             val_data_limit=val_data_limit,
