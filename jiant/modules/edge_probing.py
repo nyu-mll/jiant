@@ -136,6 +136,7 @@ class EdgeClassifierModule(nn.Module):
 
         # Apply projection CNN layer for each span.
         word_embs_in_context_t = word_embs_in_context.transpose(1, 2)  # needed for CNN layer
+
         se_proj1 = self.projs[1](word_embs_in_context_t).transpose(2, 1).contiguous()
         if not self.single_sided:
             se_proj2 = self.projs[2](word_embs_in_context_t).transpose(2, 1).contiguous()
