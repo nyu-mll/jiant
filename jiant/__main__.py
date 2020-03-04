@@ -565,7 +565,7 @@ def main(cl_arguments):
 
     check_configurations(args, pretrain_tasks, target_tasks)
 
-    # initialize
+    # Device-related initialization: CUDA, Data Parallel
     model = model.cuda() if uses_cuda(cuda_device) else model
     if isinstance(cuda_device, list):
         model = nn.DataParallel(model, device_ids=cuda_device)
