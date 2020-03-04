@@ -80,19 +80,19 @@ class EdgeClassifierModule(nn.Module):
         if self.is_symmetric or self.single_sided:
             # Use None as dummy padding for readability,
             # so that we can index projs[1] and projs[2]
-            self.projs = [None, self.proj1, self.proj1]
+            self.projs = nn.ModuleList([None, self.proj1, self.proj1])
         else:
             # Separate params for span2
             self.proj2 = self._make_cnn_layer(d_inp)
-            self.projs = [None, self.proj1, self.proj2]
+            self.projs = nn.ModuleList([None, self.proj1, self.proj2])
 
         # Span extractor, shared for both span1 and span2.
         self.span_extractor1 = self._make_span_extractor()
         if self.is_symmetric or self.single_sided:
-            self.span_extractors = [None, self.span_extractor1, self.span_extractor1]
+            self.span_extractors = nn.ModuleList([None, self.span_extractor1, self.span_extractor1])
         else:
             self.span_extractor2 = self._make_span_extractor()
-            self.span_extractors = [None, self.span_extractor1, self.span_extractor2]
+            self.span_extractors = nn.ModuleList([None, self.span_extractor1, self.span_extractor2])
 
         # Classifier gets concatenated projections of span1, span2
         clf_input_dim = self.span_extractors[1].get_output_dim()
