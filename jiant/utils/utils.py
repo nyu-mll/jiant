@@ -323,7 +323,7 @@ def select_task_specific_args(exp_args, diff_args):
     return diff_args
 
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
+def load_model_state(model, state_path, skip_task_models=[], strict=True):
     """ Helper function to load a model state
 
     Parameters

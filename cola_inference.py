@@ -155,7 +155,7 @@ def main(cl_arguments):
     # Build or load model #
     model = build_model(args, vocab, word_embs, tasks, cuda_device)
     log.info("Loading existing model from %s...", cl_args.model_file_path)
-    load_model_state(model, cl_args.model_file_path, args.cuda, [], strict=False)
+    load_model_state(model, cl_args.model_file_path, [], strict=False)
 
     # Inference Setup #
     model.eval()
