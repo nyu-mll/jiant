@@ -399,7 +399,7 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     return params
 
 
-def format_output(obj, cuda_devices):
+def format_output(obj, cuda_device):
     """
     Format output based on whether model is using DataParallel or not.
     DataParallel necessitates objects to be gathered into GPU:0 to have
@@ -407,7 +407,7 @@ def format_output(obj, cuda_devices):
     This function will be used for scalar outputs of model forwards
     such as loss and n_exs.
     """
-    if isinstance(cuda_devices, list):
+    if isinstance(cuda_device, list):
         if not isinstance(obj, torch.Tensor):
             obj = torch.tensor(obj).cuda()
         return obj.unsqueeze(0)
@@ -415,11 +415,11 @@ def format_output(obj, cuda_devices):
         return obj
 
 
-def uses_cuda(cuda_devices):
-    return isinstance(cuda_devices, list) or (isinstance(cuda_devices, int) and cuda_devices >= 0)
+def uses_cuda(cuda_device):
+    return isinstance(cuda_device, list) or (isinstance(cuda_device, int) and cuda_device >= 0)
 
 
-def get_batch_size(batch, cuda_devices, keyword="input"):
+def get_batch_size(batch, cuda_device, keyword="input"):
     """ Given a batch with unknown text_fields, get an estimate of batch size """
     if keyword == "input":
         batch_field = batch["inputs"] if "inputs" in batch else batch["input1"]
@@ -427,7 +427,7 @@ def get_batch_size(batch, cuda_devices, keyword="input"):
         batch_field = batch[keyword]
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
-    return format_output(batch_size, cuda_devices)
+    return format_output(batch_size, cuda_device)
 
 
 def get_batch_utilization(batch_field, pad_idx=0):

@@ -228,7 +228,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     return sent_encoder, d_sent
 
 
-def build_model(args, vocab, pretrained_embs, tasks, cuda_devices):
+def build_model(args, vocab, pretrained_embs, tasks, cuda_device):
     """
     Build model according to args
     Returns: model which has attributes set in it with the attrbutes.
@@ -297,11 +297,11 @@ def build_model(args, vocab, pretrained_embs, tasks, cuda_devices):
     d_task_input = d_sent_output + (args.skip_embs * d_emb)
 
     # Build model and classifiers
-    model = MultiTaskModel(args, sent_encoder, vocab, cuda_devices)
+    model = MultiTaskModel(args, sent_encoder, vocab, cuda_device)
     build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
-    model = model.cuda() if uses_cuda(cuda_devices) else model
-    if isinstance(cuda_devices, list):
-        model = nn.DataParallel(model, device_ids=cuda_devices)
+    model = model.cuda() if uses_cuda(cuda_device) else model
+    if isinstance(cuda_device, list):
+        model = nn.DataParallel(model, device_ids=cuda_device)
 
     log.info("Model specification:")
     log.info(model)
@@ -812,11 +812,11 @@ class MultiTaskModel(nn.Module):
     to the model.
     """
 
-    def __init__(self, args, sent_encoder, vocab, cuda_devices):
+    def __init__(self, args, sent_encoder, vocab, cuda_device):
         """ Args: sentence encoder """
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
-        self._cuda_device = cuda_devices
+        self._cuda_device = cuda_device
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"

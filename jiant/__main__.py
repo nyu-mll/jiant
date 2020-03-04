@@ -487,7 +487,7 @@ def check_arg_name(args: config.Params):
         )
 
 
-def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_devices):
+def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_device):
     """
         Function that reloads model if necessary and extracts trainable parts
         of the model in preparation for target_task training.
@@ -506,7 +506,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         to_train: List of tuples of (name, weight) of trainable parameters
 
     """
-    load_model_state(model, ckpt_path, cuda_devices, skip_task_models=[task.name], strict=strict)
+    load_model_state(model, ckpt_path, cuda_device, skip_task_models=[task.name], strict=strict)
     if args.transfer_paradigm == "finetune":
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
@@ -527,12 +527,12 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         )
         # Only train task-specific module
 
-        pred_module = get_model_attribute(model, "%s_mdl" % task.name, cuda_devices)
+        pred_module = get_model_attribute(model, "%s_mdl" % task.name, cuda_device)
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         to_train += elmo_scalars
-    model = model.cuda() if uses_cuda(cuda_devices) else model
-    if isinstance(cuda_devices, list):
-        model = nn.DataParallel(model, device_ids=cuda_devices)
+    model = model.cuda() if uses_cuda(cuda_device) else model
+    if isinstance(cuda_device, list):
+        model = nn.DataParallel(model, device_ids=cuda_device)
     return to_train
 
 
@@ -547,7 +547,7 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     cuda_device = parse_cuda_list_arg(args.cuda)
-    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args, cuda_device)
+    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
     tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
     log.info("\tFinished loading tasks in %.3fs", time.time() - start_time)
     log.info("\t Tasks: {}".format([task.name for task in tasks]))
@@ -564,6 +564,12 @@ def main(cl_arguments):
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
 
     check_configurations(args, pretrain_tasks, target_tasks)
+
+    # initialize
+    model = model.cuda() if uses_cuda(cuda_device) else model
+    if isinstance(cuda_device, list):
+        model = nn.DataParallel(model, device_ids=cuda_device)
+
     if args.do_pretrain:
         # Train on pretrain tasks
         log.info("Training...")

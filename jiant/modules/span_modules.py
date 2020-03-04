@@ -79,7 +79,7 @@ class SpanClassifierModule(nn.Module):
         sent_mask: torch.Tensor,
         task: Task,
         predict: bool,
-        cuda_devices: Any,
+        cuda_device: Any,
     ) -> Dict:
         """
         Run forward pass.
@@ -116,7 +116,7 @@ class SpanClassifierModule(nn.Module):
             se_projs.append(se_proj)
 
         span_embs = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
-        out["n_exs"] = get_batch_size(batch, cuda_devices)
+        out["n_exs"] = get_batch_size(batch, cuda_device)
         _kw = dict(sequence_mask=sent_mask.long())
         for i in range(self.num_spans):
             # spans are [batch_size, num_targets, span_modules]
@@ -132,7 +132,7 @@ class SpanClassifierModule(nn.Module):
             logits = logits.squeeze(dim=1)
             out["logits"] = logits
             out["loss"] = format_output(
-                self.compute_loss(logits, batch["labels"], task), cuda_devices
+                self.compute_loss(logits, batch["labels"], task), cuda_device
             )
 
         if predict:
