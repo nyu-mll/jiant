@@ -571,10 +571,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, EdgeProbingTask):
-        assert_for_log(
-            not isinstance(model._cuda_device, list),
-            "Error: Edge-probing does not currently work with Multi-GPU",
-        )
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, Seq2SeqTask):
