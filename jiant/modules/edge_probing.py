@@ -1,8 +1,6 @@
 # Implementation of edge probing module.
+from typing import Dict
 
-from typing import Dict, Iterable
-
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -131,9 +129,6 @@ class EdgeClassifierModule(nn.Module):
         """
         out = {}
 
-        batch_size = word_embs_in_context.shape[0]
-        out["n_inputs"] = batch_size
-
         # Apply projection CNN layer for each span.
         word_embs_in_context_t = word_embs_in_context.transpose(1, 2)  # needed for CNN layer
 
@@ -171,26 +166,9 @@ class EdgeClassifierModule(nn.Module):
 
         if predict:
             # Return preds as a list.
-            preds = self.get_predictions(logits)
-            out["preds"] = list(self.unbind_predictions(preds, span_mask))
+            out["preds"] = self.get_predictions(logits)
 
         return out
-
-    def unbind_predictions(self, preds: torch.Tensor, masks: torch.Tensor) -> Iterable[np.ndarray]:
-        """ Unpack preds to varying-length numpy arrays.
-
-        Args:
-            preds: [batch_size, num_targets, ...]
-            masks: [batch_size, num_targets] boolean mask
-
-        Yields:
-            np.ndarray for each row of preds, selected by the corresponding row
-            of span_mask.
-        """
-        preds = preds.detach().cpu()
-        masks = masks.detach().cpu()
-        for pred, mask in zip(torch.unbind(preds, dim=0), torch.unbind(masks, dim=0)):
-            yield pred[mask].numpy()  # only non-masked predictions
 
     def get_predictions(self, logits: torch.Tensor):
         """Return class probabilities, same shape as logits.
