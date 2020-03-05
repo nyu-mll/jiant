@@ -115,11 +115,6 @@
         "training_size": 162865
     },
     {
-        "task_name": "mnli-snli-anli",
-        "batch_size_limit": 0,
-        "training_size": 1066278
-    },
-    {
         "task_name": "edges-ner-ontonotes",
         "batch_size_limit": 0,
         "training_size": -1
