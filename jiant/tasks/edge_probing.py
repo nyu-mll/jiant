@@ -176,6 +176,24 @@ class EdgeProbingTask(Task):
         binary_scores = torch.stack([-1 * logits, logits], dim=2)
         self.f1_scorer(binary_scores, labels)
 
+    def handle_preds(self, preds, batch):
+        """ Unpack preds to varying-length numpy arrays.
+
+        Args:
+            preds: [batch_size, num_targets, ...]
+
+        Returns:
+            np.ndarray for each row of preds, selected by the corresponding row of span_mask.
+
+        """
+        masks = batch["span1s"][:, :, 0] != -1
+        preds = preds.detach().cpu()
+        masks = masks.detach().cpu()
+        non_masked_preds = []
+        for pred, mask in zip(torch.unbind(preds, dim=0), torch.unbind(masks, dim=0)):
+            non_masked_preds.append(pred[mask].numpy())  # only non-masked predictions
+        return non_masked_preds
+
     def get_split_text(self, split: str):
         """ Get split text as iterable of records.
 
