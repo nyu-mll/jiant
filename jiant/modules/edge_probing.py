@@ -165,7 +165,6 @@ class EdgeClassifierModule(nn.Module):
             out["loss"] = self.compute_loss(logits[span_mask], batch["labels"][span_mask], task)
 
         if predict:
-            # Return preds as a list.
             out["preds"] = self.get_predictions(logits)
 
         return out

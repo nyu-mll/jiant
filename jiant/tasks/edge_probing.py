@@ -177,13 +177,18 @@ class EdgeProbingTask(Task):
         self.f1_scorer(binary_scores, labels)
 
     def handle_preds(self, preds, batch):
-        """ Unpack preds to varying-length numpy arrays.
+        """Unpack preds into varying-length numpy arrays, return the non-masked preds in a list.
 
-        Args:
-            preds: [batch_size, num_targets, ...]
+        Parameters
+        ----------
+            preds : [batch_size, num_targets, ...]
+            batch : dict
+                dict with key "span1s" having val w/ bool Tensor dim [batch_size, num_targets, ...].
 
-        Returns:
-            np.ndarray for each row of preds, selected by the corresponding row of span_mask.
+        Returns
+        -------
+            non_masked_preds : list[np.ndarray]
+                list of of pred np.ndarray selected by the corresponding row of span_mask.
 
         """
         masks = batch["span1s"][:, :, 0] != -1
