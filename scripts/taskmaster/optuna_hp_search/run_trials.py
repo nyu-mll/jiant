@@ -22,7 +22,26 @@ def run_trials(study_name, gpu_available, n_trials):
         exp_name = f"optuna_{task_name}"
         run_name = f"trial_{trial.number}"
 
-        batch_size = [16, 32][trial.suggest_int("bs_select", 0, 1)]
+        training_size = task["training_size"]
+        if training_size <= 3000:
+            max_epochs_candidates = [25, 50]
+            batch_size_candidate = [8, 16]
+            lr_candidates = [5e-6, 1e-5, 2e-5]
+        elif training_size >= 300000:
+            max_epochs_candidates = [2, 5]
+            batch_size_candidate = [16, 32]
+            lr_candidates = [1e-5, 2e-5, 3e-5]
+        else:
+            max_epochs_candidates = [7, 15]
+            batch_size_candidate = [16, 32]
+            lr_candidates = [1e-5, 2e-5, 3e-5]
+
+        max_epochs_select = trial.suggest_int("epoch_select", 0, len(max_epochs_candidates) - 1)
+        max_epochs = max_epochs_candidates[max_epochs_select]
+        lr_select = trial.suggest_int("lr_select", 0, len(lr_candidates) - 1)
+        lr = lr_candidates[lr_select]
+        batch_size_select = trial.suggest_int("bs_select", 0, len(batch_size_candidate) - 1)
+        batch_size = batch_size_candidate[batch_size_select]
         batch_size_limit = task["batch_size_limit"]
         gpu_needed = batch_size // batch_size_limit
         if gpu_needed <= gpu_available:
@@ -33,17 +52,6 @@ def run_trials(study_name, gpu_available, n_trials):
             accumulation_steps = gpu_needed // gpu_available
             assert batch_size % accumulation_steps == 0
             real_batch_size = batch_size // accumulation_steps
-
-        lr = [1e-5, 2e-5, 3e-5][trial.suggest_int("lr_select", 0, 2)]
-
-        training_size = task["training_size"]
-        max_epochs_select = trial.suggest_int("epoch_select", 0, 1)
-        if training_size <= 3000:
-            max_epochs = [25, 50][max_epochs_select]
-        elif training_size >= 300000:
-            max_epochs = [2, 5][max_epochs_select]
-        else:
-            max_epochs = [7, 15][max_epochs_select]
         val_interval = min(training_size // batch_size, 2500)
 
         overrides = []
@@ -52,16 +60,16 @@ def run_trials(study_name, gpu_available, n_trials):
         overrides.append(f"pretrain_tasks=none")
         overrides.append(f"target_tasks={task_name}")
         overrides.append("do_target_task_training=1")
+        overrides.append(f"max_epochs={max_epochs}")
+        overrides.append(f"lr={lr}")
         overrides.append(f"batch_size={real_batch_size}")
         overrides.append(f"accumulation_steps={accumulation_steps}")
-        overrides.append(f"lr={lr}")
-        overrides.append(f"max_epochs={max_epochs}")
         overrides.append(f"target_train_val_interval={val_interval}")
         overrides.append("random_seed=-1")
 
-        trial.set_user_attr("batch_size", batch_size)
-        trial.set_user_attr("lr", lr)
         trial.set_user_attr("max_epochs", max_epochs)
+        trial.set_user_attr("lr", lr)
+        trial.set_user_attr("batch_size", batch_size)
 
         overrides = ", ".join(overrides)
         command = [
