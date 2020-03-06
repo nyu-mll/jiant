@@ -2424,6 +2424,7 @@ class CCGTaggingTask(TaggingTask):
 
     def update_metrics(self, out, batch):
         logits, labels = out["logits"], out["labels"]
+        assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
