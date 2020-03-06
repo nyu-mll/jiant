@@ -1,237 +1,237 @@
-[
-    {
+{
+    "sst": {
         "task_name": "sst",
         "batch_size_limit": 32,
         "training_size": 67349
     },
-    {
+    "socialiqa": {
         "task_name": "socialiqa",
         "batch_size_limit": 8,
         "training_size": 33410
     },
-    {
+    "qqp": {
         "task_name": "qqp",
         "batch_size_limit": 8,
         "training_size": 363846
     },
-    {
+    "mnli": {
         "task_name": "mnli",
         "batch_size_limit": 8,
         "training_size": 392702
     },
-    {
+    "scitail": {
         "task_name": "scitail",
         "batch_size_limit": 32,
         "training_size": 23596
     },
-    {
+    "qasrl": {
         "task_name": "qasrl",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "qamr": {
         "task_name": "qamr",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "squad": {
         "task_name": "squad",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "cosmosqa": {
         "task_name": "cosmosqa",
         "batch_size_limit": 4,
         "training_size": 25262
     },
-    {
+    "hellaswag": {
         "task_name": "hellaswag",
         "batch_size_limit": 8,
         "training_size": 39905
     },
-    {
+    "commonsenseqa": {
         "task_name": "commonsenseqa",
         "batch_size_limit": 8,
         "training_size": 9741
     },
-    {
+    "cola": {
         "task_name": "cola",
         "batch_size_limit": 32,
         "training_size": 8551
     },
-    {
+    "rte": {
         "task_name": "rte",
         "batch_size_limit": 32,
         "training_size": 2490
     },
-    {
+    "boolq": {
         "task_name": "boolq",
         "batch_size_limit": 0,
         "training_size": 9427
     },
-    {
+    "commitbank": {
         "task_name": "commitbank",
         "batch_size_limit": 16,
         "training_size": 250
     },
-    {
+    "copa": {
         "task_name": "copa",
         "batch_size_limit": 32,
         "training_size": 400
     },
-    {
+    "multirc": {
         "task_name": "multirc",
         "batch_size_limit": 8,
         "training_size": 27243
     },
-    {
+    "record": {
         "task_name": "record",
         "batch_size_limit": 0,
         "training_size": 1796856
     },
-    {
+    "wic": {
         "task_name": "wic",
         "batch_size_limit": 32,
         "training_size": 5428
     },
-    {
+    "ccg": {
         "task_name": "ccg",
         "batch_size_limit": 32,
         "training_size": 38015
     },
-    {
+    "winograd-coreference": {
         "task_name": "winograd-coreference",
         "batch_size_limit": 32,
         "training_size": 554
     },
-    {
+    "winogrande": {
         "task_name": "winogrande",
         "batch_size_limit": 32,
         "training_size": 40398
     },
-    {
-        "task_name": "adversarial_nli",
+    "adversarial_nli": {
+        "task_name": "adversarial-nli",
         "batch_size_limit": 8,
         "training_size": 162865
     },
-    {
+    "edges-ner-ontonotes": {
         "task_name": "edges-ner-ontonotes",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-srl-ontonotes": {
         "task_name": "edges-srl-ontonotes",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-coref-ontonotes": {
         "task_name": "edges-coref-ontonotes",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-spr1": {
         "task_name": "edges-spr1",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-spr2": {
         "task_name": "edges-spr2",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-dpr": {
         "task_name": "edges-dpr",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-rel-semeval": {
         "task_name": "edges-rel-semeval",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-pos-ontonotes": {
         "task_name": "edges-pos-ontonotes",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-nonterminal-ontonotes": {
         "task_name": "edges-nonterminal-ontonotes",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "edges-dep-ud-ewt": {
         "task_name": "edges-dep-ud-ewt",
         "batch_size_limit": 0,
         "training_size": -1
     },
-    {
+    "se-probing-word-content": {
         "task_name": "se-probing-word-content",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-tree-depth": {
         "task_name": "se-probing-tree-depth",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-top-constituents": {
         "task_name": "se-probing-top-constituents",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-bigram-shift": {
         "task_name": "se-probing-bigram-shift",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-past-present": {
         "task_name": "se-probing-past-present",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-subj-number": {
         "task_name": "se-probing-subj-number",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-obj-number": {
         "task_name": "se-probing-obj-number",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-odd-man-out": {
         "task_name": "se-probing-odd-man-out",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-coordination-inversion": {
         "task_name": "se-probing-coordination-inversion",
         "batch_size_limit": 32,
         "training_size": 100000
     },
-    {
+    "se-probing-sentence-length": {
         "task_name": "se-probing-sentence-length",
         "batch_size_limit": 32,
         "training_size": 99996
     },
-    {
+    "acceptability-wh": {
         "task_name": "acceptability-wh",
         "batch_size_limit": 32,
         "training_size": 432
     },
-    {
+    "acceptability-def": {
         "task_name": "acceptability-def",
         "batch_size_limit": 32,
         "training_size": 404
     },
-    {
+    "acceptability-conj": {
         "task_name": "acceptability-conj",
         "batch_size_limit": 32,
         "training_size": 332
     },
-    {
+    "acceptability-eos": {
         "task_name": "acceptability-eos",
         "batch_size_limit": 32,
         "training_size": 382
     }
-]
+}
