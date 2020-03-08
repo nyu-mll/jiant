@@ -486,7 +486,7 @@ def check_arg_name(args: config.Params):
         )
 
 
-def load_model_for_target_train_run(args, ckpt_path, model, task, cuda_device):
+def load_model_for_target_train_run(args, ckpt_path, model, task):
     """
         Function that reloads model if necessary and extracts trainable parts
         of the model in preparation for target_task training.
