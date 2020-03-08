@@ -1201,18 +1201,18 @@ class MultiTaskModel(nn.Module):
         padding_mask = labels.eq(pad_idx)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
 
-        masked_indices = torch.bernoulli(probability_matrix).to(device=inputs.device, dtype=torch.uint8)
+        masked_indices = torch.bernoulli(probability_matrix).to(device=inputs.device, dtype=torch.bool)
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
 
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
         indices_replaced = (
-            torch.bernoulli(torch.full(labels.shape, 0.8)).to(device=inputs.device, dtype=torch.uint8) & masked_indices
+            torch.bernoulli(torch.full(labels.shape, 0.8)).to(device=inputs.device, dtype=torch.bool) & masked_indices
         )
         inputs[indices_replaced] = mask_idx
 
         # 10% of the time, we replace masked input tokens with random word
         indices_random = (
-            torch.bernoulli(torch.full(labels.shape, 0.5)).to(device=inputs.device, dtype=torch.uint8)
+            torch.bernoulli(torch.full(labels.shape, 0.5)).to(device=inputs.device, dtype=torch.bool)
             & masked_indices
             & ~indices_replaced
         )
