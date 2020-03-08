@@ -9,7 +9,7 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
 from allennlp.data.fields import SequenceLabelField
 
-from jiant.utils.data_loaders import tokenize_and_truncate
+from jiant.utils.data_loaders import tokenize_and_truncate, get_tokenizer
 from jiant.tasks.registry import register_task
 from jiant.tasks.tasks import (
     UNK_TOK_ALLENNLP,
@@ -41,7 +41,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         super().__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = None
-        self._label_namespace = self.name + "_tags"
+        self._label_namespace = self.name + "_labels"
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
@@ -208,12 +208,11 @@ class MLMTask(MaskedLanguageModelingTask):
         For MLM, the label space is the vocabulary space of the input.
         """
         labels = []
-        if isinstance(task, MLMTask):
-            tokenizer = get_tokenizer(self._tokenizer_name)
-            vocab_size = len(tokenizer)
-            ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
-            for word in ordered_vocab:
-                labels.append(word)
+        tokenizer = get_tokenizer(self._tokenizer_name)
+        vocab_size = len(tokenizer)
+        ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
+        for word in ordered_vocab:
+            labels.append(word)
         return labels
 
     def update_metrics(self, out, batch=None):
@@ -231,9 +230,11 @@ class MLMTask(MaskedLanguageModelingTask):
         f = open(path, "r")
         reader = csv.reader(f)
         text = list(reader)
+        moses_tokenizer = get_tokenizer("MosesTokenizer")
         for i in range(len(text)):
             row = text[i]
-            toks = "".join(row)
+            untokenized_toks = moses_tokenizer.detokenize(row)
+            toks = "".join(untokenized_toks)
             yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(

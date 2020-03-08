@@ -76,6 +76,7 @@ from jiant.utils.utils import (
     format_output,
     uses_cuda,
 )
+from jiant.utils.data_loaders import get_tokenizer
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -162,7 +163,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         assert_for_log(
             args.sent_enc in ["rnn", "bilm", "none"], "Only RNNLM or sent_enc=None supported!"
         )
-        if not isinstance(task, MaskedLanguageModelingTask):
+        if not any(isinstance(task, MaskedLanguageModelingTask) for task in tasks):
             # If an autoregressive LanguageModelingTask
             assert_for_log(
                 not (
@@ -1182,16 +1183,17 @@ class MultiTaskModel(nn.Module):
         mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
+
+        tokenizer_name = self.sent_encoder._text_field_embedder.input_module
+        tokenizer = get_tokenizer(tokenizer_name)
+        input_key = self.sent_encoder._text_field_embedder.tokenizer_required
         # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
         mask_idx = self.sent_encoder._text_field_embedder._mask_id
-        pad_idx = self.sent_encoder._text_field_embedder._pad_id
         b_size, seq_len = batch["targs"].size()
-        input_key = self.sent_encoder._text_field_embedder.tokenizer_required
         inputs = batch["input"][input_key]
         labels = batch["targs"]
-
         probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
-        padding_mask = labels.eq(pad_idx)
+        padding_mask = labels.eq(0)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
 
         masked_indices = torch.bernoulli(probability_matrix).to(
@@ -1221,7 +1223,6 @@ class MultiTaskModel(nn.Module):
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
         inputs[indices_random] = random_words[indices_random]
-
         # Add 2 to all non-special tokens due to correct_sent logic in Transformer-based
         # sent_encoder
         pad_mask = (inputs == 0).long()
@@ -1229,7 +1230,7 @@ class MultiTaskModel(nn.Module):
         unk_mask = (inputs == 1).long()
         # map AllenNLP @@UNKNOWN@@ to _unk_id in specific transformer vocab
         valid_mask = (inputs > 1).long()
-        inputs = (inputs - 2) * valid_mask + self._pad_id * pad_mask + self._unk_id * unk_mask
+        inputs = (inputs + 2) * valid_mask + 0 * pad_mask + 1 * unk_mask
         batch["input"][input_key] = inputs
 
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)

@@ -55,6 +55,7 @@ from jiant.tasks.lm import MLMTask
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask, Task
+from jiant.tasks.lm import LanguageModelingTask
 from jiant.utils import config, serialize, utils, options
 from jiant.utils.options import parse_task_list_arg
 
@@ -259,6 +260,9 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     max_v_sizes = {"word": args.max_word_v_size, "char": args.max_char_v_size}
     word2freq, char2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
+    for task in tasks:  # add custom label namespaces
+        # TODO: surface more docs for add_task_label_vocab:
+        add_task_label_vocab(vocab, task)
 
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
@@ -266,9 +270,7 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     if input_module_uses_transformers(args.input_module):
         # Add pre-computed vocabulary of corresponding tokenizer for transformers models.
         add_transformers_vocab(vocab, args.tokenizer)
-    for task in tasks:  # add custom label namespaces
-        # TODO: surface more docs for add_task_label_vocab:
-        add_task_label_vocab(vocab, task)
+
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -663,7 +665,7 @@ def add_task_label_vocab(vocab, task):
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
 
-    if isinstance(task, SequenceGenerationTask):
+    if isinstance(task, SequenceGenerationTask) and not isinstance(task, LanguageModelingTask):
         for special in SPECIALS:
             vocab.add_token_to_namespace(special, namespace)
 
