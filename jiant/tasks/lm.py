@@ -84,7 +84,6 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                # Segment text. 
                 yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(
@@ -205,7 +204,7 @@ class MLMTask(MaskedLanguageModelingTask):
         }
 
     def update_metrics(self, out, batch=None):
-        #self.scorer1(logits,labels)
+        # self.scorer1(logits,labels)
         self.scorer1(out["loss"].mean())
         return
 
@@ -215,6 +214,7 @@ class MLMTask(MaskedLanguageModelingTask):
             path: (str) data file path
         """
         import csv
+
         f = open(path, "r")
         reader = csv.reader(f)
         text = list(reader)
@@ -222,7 +222,6 @@ class MLMTask(MaskedLanguageModelingTask):
             row = text[i]
             toks = "".join(row)
             yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
-
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -242,13 +241,14 @@ class MLMTask(MaskedLanguageModelingTask):
             input_sent = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": input_sent,
-                "targs": SequenceLabelField(sent_, input_sent, label_namespace=self._label_namespace),
+                "targs": SequenceLabelField(
+                    sent_, input_sent, label_namespace=self._label_namespace
+                ),
             }
             return Instance(d)
 
         for sent in split:
             yield _make_instance(sent)
-
 
 
 @register_task("mlm_toronto", rel_path="toronto/")

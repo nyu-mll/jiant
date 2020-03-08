@@ -577,8 +577,8 @@ def main(cl_arguments):
                 index = target_names.index(args.early_stopping_method)
                 stop_metric = target_tasks[index].val_metric
             else:
-                raise ValueError()
-        
+                raise ValueError("args.early_stopping_method must be either 'auto' or a task name")
+
         else:
             stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else "macro_avg"
         should_decrease = (
