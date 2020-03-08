@@ -501,13 +501,13 @@ def load_model_for_target_train_run(args, ckpt_path, model, task):
 
         Returns
         -------------------
-        to_train: List of tuples of (name, weight) of trainable parameters
+        trainable_parameters: List of tuples of (name, weight) of trainable parameters
 
     """
     load_model_state(model, ckpt_path, skip_task_models=[task.name], strict=False)
     if args.transfer_paradigm == "finetune":
         # Train both the task specific models as well as sentence encoder.
-        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+        trainable_parameters = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     else:  # args.transfer_paradigm == "frozen":
         # will be empty if args.input_module != "elmo", scalar_mix_0 should always be
         # pretrain scalars
@@ -526,9 +526,11 @@ def load_model_for_target_train_run(args, ckpt_path, model, task):
         # Only train task-specific module
 
         pred_module = get_model_attribute(model, "%s_mdl" % task.name, cuda_device)
-        to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-        to_train += elmo_scalars
-    return to_train
+        trainable_parameters = [
+            (n, p) for n, p in pred_module.named_parameters() if p.requires_grad
+        ]
+        trainable_parameters += elmo_scalars
+    return trainable_parameters
 
 
 def main(cl_arguments):
