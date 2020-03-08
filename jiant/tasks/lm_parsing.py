@@ -85,7 +85,7 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
                 yield tokens[i : i + seq_len]
 
 
-@register_task("toronto_lm", rel_path="toronto/")
+@register_task("toronto-lm", rel_path="toronto/")
 class TorontoLanguageModelling(LanguageModelingParsingTask):
     """ Language modeling on the Toronto Books dataset
     See base class: LanguageModelingTask
@@ -110,7 +110,7 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
                 yield tokens[i : i + seq_len]
 
 
-@register_task("egw_lm", rel_path="egw_corpus/")
+@register_task("egw-lm", rel_path="egw_corpus/")
 class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
     """ Language modeling on the English Gigaword dataset
     See base class: LanguageModelingTask
@@ -135,13 +135,13 @@ class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
                 yield tokens[i : i + seq_len]
 
 
-@register_task("mnli_lm", rel_path="MNLI/")
+@register_task("mnli-lm", rel_path="MNLI/")
 class MNLILanguageModeling(LanguageModelingParsingTask):
     """ Language modeling on the MNLI dataset
     See base class: LanguageModelingTask
     """
 
-    def __init__(self, path, max_seq_len, name="mnli_lm", **kw):
+    def __init__(self, path, max_seq_len, name="mnli-lm", **kw):
         """Init class
         Args:
             path: (str) path that the data files are stored

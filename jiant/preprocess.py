@@ -407,10 +407,7 @@ def build_tasks(
                 )
 
         # Delete in-memory data - we'll lazy-load from disk later.
-        # TODO: delete task.{split}_data_text as well?
-        task.train_data = None
-        task.val_data = None
-        task.test_data = None
+        # TODO: delete task.{split}_data_text?
 
     log.info("\tFinished indexing tasks")
 

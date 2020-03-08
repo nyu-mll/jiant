@@ -104,7 +104,16 @@ def evaluate(
                 out = model.forward(task=task, batch=batch, predict=True)
             if task is not None:
                 task.update_metrics(out, batch)
-            n_task_examples += get_output_attribute(out, "n_exs", cuda_device)
+
+            n_exs = get_output_attribute(out, "n_exs", cuda_device)
+            # in multi-GPU mode n_exs is expected to be a tensor, w/ single-GPU an int is expected:
+            if isinstance(n_exs, torch.Tensor):
+                n_task_examples += n_exs.item()
+            elif isinstance(n_exs, int):
+                n_task_examples += n_exs
+            else:
+                raise ValueError("n_exs is type " + type(n_exs) + ", int or Tensor is expected.")
+
             # get predictions
             if "preds" not in out:
                 continue
