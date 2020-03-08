@@ -1,9 +1,0 @@
-edges-coref-ontonotes_run1	micro_avg: 0.000, macro_avg: 0.969, edges-coref-ontonotes_mcc: 0.937, edges-coref-ontonotes_acc: 0.969, edges-coref-ontonotes_precision: 0.969, edges-coref-ontonotes_recall: 0.969, edges-coref-ontonotes_f1: 0.969
-edges-nonterminal-ontonotes_run1	micro_avg: 0.000, macro_avg: 0.888, edges-nonterminal-ontonotes_mcc: 0.885, edges-nonterminal-ontonotes_acc: 0.813, edges-nonterminal-ontonotes_precision: 0.857, edges-nonterminal-ontonotes_recall: 0.923, edges-nonterminal-ontonotes_f1: 0.888
-record_run1	micro_avg: 0.861, macro_avg: 0.861, record_f1: 0.864, record_em: 0.858, record_avg: 0.861
-cosmosqa_run1	micro_avg: 0.813, macro_avg: 0.813, cosmosqa_accuracy: 0.813
-edges-srl-ontonotes_run1    micro_avg: 0.000, macro_avg: 0.925, edges-srl-ontonotes_mcc: 0.924, edges-srl-ontonotes_acc: 0.905, edges-srl-ontonotes_precision: 0.943, edges-srl-ontonotes_recall: 0.908, edges-srl-ontonotes_f1: 0.925
-edges-rel-semeval_run1    micro_avg: 0.000, macro_avg: 0.000, edges-rel-semeval_mcc: 0.000, edges-rel-semeval_acc: 0.000, edges-rel-semeval_precision: 0.000, edges-rel-semeval_recall: 0.000, edges-rel-semeval_f1: 0.000
-edges-ner-ontonotes_run1    micro_avg: 0.000, macro_avg: 0.368, edges-ner-ontonotes_mcc: 0.370, edges-ner-ontonotes_acc: 0.271, edges-ner-ontonotes_precision: 0.571, edges-ner-ontonotes_recall: 0.271, edges-ner-ontonotes_f1: 0.368
-edges-srl-ontonotes_run1    micro_avg: 0.000, macro_avg: 0.030, edges-srl-ontonotes_mcc: 0.000, edges-srl-ontonotes_acc: 0.000, edges-srl-ontonotes_precision: 0.015, edges-srl-ontonotes_recall: 1.000, edges-srl-ontonotes_f1: 0.030
-edges-pos-ontonotes_run1    micro_avg: 0.000, macro_avg: 0.057, edges-pos-ontonotes_mcc: 0.084, edges-pos-ontonotes_acc: 0.032, edges-pos-ontonotes_precision: 0.258, edges-pos-ontonotes_recall: 0.032, edges-pos-ontonotes_f1: 0.057

@@ -158,15 +158,34 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks) and args.sent_enc == "none":
-        # Expose word representation layer (GloVe, ELMo, etc.) directly.
+    elif any(isinstance(task, LanguageModelingTask) for task in tasks):
         assert_for_log(
-            args.skip_embs,
-            "skip_embs is false and sent_enc is none, "
-            "which means that your token representations are zero-dimensional. "
-            "Consider setting skip_embs.",
+            args.sent_enc in ["rnn", "bilm", "none"], "Only RNNLM or sent_enc=None supported!"
         )
-        phrase_layer = NullPhraseLayer(rnn_params["input_size"])
+        if not isinstance(task, MaskedLanguageModelingTask):
+            # If an autoregressive LanguageModelingTask
+            assert_for_log(
+                not (
+                    args.input_module == "elmo"
+                    or args.input_module.startswith("bert")
+                    or args.input_module.startswith("xlnet")
+                ),
+                f"Using input_module = {args.input_module} for language modeling is probably not a "
+                "good idea, since it allows the language model to use information from the right-hand "
+                "context.",
+            )
+        if args.sent_enc == "none":
+            assert_for_log(
+                args.skip_embs,
+                "skip_embs is false and sent_enc is none, "
+                "which means that your token representations are zero-dimensional. "
+                "Consider setting skip_embs.",
+            )
+            phrase_layer = NullPhraseLayer(rnn_params["input_size"])
+            d_sent = 0
+        else:
+            phrase_layer = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
+            d_sent = 2 * args.d_hid
         sent_encoder = SentenceEncoder(
             vocab,
             embedder,
@@ -177,31 +196,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             sep_embs_for_skip=args.sep_embs_for_skip,
             cove_layer=cove_layer,
         )
-        d_sent = 0
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
-        assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
-        assert_for_log(
-            not (
-                args.input_module == "elmo"
-                or args.input_module.startswith("bert")
-                or args.input_module.startswith("xlnet")
-            ),
-            f"Using input_module = {args.input_module} for language modeling is probably not a "
-            "good idea, since it allows the language model to use information from the right-hand "
-            "context.",
-        )
-        bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
-        sent_encoder = SentenceEncoder(
-            vocab,
-            embedder,
-            args.n_layers_highway,
-            bilm,
-            skip_embs=args.skip_embs,
-            dropout=args.dropout,
-            sep_embs_for_skip=args.sep_embs_for_skip,
-            cove_layer=cove_layer,
-        )
-        d_sent = 2 * args.d_hid
     elif args.sent_enc == "bow":
         sent_encoder = BoWSentEncoder(vocab, embedder)
         assert_for_log(
@@ -570,7 +564,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
         setattr(model, "%s_mdl" % task.name, hid2voc)
     elif isinstance(task, MaskedLanguageModelingTask):
-        module = build_mlm(task, d_sent, task_params, model.sent_encoder._text_field_embedder)
+        module = build_mlm(model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, LanguageModelingTask):
         assert not input_module_uses_transformers(args.input_module), (
@@ -768,7 +762,8 @@ def build_lm(task, d_inp, args):
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
 
-def build_mlm(task, d_inp, task_params, embedder):
+
+def build_mlm(embedder):
     " Build MLM components " ""
     lm_head = embedder.get_pretrained_lm_head()
     return lm_head
@@ -1183,43 +1178,59 @@ class MultiTaskModel(nn.Module):
             pass
         return out
 
-
     def _masked_lm_forward(self, batch, task, predict):
         mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
-        tokenizer = self.sent_encoder._text_field_embedder.tokenizer
         # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
-        mask_idx = tokenizer.convert_tokens_to_ids("<mask>")
-        pad_idx = tokenizer.convert_tokens_to_ids("<pad>")
+        mask_idx = self.sent_encoder._text_field_embedder._mask_id
+        pad_idx = self.sent_encoder._text_field_embedder._pad_id
         b_size, seq_len = batch["targs"].size()
-
-        inputs = batch["input"]["roberta"]
+        input_key = self.sent_encoder._text_field_embedder.tokenizer_required
+        inputs = batch["input"][input_key]
         labels = batch["targs"]
 
         probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
         padding_mask = labels.eq(pad_idx)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
 
-        masked_indices = torch.bernoulli(probability_matrix).to(device=inputs.device, dtype=torch.bool)
+        masked_indices = torch.bernoulli(probability_matrix).to(
+            device=inputs.device, dtype=torch.bool
+        )
+
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
 
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
         indices_replaced = (
-            torch.bernoulli(torch.full(labels.shape, 0.8)).to(device=inputs.device, dtype=torch.bool) & masked_indices
+            torch.bernoulli(torch.full(labels.shape, 0.8)).to(
+                device=inputs.device, dtype=torch.bool
+            )
+            & masked_indices
         )
         inputs[indices_replaced] = mask_idx
 
         # 10% of the time, we replace masked input tokens with random word
         indices_random = (
-            torch.bernoulli(torch.full(labels.shape, 0.5)).to(device=inputs.device, dtype=torch.bool)
+            torch.bernoulli(torch.full(labels.shape, 0.5)).to(
+                device=inputs.device, dtype=torch.bool
+            )
             & masked_indices
             & ~indices_replaced
         )
-        random_words = torch.randint(len(tokenizer), labels.shape, dtype=torch.long,device=inputs.device)
+        random_words = torch.randint(
+            len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
+        )
         inputs[indices_random] = random_words[indices_random]
 
-        batch["input"]["roberta"] = inputs
+        # Add 2 to all non-special tokens due to correct_sent logic in Transformer-based
+        # sent_encoder
+        pad_mask = (inputs == 0).long()
+        # map AllenNLP @@PADDING@@ to _pad_id in specific transformer vocab
+        unk_mask = (inputs == 1).long()
+        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific transformer vocab
+        valid_mask = (inputs > 1).long()
+        inputs = (inputs - 2) * valid_mask + self._pad_id * pad_mask + self._unk_id * unk_mask
+        batch["input"][input_key] = inputs
 
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
@@ -1227,11 +1238,10 @@ class MultiTaskModel(nn.Module):
         out["logits"] = logits
         out["loss"] = F.cross_entropy(logits.view(-1, 50265), labels.view(-1))
         out["n_exs"] = format_output(b_size, self._cuda_device)
-        #task.update_metrics(logits.view(-1, 50265), labels.view(-1))
+        # task.update_metrics(logits.view(-1, 50265), labels.view(-1))
         task.update_metrics(out, None)
-        #task.scorer1(out["loss"].item())
+        # task.scorer1(out["loss"].item())
         return out
-
 
     def _mc_forward(self, batch, task, predict):
         """ Forward for a multiple choice question answering task """
@@ -1258,7 +1268,7 @@ class MultiTaskModel(nn.Module):
         if "label" in batch:
             labels = batch["label"]
             out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-        
+
         if predict:
             out["preds"] = logits.argmax(dim=-1)
         return out
