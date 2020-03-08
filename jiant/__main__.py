@@ -562,10 +562,55 @@ def main(cl_arguments):
 
     check_configurations(args, pretrain_tasks, target_tasks)
 
+    # Create trainers
+    trainers = {}
+    if args.do_pretrain:
+        trainers["pretrain"] = build_trainer(
+            args, cuda_device, pretrain_tasks, model, phase="pretrain"
+        )
+
+    if args.do_target_task_training:
+        for task in target_tasks:
+            # Skip tasks that should not be trained on.
+            if task.eval_only_task:
+                continue
+            trainers[f"target_train_{task.name}"] = build_trainer(
+                args, cuda_device, [task], model, phase="target_train"
+            )
+
     # Device-related initialization: CUDA, Data Parallel
     model = model.cuda() if uses_cuda(cuda_device) else model
     if isinstance(cuda_device, list):
         model = nn.DataParallel(model, device_ids=cuda_device)
+
+    # Run pretrain
+    if args.do_pretrain:
+        # Train on pretrain tasks
+        log.info("Training...")
+        trainers["pretrain"].train()
+
+    # Run target training
+    if args.do_target_task_training:
+        # Train on target tasks
+        log.info("Target task training...")
+        pre_target_train_path = setup_target_task_training(args, target_tasks, model)
+        # Check for previous target train checkpoints
+        last_task_index = 0
+        task_to_restore, _, _ = check_for_previous_checkpoints(
+            args.run_dir, target_tasks, "target_train", args.load_model
+        )
+        if task_to_restore is not None:
+            # If there is a task to restore from, target train only on target tasks
+            # including and following that task.
+            last_task_index = [task.name for task in target_tasks].index(task_to_restore)
+        for task in target_tasks[last_task_index:]:
+            # Skip tasks that should not be trained on.
+            if task.eval_only_task:
+                continue
+            load_model_state(
+                model, pre_target_train_path, skip_task_models=[task.name], strict=False
+            )
+            trainers[f"target_task_{task.name}"].train()
 
     # Run pretrain
     if args.do_pretrain:
@@ -637,6 +682,7 @@ def main(cl_arguments):
                 phase="target_train",
             )
 
+    # Run evaluation
     if args.do_full_eval:
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
