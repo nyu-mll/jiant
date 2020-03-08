@@ -1,3 +1,0 @@
-edges-pos-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.981, edges-pos-ontonotes_mcc: 0.980, edges-pos-ontonotes_acc: 0.980, edges-pos-ontonotes_precision: 0.980, edges-pos-ontonotes_recall: 0.981, edges-pos-ontonotes_f1: 0.981
-edges-coref-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.971, edges-coref-ontonotes_mcc: 0.942, edges-coref-ontonotes_acc: 0.970, edges-coref-ontonotes_precision: 0.971, edges-coref-ontonotes_recall: 0.971, edges-coref-ontonotes_f1: 0.971
-edges-nonterminal-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.887, edges-nonterminal-ontonotes_mcc: 0.883, edges-nonterminal-ontonotes_acc: 0.817, edges-nonterminal-ontonotes_precision: 0.861, edges-nonterminal-ontonotes_recall: 0.915, edges-nonterminal-ontonotes_f1: 0.887
