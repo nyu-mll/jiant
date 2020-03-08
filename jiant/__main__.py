@@ -543,7 +543,6 @@ def main(cl_arguments):
     # Load tasks
     log.info("Loading tasks...")
     start_time = time.time()
-    cuda_device = parse_cuda_list_arg(args.cuda)
     pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
     tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
     log.info("\tFinished loading tasks in %.3fs", time.time() - start_time)
@@ -552,7 +551,7 @@ def main(cl_arguments):
     # Build model
     log.info("Building model...")
     start_time = time.time()
-    model = build_model(args, vocab, word_embs, tasks, cuda_device)
+    model = build_model(args, vocab, word_embs, tasks)
     log.info("Finished building model in %.3fs", time.time() - start_time)
 
     # Start Tensorboard if requested
@@ -566,7 +565,7 @@ def main(cl_arguments):
     trainers = {}
     if args.do_pretrain:
         trainers["pretrain"] = build_trainer(
-            args, cuda_device, pretrain_tasks, model, phase="pretrain"
+            args=args, tasks=pretrain_tasks, model=model, phase="pretrain"
         )
 
     if args.do_target_task_training:
@@ -575,11 +574,16 @@ def main(cl_arguments):
             if task.eval_only_task:
                 continue
             trainers[f"target_train_{task.name}"] = build_trainer(
-                args, cuda_device, [task], model, phase="target_train"
+                args=args, tasks=[task], model=model, phase="target_train"
             )
 
     # Device-related initialization: CUDA, Data Parallel
-    model = model.cuda() if uses_cuda(cuda_device) else model
+    cuda_device = parse_cuda_list_arg(args.cuda)
+    model.set_device(cuda_device)
+    for trainer in trainers.values():
+        trainer.set_device(cuda_device)
+    if uses_cuda(cuda_device):
+        model.cuda()
     if isinstance(cuda_device, list):
         model = nn.DataParallel(model, device_ids=cuda_device)
 

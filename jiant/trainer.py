@@ -227,7 +227,7 @@ class SamplingMultiTaskTrainer:
         self._max_vals = max_vals
         self._val_interval = val_interval
         self._serialization_dir = serialization_dir
-        self._cuda_device = cuda_device
+        self._cuda_device = -1
         self._grad_norm = grad_norm
         self._grad_clipping = grad_clipping
         self._min_lr = min_lr
@@ -272,6 +272,9 @@ class SamplingMultiTaskTrainer:
             out_of_patience = index_of_last_improvement <= len(metric_history) - (patience + 1)
 
         return best_so_far, out_of_patience
+
+    def set_device(self, cuda_device):
+        self._cuda_device = cuda_device
 
     def _setup_training(
         self, tasks, batch_size, train_params, optimizer_params, scheduler_params, phase

@@ -228,7 +228,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     return sent_encoder, d_sent
 
 
-def build_model(args, vocab, pretrained_embs, tasks, cuda_device):
+def build_model(args, vocab, pretrained_embs, tasks):
     """
     Build model according to args
     Returns: model which has attributes set in it with the attrbutes.
@@ -297,7 +297,7 @@ def build_model(args, vocab, pretrained_embs, tasks, cuda_device):
     d_task_input = d_sent_output + (args.skip_embs * d_emb)
 
     # Build model and classifiers
-    model = MultiTaskModel(args, sent_encoder, vocab, cuda_device)
+    model = MultiTaskModel(args, sent_encoder, vocab)
     build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
 
     log.info("Model specification:")
@@ -809,11 +809,11 @@ class MultiTaskModel(nn.Module):
     to the model.
     """
 
-    def __init__(self, args, sent_encoder, vocab, cuda_device):
+    def __init__(self, args, sent_encoder, vocab):
         """ Args: sentence encoder """
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
-        self._cuda_device = cuda_device
+        self._cuda_device = -1
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
@@ -824,6 +824,9 @@ class MultiTaskModel(nn.Module):
             and args.transfer_paradigm == "finetune"
         )  # Rough heuristic. TODO: Make this directly user-controllable.
         self.sep_embs_for_skip = args.sep_embs_for_skip
+
+    def set_device(self, cuda_device):
+        self._cuda_device = cuda_device
 
     def forward(self, task, batch, predict=False):
         """
