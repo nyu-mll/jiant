@@ -102,7 +102,7 @@ def handle_arguments(cl_arguments: Iterable[str]) -> argparse.Namespace:
     return parser.parse_args(cl_arguments)
 
 
-def setup_target_task_training(args, target_tasks, model, strict):
+def setup_target_task_training(args, target_tasks, model):
     """
     Gets the model path used to restore model after each target
     task run, and saves current state if no other previous checkpoint can
@@ -486,7 +486,7 @@ def check_arg_name(args: config.Params):
         )
 
 
-def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_device):
+def load_model_for_target_train_run(args, ckpt_path, model, task, cuda_device):
     """
         Function that reloads model if necessary and extracts trainable parts
         of the model in preparation for target_task training.
@@ -497,7 +497,6 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         args: config.Param object,
         ckpt_path: str: path to reload model from,
         model: MultiTaskModel object,
-        strict: bool,
         task: Task object
 
         Returns
@@ -505,7 +504,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         to_train: List of tuples of (name, weight) of trainable parameters
 
     """
-    load_model_state(model, ckpt_path, skip_task_models=[task.name], strict=strict)
+    load_model_state(model, ckpt_path, skip_task_models=[task.name], strict=False)
     if args.transfer_paradigm == "finetune":
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
@@ -566,6 +565,7 @@ def main(cl_arguments):
     if isinstance(cuda_device, list):
         model = nn.DataParallel(model, device_ids=cuda_device)
 
+    # Run pretrain
     if args.do_pretrain:
         # Train on pretrain tasks
         log.info("Training...")
@@ -590,15 +590,10 @@ def main(cl_arguments):
             phase="pretrain",
         )
 
-    # For checkpointing logic
-    if not args.do_target_task_training:
-        strict = True
-    else:
-        strict = False
-
+    # Run target training
     if args.do_target_task_training:
         # Train on target tasks
-        pre_target_train_path = setup_target_task_training(args, target_tasks, model, strict)
+        pre_target_train_path = setup_target_task_training(args, target_tasks, model)
         target_tasks_to_train = copy.deepcopy(target_tasks)
         # Check for previous target train checkpoints
         task_to_restore, _, _ = check_for_previous_checkpoints(
@@ -615,7 +610,7 @@ def main(cl_arguments):
                 continue
 
             params_to_train = load_model_for_target_train_run(
-                args, pre_target_train_path, model, strict, task, cuda_device
+                args, pre_target_train_path, model, task, cuda_device
             )
             trainer, _, opt_params, schd_params = build_trainer(
                 args,
@@ -651,7 +646,7 @@ def main(cl_arguments):
             task_to_use = task_params(task.name).get("use_classifier", task.name)
             ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
-            load_model_state(model, ckpt_path, skip_task_models=[], strict=strict)
+            load_model_state(model, ckpt_path, skip_task_models=[], strict=True)
             evaluate_and_write(args, model, [task], splits_to_write, cuda_device)
 
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:
