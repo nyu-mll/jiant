@@ -299,9 +299,6 @@ def build_model(args, vocab, pretrained_embs, tasks, cuda_device):
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab, cuda_device)
     build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
-    model = model.cuda() if uses_cuda(cuda_device) else model
-    if isinstance(cuda_device, list):
-        model = nn.DataParallel(model, device_ids=cuda_device)
 
     log.info("Model specification:")
     log.info(model)

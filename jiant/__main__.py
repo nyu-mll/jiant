@@ -529,9 +529,6 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         pred_module = get_model_attribute(model, "%s_mdl" % task.name, cuda_device)
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         to_train += elmo_scalars
-    model = model.cuda() if uses_cuda(cuda_device) else model
-    if isinstance(cuda_device, list):
-        model = nn.DataParallel(model, device_ids=cuda_device)
     return to_train
 
 
