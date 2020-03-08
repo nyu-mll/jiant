@@ -45,7 +45,9 @@ function run_exp() {
 
     # Add random seed
     OVERRIDES+=", random_seed=${RANDOM_SEED}"
-    #OVERRIDES+=", batch_size=2, accumulation_steps=2"
+    #OVERRIDES+=", early_stopping_method=ccg"
+    OVERRIDES+=", cuda=\"0,1\""
+    OVERRIDES+=", batch_size=2, accumulation_steps=4"
     #CONFIG_FILE=$1 OVERRIDES=$OVERRIDES sbatch template_sbatch.sbatch
     echo "${CONFIG_FILE}"
     echo "${OVERRIDES}"
@@ -343,9 +345,9 @@ function hyperparameter_mlm_sweep() {
     # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
     #OVERRIDES="exp_name=roberta-large"
     #OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, batch_size=$2, reload_vocab=1, input_module=roberta-large,pretrain_tasks=\"$1,mlm\", weighting_method=\"examples-proportional-mixingK=1048576\""
-    for i in 1  #0 1 2 3 4 5 6 7
+    for i in 3 #0 1 2 3 4 5 6 7
     do
-        OVERRIDES="exp_name=roberta-large-mlm"
+        OVERRIDES="exp_name=roberta-large-mlm-es-ccg"
         OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, batch_size=$2, reload_vocab=1, input_module=roberta-large,pretrain_tasks=\"$1,mlm\", weighting_method=\"examples-proportional-mixingK=1048576\""
         EXP_OVERRIDES="${OVERRIDES}, run_name=$1config$i"
         TASK_TYPE="regular"
@@ -484,7 +486,7 @@ function ez_run_intermediate_to_probing() {
 
 
 function ez_run_mlm_finetune() {
-    declare -a arr=("rte-superglue" "boolq" "commitbank" "copa" "multirc" "wic" "commonsenseqa" "cosmosqa")
+    declare -a arr=("winograd-coreference") #"rte-superglue" "boolq" "commitbank" "copa" "multirc" "wic" "commonsenseqa" "cosmosqa")
  declare -A TARGET_BSIZE=(
       ["rte-superglue"]=4
       ["boolq"]=4
@@ -511,6 +513,6 @@ function ez_run_intermediate_to_mixing() {
     run_intermediate_to_mixing ${2} ${3} ${4} ${MIXING_HPARAM[${3}]} ${MIXING_BSIZE[${3}]} ${SEED_DICT[run${1}_mixing]} ${1}
 }
 
-ez_run_mlm_finetune ccg 111001
-#hyperparameter_mlm_sweep ccg 16 111001 
+#ez_run_mlm_finetune ccg 111001
+hyperparameter_mlm_sweep ccg 16 111001 
 

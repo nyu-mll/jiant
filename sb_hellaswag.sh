@@ -3,7 +3,7 @@
 #SBATCH --output=/misc/vlgscratch4/BowmanGroup/pmh330/jiant-outputs/tense-%j.out
 #SBATCH --error=/misc/vlgscratch4/BowmanGroup/pmh330/jiant-outputs/tense-%j.err
 #SBATCH --time=48:00:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:2
 #SBATCH --mem=100GB
 #SBATCH --signal=USR1@600
 #SBATCH --mail-user=pmh330@nyu.edu
