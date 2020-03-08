@@ -203,6 +203,19 @@ class MLMTask(MaskedLanguageModelingTask):
             "test": os.path.join(path, "test.sentences.txt"),
         }
 
+    def get_all_labels(self):
+        """
+        For MLM, the label space is the vocabulary space of the input.
+        """
+        labels = []
+        if isinstance(task, MLMTask):
+            tokenizer = get_tokenizer(self._tokenizer_name)
+            vocab_size = len(tokenizer)
+            ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
+            for word in ordered_vocab:
+                labels.append(word)
+        return labels
+
     def update_metrics(self, out, batch=None):
         # self.scorer1(logits,labels)
         self.scorer1(out["loss"].mean())

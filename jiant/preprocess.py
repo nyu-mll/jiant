@@ -269,7 +269,7 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     for task in tasks:  # add custom label namespaces
         # TODO: surface more docs for add_task_label_vocab:
         add_task_label_vocab(vocab, task)
-           
+
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
@@ -652,14 +652,6 @@ def add_task_label_vocab(vocab, task):
     This can then be accessed when generating Instances, either via a custom
     Indexer or by invoking the namespace when creating a LabelField.
     """
-    if isinstance(task, MLMTask):
-        tokenizer =  RobertaTokenizer.from_pretrained("roberta-large")
-        vocab_size = len(tokenizer)
-        ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
-        for word in ordered_vocab:
-            vocab.add_token_to_namespace(word, task._label_namespace)
- 
-         
     if not hasattr(task, "get_all_labels"):
         return
     utils.assert_for_log(

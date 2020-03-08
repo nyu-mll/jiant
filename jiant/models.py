@@ -162,16 +162,18 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         assert_for_log(
             args.sent_enc in ["rnn", "bilm", "none"], "Only RNNLM or sent_enc=None supported!"
         )
-        assert_for_log(
-            not (
-                args.input_module == "elmo"
-                or args.input_module.startswith("bert")
-                or args.input_module.startswith("xlnet")
-            ),
-            f"Using input_module = {args.input_module} for language modeling is probably not a "
-            "good idea, since it allows the language model to use information from the right-hand "
-            "context.",
-        )
+        if not isinstance(task, MaskedLanguageModelingTask):
+            # If an autoregressive LanguageModelingTask
+            assert_for_log(
+                not (
+                    args.input_module == "elmo"
+                    or args.input_module.startswith("bert")
+                    or args.input_module.startswith("xlnet")
+                ),
+                f"Using input_module = {args.input_module} for language modeling is probably not a "
+                "good idea, since it allows the language model to use information from the right-hand "
+                "context.",
+            )
         if args.sent_enc == "none":
             assert_for_log(
                 args.skip_embs,
@@ -562,7 +564,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
         setattr(model, "%s_mdl" % task.name, hid2voc)
     elif isinstance(task, MaskedLanguageModelingTask):
-        module = build_mlm(task, d_sent, task_params, model.sent_encoder._text_field_embedder)
+        module = build_mlm(model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, LanguageModelingTask):
         assert not input_module_uses_transformers(args.input_module), (
@@ -761,7 +763,7 @@ def build_lm(task, d_inp, args):
     return hid2voc
 
 
-def build_mlm(task, d_inp, task_params, embedder):
+def build_mlm(embedder):
     " Build MLM components " ""
     lm_head = embedder.get_pretrained_lm_head()
     return lm_head
@@ -1180,12 +1182,11 @@ class MultiTaskModel(nn.Module):
         mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
-        tokenizer = self.sent_encoder._text_field_embedder.tokenizer
         # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
-        mask_idx = tokenizer.convert_tokens_to_ids("<mask>")
-        pad_idx = tokenizer.convert_tokens_to_ids("<pad>")
+        mask_idx = self.sent_encoder._text_field_embedder._mask_id
+        pad_idx = self.sent_encoder._text_field_embedder._pad_id
         b_size, seq_len = batch["targs"].size()
-        input_key = list(batch["input"].values())[0]
+        input_key = self.sent_encoder._text_field_embedder.tokenizer_required
         inputs = batch["input"][input_key]
         labels = batch["targs"]
 
@@ -1220,6 +1221,14 @@ class MultiTaskModel(nn.Module):
         )
         inputs[indices_random] = random_words[indices_random]
 
+        # Add 2 to all non-special tokens due to correct_sent logic in Transformer-based
+        # sent_encoder
+        pad_mask = (inputs == 0).long()
+        # map AllenNLP @@PADDING@@ to _pad_id in specific transformer vocab
+        unk_mask = (inputs == 1).long()
+        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific transformer vocab
+        valid_mask = (inputs > 1).long()
+        inputs = (inputs - 2) * valid_mask + self._pad_id * pad_mask + self._unk_id * unk_mask
         batch["input"][input_key] = inputs
 
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
