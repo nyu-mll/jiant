@@ -13,7 +13,7 @@ A few things you might want to know about `jiant`:
 - `jiant` is built on [PyTorch](https://pytorch.org). It also uses many components from [AllenNLP](https://github.com/allenai/allennlp) and the HuggingFace Transformers [implementations](https://github.com/huggingface/transformers) for GPT, BERT and other transformer models.
 - The name `jiant` doesn't mean much. The 'j' stands for JSALT. That's all the acronym we have.
 
-For a full system overview of `jiant` version 1.3.0, see https://arxiv.org/abs/2003.02249.	
+For a full system overview of `jiant` version 1.3.0, see https://arxiv.org/abs/2003.02249.
 
 ## Getting Started
 

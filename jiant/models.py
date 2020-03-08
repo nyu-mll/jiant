@@ -1226,9 +1226,7 @@ class MultiTaskModel(nn.Module):
         # Add 2 to all non-special tokens due to correct_sent logic in Transformer-based
         # sent_encoder
         pad_mask = (inputs == 0).long()
-        # map AllenNLP @@PADDING@@ to _pad_id in specific transformer vocab
         unk_mask = (inputs == 1).long()
-        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific transformer vocab
         valid_mask = (inputs > 1).long()
         inputs = (inputs + 2) * valid_mask + 0 * pad_mask + 1 * unk_mask
         batch["input"][input_key] = inputs
@@ -1239,9 +1237,7 @@ class MultiTaskModel(nn.Module):
         out["logits"] = logits
         out["loss"] = F.cross_entropy(logits.view(-1, 50265), labels.view(-1))
         out["n_exs"] = format_output(b_size, self._cuda_device)
-        # task.update_metrics(logits.view(-1, 50265), labels.view(-1))
         task.update_metrics(out, None)
-        # task.scorer1(out["loss"].item())
         return out
 
     def _mc_forward(self, batch, task, predict):
