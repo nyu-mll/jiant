@@ -271,7 +271,6 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
         # Add pre-computed vocabulary of corresponding tokenizer for transformers models.
         add_transformers_vocab(vocab, args.tokenizer)
 
-
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
