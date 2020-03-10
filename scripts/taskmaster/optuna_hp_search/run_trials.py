@@ -5,13 +5,18 @@ import subprocess
 import os
 
 RESULT_DIR = "/scratch/hl3236/jiant_results/"
-FAILED_RUN_DEFAULT = -1.0
+FAILED_RUN_DEFAULT = None
 
 
 def run_trials(study_name, gpu_available, n_trials):
     storage = "sqlite:///example.db"
+    sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(
-        study_name=study_name, storage=storage, direction="maximize", load_if_exists=True
+        study_name=study_name,
+        storage=storage,
+        direction="maximize",
+        sampler=sampler,
+        load_if_exists=True,
     )
     with open("scripts/taskmaster/optuna_hp_search/task_metadata.json", "r") as f:
         task_metadata = json.loads(f.read())
@@ -36,12 +41,9 @@ def run_trials(study_name, gpu_available, n_trials):
             batch_size_candidate = [16, 32]
             lr_candidates = [1e-5, 2e-5, 3e-5]
 
-        max_epochs_select = trial.suggest_int("epoch_select", 0, len(max_epochs_candidates) - 1)
-        max_epochs = max_epochs_candidates[max_epochs_select]
-        lr_select = trial.suggest_int("lr_select", 0, len(lr_candidates) - 1)
-        lr = lr_candidates[lr_select]
-        batch_size_select = trial.suggest_int("bs_select", 0, len(batch_size_candidate) - 1)
-        batch_size = batch_size_candidate[batch_size_select]
+        max_epochs = trial.suggest_categorical("epochs", max_epochs_candidates)
+        lr = trial.suggest_categorical("lr", lr_candidates)
+        batch_size = trial.suggest_categorical("bs", batch_size_candidate)
         batch_size_limit = task["batch_size_limit"]
         gpu_needed = batch_size // batch_size_limit
         if gpu_needed <= gpu_available:
@@ -84,13 +86,13 @@ def run_trials(study_name, gpu_available, n_trials):
         process = subprocess.Popen(command, stdout=subprocess.PIPE)
         process.wait()
 
+        performance = FAILED_RUN_DEFAULT
         results_tsv = os.path.join(RESULT_DIR, exp_name, "results.tsv")
-        with open(results_tsv, "r") as f:
-            results = dict([line.split("\t") for line in f.read().split("\n") if line])
-        if run_name in results:
-            performance = float(results[run_name].split(", ")[0].split(": ")[-1])
-        else:
-            performance = FAILED_RUN_DEFAULT
+        if os.path.exists(results_tsv):
+            with open(results_tsv, "r") as f:
+                results = dict([line.split("\t") for line in f.read().split("\n") if line])
+            if run_name in results:
+                performance = float(results[run_name].split(", ")[0].split(": ")[-1])
 
         return performance
 
