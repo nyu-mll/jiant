@@ -115,7 +115,7 @@ def process_single_pair_task_split(
                 model_preprocessing_interface.model_flags["uses_mirrored_pair"]
                 and is_symmetrical_pair
             ):
-                inp_m = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                inp_m = model_preprocessing_interface.boundary_token_fn(input2, input1)
                 d["inputs_m"] = sentence_to_text_field(inp_m, indexers)
         else:
             d["input1"] = sentence_to_text_field(
