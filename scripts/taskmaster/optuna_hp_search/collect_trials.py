@@ -20,7 +20,7 @@ def collect_trails(study_name):
     df_grouped = df.groupby(["batch_size", "lr", "max_epochs"], as_index=False).agg(
         {"value": ["median", "mean", "var", "count"]}
     )
-    df_grouped.columns = ["batch_size", "lr", "max_epochs", "median", "mean", "var", "count"]
+    df_grouped.columns = ["batch_size", "lr", "max_epochs", "median", "min", "count"]
     df_grouped = df_grouped.sort_values(["median", "count"], ascending=False)
     print(df_grouped)
     csv_file = f"optuna_{study_name}.csv"
