@@ -1,8 +1,6 @@
 # Implementation of edge probing module.
+from typing import Dict
 
-from typing import Dict, Iterable
-
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -80,19 +78,19 @@ class EdgeClassifierModule(nn.Module):
         if self.is_symmetric or self.single_sided:
             # Use None as dummy padding for readability,
             # so that we can index projs[1] and projs[2]
-            self.projs = [None, self.proj1, self.proj1]
+            self.projs = nn.ModuleList([None, self.proj1, self.proj1])
         else:
             # Separate params for span2
             self.proj2 = self._make_cnn_layer(d_inp)
-            self.projs = [None, self.proj1, self.proj2]
+            self.projs = nn.ModuleList([None, self.proj1, self.proj2])
 
         # Span extractor, shared for both span1 and span2.
         self.span_extractor1 = self._make_span_extractor()
         if self.is_symmetric or self.single_sided:
-            self.span_extractors = [None, self.span_extractor1, self.span_extractor1]
+            self.span_extractors = nn.ModuleList([None, self.span_extractor1, self.span_extractor1])
         else:
             self.span_extractor2 = self._make_span_extractor()
-            self.span_extractors = [None, self.span_extractor1, self.span_extractor2]
+            self.span_extractors = nn.ModuleList([None, self.span_extractor1, self.span_extractor2])
 
         # Classifier gets concatenated projections of span1, span2
         clf_input_dim = self.span_extractors[1].get_output_dim()
@@ -131,11 +129,9 @@ class EdgeClassifierModule(nn.Module):
         """
         out = {}
 
-        batch_size = word_embs_in_context.shape[0]
-        out["n_inputs"] = batch_size
-
         # Apply projection CNN layer for each span.
         word_embs_in_context_t = word_embs_in_context.transpose(1, 2)  # needed for CNN layer
+
         se_proj1 = self.projs[1](word_embs_in_context_t).transpose(2, 1).contiguous()
         if not self.single_sided:
             se_proj2 = self.projs[2](word_embs_in_context_t).transpose(2, 1).contiguous()
@@ -169,27 +165,9 @@ class EdgeClassifierModule(nn.Module):
             out["loss"] = self.compute_loss(logits[span_mask], batch["labels"][span_mask], task)
 
         if predict:
-            # Return preds as a list.
-            preds = self.get_predictions(logits)
-            out["preds"] = list(self.unbind_predictions(preds, span_mask))
+            out["preds"] = self.get_predictions(logits)
 
         return out
-
-    def unbind_predictions(self, preds: torch.Tensor, masks: torch.Tensor) -> Iterable[np.ndarray]:
-        """ Unpack preds to varying-length numpy arrays.
-
-        Args:
-            preds: [batch_size, num_targets, ...]
-            masks: [batch_size, num_targets] boolean mask
-
-        Yields:
-            np.ndarray for each row of preds, selected by the corresponding row
-            of span_mask.
-        """
-        preds = preds.detach().cpu()
-        masks = masks.detach().cpu()
-        for pred, mask in zip(torch.unbind(preds, dim=0), torch.unbind(masks, dim=0)):
-            yield pred[mask].numpy()  # only non-masked predictions
 
     def get_predictions(self, logits: torch.Tensor):
         """Return class probabilities, same shape as logits.
@@ -218,16 +196,6 @@ class EdgeClassifierModule(nn.Module):
         Returns:
             loss: scalar Tensor
         """
-        binary_preds = logits.ge(0).long()  # {0,1}
-
-        # Matthews coefficient and accuracy computed on {0,1} labels.
-        task.mcc_scorer(binary_preds, labels.long())
-        task.acc_scorer(binary_preds, labels.long())
-
-        # F1Measure() expects [total_num_targets, n_classes, 2]
-        # to compute binarized F1.
-        binary_scores = torch.stack([-1 * logits, logits], dim=2)
-        task.f1_scorer(binary_scores, labels)
 
         if self.loss_type == "sigmoid":
             return F.binary_cross_entropy(torch.sigmoid(logits), labels.float())
