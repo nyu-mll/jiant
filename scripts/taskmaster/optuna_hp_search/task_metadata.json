@@ -26,8 +26,8 @@
     },
     "qasrl": {
         "task_name": "qasrl",
-        "batch_size_limit": 0,
-        "training_size": -1
+        "batch_size_limit": 8,
+        "training_size": 637989
     },
     "qamr": {
         "task_name": "qamr",
@@ -111,52 +111,52 @@
     },
     "edges-ner-ontonotes": {
         "task_name": "edges-ner-ontonotes",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 49706
     },
     "edges-srl-ontonotes": {
         "task_name": "edges-srl-ontonotes",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 231480
     },
     "edges-coref-ontonotes": {
         "task_name": "edges-coref-ontonotes",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 41777
     },
     "edges-spr1": {
         "task_name": "edges-spr1",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 3843
     },
     "edges-spr2": {
         "task_name": "edges-spr2",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 2226
     },
     "edges-dpr": {
         "task_name": "edges-dpr",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 958
     },
     "edges-rel-semeval": {
         "task_name": "edges-rel-semeval",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 6851
     },
     "edges-pos-ontonotes": {
         "task_name": "edges-pos-ontonotes",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 81035
     },
     "edges-nonterminal-ontonotes": {
         "task_name": "edges-nonterminal-ontonotes",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 110513
     },
     "edges-dep-ud-ewt": {
         "task_name": "edges-dep-ud-ewt",
-        "batch_size_limit": 16,
+        "batch_size_limit": 32,
         "training_size": 12496
     },
     "se-probing-word-content": {

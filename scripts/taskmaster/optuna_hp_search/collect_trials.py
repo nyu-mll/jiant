@@ -16,14 +16,16 @@ def collect_trails(study_name):
     )
     df = df.dropna()
     df = df.sort_values(["batch_size", "lr", "max_epochs"])
+    csv_file = f"optuna_{study_name}_full.csv"
+    df.to_csv(csv_file, index=True)
 
     df_grouped = df.groupby(["batch_size", "lr", "max_epochs"], as_index=False).agg(
-        {"value": ["median", "mean", "var", "count"]}
+        {"value": ["median", "mean", "min", "max", "count"]}
     )
-    df_grouped.columns = ["batch_size", "lr", "max_epochs", "median", "min", "count"]
+    df_grouped.columns = ["batch_size", "lr", "max_epochs", "median", "mean", "min", "max", "count"]
     df_grouped = df_grouped.sort_values(["median", "count"], ascending=False)
     print(df_grouped)
-    csv_file = f"optuna_{study_name}.csv"
+    csv_file = f"optuna_{study_name}_agg.csv"
     df_grouped.to_csv(csv_file, index=True)
 
 

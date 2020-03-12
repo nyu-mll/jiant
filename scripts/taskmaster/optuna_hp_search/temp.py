@@ -49,21 +49,23 @@ task_names = [
     "acceptability-eos",
 ]
 
-batch_size = 32
-outputs = []
 
-for task_name in task_names:
-    override = f'"reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks={task_name}, target_tasks={task_name}, run_name={task_name}, batch_size={batch_size}, max_epochs=1, val_interval=100, max_vals=1, patience=10000"'
-    outputs.append(
-        f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES={override} sbatch ~/jp100.sbatch'
-    )
+def run_batch_size_check(batch_size):
+    outputs = []
+    for task_name in task_names:
+        override = f'"reload_tasks=1, reload_vocab=1, do_pretrain=1, pretrain_tasks={task_name}, target_tasks={task_name}, run_name={task_name}, batch_size={batch_size}, max_epochs=1, val_interval=100, max_vals=1, patience=10000"'
+        outputs.append(
+            f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES={override} sbatch ~/jp100.sbatch'
+        )
+    return outputs
 
-task_metadata = [
-    {"task_name": task_name, "batch_size_limit": 0, "training_size": 0} for task_name in task_names
-]
 
-# with open("task_metadata.json", "w") as f:
-#     f.write(json.dumps(task_metadata))
+def run_optuna(parallel, gpus):
+    outputs = []
+    PROG="scripts/taskmaster/optuna_hp_search/run_trials" ARGS="winogrande 1 20" sbatch ~/p40.sbatch
+
+
+outputs = run_batch_size_check(32)
 
 with open("auto.sh", "w") as f:
     for line in outputs:
