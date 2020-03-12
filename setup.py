@@ -68,6 +68,7 @@ setuptools.setup(
         "transformers==2.3.0",
         "ftfy",
         "spacy",
+        "optuna",
     ],
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
