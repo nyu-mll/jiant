@@ -1,3 +1,5 @@
+*.pkl
+
 *.pyc
 *.swp
 *.log

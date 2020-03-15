@@ -1,0 +1,211 @@
+suffixal	0	0	This	this	DT	(ROOT(S(NP*)	_	_	_
+suffixal	0	1	symbolizes	symbolize	VBZ	(VP*	_	_	_
+suffixal	0	2	the	the	DT	(S(NP(NP*	_	_	_
+suffixal	0	3	power	power	NN	*)	_	_	_
+suffixal	0	4	of	of	IN	(PP*	_	_	_
+suffixal	0	5	lust	lust	NN	(NP*)))	_	_	_
+suffixal	0	6	to	to	TO	(VP*	_	_	_
+suffixal	0	7	blow	blow	VB	(VP*	_	blow	_
+suffixal	0	8	one	one	CD	(NP*)	_	one	_
+suffixal	0	9	about	about	IN	(PP*	_	about	_
+suffixal	0	10	aimlessly	aimlessly	RB	(ADVP*))))))	less	aim	aim
+suffixal	0	11	.	.	.	*))	_	_	_
+
+suffixal	1	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+suffixal	1	1	surged	surge	VBD	(VP(VP*	_	surged	_
+suffixal	1	2	effortlessly	effortlessly	RB	(ADVP*)	less	effort	effort
+suffixal	1	3	past	past	IN	(PP*	_	past	_
+suffixal	1	4	the	the	DT	(NP*	_	the	_
+suffixal	1	5	palace	palace	NN	*	_	palace	_
+suffixal	1	6	guards	guard	NNS	*)))	_	guards	_
+suffixal	1	7	and	and	CC	*	_	_	_
+suffixal	1	8	thundered	thunder	VBD	(VP*	_	_	_
+suffixal	1	9	into	into	IN	(PP*	_	_	_
+suffixal	1	10	the	the	DT	(NP(NP*	_	_	_
+suffixal	1	11	queen	queen	NN	*	_	_	_
+suffixal	1	12	's	's	POS	*)	_	_	_
+suffixal	1	13	bedroom	bedroom	NN	*))	_	_	_
+suffixal	1	14	mere	mere	JJ	(NP*	_	_	_
+suffixal	1	15	minutes	minute	NNS	*)	_	_	_
+suffixal	1	16	after	after	IN	(SBAR*	_	_	_
+suffixal	1	17	she	she	PRP	(S(NP*)	_	_	_
+suffixal	1	18	fled	flee	VBD	(VP*)))))	_	_	_
+suffixal	1	19	.	.	.	*))	_	_	_
+
+suffixal	2	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+suffixal	2	1	can	can	MD	(VP*	_	can	_
+suffixal	2	2	connect	connect	VB	(VP*	_	connect	_
+suffixal	2	3	wirelessly	wirelessly	RB	(ADVP*)	less	wire	wire
+suffixal	2	4	to	to	TO	(PP*	_	to	_
+suffixal	2	5	any	any	DT	(NP(NP*	_	any	_
+suffixal	2	6	computer	computer	NN	*)	_	computer	_
+suffixal	2	7	that	that	WDT	(SBAR(WHNP*)	_	that	_
+suffixal	2	8	has	have	VBZ	(S(VP*	_	has	_
+suffixal	2	9	the	the	DT	(NP*	_	the	_
+suffixal	2	10	Apple	Apple	NNP	*	_	Apple	_
+suffixal	2	11	program	program	NN	*	_	program	_
+suffixal	2	12	``	``	``	*	_	``	_
+suffixal	2	13	iTunes	iTunes	NNP	*	_	iTunes	_
+suffixal	2	14	''	''	''	*)	_	''	_
+suffixal	2	15	on	on	IN	(PP*	_	on	_
+suffixal	2	16	it	it	PRP	(NP*)))))))))	_	it	_
+suffixal	2	17	.	.	.	*))	_	_	_
+
+suffixal	3	0	The	the	DT	(ROOT(S(NP(NP(NP*	_	The	_	_	_	_
+suffixal	3	1	electromagnetic	electromagnetic	JJ	*	_	electromagnetic	_	_	_	_
+suffixal	3	2	field	field	NN	*	_	field	_	_	_	_
+suffixal	3	3	's	's	POS	*)	_	's	_	_	_	_
+suffixal	3	4	messenger	messenger	NN	*	_	messenger	_	_	_	_
+suffixal	3	5	particles	particle	NNS	*)	_	particles	_	_	_	_
+suffixal	3	6	,	,	,	*	_	,	_	_	_	_
+suffixal	3	7	photons	photon	NNS	(NP*)	_	photons	_	_	_	_
+suffixal	3	8	,	,	,	*)	_	,	_	_	_	_
+suffixal	3	9	carry	carry	VBP	(VP(VP*	_	carry	_	_	_	_
+suffixal	3	10	an	a	DT	(NP*	_	an	_	_	_	_
+suffixal	3	11	image	image	NN	*	_	image	_	_	_	_
+suffixal	3	12	timelessly	timelessly	NN	*)	less	time	time	_	_	_
+suffixal	3	13	across	across	IN	(PP*	_	across	_	_	_	_
+suffixal	3	14	the	the	DT	(NP*	_	the	_	_	_	_
+suffixal	3	15	universe	universe	NN	*))	_	universe	_	_	_	_
+suffixal	3	16	while	while	IN	(SBAR*	_	_	_	_	_	_
+suffixal	3	17	observers	observer	NNS	(S(NP(NP*)	_	_	_	_	_	_
+suffixal	3	18	within	within	IN	(PP*	_	_	_	_	_	_
+suffixal	3	19	this	this	DT	(NP*	_	_	_	_	_	_
+suffixal	3	20	field	field	NN	*)))	_	_	_	_	_	_
+suffixal	3	21	have	have	VBP	(VP*	_	_	_	_	_	_
+suffixal	3	22	enough	enough	JJ	(NP*	_	_	_	_	_	_
+suffixal	3	23	flow	flow	NN	*)	_	_	_	_	_	_
+suffixal	3	24	through	through	IN	(PP*	_	_	_	_	_	_
+suffixal	3	25	time	time	NN	(NP*))	_	_	_	_	_	_
+suffixal	3	26	to	to	TO	(S(VP*	_	_	_	_	_	_
+suffixal	3	27	decode	decode	VB	(VP(VP*	_	_	_	_	_	_
+suffixal	3	28	this	this	DT	(NP*	_	_	_	_	_	_
+suffixal	3	29	image	image	NN	*))	_	_	_	_	_	_
+suffixal	3	30	and	and	CC	*	_	_	_	_	_	_
+suffixal	3	31	react	react	VB	(VP*	_	_	_	_	_	_
+suffixal	3	32	by	by	IN	(PP*	_	_	_	_	_	_
+suffixal	3	33	moving	move	VBG	(S(VP*	_	_	_	_	_	_
+suffixal	3	34	within	within	IN	(PP*	_	_	_	_	_	_
+suffixal	3	35	3D	3D	CD	(NP*	_	_	_	_	_	_
+suffixal	3	36	space	space	NN	*)))))))))))))	_	_	_	_	_	_
+suffixal	3	37	,	,	,	*	_	_	_	_	_	_
+suffixal	3	38	yet	yet	CC	*	_	_	_	_	_	_
+suffixal	3	39	can	can	MD	(VP*	_	_	_	_	_	_
+suffixal	3	40	never	never	RB	(ADVP*)	_	_	_	_	_	_
+suffixal	3	41	outrun	outrun	VB	(VP*	_	_	_	_	_	_
+suffixal	3	42	this	this	DT	(NP*	_	_	_	_	this	_
+suffixal	3	43	timeless	timeless	JJ	*	_	_	_	less	time	time
+suffixal	3	44	image	image	NN	*))))	_	_	_	_	image	_
+suffixal	3	45	.	.	.	*))	_	_	_	_	_	_
+
+suffixal	4	0	They	they	PRP	(ROOT(S(S(NP*)	_	They	_
+suffixal	4	1	have	have	VBP	(VP*	_	have	_
+suffixal	4	2	mercilessly	mercilessly	RB	(ADVP*)	less	merci	merci
+suffixal	4	3	slain	slay	VBN	(VP*	_	slain	_
+suffixal	4	4	our	we	PRP$	(NP*	_	our	_
+suffixal	4	5	patriots	patriot	NNS	*))))	_	patriots	_
+suffixal	4	6	;	;	:	*	_	_	_
+suffixal	4	7	they	they	PRP	(S(NP*)	_	_	_
+suffixal	4	8	have	have	VBP	(VP*	_	_	_
+suffixal	4	9	drowned	drown	VBN	(VP*	_	_	_
+suffixal	4	10	our	we	PRP$	(NP*	_	_	_
+suffixal	4	11	uprisings	uprising	NNS	*)	_	_	_
+suffixal	4	12	in	in	IN	(PP*	_	_	_
+suffixal	4	13	rivers	river	NNS	(NP(NP*)	_	_	_
+suffixal	4	14	of	of	IN	(PP*	_	_	_
+suffixal	4	15	blood	blood	NN	(NP*)))))))	_	_	_
+suffixal	4	16	.	.	.	*))	_	_	_
+
+suffixal	5	0	And	and	CC	(ROOT(S*	_	_	_
+suffixal	5	1	the	the	DT	(NP(NP*	_	the	_
+suffixal	5	2	Bird	Bird	NNP	*)	_	Bird	_
+suffixal	5	3	of	of	IN	(PP*	_	of	_
+suffixal	5	4	Paradise	Paradise	NNP	(NP*)))	_	Paradise	_
+suffixal	5	5	must	must	MD	(VP*	_	must	_
+suffixal	5	6	have	have	VB	(VP*	_	have	_
+suffixal	5	7	flown	fly	VBN	(VP*	_	flown	_
+suffixal	5	8	around	around	IN	(PP*	_	around	_
+suffixal	5	9	the	the	DT	(NP*	_	the	_
+suffixal	5	10	ark	ark	NN	*))	_	ark	_
+suffixal	5	11	endlessly	endlessly	RB	(ADVP*)	less	end	end	_
+suffixal	5	12	,	,	,	*	_	,	_
+suffixal	5	13	because	because	IN	(SBAR*	_	because	_
+suffixal	5	14	it	it	PRP	(S(NP*)	_	it	_
+suffixal	5	15	had	have	VBD	(VP*	_	had	_
+suffixal	5	16	no	no	DT	(NP(NP*	_	no	_
+suffixal	5	17	feet	foot	NNS	*)	_	feet	_
+suffixal	5	18	to	to	TO	(PP*	_	to	_
+suffixal	5	19	land	land	NN	(NP*)))))))))	_	land	_
+suffixal	5	20	.	.	.	*))	_	_	_
+
+suffixal	6	0	Kittens	kitten	NNS	(ROOT(S(NP*)	_	Kittens	_
+suffixal	6	1	play	play	VBP	(VP*	_	play	_
+suffixal	6	2	endlessly	endlessly	RB	(ADVP*))	less	end	end
+suffixal	6	3	.	.	.	*))	_	_	_
+
+suffixal	7	0	Frieza	Frieza	NNP	(ROOT(S(NP*)	_	Frieza	_
+suffixal	7	1	defeats	defeat	VBZ	(VP*	_	defeats	_
+suffixal	7	2	Nail	nail	VB	(S(VP*	_	Nail	_
+suffixal	7	3	effortlessly	effortlessly	RB	(ADVP*)	less	effort	effort
+suffixal	7	4	,	,	,	*	_	_	_
+suffixal	7	5	leaving	leave	VBG	(S(VP*	_	_	_
+suffixal	7	6	him	he	PRP	(S(NP*)	_	_	_
+suffixal	7	7	to	to	TO	(VP*	_	_	_
+suffixal	7	8	die	die	VB	(VP*	_	_	_
+suffixal	7	9	after	after	IN	(PP*	_	_	_
+suffixal	7	10	discovering	discover	VBG	(S(VP*	_	_	_
+suffixal	7	11	that	that	IN	(SBAR*	_	_	_
+suffixal	7	12	dende	dende	NN	(S(NP*)	_	_	_
+suffixal	7	13	has	have	VBZ	(VP*	_	_	_
+suffixal	7	14	ran	ran	VBD	(VP*	_	_	_
+suffixal	7	15	to	to	TO	(PP*	_	_	_
+suffixal	7	16	the	the	DT	(NP*	_	_	_
+suffixal	7	17	Z-fighters	Z-fighters	NNP	*))	_	_	_
+suffixal	7	18	to	to	TO	(S(VP*	_	_	_
+suffixal	7	19	tell	tell	VB	(VP*	_	_	_
+suffixal	7	20	Krillin	Krillin	NNP	(NP*	_	_	_
+suffixal	7	21	and	and	CC	*	_	_	_
+suffixal	7	22	Gohan	Gohan	NNP	*)	_	_	_
+suffixal	7	23	how	how	WRB	(SBAR(WHADVP*)	_	_	_
+suffixal	7	24	to	to	TO	(S(VP*	_	_	_
+suffixal	7	25	use	use	VB	(VP*	_	_	_
+suffixal	7	26	the	the	DT	(NP*	_	_	_
+suffixal	7	27	dragon	dragon	NN	*	_	_	_
+suffixal	7	28	balls	ball	NNS	*)))))))))))))))))))))))	_	_	_
+suffixal	7	29	.	.	.	*))	_	_	_
+
+suffixal	8	0	The	the	DT	(ROOT(S(S(NP(NP*	_	_	_
+suffixal	8	1	controllers	controller	NNS	*)	_	_	_
+suffixal	8	2	of	of	IN	(PP*	_	_	_
+suffixal	8	3	the	the	DT	(NP(NP*	_	_	_
+suffixal	8	4	PlayStation	PlayStation	NNP	*	_	_	_
+suffixal	8	5	2	2	CD	*)	_	_	_
+suffixal	8	6	and	and	CC	*	_	_	_
+suffixal	8	7	PlayStation	PlayStation	NNP	(NP*	_	_	_
+suffixal	8	8	3	3	CD	*))))	_	_	_
+suffixal	8	9	are	be	VBP	(VP*	_	_	_
+suffixal	8	10	the	the	DT	(NP*	_	_	_
+suffixal	8	11	same	same	JJ	*)))	_	_	_
+suffixal	8	12	but	but	CC	*	_	_	_
+suffixal	8	13	the	the	DT	(S(NP*	_	the	_
+suffixal	8	14	PlayStation	PlayStation	NNP	*	_	Playstation	_
+suffixal	8	15	3	3	CD	*)	_	3	_
+suffixal	8	16	is	be	VBZ	(VP*	_	is	_
+suffixal	8	17	used	use	VBN	(VP*	_	used	_
+suffixal	8	18	wirelessly	wirelessly	RB	(ADVP*))))	less	wire	wire
+suffixal	8	19	.	.	.	*))	_	_	_
+
+suffixal	9	0	Both	both	DT	(ROOT(S(NP*	_	_	_
+suffixal	9	1	Frieza	Frieza	NNP	*	_	_	_
+suffixal	9	2	and	and	CC	*	_	_	_
+suffixal	9	3	Zarbon	Zarbon	NNP	*)	_	_	_
+suffixal	9	4	looked	look	VBD	(VP*	_	_	_
+suffixal	9	5	down	down	RP	(PRT*)	_	_	_
+suffixal	9	6	upon	upon	IN	(PP*	_	_	_
+suffixal	9	7	him	he	PRP	(NP*))	_	_	_
+suffixal	9	8	for	for	IN	(PP*	_	_	_
+suffixal	9	9	carelessly	carelessly	RB	(S(ADVP*)	less	care	care
+suffixal	9	10	leaving	leave	VBG	(VP*	_	leaving	_
+suffixal	9	11	him	he	PRP	(S(NP*)	_	him	_
+suffixal	9	12	alive	alive	JJ	(ADJP*))))))	_	alive	_
+suffixal	9	13	.	.	.	*))	_	_	_

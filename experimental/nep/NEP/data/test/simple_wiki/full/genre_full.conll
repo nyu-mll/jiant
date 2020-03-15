@@ -1,0 +1,2451 @@
+genre	0	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+genre	0	1	is	be	VBZ	(VP*	_	is	_
+genre	0	2	impossible	impossible	JJ	(ADJP(ADJP*	im	possible	possible
+genre	0	3	to	to	TO	(S(VP*	_	to	_
+genre	0	4	make	make	VB	(VP*	_	make	_
+genre	0	5	on	on	IN	(PP*	_	on	_
+genre	0	6	a	a	DT	(NP(NP*	_	a	_
+genre	0	7	flat	flat	JJ	*	_	flat	_
+genre	0	8	surface	surface	NN	*)	_	surface	_
+genre	0	9	,	,	,	*	_	,	_
+genre	0	10	called	called	VBN	(VP*	_	called	_
+genre	0	11	a	a	DT	(NP*	_	a	_
+genre	0	12	plane	plane	NN	*)	_	plane	_
+genre	0	13	because	because	IN	(SBAR*	_	because	_
+genre	0	14	the	the	DT	(S(NP*	_	the	_
+genre	0	15	sides	side	NNS	*)	_	sides	_
+genre	0	16	would	would	MD	(VP*	_	would	_
+genre	0	17	be	be	VB	(VP*	_	be	_
+genre	0	18	the	the	DT	(NP*	_	the	_
+genre	0	19	same	same	JJ	*))))))))))))	_	same	_
+genre	0	20	,	,	,	*	_	_	_
+genre	0	21	but	but	CC	*	_	_	_
+genre	0	22	possible	possible	JJ	(ADJP*	_	_	_
+genre	0	23	to	to	TO	(S(VP*	_	_	_
+genre	0	24	make	make	VB	(VP*	_	_	_
+genre	0	25	on	on	IN	(PP*	_	_	_
+genre	0	26	a	a	DT	(NP*	_	_	_
+genre	0	27	sphere	sphere	NN	*))))))))	_	_	_
+genre	0	28	.	.	.	*))	_	_	_
+
+genre	1	0	Afghanistan	Afghanistan	NNP	(ROOT(S(NP*)	_	_	_
+genre	1	1	was	be	VBD	(VP*	_	_	_
+genre	1	2	recognized	recognize	VBN	(VP*	_	_	_
+genre	1	3	as	as	IN	(PP*	_	_	_
+genre	1	4	``	``	``	*	_	_	_
+genre	1	5	Khorasan	Khorasan	NNP	(NP*)	_	_	_
+genre	1	6	''	''	''	*)	_	_	_
+genre	1	7	,	,	,	*	_	_	_
+genre	1	8	meaning	mean	VBG	(S(VP*	_	_	_
+genre	1	9	``	``	``	*	_	_	_
+genre	1	10	land	land	NN	(NP(NP*)	_	_	_
+genre	1	11	of	of	IN	(PP*	_	_	_
+genre	1	12	the	the	DT	(NP*	_	_	_
+genre	1	13	rising	rise	VBG	*	_	_	_
+genre	1	14	sun	sun	NN	*	_	_	_
+genre	1	15	,	,	,	*	_	_	_
+genre	1	16	''	''	''	*))	_	_	_
+genre	1	17	which	which	WDT	(SBAR(WHNP*)	_	_	_
+genre	1	18	was	be	VBD	(S(VP*	_	_	_
+genre	1	19	a	a	DT	(NP(NP*	_	a	_
+genre	1	20	prosperous	prosperous	JJ	(ADJP*	_	_	_
+genre	1	21	and	and	CC	*	_	_	_
+genre	1	22	independent	independent	JJ	*)	in	dependent	dependent
+genre	1	23	geographic	geographic	JJ	*	_	geographic	_
+genre	1	24	region	region	NN	*)	_	region	_
+genre	1	25	reaching	reach	VBG	(VP*	_	_	_
+genre	1	26	as	as	RB	(ADVP*	_	_	_
+genre	1	27	far	far	RB	*)	_	_	_
+genre	1	28	as	as	IN	(PP*	_	_	_
+genre	1	29	the	the	DT	(NP*	_	_	_
+genre	1	30	Indus	Indus	NNP	*	_	_	_
+genre	1	31	River	River	NNP	*))))))))))))	_	_	_
+genre	1	32	.	.	.	*))	_	_	_
+
+genre	2	0	Intergenerational	intergenerational	JJ	(ROOT(S(NP*	_	_	_
+genre	2	1	conflict	conflict	NN	*	_	_	_
+genre	2	2	Template	Template	NN	*	_	Template	_
+genre	2	3	codice_1	codice_1	NNS	*)	_	codice_1	_
+genre	2	4	has	have	VBZ	(VP*	_	has	_
+genre	2	5	been	be	VBN	(VP*	_	been	_
+genre	2	6	incorrectly	incorrectly	RB	(VP(ADVP*)	in	correctly	correctly
+genre	2	7	substituted	substitute	VBN	*)))	_	substituted	_
+genre	2	8	.	.	.	*))	_	_	_
+
+genre	3	0	It	it	PRP	(ROOT(S(NP*)	_	_	_
+genre	3	1	has	have	VBZ	(VP*	_	_	_
+genre	3	2	matured	mature	VBN	(VP*	_	_	_
+genre	3	3	not	not	RB	(PP(CONJP*	_	_	_
+genre	3	4	only	only	JJ	*)	_	_	_
+genre	3	5	into	into	IN	(PP*	_	_	_
+genre	3	6	a	a	DT	(NP(NP*	_	_	_
+genre	3	7	system	system	NN	*)	_	_	_
+genre	3	8	of	of	IN	(PP*	_	_	_
+genre	3	9	interlocking	interlocking	JJ	(NP*	_	_	_
+genre	3	10	guarantees	guarantee	NNS	*))))	_	_	_
+genre	3	11	,	,	,	*	_	_	_
+genre	3	12	but	but	CC	(CONJP*	_	_	_
+genre	3	13	also	also	RB	*)	_	_	_
+genre	3	14	into	into	IN	(PP*	_	_	_
+genre	3	15	a	a	DT	(NP(NP*	_	_	_
+genre	3	16	system	system	NN	*)	_	_	_
+genre	3	17	of	of	IN	(PP*	_	_	_
+genre	3	18	indirectly	indirectly	RB	(S(VP(VP(ADVP*)	in	directly	directly
+genre	3	19	trading	trade	VBG	*	_	trading	_
+genre	3	20	on	on	IN	(PP*	_	on	_
+genre	3	21	the	the	DT	(NP(NP*	_	the	_
+genre	3	22	actual	actual	JJ	*	_	actual	_
+genre	3	23	damage	damage	NN	*)	_	damage	_
+genre	3	24	done	do	VBN	(VP*	_	done	_
+genre	3	25	by	by	IN	(PP*	_	by	_
+genre	3	26	weather	weather	NN	(NP*))))))	_	weather	_
+genre	3	27	,	,	,	*	_	_	_
+genre	3	28	using	use	VBG	(VP*	_	_	_
+genre	3	29	``	``	``	*	_	_	_
+genre	3	30	weather	weather	NN	(NP*	_	_	_
+genre	3	31	derivatives	derivative	NNS	*)	_	_	_
+genre	3	32	''	''	''	*)))))))))	_	_	_
+genre	3	33	.	.	.	*))	_	_	_
+
+genre	4	0	Mongolia	Mongolia	NNP	(ROOT(S(NP*)	_	_	_
+genre	4	1	became	become	VBD	(VP*	_	_	_
+genre	4	2	an	a	DT	(NP*	_	an	_
+genre	4	3	independent	independent	JJ	*	in	depedent	dependent
+genre	4	4	state	state	NN	*)	_	state	_
+genre	4	5	later	later	RB	(ADVP*))	_	_	_
+genre	4	6	.	.	.	*))	_	_	_
+
+genre	5	0	British	british	JJ	(ROOT(S(NP*	_	_	_
+genre	5	1	paperfolder	paperfolder	NN	*	_	_	_
+genre	5	2	John	John	NNP	*	_	_	_
+genre	5	3	Smith	Smith	NNP	*)	_	_	_
+genre	5	4	started	start	VBD	(VP*	_	_	_
+genre	5	5	pureland	pureland	JJ	(NP*	_	_	_
+genre	5	6	origami	origami	NNS	*)	_	_	_
+genre	5	7	for	for	IN	(PP(PP*	_	_	_
+genre	5	8	inexperienced	inexperienced	JJ	(NP*	in	experienced	experienced
+genre	5	9	paperfolders	paperfolder	NNS	*))	_	paperfolders	_
+genre	5	10	or	or	CC	*	_	_	_
+genre	5	11	for	for	IN	(PP*	_	_	_
+genre	5	12	people	people	NNS	(NP*)))	_	_	_
+genre	5	13	with	with	IN	(PP*	_	_	_
+genre	5	14	poor	poor	JJ	(NP*	_	_	_
+genre	5	15	motor	motor	NN	*	_	_	_
+genre	5	16	skills	skill	NNS	*)))	_	_	_
+genre	5	17	.	.	.	*))	_	_	_
+
+genre	6	0	The	the	DT	(ROOT(S(NP*	_	_	_
+genre	6	1	constitution	constitution	NN	*)	_	_	_
+genre	6	2	declares	declare	VBZ	(VP*	_	_	_
+genre	6	3	the	the	DT	(NP*	_	_	_
+genre	6	4	nation	nation	NN	*	_	_	_
+genre	6	5	to	to	TO	(S(VP*	_	_	_
+genre	6	6	be	be	VB	(VP*	_	_	_
+genre	6	7	``	``	``	*	_	_	_
+genre	6	8	an	a	DT	(NP*	_	an	_
+genre	6	9	indivisible	indivisible	JJ	(ADJP*	in	divisible	divisible
+genre	6	10	,	,	,	*	_	_	_
+genre	6	11	secular	secular	JJ	*	_	_	_
+genre	6	12	,	,	,	*	_	_	_
+genre	6	13	democratic	democratic	JJ	*)	_	_	_
+genre	6	14	,	,	,	*	_	_	_
+genre	6	15	and	and	CC	*	_	_	_
+genre	6	16	social	social	JJ	*	_	_	_
+genre	6	17	Republic	republic	NN	*)	_	Republic	_
+genre	6	18	''	''	''	*)))))	_	_	_
+genre	6	19	.	.	.	*))	_	_	_
+
+genre	7	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+genre	7	1	incorrect	incorrect	JJ	*	in	correct	correct
+genre	7	2	proofs	proof	NNS	*)	_	proofs	_
+genre	7	3	have	have	VBP	(VP*	_	_	_
+genre	7	4	been	be	VBN	(VP*	_	_	_
+genre	7	5	proposed	propose	VBN	(VP*	_	_	_
+genre	7	6	,	,	,	*	_	_	_
+genre	7	7	including	include	VBG	(PP*	_	_	_
+genre	7	8	those	those	DT	(NP(NP*)	_	_	_
+genre	7	9	by	by	IN	(PP*	_	_	_
+genre	7	10	Cayley	Cayley	NNP	(NP(NP*)	_	_	_
+genre	7	11	,	,	,	*	_	_	_
+genre	7	12	Kempe	Kempe	NNP	(NP*)	_	_	_
+genre	7	13	,	,	,	*	_	_	_
+genre	7	14	and	and	CC	*	_	_	_
+genre	7	15	others	other	NNS	(NP*))))))))	_	_	_
+genre	7	16	.	.	.	*))	_	_	_
+
+genre	8	0	A	a	DT	(ROOT(S(NP*	_	_	_
+genre	8	1	serious	serious	JJ	*	_	_	_
+genre	8	2	criticism	criticism	NN	*)	_	_	_
+genre	8	3	is	be	VBZ	(VP*	_	_	_
+genre	8	4	the	the	DT	(NP(NP*	_	_	_
+genre	8	5	judgement	judgement	NN	*)	_	_	_
+genre	8	6	of	of	IN	(PP*	_	_	_
+genre	8	7	the	the	DT	(NP*	_	_	_
+genre	8	8	European	European	NNP	*	_	_	_
+genre	8	9	Court	Court	NNP	*)))	_	_	_
+genre	8	10	that	that	IN	(SBAR*	_	_	_
+genre	8	11	``	``	``	*	_	_	_
+genre	8	12	sharia	sharium	NN	(S(NP*)	_	sharia	_
+genre	8	13	is	be	VBZ	(VP*	_	is	_
+genre	8	14	incompatible	incompatible	JJ	(ADJP*	in	compatible	compatible
+genre	8	15	with	with	IN	(PP*	_	with	_
+genre	8	16	the	the	DT	(NP(NP*	_	the	_
+genre	8	17	fundamental	fundamental	JJ	*	_	fundamental	_
+genre	8	18	principles	principle	NNS	*)	_	principles	_
+genre	8	19	of	of	IN	(PP*	_	of	_
+genre	8	20	democracy	democracy	NN	(NP*)))))))	_	democracy	_
+genre	8	21	''	''	''	*))	_	_	_
+genre	8	22	.	.	.	*))	_	_	_
+
+genre	9	0	Inconvertible	inconvertible	JJ	(ROOT(S(NP*	In	convertible	convertible	_	_	_
+genre	9	1	money	money	NN	*)	_	money	_	_	_	_
+genre	9	2	is	be	VBZ	(VP*	_	_	_	_	_	_
+genre	9	3	money	money	NN	(NP(NP*)	_	_	_	_	money	_
+genre	9	4	that	that	WDT	(SBAR(WHNP*)	_	_	_	_	that	_
+genre	9	5	can	can	MD	(S(VP*	_	_	_	_	can	_
+genre	9	6	not	not	RB	*	_	_	_	_	not	_
+genre	9	7	be	be	VB	(VP*	_	_	_	_	be	_
+genre	9	8	converted	convert	VBN	(VP*	_	_	_	_	converted	converted
+genre	9	9	into	into	IN	(PP*	_	_	_	_	into	_
+genre	9	10	gold	gold	NN	(NP*	_	_	_	_	gold	_
+genre	9	11	and	and	CC	*	_	_	_	_	and	_
+genre	9	12	silver	silver	NN	*)))))))))	_	_	_	_	silver	_
+genre	9	13	.	.	.	*))	_	_	_	_	_	_
+
+genre	10	0	Metaphors	metaphor	NNS	(ROOT(S(NP*)	_	_	_	_	_	_
+genre	10	1	use	use	VBP	(VP*	_	_	_	_	_	_
+genre	10	2	indirect	indirect	JJ	(NP*	in	direct	direct	_	_	_
+genre	10	3	comparisons	comparison	NNS	*)	_	comparisons	_	_	_	_
+genre	10	4	,	,	,	*	_	_	_	_	_	_
+genre	10	5	without	without	IN	(PP*	_	_	_	without	_	_
+genre	10	6	the	the	DT	(NP(NP*	_	_	_	_	the	_
+genre	10	7	words	word	NNS	*	_	_	_	_	words	words
+genre	10	8	'like	'like	NN	*	_	_	_	_	'like	_
+genre	10	9	'	'	POS	*)	_	_	_	_	'	_
+genre	10	10	or	or	CC	*	_	_	_	_	or	_
+genre	10	11	'as	'as	NNP	(NP*	_	_	_	_	'as	_
+genre	10	12	'	'	POS	*))))	_	_	_	_	'	_
+genre	10	13	.	.	.	*))	_	_	_	_	_	_
+
+genre	11	0	Contrary	contrary	JJ	(ROOT(S(ADVP*	_	_	_
+genre	11	1	to	to	TO	(PP*	_	_	_
+genre	11	2	popular	popular	JJ	(NP*	_	_	_
+genre	11	3	belief	belief	NN	*)))	_	_	_
+genre	11	4	,	,	,	*	_	_	_
+genre	11	5	practiced	practiced	NNP	(NP*	_	practiced	_
+genre	11	6	Hinduism	Hinduism	NNP	*)	_	Hinduism	_
+genre	11	7	is	be	VBZ	(VP*	_	is	_
+genre	11	8	neither	neither	RB	(ADJP(ADJP*	neither	_	_
+genre	11	9	polytheistic	polytheistic	JJ	*)	_	polytheistic	polytheistic
+genre	11	10	nor	nor	CC	*	nor	_	_
+genre	11	11	strictly	strictly	RB	(ADJP(ADVP*)	_	strictly	_
+genre	11	12	monotheistic	monotheistic	JJ	*)))	_	monotheistic	monotheistic
+genre	11	13	.	.	.	*))	_	_	_
+
+genre	12	0	A	a	DT	(ROOT(S(S(NP(NP*	_	_	_
+genre	12	1	study	study	NN	*)	_	_	_
+genre	12	2	by	by	IN	(PP*	_	_	_
+genre	12	3	Alfred	Alfred	NNP	(NP*	_	_	_
+genre	12	4	Kinsey	Kinsey	NNP	*)))	_	_	_
+genre	12	5	found	find	VBD	(VP*	_	_	_
+genre	12	6	that	that	IN	(SBAR*	_	_	_
+genre	12	7	75	75	CD	(S(NP(NP*	_	_	_
+genre	12	8	%	%	NN	*)	_	_	_
+genre	12	9	of	of	IN	(PP*	_	_	_
+genre	12	10	the	the	DT	(NP*	_	_	_
+genre	12	11	participants	participant	NNS	*)))	_	_	_
+genre	12	12	stated	state	VBD	(VP*	_	_	_
+genre	12	13	that	that	IN	(SBAR*	_	_	_
+genre	12	14	there	there	EX	(S(NP*)	_	there	_
+genre	12	15	was	be	VBD	(VP*	_	was	_
+genre	12	16	never	never	RB	(ADVP*)	never	_	_
+genre	12	17	nudity	nudity	JJ	(ADJP*	_	nudity	nudity
+genre	12	18	in	in	IN	(PP*	_	in	_
+genre	12	19	the	the	DT	(NP*	_	the	_
+genre	12	20	home	home	NN	*)))	_	home	_
+genre	12	21	when	when	WRB	(SBAR(WHADVP*)	_	when	_
+genre	12	22	they	they	PRP	(S(NP*)	_	they	_
+genre	12	23	were	be	VBD	(VP*	_	were	_
+genre	12	24	growing	grow	VBG	(VP*	_	growing	_
+genre	12	25	up	up	RP	(PRT*)))))))))))))	_	up	_
+genre	12	26	,	,	,	*	_	_	_
+genre	12	27	5	5	CD	(S(NP(NP*	_	_	_
+genre	12	28	%	%	NN	*)	_	_	_
+genre	12	29	of	of	IN	(PP*	_	_	_
+genre	12	30	them	they	PRP	(NP*)))	_	_	_
+genre	12	31	said	say	VBD	(VP*	_	_	_
+genre	12	32	that	that	IN	(SBAR*	_	_	_
+genre	12	33	there	there	EX	(S(NP*)	_	_	_
+genre	12	34	was	be	VBD	(VP*	_	_	_
+genre	12	35	``	``	``	*	_	_	_
+genre	12	36	seldom	seldom	RB	(ADVP*)	_	_	_
+genre	12	37	''	''	''	*	_	_	_
+genre	12	38	nudity	nudity	RB	(PP(ADVP*)	_	_	_
+genre	12	39	in	in	IN	*	_	_	_
+genre	12	40	the	the	DT	(NP(NP*	_	_	_
+genre	12	41	home	home	NN	*)	_	_	_
+genre	12	42	,	,	,	*	_	_	_
+genre	12	43	3	3	CD	(NP(NP*	_	_	_
+genre	12	44	%	%	NN	*)	_	_	_
+genre	12	45	said	said	VBN	(VP*	_	_	_
+genre	12	46	``	``	``	*	_	_	_
+genre	12	47	often	often	RB	(ADVP*)	_	_	_
+genre	12	48	''	''	''	*)))))))))	_	_	_
+genre	12	49	,	,	,	*	_	_	_
+genre	12	50	and	and	CC	*	_	_	_
+genre	12	51	17	17	CD	(S(NP*	_	_	_
+genre	12	52	%	%	NN	*)	_	_	_
+genre	12	53	said	say	VBD	(VP*	_	_	_
+genre	12	54	that	that	IN	(SBAR*	_	_	_
+genre	12	55	it	it	PRP	(S(NP*)	_	_	_
+genre	12	56	was	be	VBD	(VP*	_	_	_
+genre	12	57	``	``	``	*	_	_	_
+genre	12	58	usual	usual	JJ	(ADJP*)	_	_	_
+genre	12	59	''	''	''	*)))))	_	_	_
+genre	12	60	.	.	.	*))	_	_	_
+
+genre	13	0	After	after	IN	(ROOT(S(PP*	_	_	_
+genre	13	1	seven	seven	CD	(NP(NP*	_	_	_
+genre	13	2	years	year	NNS	*)	_	_	_
+genre	13	3	of	of	IN	(PP*	_	_	_
+genre	13	4	marriage	marriage	NN	(NP*))))	_	_	_
+genre	13	5	,	,	,	*	_	_	_
+genre	13	6	she	she	PRP	(S(NP*)	_	_	_
+genre	13	7	gave	give	VBD	(VP*	_	_	_
+genre	13	8	birth	birth	NN	(NP*)	_	_	_
+genre	13	9	to	to	TO	(PP*	_	_	_
+genre	13	10	a	a	DT	(NP*	_	_	_
+genre	13	11	daughter	daughter	NN	*))))	_	_	_
+genre	13	12	,	,	,	*	_	_	_
+genre	13	13	and	and	CC	*	_	_	_
+genre	13	14	later	later	RB	(S(ADVP*	_	_	_
+genre	13	15	to	to	TO	(PP*	_	_	_
+genre	13	16	three	three	CD	(NP*	_	_	_
+genre	13	17	more	more	JJR	*	_	_	_
+genre	13	18	children	child	NNS	*)))	_	_	_
+genre	13	19	She	she	PRP	(NP*)	_	_	_
+genre	13	20	was	be	VBD	(VP*	_	_	_
+genre	13	21	the	the	DT	(NP(NP*	_	_	_
+genre	13	22	mother	mother	NN	*)	_	_	_
+genre	13	23	of	of	IN	(PP*	_	_	_
+genre	13	24	Louis	Louis	NNP	(NP(NP*	_	_	_
+genre	13	25	XVII	XVII	NNP	*)	_	_	_
+genre	13	26	of	of	IN	(PP*	_	_	_
+genre	13	27	France	France	NNP	(NP*))	_	_	_
+genre	13	28	,	,	,	*	_	_	_
+genre	13	29	who	who	WP	(SBAR(WHNP*)	_	who	_
+genre	13	30	never	never	RB	(S(ADVP*)	never	_	_
+genre	13	31	actually	actually	RB	(VP(ADVP*)	_	actually	_
+genre	13	32	became	become	VBD	*	_	became	became
+genre	13	33	king	king	NN	(NP*)))))))))	_	king	_
+genre	13	34	.	.	.	*))	_	_	_
+
+genre	14	0	Today	today	NN	(ROOT(S(NP*)	_	_	_
+genre	14	1	,	,	,	*	_	_	_
+genre	14	2	most	most	JJS	(NP*	_	_	_
+genre	14	3	scientists	scientist	NNS	*)	_	_	_
+genre	14	4	accept	accept	VBP	(VP*	_	_	_
+genre	14	5	that	that	IN	(SBAR*	_	_	_
+genre	14	6	the	the	DT	(S(NP*	_	the	_
+genre	14	7	asteroids	asteroid	NNS	*)	_	asteroids	_
+genre	14	8	never	never	RB	(ADVP*)	never	_	_
+genre	14	9	formed	form	VBD	(VP*	_	formed	formed
+genre	14	10	a	a	DT	(NP*	_	a	_
+genre	14	11	planet	planet	NN	*)	_	planet	_
+genre	14	12	at	at	IN	(ADVP*	_	at	_
+genre	14	13	all	all	DT	*)))))	_	all	_
+genre	14	14	.	.	.	*))	_	_	_
+
+genre	15	0	Once	once	IN	(ROOT(S(SBAR*	_	Once	_
+genre	15	1	it	it	PRP	(S(NP*)	_	it	_
+genre	15	2	is	be	VBZ	(VP*	_	is	_
+genre	15	3	listed	list	VBN	(VP*))))	_	listed	_
+genre	15	4	,	,	,	*	_	,	_
+genre	15	5	no	no	DT	(NP*	no	_	_
+genre	15	6	one	one	NN	*	_	one	_
+genre	15	7	else	else	RB	*)	_	else	_
+genre	15	8	can	can	MD	(VP*	_	can	can
+genre	15	9	use	use	VB	(VP*	_	use	_
+genre	15	10	that	that	DT	(NP(NP*	_	that	_
+genre	15	11	trademark	trademark	NN	*)	_	trademark	_
+genre	15	12	for	for	IN	(PP*	_	for	_
+genre	15	13	those	those	DT	(NP*	_	those	_
+genre	15	14	products	product	NNS	*)))))	_	products	_
+genre	15	15	.	.	.	*))	_	_	_
+
+genre	16	0	Octopodiformes	Octopodiformes	NNP	(ROOT(S(NP*	_	_	_
+genre	16	1	Octopodiformes	Octopodiformes	NNP	*)	_	_	_
+genre	16	2	is	be	VBZ	(VP*	_	_	_
+genre	16	3	a	a	DT	(NP(NP*	_	_	_
+genre	16	4	group	group	NN	*)	_	_	_
+genre	16	5	of	of	IN	(PP*	_	_	_
+genre	16	6	cephalopods	cephalopod	NNS	(NP(NP*)	_	_	_
+genre	16	7	with	with	IN	(PP*	_	_	_
+genre	16	8	eight	eight	CD	(NP(NP*	_	_	_
+genre	16	9	arms	arm	NNS	*)	_	_	_
+genre	16	10	and	and	CC	*	_	_	_
+genre	16	11	no	no	DT	(NP*	no	_	_
+genre	16	12	skeletal	skeletal	JJ	*	_	skeletal	_
+genre	16	13	structure	structure	NN	*)))))))	_	structure	structure
+genre	16	14	.	.	.	*))	_	_	_
+
+genre	17	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_
+genre	17	1	reason	reason	NN	*)	_	_	_
+genre	17	2	why	why	WRB	(SBAR(WHADVP*)	_	_	_
+genre	17	3	it	it	PRP	(S(NP*)	_	it	_
+genre	17	4	has	have	VBZ	(VP*	_	has	has
+genre	17	5	no	no	DT	(NP*	no	_	_
+genre	17	6	colour	colour	NN	*)))))	_	colour	_
+genre	17	7	is	be	VBZ	(VP*	_	_	_
+genre	17	8	because	because	IN	(SBAR*	_	_	_
+genre	17	9	the	the	DT	(S(NP(NP*	_	_	_
+genre	17	10	light	light	NN	*)	_	_	_
+genre	17	11	that	that	WDT	(SBAR(WHNP*)	_	_	_
+genre	17	12	travels	travel	VBZ	(S(VP*	_	_	_
+genre	17	13	through	through	IN	(PP*	_	_	_
+genre	17	14	the	the	DT	(NP*	_	_	_
+genre	17	15	pupil	pupil	NN	*))))))	_	_	_
+genre	17	16	is	be	VBZ	(VP*	_	_	_
+genre	17	17	absorbed	absorb	VBN	(VP*	_	_	_
+genre	17	18	by	by	IN	(PP*	_	_	_
+genre	17	19	tissues	tissue	NNS	(NP(NP*)	_	_	_
+genre	17	20	at	at	IN	(PP*	_	_	_
+genre	17	21	the	the	DT	(NP(NP*	_	_	_
+genre	17	22	inside	inside	NN	*)	_	_	_
+genre	17	23	of	of	IN	(PP*	_	_	_
+genre	17	24	the	the	DT	(NP*	_	_	_
+genre	17	25	eye	eye	NN	*)))))))))))	_	_	_
+genre	17	26	.	.	.	*))	_	_	_
+
+genre	18	0	A	a	DT	(ROOT(S(NP*	_	_	_
+genre	18	1	slate	slate	NN	*	_	_	_
+genre	18	2	phone	phone	NN	*)	_	_	_
+genre	18	3	is	be	VBZ	(VP*	_	_	_
+genre	18	4	a	a	DT	(NP(NP*	_	_	_
+genre	18	5	phone	phone	NN	*)	_	_	_
+genre	18	6	that	that	WDT	(SBAR(WHNP*)	_	that	_
+genre	18	7	has	have	VBZ	(S(VP(VP*	_	has	has
+genre	18	8	almost	almost	RB	(NP(QP*	_	almost	_
+genre	18	9	no	no	DT	*)	no	_	_
+genre	18	10	buttons	button	NNS	*))	_	buttons	_
+genre	18	11	,	,	,	*	_	_	_
+genre	18	12	and	and	CC	*	_	_	_
+genre	18	13	uses	use	VBZ	(VP*	_	_	_
+genre	18	14	a	a	DT	(NP*	_	_	_
+genre	18	15	touchscreen	touchscreen	NN	*)))))))	_	_	_
+genre	18	16	.	.	.	*))	_	_	_
+
+genre	19	0	``	``	``	(ROOT(S*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	1	or	or	CC	(S*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	2	``	``	``	(NP(NP*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	3	Bye	Bye	NNP	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	4	''	''	''	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	5	Tak	Tak	NNP	*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	6	(	(	(	(PRN*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	7	tahk	tahk	NN	(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	8	)	)	)	*))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	9	-	-	VBZ	(VP*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	10	``	``	``	(FRAG(INTJ*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	11	Yes	yes	UH	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	12	''	''	''	*))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	13	(	(	(	(PRN*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	14	in	in	IN	(SBAR*	_	in	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	15	Polish	polish	JJ	(S(NP*	_	Polish	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	16	people	people	NNS	*)	_	people	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	17	may	may	MD	(VP*	_	may	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	18	not	not	RB	*	not	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	19	say	say	VB	(VP*	_	say	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	20	long-short	long-short	JJ	(SBAR(S(NP*	_	long-short	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	21	answers	answer	NNS	*)	_	answers	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	22	-	-	:	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	23	like	like	VB	(S(VP(VP*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	24	``	``	``	(S*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	25	Yes	yes	UH	(INTJ*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	26	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	27	I	I	PRP	(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	28	did	do	VBD	(VP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	29	''	''	''	*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	30	Tak	Tak	NNP	(PRN(S(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	31	is	be	VBZ	(VP*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	32	enough	enough	JJ	(ADJP*)))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	33	)	)	)	*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	34	Nie	Nie	NNP	(NP(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	35	(	(	(	(PRN*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	36	nyeh	nyeh	NN	(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	37	)	)	)	*))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	38	-	-	:	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	39	``	``	``	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	40	No	no	UH	(INTJ*))	_	_	_	No	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	41	''	''	''	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	42	or	or	CC	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	43	``	``	``	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	44	Not	Not	VB	(VP*	_	_	_	_	_	_	Not	_	_	_	_	_	_	_	_	_	_	_
+genre	19	45	''	''	''	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	46	(	(	(	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	47	in	in	IN	(SBAR*	_	_	_	_	_	_	_	_	_	_	in	_	_	_	_	_	_	_
+genre	19	48	Polish	polish	JJ	(S(NP*	_	_	_	_	_	_	_	_	_	_	Polish	_	_	_	_	_	_	_
+genre	19	49	people	people	NNS	*)	_	_	_	_	_	_	_	_	_	_	people	_	_	_	_	_	_	_
+genre	19	50	may	may	MD	(VP*	_	_	_	_	_	_	_	_	_	_	may	_	_	_	_	_	_	_
+genre	19	51	not	not	RB	*	_	_	_	_	_	_	_	_	_	not	_	_	_	_	_	_	_	_
+genre	19	52	say	say	VB	(VP*	_	_	_	_	_	_	_	_	_	_	say	_	_	_	_	_	_	_
+genre	19	53	long-short	long-short	JJ	(NP*	_	_	_	_	_	_	_	_	_	_	long-short	_	_	_	_	_	_	_
+genre	19	54	answers	answer	NNS	*)))))	_	_	_	_	_	_	_	_	_	_	answers	_	_	_	_	_	_	_
+genre	19	55	-	-	:	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	56	like	like	IN	(SBAR*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	57	``	``	``	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	58	No	no	UH	(S(INTJ*)	_	_	_	_	_	_	_	_	_	_	_	_	No	_	_	_	_	_
+genre	19	59	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	60	I	I	PRP	(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	I	_
+genre	19	61	wo	will	MD	(VP*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	wo	_
+genre	19	62	n't	not	RB	*))))))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	n't	_	_
+genre	19	63	''	''	''	*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	64	Nie	Nie	NNP	(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	65	is	be	VBZ	(VP*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	66	enough	enough	JJ	(ADJP*))))))))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	67	)	)	)	*)))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	68	Jak	Jak	NNP	(NP*)	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	69	się	się	VBP	(VP*	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	70	masz	masz	NN	(NP*))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+genre	19	71	?	?	.	*))	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_
+
+genre	20	0	(	(	(	(ROOT(S*	_	_	_
+genre	20	1	Kerouac	Kerouac	NNP	(NP*)	_	Kerouac	_
+genre	20	2	played	play	VBD	(VP(VP*	_	played	played
+genre	20	3	no	no	DT	(NP*	no	_	_
+genre	20	4	musical	musical	JJ	*	_	musical	_
+genre	20	5	instruments	instrument	NNS	*))	_	instruments	_
+genre	20	6	,	,	,	*	_	_	_
+genre	20	7	but	but	CC	*	_	_	_
+genre	20	8	could	could	MD	(VP*	_	_	_
+genre	20	9	[	[	VB	(VP*	_	_	_
+genre	20	10	scat	scat	JJ	(NP*	_	_	_
+genre	20	11	sing	sing	JJ	*	_	_	_
+genre	20	12	]	]	NNS	*)	_	_	_
+genre	20	13	well	well	RB	(ADVP*)))	_	_	_
+genre	20	14	,	,	,	*	_	_	_
+genre	20	15	and	and	CC	*	_	_	_
+genre	20	16	had	have	VBD	(VP*	_	_	_
+genre	20	17	many	many	JJ	(NP(NP*)	_	_	_
+genre	20	18	of	of	IN	(PP*	_	_	_
+genre	20	19	the	the	DT	(NP*	_	_	_
+genre	20	20	same	same	JJ	*	_	_	_
+genre	20	21	instincts	instinct	NNS	*)))	_	_	_
+genre	20	22	as	as	IN	(PP*	_	_	_
+genre	20	23	a	a	DT	(NP*	_	_	_
+genre	20	24	musician	musician	NN	*))))	_	_	_
+genre	20	25	.	.	.	*))	_	_	_
+
+genre	21	0	The	the	DT	(ROOT(S(S(NP*	_	_	_
+genre	21	1	time	time	NN	*	_	_	_
+genre	21	2	machine	machine	NN	*)	_	_	_
+genre	21	3	is	be	VBZ	(VP*	_	_	_
+genre	21	4	out	out	RB	(ADVP*)	_	_	_
+genre	21	5	of	of	IN	(PP*	_	_	_
+genre	21	6	plutonium	plutonium	NN	(NP*))))	_	_	_
+genre	21	7	,	,	,	*	_	_	_
+genre	21	8	and	and	CC	*	_	_	_
+genre	21	9	there	there	EX	(S(NP*)	_	there	_
+genre	21	10	is	be	VBZ	(VP*	_	is	_
+genre	21	11	no	no	DT	(NP(NP*	no	_	_
+genre	21	12	plutonium	plutonium	NN	*)	_	plutonium	plutonium
+genre	21	13	available	available	JJ	(ADJP*	_	available	_
+genre	21	14	for	for	IN	(PP*	_	for	_
+genre	21	15	the	the	DT	(NP(NP*	_	the	_
+genre	21	16	time	time	NN	*	_	time	_
+genre	21	17	machine	machine	NN	*)	_	machine	_
+genre	21	18	in	in	IN	(PP*	_	in	_
+genre	21	19	1955	1955	CD	(NP*))))))))	_	1955	_
+genre	21	20	.	.	.	*))	_	_	_
+
+genre	22	0	Marxists	Marxists	NNS	(ROOT(S(S(NP*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	1	believe	believe	VBP	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	2	that	that	IN	(SBAR*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	3	if	if	IN	(S(S(SBAR*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	4	the	the	DT	(S(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	5	working	work	VBG	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	6	class	class	NN	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	7	makes	make	VBZ	(VP(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	8	itself	itself	PRP	(S(NP*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	9	the	the	DT	(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	10	ruling	ruling	NN	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	11	class	class	NN	*)))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	12	and	and	CC	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	13	destroys	destroy	VBZ	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	14	the	the	DT	(NP(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	15	objective	objective	JJ	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	16	basis	basis	NN	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	17	for	for	IN	(PP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	18	class	class	NN	(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	19	society	society	NN	*)))))))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	20	(	(	(	(PRN*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	21	private	private	JJ	(S(NP(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	22	property	property	NN	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	23	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	24	or	or	CC	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	25	what	what	WP	(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	26	Marx	Marx	NN	*))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	27	called	call	VBD	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	28	``	``	``	(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	29	Bourgeois	Bourgeois	NNP	(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	30	Property	Property	NNP	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	31	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	32	''	''	''	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	33	relations	relation	NNS	(NP*))))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	34	)	)	)	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	35	there	there	EX	(NP*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	36	will	will	MD	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	37	be	be	VB	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	38	a	a	DT	(NP(NP*	_	a	_	_	_	_	_	_	_	_	_	_
+genre	22	39	``	``	``	*	_	``	_	_	_	_	_	_	_	_	_	_
+genre	22	40	classless	classless	JJ	*	less	class	class	_	_	_	_	_	_	_	_	_
+genre	22	41	society	society	NN	*	_	society	_	_	_	_	_	_	_	_	_	_
+genre	22	42	''	''	''	*)	_	''	_	_	_	_	_	_	_	_	_	_
+genre	22	43	-	-	:	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	44	a	a	DT	(NP(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	45	society	society	NN	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	46	where	where	WRB	(SBAR(WHADVP*)	_	_	_	_	where	_	_	_	_	_	_	_
+genre	22	47	no	no	DT	(S(NP*	_	_	_	no	_	_	_	_	_	_	_	_
+genre	22	48	social	social	JJ	*	_	_	_	_	social	_	_	_	_	_	_	_
+genre	22	49	groups	group	NNS	*)	_	_	_	_	groups	_	_	_	_	_	_	_
+genre	22	50	are	be	VBP	(VP*	_	_	_	_	are	are	_	_	_	_	_	_
+genre	22	51	in	in	IN	(PP*	_	_	_	_	in	_	_	_	_	_	_	_
+genre	22	52	conflict	conflict	NN	(NP*))))))))))	_	_	_	_	conflict	_	_	_	_	_	_	_
+genre	22	53	and	and	CC	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	54	there	there	EX	(S(NP*)	_	_	_	_	_	_	_	there	_	_	_	_
+genre	22	55	is	be	VBZ	(VP*	_	_	_	_	_	_	_	is	_	_	_	_
+genre	22	56	no	no	DT	(NP*	_	_	_	_	_	_	no	_	_	_	_	_
+genre	22	57	government	government	NN	*)	_	_	_	_	_	_	_	government	government	_	_	_
+genre	22	58	anymore	anymore	RB	(ADVP*)))))))	_	_	_	_	_	_	_	anymore	_	_	_	_
+genre	22	59	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	60	and	and	CC	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	61	the	the	DT	(S(S(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	62	state	state	NN	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	63	will	will	MD	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	64	be	be	VB	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	65	dismantled	dismantle	VBN	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	66	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	67	organically	organically	RB	(ADVP*)))))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	68	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	69	and	and	CC	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	70	it	it	PRP	(S(NP*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	71	will	will	MD	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	72	be	be	VB	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	73	a	a	DT	(NP(NP*	_	_	_	_	_	_	_	_	_	_	a	_
+genre	22	74	borderless	borderless	JJ	*	_	_	_	_	_	_	_	_	_	less	border	border
+genre	22	75	world	world	NN	*)	_	_	_	_	_	_	_	_	_	_	world	_
+genre	22	76	with	with	IN	(PP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	77	world-wide	world-wide	JJ	(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	78	communes	commune	NNS	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	79	and	and	CC	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	80	worker-organisation	worker-organisation	NN	*))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	81	of	of	IN	(PP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	82	production	production	NN	(NP(NP*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	83	based	base	VBN	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	84	on	on	IN	(PP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	85	needs	need	NNS	(NP(NP*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	86	instead	instead	RB	(PP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	87	of	of	IN	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	88	profits	profit	NNS	(NP*))))))))))))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	22	89	.	.	.	*))	_	_	_	_	_	_	_	_	_	_	_	_
+
+genre	23	0	Many	Many	DT	(ROOT(S(NP*)	_	_	_	_	Many	_
+genre	23	1	are	be	VBP	(VP(VP*	_	_	_	_	_	_
+genre	23	2	built	build	VBN	(VP*	_	_	_	_	_	_
+genre	23	3	on	on	IN	(PP*	_	_	_	_	_	_
+genre	23	4	land	land	NN	(NP*))	_	_	_	_	_	_
+genre	23	5	without	without	IN	(PP*	without	_	_	_	_	_
+genre	23	6	a	a	DT	(NP*	_	a	_	_	_	_
+genre	23	7	permit	permit	NN	*))))	_	permit	permit	_	_	_
+genre	23	8	and	and	CC	*	_	_	_	_	_	_
+genre	23	9	often	often	RB	(VP(ADVP*)	_	_	_	_	often	_
+genre	23	10	have	have	VBP	(VP*	_	_	_	_	have	have
+genre	23	11	no	no	DT	(NP*	_	_	_	no	_	_
+genre	23	12	roads	road	NNS	*))	_	_	_	_	roads	_
+genre	23	13	,	,	,	*	_	_	_	_	,	_
+genre	23	14	numbered	number	VBD	(VP*	_	_	_	_	numbered	_
+genre	23	15	street	street	NN	(NP*	_	_	_	_	streets	_
+genre	23	16	,	,	,	*	_	_	_	_	,	_
+genre	23	17	electricity	electricity	NN	*	_	_	_	_	electricity	_
+genre	23	18	or	or	CC	*	_	_	_	_	or	_
+genre	23	19	telephone	telephone	NN	*	_	_	_	_	telephone	_
+genre	23	20	lines	line	NNS	*))))	_	_	_	_	lines	_
+genre	23	21	.	.	.	*))	_	_	_	_	_	_
+
+genre	24	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_	_	_	_
+genre	24	1	fact	fact	NN	*)	_	_	_	_	_	_
+genre	24	2	why	why	WRB	(SBAR(WHADVP*)	_	_	_	_	_	_
+genre	24	3	this	this	DT	(S(NP*)	_	this	_	_	_	_
+genre	24	4	is	be	VBZ	(VP*	_	is	_	_	_	_
+genre	24	5	incorrect	incorrect	JJ	(ADJP*)))))	in	correct	correct	_	_	_
+genre	24	6	is	be	VBZ	(VP*	_	_	_	_	_	_
+genre	24	7	that	that	IN	(SBAR*	_	_	_	_	_	_
+genre	24	8	the	the	DT	(S(NP(NP*	_	_	_	_	the	_
+genre	24	9	light	light	NN	*)	_	_	_	_	light	_
+genre	24	10	,	,	,	*	_	_	_	_	_	_
+genre	24	11	for	for	IN	(PP*	_	_	_	_	_	_
+genre	24	12	example	example	NN	(NP*))	_	_	_	_	_	_
+genre	24	13	,	,	,	*)	_	_	_	_	_	_
+genre	24	14	has	have	VBZ	(VP(VP*	_	_	_	_	has	has
+genre	24	15	no	no	DT	(NP*	_	_	_	no	_	_
+genre	24	16	mass	mass	NN	*))	_	_	_	_	mass	_
+genre	24	17	,	,	,	*	_	_	_	_	_	_
+genre	24	18	but	but	CC	*	_	_	_	_	_	_
+genre	24	19	has	have	VBZ	(VP*	_	_	_	_	_	_
+genre	24	20	energy	energy	NN	(NP*))))))	_	_	_	_	_	_
+genre	24	21	.	.	.	*))	_	_	_	_	_	_
+
+genre	25	0	The	the	DT	(ROOT(S(S(NP(NP*	_	The	_	_	_	_
+genre	25	1	isotope	isotope	NN	*)	_	isotope	_	_	_	_
+genre	25	2	of	of	IN	(PP*	_	of	_	_	_	_
+genre	25	3	Hydrogen	Hydrogen	JJ	(NP*	_	Hydrogen	_	_	_	_
+genre	25	4	Hydrogen-1	Hydrogen-1	NNS	*)))	_	Hydrogen-1	_	_	_	_
+genre	25	5	has	have	VBZ	(VP*	_	has	has	_	_	_
+genre	25	6	no	no	DT	(NP*	no	_	_	_	_	_
+genre	25	7	neutrons	neutron	NNS	*)))	_	neutrons	_	_	_	_
+genre	25	8	,	,	,	*	_	_	_	_	_	_
+genre	25	9	and	and	CC	*	_	_	_	_	_	_
+genre	25	10	a	a	DT	(S(NP*	_	_	_	_	a	_
+genre	25	11	positive	positive	JJ	*	_	_	_	_	positive	_
+genre	25	12	hydrogen	hydrogen	NN	*	_	_	_	_	hydrogen	_
+genre	25	13	ion	ion	NN	*)	_	_	_	_	ion	_
+genre	25	14	has	have	VBZ	(VP*	_	_	_	_	has	has
+genre	25	15	no	no	DT	(NP*	_	_	_	no	_	_
+genre	25	16	electrons	electron	NNS	*)))	_	_	_	_	electrons	_
+genre	25	17	.	.	.	*))	_	_	_	_	_	_
+
+genre	26	0	Eisenhower	Eisenhower	NNP	(ROOT(S(S(NP*)	_	Eisenhower	_	_	_	_	_	_	_
+genre	26	1	disliked	dislike	VBD	(VP(VP*	dis	liked	liked	_	_	_	_	_	_
+genre	26	2	Joseph	Joseph	NNP	(NP*	_	Joseph	_	_	_	_	_	_	_
+genre	26	3	McCarthy	McCarthy	NNP	*))	_	McCarthy	_	_	_	_	_	_	_
+genre	26	4	and	and	CC	*	_	_	_	_	_	_	_	_	_
+genre	26	5	tried	try	VBD	(VP*	_	_	_	_	_	_	_	_	_
+genre	26	6	to	to	TO	(S(VP*	_	_	_	_	_	_	_	_	_
+genre	26	7	bring	bring	VB	(VP*	_	_	_	_	_	_	_	_	_
+genre	26	8	him	he	PRP	(NP*)	_	_	_	_	_	_	_	_	_
+genre	26	9	down	down	RP	(PRT*)	_	_	_	_	_	_	_	_	_
+genre	26	10	behind	behind	IN	(PP*	_	_	_	_	_	_	_	_	_
+genre	26	11	the	the	DT	(NP*	_	_	_	_	_	_	_	_	_
+genre	26	12	scenes	scene	NNS	*))))))))	_	_	_	_	_	_	_	_	_
+genre	26	13	,	,	,	*	_	_	_	_	_	_	_	_	_
+genre	26	14	but	but	CC	*	_	_	_	_	_	_	_	_	_
+genre	26	15	Eisenhower	Eisenhower	NNP	(S(S(NP*)	_	_	_	_	Eisenhower	_	_	_	_
+genre	26	16	did	do	VBD	(VP*	_	_	_	_	did	_	_	_	_
+genre	26	17	not	not	RB	*	_	_	_	not	_	_	_	_	_
+genre	26	18	like	like	VB	(VP*	_	_	_	_	like	like	_	_	_
+genre	26	19	to	to	TO	(S(VP*	_	_	_	_	to	_	_	_	_
+genre	26	20	make	make	VB	(VP*	_	_	_	_	make	_	_	_	_
+genre	26	21	enemies	enemy	NNS	(NP*)))))))	_	_	_	_	enemies	_	_	_	_
+genre	26	22	,	,	,	*	_	_	_	_	_	_	_	_	_
+genre	26	23	so	so	IN	*	_	_	_	_	_	_	_	_	_
+genre	26	24	he	he	PRP	(S(NP*)	_	_	_	_	_	_	_	he	_
+genre	26	25	did	do	VBD	(VP*	_	_	_	_	_	_	_	did	_
+genre	26	26	not	not	RB	*	_	_	_	_	_	_	not	_	_
+genre	26	27	talk	talk	VB	(VP*	_	_	_	_	_	_	_	talk	talk
+genre	26	28	about	about	IN	(PP*	_	_	_	_	_	_	_	about	_
+genre	26	29	McCarthy	McCarthy	NNP	(NP*))	_	_	_	_	_	_	_	McCarthy	_
+genre	26	30	much	much	RB	(ADVP*)))))	_	_	_	_	_	_	_	much	_
+genre	26	31	.	.	.	*))	_	_	_	_	_	_	_	_	_
+
+genre	27	0	He	he	PRP	(ROOT(S(NP*)	_	He	_	_	_	_	_	_	_
+genre	27	1	also	also	RB	(ADVP*)	_	also	_	_	_	_	_	_	_
+genre	27	2	can	can	MD	(VP*	_	can	can	_	_	_	_	_	_
+genre	27	3	not	not	RB	*	not	_	_	_	_	_	_	_	_
+genre	27	4	create	create	VB	(VP*	_	create	_	_	_	_	_	_	_
+genre	27	5	an	a	DT	(NP*	_	an	_	_	an	_	_	_	_
+genre	27	6	``	``	``	*	_	``	_	_	``	_	_	_	_
+genre	27	7	unliftable	unliftable	JJ	*	_	unliftable	_	un	liftable	liftable	_	_	_
+genre	27	8	''	''	''	*	_	''	_	_	''	_	_	_	_
+genre	27	9	mountain	mountain	NN	*)	_	mountain	_	_	mountain	_	_	_	_
+genre	27	10	because	because	IN	(SBAR*	_	because	_	_	_	_	_	_	_
+genre	27	11	that	that	DT	(S(NP*)	_	that	_	_	_	_	_	that	_
+genre	27	12	also	also	RB	(ADVP*)	_	also	_	_	_	_	_	also	_
+genre	27	13	would	would	MD	(VP*	_	would	_	_	_	_	_	would	_
+genre	27	14	not	not	RB	*	_	not	_	_	_	_	not	_	_
+genre	27	15	make	make	VB	(VP*	_	make	_	_	_	_	_	make	_
+genre	27	16	sense	sense	NN	(NP*)))))	_	sense	_	_	_	_	_	sense	_
+genre	27	17	,	,	,	*	_	,	_	_	_	_	_	,	_
+genre	27	18	if	if	IN	(SBAR*	_	if	_	_	_	_	_	if	_
+genre	27	19	God	God	NNP	(S(NP*)	_	God	_	_	_	_	_	God	_
+genre	27	20	can	can	MD	(VP*	_	can	_	_	_	_	_	can	_
+genre	27	21	lift	lift	VB	(VP*	_	lift	_	_	_	_	_	lift	_
+genre	27	22	everything	everything	NN	(NP*)))))))	_	everything	_	_	_	_	_	everything	_
+genre	27	23	.	.	.	*))	_	_	_	_	_	_	_	_	_
+
+genre	28	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+genre	28	1	edge	edge	NN	*)	_	edge	_
+genre	28	2	of	of	IN	(PP*	_	of	_
+genre	28	3	a	a	DT	(NP*	_	a	_
+genre	28	4	circle	circle	NN	*)))	_	circle	_
+genre	28	5	is	be	VBZ	(VP(VP*	_	is	_
+genre	28	6	not	not	RB	*	not	_	_
+genre	28	7	straight	straight	RB	(ADJP*))	_	straight	straight
+genre	28	8	and	and	CC	*	_	_	_
+genre	28	9	is	be	VBZ	(VP*	_	_	_
+genre	28	10	an	a	DT	(NP(NP*	_	_	_
+genre	28	11	example	example	NN	*)	_	_	_
+genre	28	12	of	of	IN	(PP*	_	_	_
+genre	28	13	a	a	DT	(NP*	_	_	_
+genre	28	14	curve	curve	NN	*)))))	_	_	_
+genre	28	15	.	.	.	*))	_	_	_
+
+genre	29	0	That	that	DT	(ROOT(S(S(NP*)	_	That	_	_	_	_	_	_	_	_	_	_
+genre	29	1	does	do	VBZ	(VP*	_	does	_	_	_	_	_	_	_	_	_	_
+genre	29	2	not	not	RB	*	not	_	_	_	_	_	_	_	_	_	_	_
+genre	29	3	mean	mean	VB	(VP*	_	mean	mean	_	_	_	_	_	_	_	_	_
+genre	29	4	that	that	IN	(SBAR*	_	that	_	_	_	_	_	_	_	_	_	_
+genre	29	5	the	the	DT	(S(NP*	_	the	_	_	_	_	_	_	_	_	_	_
+genre	29	6	author	author	NN	*)	_	author	_	_	_	_	_	_	_	_	_	_
+genre	29	7	must	must	MD	(VP*	_	must	_	_	_	_	_	_	_	_	_	_
+genre	29	8	say	say	VB	(VP*	_	say	_	_	_	_	_	_	_	_	_	_
+genre	29	9	``	``	``	(S*	_	``	_	_	_	_	_	_	_	_	_	_
+genre	29	10	I	I	PRP	(NP*)	_	I	_	_	_	_	_	_	_	_	_	_
+genre	29	11	allow	allow	VBP	(VP*	_	allow	_	_	_	_	_	_	_	_	_	_
+genre	29	12	you	you	PRP	(S(NP*)	_	you	_	_	_	_	_	_	_	_	_	_
+genre	29	13	to	to	TO	(VP*	_	to	_	_	_	_	_	_	_	_	_	_
+genre	29	14	delete	delete	VB	(VP*	_	delete	_	_	_	_	_	_	_	_	_	_
+genre	29	15	files	file	NNS	(NP*)	_	files	_	_	_	_	_	_	_	_	_	_
+genre	29	16	from	from	IN	(PP*	_	from	_	_	_	_	_	_	_	_	_	_
+genre	29	17	the	the	DT	(NP(NP*	_	the	_	_	_	_	_	_	_	_	_	_
+genre	29	18	computers	computer	NNS	*)	_	computers	_	_	_	_	_	_	_	_	_	_
+genre	29	19	of	of	IN	(PP*	_	of	_	_	_	_	_	_	_	_	_	_
+genre	29	20	other	other	JJ	(NP*	_	other	_	_	_	_	_	_	_	_	_	_
+genre	29	21	people	people	NNS	*))))	_	people	_	_	_	_	_	_	_	_	_	_
+genre	29	22	without	without	IN	(PP*	_	without	_	without	_	_	_	_	_	_	_	_
+genre	29	23	telling	tell	VBG	(S(VP*	_	telling	_	_	telling	telling	_	_	_	_	_	_
+genre	29	24	them	they	PRP	(NP*))))))))	_	them	_	_	them	_	_	_	_	_	_	_
+genre	29	25	''	''	''	*))))))))	_	''	_	_	_	_	_	_	_	_	_	_
+genre	29	26	,	,	,	*	_	,	_	_	_	_	_	_	_	_	_	_
+genre	29	27	but	but	CC	*	_	but	_	_	_	_	_	_	_	_	_	_
+genre	29	28	he	he	PRP	(S(NP*)	_	he	_	_	_	_	_	he	_	_	_	_
+genre	29	29	must	must	MD	(VP*	_	must	_	_	_	_	_	must	_	_	_	_
+genre	29	30	not	not	RB	*	_	not	_	_	_	_	not	_	_	_	_	_
+genre	29	31	say	say	VB	(VP*	_	say	_	_	_	_	_	say	_	_	_	_
+genre	29	32	``	``	``	(S*	_	``	_	_	_	_	_	``	_	_	_	_
+genre	29	33	I	I	PRP	(NP*)	_	I	_	_	_	_	_	I	_	_	_	_
+genre	29	34	prohibit	prohibit	VBP	(VP*	_	prohibit	_	_	_	_	_	prohibit	_	_	_	_
+genre	29	35	you	you	PRP	(NP*)	_	you	_	_	_	_	_	you	_	_	_	_
+genre	29	36	from	from	IN	(PP*	_	from	_	_	_	_	_	from	_	_	_	_
+genre	29	37	deleting	delete	VBG	(S(VP*	_	deleting	_	_	_	_	_	deleting	_	_	_	_
+genre	29	38	files	file	NNS	(NP*)	_	files	_	_	_	_	_	files	_	_	_	_
+genre	29	39	from	from	IN	(PP*	_	from	_	_	_	_	_	from	_	_	_	_
+genre	29	40	the	the	DT	(NP(NP*	_	the	_	_	_	_	_	the	_	_	_	_
+genre	29	41	computers	computer	NNS	*)	_	computers	_	_	_	_	_	computers	_	_	_	_
+genre	29	42	of	of	IN	(PP*	_	of	_	_	_	_	_	of	_	_	_	_
+genre	29	43	other	other	JJ	(NP*	_	other	_	_	_	_	_	other	_	_	_	_
+genre	29	44	people	people	NNS	*))))	_	people	_	_	_	_	_	people	_	_	_	_
+genre	29	45	without	without	IN	(PP*	_	without	_	_	_	_	_	without	_	without	_	_
+genre	29	46	telling	tell	VBG	(S(VP*	_	telling	_	_	_	_	_	telling	_	_	telling	telling
+genre	29	47	them	they	PRP	(NP*))))))))	_	them	_	_	_	_	_	them	_	_	them	_
+genre	29	48	''	''	''	*))))	_	''	_	_	_	_	_	''	_	_	_	_
+genre	29	49	.	.	.	*))	_	_	_	_	_	_	_	_	_	_	_	_
+
+genre	30	0	Will	Will	NNP	(ROOT(S(NP*)	_	Will	_
+genre	30	1	soon	soon	RB	(ADVP*)	_	_	_
+genre	30	2	falls	fall	VBZ	(VP(VP*	_	_	_
+genre	30	3	for	for	IN	(PP*	_	_	_
+genre	30	4	Gwen	Gwen	NNP	(NP*)))	_	_	_
+genre	30	5	and	and	CC	*	_	_	_
+genre	30	6	does	do	VBZ	(VP*	_	does	_
+genre	30	7	not	not	RB	*	not	_	_
+genre	30	8	keep	keep	VB	(VP*	_	keep	keep
+genre	30	9	up	up	RP	(PRT*)	_	up	up
+genre	30	10	with	with	IN	(PP*	_	with	_
+genre	30	11	the	the	DT	(NP(NP*	_	the	_
+genre	30	12	friends	friend	NNS	*)	_	friends	_
+genre	30	13	he	he	PRP	(SBAR(S(NP*)	_	he	_
+genre	30	14	made	make	VBD	(VP*	_	made	_
+genre	30	15	as	as	IN	(PP*	_	as	_
+genre	30	16	a	a	DT	(NP*	_	a	_
+genre	30	17	sidekick	sidekick	NN	*))))))))))	_	sidekick	_
+genre	30	18	.	.	.	*))	_	_	_
+
+genre	31	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+genre	31	1	may	may	MD	(VP*	_	_	_
+genre	31	2	or	or	CC	*	_	_	_
+genre	31	3	may	may	MD	*	_	may	_
+genre	31	4	not	not	RB	*	not	_	_
+genre	31	5	be	be	VB	(VP*	_	be	_
+genre	31	6	practical	practical	JJ	(ADJP*	_	practical	_
+genre	31	7	to	to	TO	(S(VP*	_	to	_
+genre	31	8	eliminate	eliminate	VB	(VP*	_	eliminate	_
+genre	31	9	this	this	DT	(NP*	_	this	_
+genre	31	10	water	water	NN	*)))))))	_	water	_
+genre	31	11	.	.	.	*))	_	_	_
+
+genre	32	0	Some	some	DT	(ROOT(S(NP*	_	_	_	_	_	_
+genre	32	1	people	people	NNS	*)	_	_	_	_	_	_
+genre	32	2	can	can	MD	(VP*	_	_	_	_	_	_
+genre	32	3	only	only	RB	(ADVP*)	_	_	_	_	_	_
+genre	32	4	get	get	VB	(VP*	_	_	_	_	_	_
+genre	32	5	medical	medical	JJ	(NP(NP*	_	_	_	_	_	_
+genre	32	6	and	and	CC	*	_	_	_	_	_	_
+genre	32	7	surgical	surgical	JJ	*	_	_	_	_	_	_
+genre	32	8	treatment	treatment	NN	*)	_	_	_	_	_	_
+genre	32	9	paid	pay	VBN	(VP*	_	_	_	_	_	_
+genre	32	10	for	for	IN	(PP*	_	_	_	_	_	_
+genre	32	11	by	by	IN	(PP*	_	_	_	_	_	_
+genre	32	12	their	they	PRP$	(NP*	_	_	_	_	_	_
+genre	32	13	government	government	NN	*)))	_	_	_	_	_	_
+genre	32	14	if	if	IN	(SBAR*	_	_	_	_	_	_
+genre	32	15	it	it	PRP	(S(S(NP*)	_	_	_	_	_	_
+genre	32	16	is	be	VBZ	(VP*	_	_	_	_	_	_
+genre	32	17	to	to	TO	(S(VP*	_	_	_	_	_	_
+genre	32	18	``	``	``	*	_	_	_	_	_	_
+genre	32	19	treat	treat	VB	(VP*	_	_	_	_	_	_
+genre	32	20	a	a	DT	(NP*	_	_	_	_	_	_
+genre	32	21	disease	disease	NN	*))))))	_	_	_	_	_	_
+genre	32	22	,	,	,	*	_	_	_	_	_	_
+genre	32	23	''	''	''	*	_	_	_	_	_	_
+genre	32	24	so	so	IN	*	_	_	_	_	_	_
+genre	32	25	if	if	IN	(S(SBAR*	_	_	_	_	if	_
+genre	32	26	it	it	PRP	(S(NP*)	_	it	_	_	it	_
+genre	32	27	is	be	VBZ	(VP*	_	is	_	_	is	_
+genre	32	28	not	not	RB	*	not	_	_	_	not	_
+genre	32	29	considered	consider	VBN	(VP*	_	considered	_	_	considered	_
+genre	32	30	a	a	DT	(NP*	_	a	_	_	a	_
+genre	32	31	disease	disease	NN	*)))))	_	disease	_	_	disease	_
+genre	32	32	,	,	,	*	_	_	_	_	,	_
+genre	32	33	they	they	PRP	(NP*)	_	_	_	_	they	_
+genre	32	34	will	will	MD	(VP*	_	_	_	_	will	_
+genre	32	35	not	not	RB	*	_	_	_	not	_	_
+genre	32	36	get	get	VB	(VP*	_	_	_	_	get	_
+genre	32	37	the	the	DT	(NP(NP*	_	_	_	_	the	_
+genre	32	38	medicines	medicine	NNS	*	_	_	_	_	medicines	_
+genre	32	39	and	and	CC	*	_	_	_	_	and	_
+genre	32	40	surgery	surgery	NN	*)	_	_	_	_	surgery	_
+genre	32	41	they	they	PRP	(SBAR(S(NP*)	_	_	_	_	they	_
+genre	32	42	need	need	VBP	(VP*)))))))))))))	_	_	_	_	need	_
+genre	32	43	.	.	.	*))	_	_	_	_	_	_
+
+genre	33	0	People	people	NNS	(ROOT(S(NP(NP*)	_	People	_
+genre	33	1	who	who	WP	(SBAR(WHNP*)	_	_	_
+genre	33	2	were	be	VBD	(S(VP*	_	_	_
+genre	33	3	showing	show	VBG	(VP*	_	_	_
+genre	33	4	spectacles	spectacles	NNS	(NP*))))))	_	_	_
+genre	33	5	,	,	,	*	_	_	_
+genre	33	6	usually	usually	RB	(ADVP*)	_	usually	_
+genre	33	7	did	do	VBD	(VP*	_	did	_
+genre	33	8	not	not	RB	*	not	_	_
+genre	33	9	wear	wear	VB	(VP*	_	wear	wear
+genre	33	10	any	any	DT	(NP*	_	any	_
+genre	33	11	clothes	clothes	NNS	*)))	_	clothes	_
+genre	33	12	.	.	.	*))	_	_	_
+
+genre	34	0	Not	not	RB	(ROOT(S(NP*	Not	_	_
+genre	34	1	all	all	DT	*	_	all	_
+genre	34	2	philosophies	philosophy	NNS	*)	_	philosophies	_
+genre	34	3	ask	ask	VBP	(VP*	_	ask	ask
+genre	34	4	the	the	DT	(NP*	_	the	_
+genre	34	5	same	same	JJ	*	_	same	_
+genre	34	6	questions	question	NNS	*))	_	questions	_
+genre	34	7	.	.	.	*))	_	_	_
+
+genre	35	0	It	it	PRP	(ROOT(S(NP*)	_	_	_
+genre	35	1	include	include	VBP	(VP*	_	_	_
+genre	35	2	parts	part	NNS	(NP(NP*)	_	_	_
+genre	35	3	of	of	IN	(PP*	_	_	_
+genre	35	4	the	the	DT	(NP(NP*	_	_	_
+genre	35	5	backbone	backbone	NN	*)	_	_	_
+genre	35	6	and	and	CC	*	_	_	_
+genre	35	7	the	the	DT	(NP*	_	_	_
+genre	35	8	ribs	rib	NNS	*))))	_	_	_
+genre	35	9	,	,	,	*	_	_	_
+genre	35	10	meaning	mean	VBG	(S(VP*	_	_	_
+genre	35	11	the	the	DT	(SBAR(S(NP*	_	the	_
+genre	35	12	turtle	turtle	NN	*)	_	turtle	_
+genre	35	13	can	can	MD	(VP*	_	can	can
+genre	35	14	not	not	RB	*	not	_	_
+genre	35	15	crawl	crawl	VB	(VP*	_	crawl	crawl
+genre	35	16	out	out	RP	(PRT*)	_	out	_
+genre	35	17	of	of	IN	(PP*	_	of	_
+genre	35	18	its	its	PRP$	(NP*	_	its	_
+genre	35	19	shell	shell	NN	*)))))))))	_	shell	_
+genre	35	20	.	.	.	*))	_	_	_
+
+genre	36	0	The	the	DT	(ROOT(S(S(NP*	_	_	_	_	_	_
+genre	36	1	Prime	Prime	NNP	*	_	_	_	_	_	_
+genre	36	2	Minister	Minister	NNP	*)	_	_	_	_	_	_
+genre	36	3	is	be	VBZ	(VP*	_	_	_	_	_	_
+genre	36	4	almost	almost	RB	(ADVP*	_	_	_	_	_	_
+genre	36	5	always	always	RB	*)	_	_	_	_	_	_
+genre	36	6	the	the	DT	(NP(NP*	_	_	_	_	_	_
+genre	36	7	person	person	NN	*)	_	_	_	_	_	_
+genre	36	8	whose	whose	WP$	(SBAR(WHNP*	_	_	_	_	_	_
+genre	36	9	party	party	NN	*)	_	_	_	_	_	_
+genre	36	10	has	have	VBZ	(S(VP*	_	_	_	_	_	_
+genre	36	11	the	the	DT	(NP*	_	_	_	_	_	_
+genre	36	12	most	most	JJS	*	_	_	_	_	_	_
+genre	36	13	seats	seat	NNS	*)))))))	_	_	_	_	_	_
+genre	36	14	,	,	,	*	_	_	_	_	_	_
+genre	36	15	but	but	CC	*	_	_	_	_	_	_
+genre	36	16	if	if	IN	(S(SBAR*	_	_	_	_	_	_
+genre	36	17	the	the	DT	(S(NP*	_	the	_	_	_	_
+genre	36	18	lower	lower	JJR	*	_	lower	_	_	_	_
+genre	36	19	house	house	NN	*)	_	house	_	_	_	_
+genre	36	20	does	do	VBZ	(VP*	_	does	_	_	_	_
+genre	36	21	not	not	RB	*	not	_	_	_	_	_
+genre	36	22	think	think	VB	(VP*	_	think	_	_	_	_
+genre	36	23	he	he	PRP	(SBAR(S(NP*)	_	he	_	_	_	_
+genre	36	24	is	be	VBZ	(VP*	_	is	_	_	_	_
+genre	36	25	doing	do	VBG	(VP*	_	doing	_	_	_	_
+genre	36	26	a	a	DT	(NP*	_	a	_	_	_	_
+genre	36	27	good	good	JJ	*	_	good	_	_	_	_
+genre	36	28	job	job	NN	*)))))))))	_	job	_	_	_	_
+genre	36	29	they	they	PRP	(NP*)	_	_	_	_	_	_
+genre	36	30	can	can	MD	(VP*	_	_	_	_	_	_
+genre	36	31	call	call	VB	(VP(VP*	_	_	_	_	_	_
+genre	36	32	a	a	DT	(NP(NP*	_	_	_	_	_	_
+genre	36	33	vote	vote	NN	*)	_	_	_	_	_	_
+genre	36	34	of	of	IN	(PP*	_	_	_	_	_	_
+genre	36	35	no	no	DT	(NP*	_	_	_	no	_	_
+genre	36	36	confidence	confidence	NN	*))))	_	_	_	_	confidence	confidence
+genre	36	37	and	and	CC	*	_	_	_	_	_	_
+genre	36	38	ask	ask	VB	(VP*	_	_	_	_	_	_
+genre	36	39	him	he	PRP	(S(NP*)	_	_	_	_	_	_
+genre	36	40	to	to	TO	(VP*	_	_	_	_	_	_
+genre	36	41	leave	leave	VB	(VP(VP*	_	_	_	_	_	_
+genre	36	42	his	he	PRP$	(NP*	_	_	_	_	_	_
+genre	36	43	job	job	NN	*)	_	_	_	_	_	_
+genre	36	44	as	as	IN	(PP*	_	_	_	_	_	_
+genre	36	45	Prime	Prime	NNP	(NP*	_	_	_	_	_	_
+genre	36	46	Minister	Minister	NNP	*)))	_	_	_	_	_	_
+genre	36	47	or	or	CC	*	_	_	_	_	_	_
+genre	36	48	have	have	VB	(VP*	_	_	_	_	_	_
+genre	36	49	an	a	DT	(NP*	_	_	_	_	_	_
+genre	36	50	election	election	NN	*)))))))))	_	_	_	_	_	_
+genre	36	51	.	.	.	*))	_	_	_	_	_	_
+
+genre	37	0	The	the	DT	(ROOT(S(S(NP(NP*	_	_	_
+genre	37	1	first	first	JJ	*	_	_	_
+genre	37	2	game	game	NN	*)	_	_	_
+genre	37	3	of	of	IN	(PP*	_	_	_
+genre	37	4	duplicate	duplicate	JJ	(NP*	_	_	_
+genre	37	5	whist	whist	NN	*)))	_	_	_
+genre	37	6	was	be	VBD	(VP*	_	_	_
+genre	37	7	organised	organise	VBN	(VP*	_	_	_
+genre	37	8	by	by	IN	(PP*	_	_	_
+genre	37	9	``	``	``	*	_	_	_
+genre	37	10	Cavendish	Cavendish	NNP	(NP*)	_	_	_
+genre	37	11	''	''	''	*)	_	_	_
+genre	37	12	in	in	IN	(PP*	_	_	_
+genre	37	13	London	London	NNP	(NP*	_	_	_
+genre	37	14	1857	1857	CD	*)))))	_	_	_
+genre	37	15	,	,	,	*	_	_	_
+genre	37	16	but	but	CC	*	_	_	_
+genre	37	17	it	it	PRP	(S(NP*)	_	it	_
+genre	37	18	was	be	VBD	(VP*	_	was	_
+genre	37	19	not	not	RB	*	not	_	_
+genre	37	20	followed	follow	VBN	(VP*	_	followed	followed
+genre	37	21	up	up	RP	(PRT*))))	_	up	up
+genre	37	22	.	.	.	*))	_	_	_
+
+genre	38	0	Meanwhile	meanwhile	RB	(ROOT(S(ADVP*)	_	_	_
+genre	38	1	Haman	Haman	NNP	(NP(NP*)	_	_	_
+genre	38	2	,	,	,	*	_	_	_
+genre	38	3	the	the	DT	(NP(NP*	_	_	_
+genre	38	4	king	king	NN	*	_	_	_
+genre	38	5	's	's	POS	*)	_	_	_
+genre	38	6	prime	prime	JJ	*	_	_	_
+genre	38	7	minister	minister	NN	*)	_	_	_
+genre	38	8	,	,	,	*)	_	_	_
+genre	38	9	creates	create	VBZ	(VP*	_	_	_
+genre	38	10	a	a	DT	(NP*	_	_	_
+genre	38	11	grudge	grudge	NN	*)	_	_	_
+genre	38	12	against	against	IN	(PP*	_	_	_
+genre	38	13	Esther	Esther	NNP	(NP(NP*	_	_	_
+genre	38	14	's	's	POS	*)	_	_	_
+genre	38	15	uncle	uncle	NNP	*	_	_	_
+genre	38	16	Mordecai	Mordecai	NNP	*))	_	_	_
+genre	38	17	because	because	IN	(SBAR*	_	_	_
+genre	38	18	he	he	PRP	(S(NP*)	_	he	_
+genre	38	19	does	do	VBZ	(VP*	_	does	_
+genre	38	20	not	not	RB	*	not	_	_
+genre	38	21	bow	bow	VB	(VP*	_	bow	bow
+genre	38	22	down	down	RP	(PRT*)	_	down	down
+genre	38	23	to	to	TO	(PP(PP*	_	to	_
+genre	38	24	him	he	PRP	(NP*))	_	him	_
+genre	38	25	,	,	,	*	_	_	_
+genre	38	26	and	and	CC	*	_	_	_
+genre	38	27	only	only	RB	*	_	_	_
+genre	38	28	to	to	TO	(PP*	_	_	_
+genre	38	29	the	the	DT	(NP(NP*	_	_	_
+genre	38	30	God	God	NNP	*)	_	_	_
+genre	38	31	of	of	IN	(PP*	_	_	_
+genre	38	32	Israel	Israel	NNP	(NP*))))))))))	_	_	_
+genre	38	33	.	.	.	*))	_	_	_
+
+genre	39	0	Sometimes	sometimes	RB	(ROOT(S(ADVP*)	_	_	_
+genre	39	1	,	,	,	*	_	_	_
+genre	39	2	Aborigines	Aborigines	NNPS	(S(NP*)	_	_	_
+genre	39	3	would	would	MD	(VP*	_	_	_
+genre	39	4	name	name	VB	(VP*	_	_	_
+genre	39	5	a	a	DT	(NP*	_	_	_
+genre	39	6	person	person	NN	*)	_	_	_
+genre	39	7	after	after	IN	(PP*	_	_	_
+genre	39	8	an	a	DT	(NP*	_	_	_
+genre	39	9	animal	animal	NN	*)))))	_	_	_
+genre	39	10	,	,	,	*	_	_	_
+genre	39	11	and	and	CC	*	_	_	_
+genre	39	12	they	they	PRP	(S(NP*)	_	they	_
+genre	39	13	could	could	MD	(VP*	_	could	could
+genre	39	14	not	not	RB	*	not	_	_
+genre	39	15	eat	eat	VB	(VP*	_	eat	_
+genre	39	16	that	that	DT	(NP*	_	that	_
+genre	39	17	animal	animal	NN	*	_	animal	_
+genre	39	18	to	to	TO	(S(VP*	_	to	_
+genre	39	19	help	help	VB	(VP*	_	help	_
+genre	39	20	level	level	NN	(NP*)	_	level	_
+genre	39	21	out	out	IN	(PP*	_	out	_
+genre	39	22	the	the	DT	(NP*	_	the	_
+genre	39	23	food	food	NN	*	_	food	_
+genre	39	24	population	population	NN	*)))))))))	_	population	_
+genre	39	25	.	.	.	*))	_	_	_
+
+genre	40	0	Chemical	Chemical	NNP	(ROOT(S(NP*	_	_	_
+genre	40	1	reactions	reaction	NNS	*)	_	_	_
+genre	40	2	often	often	RB	(ADVP*)	_	_	_
+genre	40	3	take	take	VBP	(VP*	_	_	_
+genre	40	4	place	place	NN	(NP*)	_	_	_
+genre	40	5	at	at	IN	(PP*	_	_	_
+genre	40	6	levels	level	NNS	(NP*))	_	_	_
+genre	40	7	where	where	WRB	(SBAR(WHADVP*)	_	where	_
+genre	40	8	using	use	VBG	(S(S(VP*	_	using	_
+genre	40	9	grams	gram	NNS	(SBAR(S(NP*)	_	grams	_
+genre	40	10	would	would	MD	(VP*	_	would	_
+genre	40	11	n't	not	RB	*	n't	_	_
+genre	40	12	make	make	VB	(VP*	_	make	_
+genre	40	13	sense	sense	NN	(NP*)	_	sense	_
+genre	40	14	,	,	,	*	_	_	_
+genre	40	15	yet	yet	RB	(S(ADVP*)	_	_	_
+genre	40	16	using	use	VBG	(VP*	_	_	_
+genre	40	17	absolute	absolute	JJ	(NP(NP*	_	_	_
+genre	40	18	numbers	number	NNS	*)	_	_	_
+genre	40	19	of	of	IN	(PP*	_	_	_
+genre	40	20	atoms/molecules/ions	atoms/molecules/ions	NNS	(NP*)))))))))))	_	_	_
+genre	40	21	would	would	MD	(VP*	_	_	_
+genre	40	22	be	be	VB	(VP*	_	_	_
+genre	40	23	confusing	confusing	JJ	(ADJP*)	_	_	_
+genre	40	24	,	,	,	*	_	_	_
+genre	40	25	too	too	RB	(ADVP*))))))	_	_	_
+genre	40	26	.	.	.	*))	_	_	_
+
+genre	41	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+genre	41	1	also	also	RB	(ADVP*)	_	also	_
+genre	41	2	can	can	MD	(VP*	_	can	can
+genre	41	3	not	not	RB	*	not	_	_
+genre	41	4	be	be	VB	(VP*	_	be	_
+genre	41	5	stopped	stop	VBN	(VP(VP*)	_	stopped	_
+genre	41	6	,	,	,	*	_	_	_
+genre	41	7	sped	sped	VBN	(VP*	_	_	_
+genre	41	8	up	up	RP	(PRT*))	_	_	_
+genre	41	9	or	or	CC	*	_	_	_
+genre	41	10	slowed	slowed	VBN	(VP*	_	_	_
+genre	41	11	down	down	RP	(PRT*)))))	_	_	_
+genre	41	12	.	.	.	*))	_	_	_
+
+genre	42	0	Some	some	DT	(ROOT(S(S(NP*	_	_	_
+genre	42	1	English	English	JJ	*	_	_	_
+genre	42	2	books	book	NNS	*)	_	_	_
+genre	42	3	do	do	VBP	(VP*	_	_	_
+genre	42	4	have	have	VB	(VP*	_	_	_
+genre	42	5	these	these	DT	(NP*	_	_	_
+genre	42	6	spaces	space	NNS	*))))	_	_	_
+genre	42	7	,	,	,	*	_	_	_
+genre	42	8	but	but	CC	*	_	_	_
+genre	42	9	are	be	VBP	(S(VP*	_	_	_
+genre	42	10	often	often	RB	(ADVP*)	_	_	_
+genre	42	11	a	a	DT	(NP(NP*	_	_	_
+genre	42	12	very	very	RB	(ADJP*	_	_	_
+genre	42	13	thin	thin	JJ	*)	_	_	_
+genre	42	14	space	space	NN	*)	_	_	_
+genre	42	15	,	,	,	*	_	_	_
+genre	42	16	which	which	WDT	(SBAR(WHNP*)	_	which	_
+genre	42	17	are	be	VBP	(S(VP*	_	are	_
+genre	42	18	not	not	RB	*	not	_	_
+genre	42	19	full	full	JJ	(NP(NP*	_	full	_
+genre	42	20	spaces	space	NNS	*)	_	spaces	spaces
+genre	42	21	but	but	CC	(PP*	_	_	_
+genre	42	22	an	a	DT	(NP*	_	_	_
+genre	42	23	attempt	attempt	NN	*	_	_	_
+genre	42	24	to	to	TO	(S(VP*	_	_	_
+genre	42	25	make	make	VB	(VP*	_	_	_
+genre	42	26	the	the	DT	(S(NP*	_	_	_
+genre	42	27	words	word	NNS	*)	_	_	_
+genre	42	28	easier	easier	RBR	(ADJP*)	_	_	_
+genre	42	29	to	to	TO	(S(VP*	_	_	_
+genre	42	30	read	read	VB	(VP*))))))))))))))))	_	_	_
+genre	42	31	.	.	.	*))	_	_	_
+
+genre	43	0	Doxycycline	Doxycycline	NN	(ROOT(S(S(NP*	_	_	_
+genre	43	1	and	and	CC	*	_	_	_
+genre	43	2	tetracycline	tetracycline	NN	*)	_	_	_
+genre	43	3	are	be	VBP	(VP*	_	_	_
+genre	43	4	two	two	CD	(NP*	_	_	_
+genre	43	5	other	other	JJ	*	_	_	_
+genre	43	6	possible	possible	JJ	*	_	_	_
+genre	43	7	choices	choice	NNS	*)))	_	_	_
+genre	43	8	;	;	:	*	_	_	_
+genre	43	9	however	however	RB	(S(ADVP*)	_	_	_
+genre	43	10	,	,	,	*	_	_	_
+genre	43	11	they	they	PRP	(NP*)	_	they	_
+genre	43	12	can	can	MD	(VP*	_	can	_
+genre	43	13	not	not	RB	*	not	_	_
+genre	43	14	be	be	VB	(VP*	_	be	_
+genre	43	15	used	use	VBN	(VP*	_	used	used
+genre	43	16	in	in	IN	(PP*	_	in	_
+genre	43	17	pregnant	pregnant	JJ	(NP*	_	pregnant	_
+genre	43	18	women	woman	NNS	*))))))	_	women	_
+genre	43	19	.	.	.	*))	_	_	_
+
+genre	44	0	The	the	DT	(ROOT(S(NP*	_	The	_
+genre	44	1	term	term	NN	*	_	term	_
+genre	44	2	``	``	``	*	_	``	_
+genre	44	3	cult	cult	NN	*	_	cult	_
+genre	44	4	''	''	''	*)	_	''	_
+genre	44	5	often	often	RB	(ADVP*)	_	often	_
+genre	44	6	means	mean	VBZ	(VP*	_	means	means
+genre	44	7	not	not	RB	(NP*	not	_	_
+genre	44	8	a	a	DT	(NP*	_	a	_
+genre	44	9	mainstream	mainstream	NN	*	_	mainstream	_
+genre	44	10	religion	religion	NN	*)	_	religion	_
+genre	44	11	,	,	,	*	_	_	_
+genre	44	12	but	but	CC	*	_	_	_
+genre	44	13	a	a	DT	(NP(NP*	_	_	_
+genre	44	14	group	group	NN	*)	_	_	_
+genre	44	15	set	set	VBN	(VP*	_	_	_
+genre	44	16	up	up	RP	(PRT*)	_	_	_
+genre	44	17	``	``	``	*	_	_	_
+genre	44	18	in	in	IN	(PP*	_	_	_
+genre	44	19	opposition	opposition	NN	(NP(NP*)	_	_	_
+genre	44	20	to	to	TO	(PP*	_	_	_
+genre	44	21	a	a	DT	(NP(NP*	_	_	_
+genre	44	22	centre	centre	NN	*)	_	_	_
+genre	44	23	of	of	IN	(PP*	_	_	_
+genre	44	24	established	established	JJ	(NP*	_	_	_
+genre	44	25	authority	authority	NN	*))))))	_	_	_
+genre	44	26	''	''	''	*))))	_	_	_
+genre	44	27	.	.	.	*))	_	_	_
+
+genre	45	0	The	the	DT	(ROOT(S(NP*	_	The	_	_	_	_	_	_	_	_	_	_
+genre	45	1	belief	belief	NN	*)	_	belief	_	_	_	_	_	_	_	_	_	_
+genre	45	2	is	be	VBZ	(VP*	_	is	_	_	_	_	_	_	_	_	_	_
+genre	45	3	not	not	RB	*	not	_	_	_	_	_	_	_	_	_	_	_
+genre	45	4	orthodox	orthodox	NN	(ADJP*)	_	orthodox	orthodox	_	_	_	_	_	_	_	_	_
+genre	45	5	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	6	as	as	IN	(SBAR*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	7	the	the	DT	(S(NP*	_	_	_	_	the	_	_	_	_	_	_	_
+genre	45	8	Church	Church	NNP	*)	_	_	_	_	Church	_	_	_	_	_	_	_
+genre	45	9	does	do	VBZ	(VP*	_	_	_	_	does	_	_	_	_	_	_	_
+genre	45	10	not	not	RB	*	_	_	_	not	_	_	_	_	_	_	_	_
+genre	45	11	profess	profess	RB	(ADVP*)	_	_	_	_	profess	profess	_	_	_	_	_	_
+genre	45	12	a	a	DT	(ADVP(NP*	_	_	_	_	a	_	_	_	_	_	_	_
+genre	45	13	belief	belief	NN	*)	_	_	_	_	belief	_	_	_	_	_	_	_
+genre	45	14	as	as	RB	*	_	_	_	_	as	_	_	_	_	_	_	_
+genre	45	15	to	to	TO	(PP*	_	_	_	_	to	_	_	_	_	_	_	_
+genre	45	16	what	what	WP	(SBAR(WHNP*)	_	_	_	_	what	_	_	_	_	_	_	_
+genre	45	17	happens	happen	VBZ	(S(VP*	_	_	_	_	happens	_	_	_	_	_	_	_
+genre	45	18	to	to	TO	(S(VP*	_	_	_	_	to	_	_	_	_	_	_	_
+genre	45	19	unbaptized	unbaptized	VB	(VP*	_	_	_	_	unbaptized	_	un	baptized	baptized	_	_	_
+genre	45	20	infants	infant	NNS	(NP(NP*)	_	_	_	_	infants	_	_	infants	_	_	_	_
+genre	45	21	;	;	:	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	22	however	however	RB	(S(ADVP*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	23	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	24	it	it	PRP	(NP*)	_	_	_	_	_	_	_	_	_	_	it	_
+genre	45	25	is	be	VBZ	(VP*	_	_	_	_	_	_	_	_	_	_	is	_
+genre	45	26	also	also	RB	(ADVP*)	_	_	_	_	_	_	_	_	_	_	also	_
+genre	45	27	not	not	RB	*	_	_	_	_	_	_	_	_	_	not	_	_
+genre	45	28	heresy	heresy	JJ	(ADJP*)	_	_	_	_	_	_	_	_	_	_	heresy	heresy
+genre	45	29	,	,	,	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	30	as	as	IN	(SBAR*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	31	the	the	DT	(S(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	32	Church	Church	NNP	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	33	accepts	accept	VBZ	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	34	that	that	IN	(SBAR*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	35	such	such	PDT	(S(NP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	36	a	a	DT	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	37	scenario	scenario	NN	*)	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	38	``	``	``	*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	39	might	might	MD	(VP*)))))))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	40	''	''	''	*))))))))))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	41	be	be	VB	(VP*	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	42	possible	possible	JJ	(ADJP*))))))	_	_	_	_	_	_	_	_	_	_	_	_
+genre	45	43	.	.	.	*))	_	_	_	_	_	_	_	_	_	_	_	_
+
+genre	46	0	The	the	DT	(ROOT(S(NP*	_	_	_
+genre	46	1	Russian	russian	JJ	*	_	_	_
+genre	46	2	language	language	NN	*	_	_	_
+genre	46	3	today	today	NN	*)	_	_	_
+genre	46	4	would	would	MD	(VP*	_	_	_
+genre	46	5	be	be	VB	(VP*	_	_	_
+genre	46	6	very	very	RB	(ADJP*	_	_	_
+genre	46	7	different	different	JJ	*)	_	_	_
+genre	46	8	if	if	IN	(SBAR*	_	_	_
+genre	46	9	it	it	PRP	(S(NP*)	_	it	_
+genre	46	10	had	have	VBD	(VP*	_	had	_
+genre	46	11	not	not	RB	*	not	_	_
+genre	46	12	been	be	VBN	(VP*	_	been	_
+genre	46	13	for	for	IN	(PP*	_	for	_
+genre	46	14	Pushkin	Pushkin	NNP	(NP*))))))))	_	Pushkin	_
+genre	46	15	.	.	.	*))	_	_	_
+
+genre	47	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+genre	47	1	definition	definition	NN	*)	_	definition	_
+genre	47	2	of	of	IN	(PP*	_	of	_
+genre	47	3	the	the	DT	(NP*	_	the	_
+genre	47	4	Dutch	dutch	JJ	*	_	Dutch	_
+genre	47	5	ethnicity	ethnicity	NN	*)))	_	ethnicity	_
+genre	47	6	is	be	VBZ	(VP*	_	is	_
+genre	47	7	not	not	RB	*	not	_	_
+genre	47	8	always	always	RB	(ADJP*	_	always	_
+genre	47	9	clear	clear	JJ	*))	_	clear	clear
+genre	47	10	.	.	.	*))	_	_	_
+
+genre	48	0	The	the	DT	(ROOT(S(NP*	_	The	_
+genre	48	1	Aboriginal	Aboriginal	NNP	*	_	Aboriginal	_
+genre	48	2	people	people	NNS	*)	_	people	_
+genre	48	3	did	do	VBD	(VP*	_	did	_
+genre	48	4	not	not	RB	*	not	_	_
+genre	48	5	think	think	VB	(VP*	_	think	think
+genre	48	6	that	that	IN	(SBAR*	_	that	_
+genre	48	7	the	the	DT	(S(NP*	_	the	_
+genre	48	8	land	land	NN	*)	_	land	_
+genre	48	9	belonged	belong	VBD	(VP*	_	belonged	_
+genre	48	10	to	to	TO	(PP*	_	to	_
+genre	48	11	them	they	PRP	(NP*)))))))	_	them	_
+genre	48	12	.	.	.	*))	_	_	_
+
+genre	49	0	They	they	PRP	(ROOT(S(NP*)	_	_	_
+genre	49	1	must	must	MD	(VP*	_	_	_
+genre	49	2	pay	pay	VB	(VP*	_	_	_
+genre	49	3	exactly	exactly	RB	(SBAR(WHADJP*	_	_	_
+genre	49	4	what	what	WP	*)	_	_	_
+genre	49	5	the	the	DT	(S(NP*	_	_	_
+genre	49	6	cost	cost	NN	*)	_	_	_
+genre	49	7	is	be	VBZ	(VP*	_	_	_
+genre	49	8	,	,	,	*	_	_	_
+genre	49	9	they	they	PRP	(SBAR(S(NP*)	_	they	_
+genre	49	10	can	can	MD	(VP*	_	can	_
+genre	49	11	not	not	RB	*	not	_	_
+genre	49	12	pay	pay	VB	(VP*	_	pay	pay
+genre	49	13	more	more	JJR	(NP*))))))))))	_	more	_
+genre	49	14	.	.	.	*))	_	_	_
+
+genre	50	0	The	the	DT	(ROOT(S(NP*	_	_	_
+genre	50	1	soil	soil	NN	*)	_	_	_
+genre	50	2	is	be	VBZ	(VP*	_	_	_
+genre	50	3	so	so	RB	(ADJP*	_	_	_
+genre	50	4	poor	poor	JJ	*)	_	_	_
+genre	50	5	that	that	IN	(SBAR*	_	_	_
+genre	50	6	it	it	PRP	(S(NP*)	_	it	_
+genre	50	7	will	will	MD	(VP*	_	will	_
+genre	50	8	not	not	RB	*	not	_	_
+genre	50	9	even	even	RB	(ADVP*)	_	even	_
+genre	50	10	grow	grow	VB	(VP*	_	grow	grow
+genre	50	11	grass	grass	NN	(NP*)	_	grass	_
+genre	50	12	to	to	TO	(S(VP*	_	to	_
+genre	50	13	feed	feed	VB	(VP*	_	feed	_
+genre	50	14	cattle	cattle	NNS	(NP(NP*)	_	cattle	_
+genre	50	15	for	for	IN	(PP*	_	for	_
+genre	50	16	more	more	JJR	(NP(ADJP(NP(QP*	_	more	_
+genre	50	17	than	than	IN	*	_	than	_
+genre	50	18	a	a	DT	*	_	a	_
+genre	50	19	few	few	JJ	*))	_	few	_
+genre	50	20	more	more	JJR	*)	_	more	_
+genre	50	21	years	year	NNS	*)))))))))))	_	years	_
+genre	50	22	.	.	.	*))	_	_	_
+
+genre	51	0	The	the	DT	(ROOT(S(NP*	_	The	_
+genre	51	1	boy	boy	NN	*)	_	boy	_
+genre	51	2	did	do	VBD	(VP*	_	did	_
+genre	51	3	not	not	RB	*	not	_	_
+genre	51	4	get	get	VB	(VP*	_	get	get
+genre	51	5	sick	sick	JJ	(ADJP*)	_	sick	sick
+genre	51	6	because	because	IN	(SBAR*	_	because	_
+genre	51	7	he	he	PRP	(S(NP*)	_	he	_
+genre	51	8	had	have	VBD	(VP*	_	had	_
+genre	51	9	already	already	RB	(ADVP*)	_	already	_
+genre	51	10	had	have	VBN	(VP*	_	had	_
+genre	51	11	cowpox	cowpox	NN	(NP*)))))))	_	cowpox	_
+genre	51	12	.	.	.	*))	_	_	_
+
+genre	52	0	They	they	PRP	(ROOT(S(NP*)	_	They	_	_	They	_
+genre	52	1	should	should	MD	(VP*	_	should	_	_	should	_
+genre	52	2	not	not	RB	*	not	_	_	_	_	_
+genre	52	3	be	be	VB	(VP(VP*	_	be	_	_	be	_
+genre	52	4	forcibly	forcibly	RB	(VP(ADVP*)	_	forcibly	_	_	forcibly	_
+genre	52	5	stopped	stop	VBN	*	_	stopped	_	_	stopped	_
+genre	52	6	from	from	IN	(PP*	_	from	_	_	_	_
+genre	52	7	doing	do	VBG	(S(VP*	_	doing	_	_	_	_
+genre	52	8	that	that	DT	(NP*))))))	_	that	_	_	_	_
+genre	52	9	,	,	,	*	_	_	_	_	_	_
+genre	52	10	not	not	RB	*	_	_	_	not	_	_
+genre	52	11	even	even	RB	(VP(ADVP*)	_	_	_	_	even	_
+genre	52	12	by	by	IN	(PP*	_	_	_	_	by	_
+genre	52	13	the	the	DT	(NP*	_	_	_	_	the	_
+genre	52	14	state	state	NN	*)))))	_	_	_	_	state	_
+genre	52	15	.	.	.	*))	_	_	_	_	_	_
+
+genre	53	0	If	if	IN	(ROOT(S(SBAR*	_	_	_
+genre	53	1	a	a	DT	(S(NP*	_	a	_
+genre	53	2	part	part	NN	*)	_	part	_
+genre	53	3	is	be	VBZ	(VP*	_	is	_
+genre	53	4	not	not	RB	*	not	_	_
+genre	53	5	playing	play	VBG	(VP*	_	playing	_
+genre	53	6	a	a	DT	(NP*	_	a	_
+genre	53	7	countersubject	countersubject	NN	*)))))	_	countersubject	_
+genre	53	8	it	it	PRP	(NP*)	_	_	_
+genre	53	9	may	may	MD	(VP*	_	_	_
+genre	53	10	just	just	RB	(ADVP*)	_	_	_
+genre	53	11	be	be	VB	(VP*	_	_	_
+genre	53	12	playing	play	VBG	(VP*	_	_	_
+genre	53	13	a	a	DT	(NP*	_	_	_
+genre	53	14	“free	“free	JJ	*	_	_	_
+genre	53	15	part”	part”	NN	*))))	_	_	_
+genre	53	16	.	.	.	*))	_	_	_
+
+genre	54	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_	_	_	_
+genre	54	1	eastern	eastern	JJ	*	_	_	_	_	_	_
+genre	54	2	part	part	NN	*)	_	_	_	_	_	_
+genre	54	3	of	of	IN	(PP*	_	_	_	_	_	_
+genre	54	4	the	the	DT	(NP*	_	_	_	_	_	_
+genre	54	5	state	state	NN	*)))	_	_	_	_	_	_
+genre	54	6	is	be	VBZ	(VP(VP*	_	_	_	_	_	_
+genre	54	7	bordered	border	VBN	(VP*	_	_	_	_	_	_
+genre	54	8	by	by	IN	(PP*	_	_	_	_	_	_
+genre	54	9	the	the	DT	(NP*	_	_	_	_	_	_
+genre	54	10	Atlantic	Atlantic	NNP	*	_	_	_	_	_	_
+genre	54	11	Ocean	Ocean	NNP	*))))	_	_	_	_	_	_
+genre	54	12	,	,	,	*	_	_	_	_	_	_
+genre	54	13	and	and	CC	*	_	_	_	_	_	_
+genre	54	14	usually	usually	RB	(VP(ADVP*)	_	_	_	_	_	_
+genre	54	15	has	have	VBZ	*	_	_	_	_	_	_
+genre	54	16	comfortable	comfortable	JJ	(NP*	_	_	_	_	_	_
+genre	54	17	temperatures	temperature	NNS	*)	_	_	_	_	_	_
+genre	54	18	all	all	DT	(PP(PP(ADVP(NP*	_	_	_	_	_	_
+genre	54	19	year	year	NN	*)	_	_	_	_	_	_
+genre	54	20	long	long	RB	*)	_	_	_	_	_	_
+genre	54	21	with	with	IN	*	_	_	_	_	_	_
+genre	54	22	the	the	DT	(NP(NP*	_	the	_	_	the	_
+genre	54	23	summer	summer	NN	*	_	summer	_	_	summer	_
+genre	54	24	average	average	NN	*	_	average	_	_	average	_
+genre	54	25	high	high	JJ	*	_	high	_	_	high	_
+genre	54	26	temperature	temperature	NN	*)	_	temperature	_	_	temperature	_
+genre	54	27	usually	usually	RB	(PP*	_	usually	_	_	usually	_
+genre	54	28	not	not	RB	*	not	_	_	_	_	_
+genre	54	29	above	above	IN	*	_	above	_	_	_	_
+genre	54	30	90	90	CD	(NP(NP*	_	90	_	_	_	_
+genre	54	31	°F	°F	NNS	*)	_	°F	_	_	_	_
+genre	54	32	in	in	IN	(PP*	_	in	_	_	_	_
+genre	54	33	the	the	DT	(NP*	_	the	_	_	_	_
+genre	54	34	summer	summer	NN	*))))))	_	summer	_	_	_	_
+genre	54	35	and	and	CC	*	_	_	_	_	_	_
+genre	54	36	not	not	RB	*	_	_	_	not	_	_
+genre	54	37	under	under	IN	(PP*	_	_	_	_	under	_
+genre	54	38	40	40	CD	(NP(NP*	_	_	_	_	40	_
+genre	54	39	°F	°F	NNS	*)	_	_	_	_	°F	_
+genre	54	40	in	in	IN	(PP*	_	_	_	_	in	_
+genre	54	41	the	the	DT	(NP*	_	_	_	_	the	_
+genre	54	42	winter	winter	NN	*)))))))	_	_	_	_	winter	_
+genre	54	43	.	.	.	*))	_	_	_	_	_	_
+
+genre	55	0	In	in	IN	(ROOT(S(S(PP*	_	_	_	_	_	_
+genre	55	1	1974	1974	CD	(NP*))	_	_	_	_	_	_
+genre	55	2	,	,	,	*	_	_	_	_	_	_
+genre	55	3	Taylor	Taylor	NNP	(NP(NP*)	_	_	_	_	_	_
+genre	55	4	and	and	CC	*	_	_	_	_	_	_
+genre	55	5	Richard	Richard	NNP	(NP*	_	_	_	_	_	_
+genre	55	6	Burton	Burton	NNP	*))	_	_	_	_	_	_
+genre	55	7	considered	consider	VBD	(VP*	_	_	_	_	_	_
+genre	55	8	marrying	marry	VBG	(S(VP*	_	_	_	_	_	_
+genre	55	9	in	in	IN	(PP*	_	_	_	_	_	_
+genre	55	10	Israel	Israel	NNP	(NP*))))))	_	_	_	_	_	_
+genre	55	11	,	,	,	*	_	_	_	_	_	_
+genre	55	12	but	but	CC	*	_	_	_	_	_	_
+genre	55	13	they	they	PRP	(S(NP*)	_	they	_	_	_	_
+genre	55	14	were	be	VBD	(VP*	_	were	_	_	_	_
+genre	55	15	unable	unable	JJ	(ADJP*	un	able	able	_	_	_
+genre	55	16	to	to	TO	(S(VP*	_	to	_	_	_	_
+genre	55	17	do	do	VB	(VP*	_	do	_	_	_	_
+genre	55	18	so	so	RB	(SBAR*	_	so	_	_	_	_
+genre	55	19	because	because	IN	*	_	because	_	_	_	_
+genre	55	20	Burton	Burton	NNP	(S(NP*)	_	Burton	_	_	Burton	_
+genre	55	21	was	be	VBD	(VP*	_	was	_	_	was	_
+genre	55	22	not	not	RB	*	_	not	_	not	_	_
+genre	55	23	Jewish	jewish	JJ	(ADJP*))))))))))	_	Jewish	_	_	Jewish	Jewish
+genre	55	24	.	.	.	*))	_	_	_	_	_	_
+
+genre	56	0	Scientists	scientist	NNS	(ROOT(S(NP*)	_	Scientists	_
+genre	56	1	have	have	VBP	(VP*	_	_	_
+genre	56	2	to	to	TO	(S(VP*	_	_	_
+genre	56	3	be	be	VB	(VP*	_	_	_
+genre	56	4	careful	careful	JJ	(ADJP*	_	_	_
+genre	56	5	not	not	RB	(S*	not	_	_
+genre	56	6	to	to	TO	(VP*	_	to	_
+genre	56	7	assume	assume	VB	(VP*	_	assume	_
+genre	56	8	the	the	DT	(NP(NP*	_	the	_
+genre	56	9	things	thing	NNS	*)	_	things	_
+genre	56	10	they	they	PRP	(SBAR(S(NP*)	_	they	_
+genre	56	11	are	be	VBP	(VP*	_	are	_
+genre	56	12	studying	study	VBG	(VP*	_	studying	_
+genre	56	13	will	will	MD	(VP*	_	will	_
+genre	56	14	act	act	VB	(VP*	_	act	_
+genre	56	15	or	or	CC	*	_	or	_
+genre	56	16	think	think	VB	*	_	think	_
+genre	56	17	like	like	JJ	(NP*	_	like	_
+genre	56	18	humans	human	NNS	*))))))))))))))))	_	humans	_
+genre	56	19	.	.	.	*))	_	_	_
+
+genre	57	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+genre	57	1	people	people	NNS	*)	_	people	_
+genre	57	2	do	do	VBP	(VP*	_	do	_
+genre	57	3	not	not	RB	*	not	_	_
+genre	57	4	like	like	VB	(VP*	_	like	like
+genre	57	5	to	to	TO	(S(VP*	_	to	_
+genre	57	6	work	work	VB	(VP*	_	work	_
+genre	57	7	with	with	IN	(PP*	_	with	_
+genre	57	8	donkeys	donkey	NNS	(NP*)))))))	_	donkeys	_
+genre	57	9	.	.	.	*))	_	_	_
+
+genre	58	0	Jules	Jules	NNP	(ROOT(S(NP*	_	_	_
+genre	58	1	Verne	Verne	NNP	*)	_	_	_
+genre	58	2	wrote	write	VBD	(VP*	_	_	_
+genre	58	3	about	about	IN	(PP*	_	_	_
+genre	58	4	many	many	JJ	(NP(NP*	_	_	_
+genre	58	5	things	thing	NNS	*)	_	_	_
+genre	58	6	which	which	WDT	(SBAR(WHNP*)	_	which	_
+genre	58	7	did	do	VBD	(S(VP*	_	did	_
+genre	58	8	not	not	RB	*	not	_	_
+genre	58	9	exist	exist	VB	(VP*	_	exist	exist
+genre	58	10	when	when	WRB	(SBAR(WHADVP*)	_	when	_
+genre	58	11	he	he	PRP	(S(NP*)	_	he	_
+genre	58	12	was	be	VBD	(VP*	_	was	_
+genre	58	13	alive	alive	JJ	(ADJP*)))))))))))	_	alive	_
+genre	58	14	.	.	.	*))	_	_	_
+
+genre	59	0	Not	not	RB	(ROOT(S(NP*	Not	_	_
+genre	59	1	all	all	DT	*	_	all	_
+genre	59	2	pedophiles	pedophile	NNS	*)	_	pedophiles	_
+genre	59	3	feel	feel	VBP	(VP*	_	feel	feel
+genre	59	4	or	or	CC	*	_	or	_
+genre	59	5	act	act	VBP	*	_	act	act
+genre	59	6	in	in	IN	(PP*	_	in	_
+genre	59	7	the	the	DT	(NP*	_	the	_
+genre	59	8	same	same	JJ	*	_	same	_
+genre	59	9	way	way	NN	*)))	_	way	_
+genre	59	10	.	.	.	*))	_	_	_
+
+genre	60	0	A	a	DT	(ROOT(S(NP*	_	A	_
+genre	60	1	netnews	netnews	NNS	*	_	netnews	_
+genre	60	2	service	service	NN	*)	_	service	_
+genre	60	3	may	may	MD	(VP*	_	may	_
+genre	60	4	not	not	RB	*	not	_	_
+genre	60	5	even	even	RB	(ADVP*)	_	even	_
+genre	60	6	be	be	VB	(VP*	_	be	_
+genre	60	7	a	a	DT	(NP(NP*	_	a	_
+genre	60	8	community	community	NN	*)	_	community	_
+genre	60	9	of	of	IN	(PP*	_	of	_
+genre	60	10	computers	computer	NNS	(NP*)))))	_	computers	_
+genre	60	11	.	.	.	*))	_	_	_
+
+genre	61	0	However	however	RB	(ROOT(S(ADVP*)	_	_	_	_	_	_
+genre	61	1	,	,	,	(PRN*	_	_	_	_	_	_
+genre	61	2	he	he	PRP	(S(NP*)	_	he	_	_	_	_
+genre	61	3	was	be	VBD	(VP*	_	was	_	_	_	_
+genre	61	4	unresponsive	unresponsive	JJ	(ADJP*	un	responsive	responsive	_	_	_
+genre	61	5	by	by	IN	(PP*	_	by	_	_	_	_
+genre	61	6	12:15	12:15	CD	(NP*)))))	_	12:15	_	_	_	_
+genre	61	7	,	,	,	*)	_	_	_	_	_	_
+genre	61	8	even	even	RB	(SBAR*	_	_	_	_	_	_
+genre	61	9	though	though	IN	*	_	_	_	_	_	_
+genre	61	10	he	he	PRP	(S(NP*)	_	_	_	_	he	_
+genre	61	11	was	be	VBD	(VP*	_	_	_	_	was	_
+genre	61	12	not	not	RB	*	_	_	_	not	_	_
+genre	61	13	proclaimed	proclaimed	VBD	(VP*	_	_	_	_	proclaimed	proclaimed
+genre	61	14	dead	dead	RP	(PRT*)	_	_	_	_	dead	_
+genre	61	15	at	at	IN	(PP*	_	_	_	_	at	_
+genre	61	16	the	the	DT	(NP(NP*	_	_	_	_	the	_
+genre	61	17	time	time	NN	*)	_	_	_	_	time	_
+genre	61	18	of	of	IN	(PP*	_	_	_	_	of	_
+genre	61	19	hospital	hospital	NN	(NP*	_	_	_	_	hospital	_
+genre	61	20	arrival	arrival	NN	*))))))))	_	_	_	_	arrival	_
+genre	61	21	,	,	,	*	_	_	_	_	_	_
+genre	61	22	he	he	PRP	(NP*)	_	_	_	_	_	_
+genre	61	23	already	already	RB	(ADVP*)	_	_	_	_	_	_
+genre	61	24	passed	pass	VBD	(VP*	_	_	_	_	_	_
+genre	61	25	on	on	RP	(PRT*)	_	_	_	_	_	_
+genre	61	26	by	by	IN	(PP*	_	_	_	_	_	_
+genre	61	27	1pm	1pm	CD	(NP*)))	_	_	_	_	_	_
+genre	61	28	.	.	.	*))	_	_	_	_	_	_
+
+genre	62	0	Icarus	Icarus	NNS	(ROOT(S(NP*)	_	_	_	_	_	_
+genre	62	1	foolishly	foolishly	RB	(ADVP*)	_	_	_	_	_	_
+genre	62	2	ignored	ignore	VBD	(VP*	_	_	_	_	_	_
+genre	62	3	his	he	PRP$	(NP*	_	_	_	_	_	_
+genre	62	4	father’s	father’s	NNS	*)	_	_	_	_	_	_
+genre	62	5	advice	advice	NN	(NP*)	_	_	_	_	_	_
+genre	62	6	to	to	TO	(S(VP*	_	_	_	_	_	_
+genre	62	7	fly	fly	VB	(VP*	_	_	_	_	_	_
+genre	62	8	on	on	IN	(PP*	_	_	_	_	_	_
+genre	62	9	the	the	DT	(NP(NP*	_	_	_	_	_	_
+genre	62	10	same	same	JJ	*	_	_	_	_	_	_
+genre	62	11	route	route	NN	*)	_	_	_	_	_	_
+genre	62	12	as	as	IN	(PP*	_	_	_	_	_	_
+genre	62	13	him	he	PRP	(NP*))))	_	_	_	_	_	_
+genre	62	14	so	so	RB	(SBAR*	_	_	_	_	_	_
+genre	62	15	that	that	IN	*	_	_	_	_	_	_
+genre	62	16	the	the	DT	(S(S(NP*	_	the	_	_	_	_
+genre	62	17	sun	sun	NN	*)	_	sun	_	_	_	_
+genre	62	18	would	would	MD	(VP*	_	would	_	_	_	_
+genre	62	19	not	not	RB	*	not	_	_	_	_	_
+genre	62	20	melt	melt	VB	(VP*	_	melt	melt	_	_	_
+genre	62	21	the	the	DT	(NP*	_	the	_	_	_	_
+genre	62	22	wings	wing	NNS	*))))	_	wings	_	_	_	_
+genre	62	23	and	and	CC	*	_	_	_	_	_	_
+genre	62	24	the	the	DT	(S(NP*	_	_	_	_	the	_
+genre	62	25	sea	sea	NN	*)	_	_	_	_	sea	_
+genre	62	26	would	would	MD	(VP*	_	_	_	_	would	_
+genre	62	27	not	not	RB	*	_	_	_	not	_	_
+genre	62	28	dampen	dampen	VB	(VP*	_	_	_	_	dampen	_
+genre	62	29	them	they	PRP	(NP*))))))))))	_	_	_	_	them	_
+genre	62	30	.	.	.	*))	_	_	_	_	_	_
+
+genre	63	0	Hoover	Hoover	NNP	(ROOT(S(NP*)	_	_	_	_	Hoover	_
+genre	63	1	supported	support	VBD	(VP(VP*	_	_	_	_	_	_
+genre	63	2	the	the	DT	(NP(NP*	_	the	_	_	_	_
+genre	63	3	very	very	RB	(ADJP*	_	very	_	_	_	_
+genre	63	4	unpopular	unpopular	JJ	*)	un	popular	popular	_	_	_
+genre	63	5	prohibition	prohibition	NN	*)	_	prohibition	_	_	_	_
+genre	63	6	of	of	IN	(PP*	_	of	_	_	_	_
+genre	63	7	alcohol	alcohol	NN	(NP*))))	_	alcohol	_	_	_	_
+genre	63	8	and	and	CC	*	_	_	_	_	_	_
+genre	63	9	did	do	VBD	(VP*	_	_	_	_	did	_
+genre	63	10	not	not	RB	*	_	_	_	not	_	_
+genre	63	11	want	want	VB	(VP*	_	_	_	_	want	want
+genre	63	12	to	to	TO	(S(VP*	_	_	_	_	to	_
+genre	63	13	make	make	VB	(VP*	_	_	_	_	make	_
+genre	63	14	alcohol	alcohol	NN	(NP*	_	_	_	_	alcohol	_
+genre	63	15	legal	legal	JJ	*)))))))	_	_	_	_	legal	_
+genre	63	16	.	.	.	*))	_	_	_	_	_	_
+
+genre	64	0	Of	of	IN	(ROOT(S(PP*	_	_	_	_	_	_
+genre	64	1	Russian	russian	JJ	(NP*	_	_	_	_	_	_
+genre	64	2	national	national	JJ	*	_	_	_	_	_	_
+genre	64	3	economy	economy	NN	*))	_	_	_	_	_	_
+genre	64	4	it	it	PRP	(NP*)	_	_	_	_	_	_
+genre	64	5	was	be	VBD	(VP*	_	_	_	_	_	_
+genre	64	6	at	at	IN	(ADVP*)	_	_	_	_	_	_
+genre	64	7	present	present	JJ	(ADJP*	_	_	_	_	_	_
+genre	64	8	around	around	IN	(PP*	_	_	_	_	_	_
+genre	64	9	the	the	DT	(NP*	_	_	_	_	_	_
+genre	64	10	year	year	NN	*	_	_	_	_	_	_
+genre	64	11	1916	1916	CD	*)))	_	_	_	_	_	_
+genre	64	12	still	still	RB	(PP(ADVP*)	_	_	_	_	_	_
+genre	64	13	in	in	IN	*	_	_	_	_	_	_
+genre	64	14	a	a	DT	(NP(NP*	_	_	_	_	_	_
+genre	64	15	so	so	RB	(ADJP*	_	_	_	_	_	_
+genre	64	16	high	high	JJ	*)	_	_	_	_	_	_
+genre	64	17	agriculturally	agriculturally	NN	*)	_	_	_	_	_	_
+genre	64	18	that	that	IN	(SBAR*	_	_	_	_	_	_
+genre	64	19	it	it	PRP	(S(NP*)	_	it	_	_	_	_
+genre	64	20	could	could	MD	(VP*	_	could	could	_	_	_
+genre	64	21	not	not	RB	*	not	_	_	_	_	_
+genre	64	22	give	give	VB	(VP*	_	give	_	_	_	_
+genre	64	23	a	a	DT	(NP*	_	a	_	_	_	_
+genre	64	24	revolution	revolution	NN	*)	_	revolution	_	_	_	_
+genre	64	25	without	without	IN	(PP*	_	without	_	without	_	_
+genre	64	26	the	the	DT	(NP*	_	the	_	_	the	_
+genre	64	27	farmers	farmer	NNS	*)))))))))	_	farmers	_	_	farmers	farmers
+genre	64	28	.	.	.	*))	_	_	_	_	_	_
+
+genre	65	0	Plymouth	Plymouth	NNP	(ROOT(S(NP*	_	Plymouth	_
+genre	65	1	and	and	CC	*	_	and	_
+genre	65	2	Torbay	Torbay	NNP	*)	_	Torbay	_
+genre	65	3	are	be	VBP	(VP(VP*	_	are	_
+genre	65	4	not	not	RB	*	not	_	_
+genre	65	5	run	run	VBN	(VP*	_	run	run
+genre	65	6	by	by	IN	(PP*	_	by	_
+genre	65	7	the	the	DT	(NP*	_	the	_
+genre	65	8	county	county	NN	*	_	county	_
+genre	65	9	council	council	NN	*))))	_	council	_
+genre	65	10	,	,	,	*	_	_	_
+genre	65	11	but	but	CC	*	_	_	_
+genre	65	12	have	have	VBP	(VP*	_	_	_
+genre	65	13	their	they	PRP$	(NP*	_	_	_
+genre	65	14	own	own	JJ	*	_	_	_
+genre	65	15	special	special	JJ	*	_	_	_
+genre	65	16	councils	council	NNS	*)))	_	_	_
+genre	65	17	.	.	.	*))	_	_	_
+
+genre	66	0	I	I	PRP	(ROOT(S(NP*)	_	I	_
+genre	66	1	,	,	,	*	_	_	_
+genre	66	2	however	however	RB	(ADVP*)	_	_	_
+genre	66	3	am	be	VBP	(VP*	_	am	_
+genre	66	4	not	not	RB	*	not	_	_
+genre	66	5	currently	currently	RB	(ADVP*)	_	currently	_
+genre	66	6	getting	get	VBG	(VP*	_	getting	getting
+genre	66	7	married	married	JJ	(ADJP*)))	_	married	married
+genre	66	8	,	,	,	*	_	_	_
+genre	66	9	but	but	CC	*	_	_	_
+genre	66	10	it	it	PRP	(S(NP*)	_	_	_
+genre	66	11	is	be	VBZ	(VP*	_	_	_
+genre	66	12	great	great	JJ	(ADJP*	_	_	_
+genre	66	13	to	to	TO	(S(VP*	_	_	_
+genre	66	14	know	know	VB	(VP*	_	_	_
+genre	66	15	I	I	PRP	(SBAR(S(NP*)	_	_	_
+genre	66	16	can	can	MD	(VP*	_	_	_
+genre	66	17	now	now	RB	*	_	_	_
+genre	66	18	,	,	,	*	_	_	_
+genre	66	19	should	should	MD	(SBAR*	_	_	_
+genre	66	20	I	I	PRP	(S(NP*)	_	_	_
+genre	66	21	wish	wish	VBP	(VP*))))))))))	_	_	_
+genre	66	22	to	to	TO	(PP*)	_	_	_
+genre	66	23	''	''	''	*))	_	_	_
+genre	66	24	.	.	.	*))	_	_	_
+
+genre	67	0	Despite	despite	IN	(ROOT(S(PP*	_	Despite	_
+genre	67	1	the	the	DT	(NP(NP*	_	the	_
+genre	67	2	film	film	NN	*	_	film	_
+genre	67	3	's	's	POS	*)	_	's	_
+genre	67	4	title	title	NN	*))	_	title	_
+genre	67	5	,	,	,	*	_	,	_
+genre	67	6	``	``	``	*	_	``	_
+genre	67	7	Elephants	Elephants	NNP	(NP*	_	Elephants	_
+genre	67	8	Dream	Dream	NNP	*)	_	Dream	_
+genre	67	9	''	''	''	*	_	''	_
+genre	67	10	does	do	VBZ	(VP*	_	does	_
+genre	67	11	not	not	RB	*	not	_	_
+genre	67	12	have	have	VB	(VP*	_	have	have
+genre	67	13	any	any	DT	(NP*	_	any	_
+genre	67	14	elephants	elephant	NNS	*	_	elephants	_
+genre	67	15	or	or	CC	*	_	or	_
+genre	67	16	dreams	dream	NNS	*)))	_	dreams	_
+genre	67	17	.	.	.	*))	_	_	_
+
+genre	68	0	It	it	PRP	(ROOT(S(NP*)	_	_	_
+genre	68	1	is	be	VBZ	(VP*	_	_	_
+genre	68	2	rather	rather	RB	(ADVP*)	_	_	_
+genre	68	3	those	those	DT	(NP(NP*)	_	_	_
+genre	68	4	who	who	WP	(SBAR(WHNP*)	_	_	_
+genre	68	5	live	live	VBP	(S(VP*	_	_	_
+genre	68	6	between	between	IN	(PP*	_	_	_
+genre	68	7	two	two	CD	(NP(NP*	_	_	_
+genre	68	8	times	time	NNS	*)	_	_	_
+genre	68	9	,	,	,	*	_	_	_
+genre	68	10	those	those	DT	(NP(NP*)	_	_	_
+genre	68	11	who	who	WP	(SBAR(WHNP*)	_	who	_
+genre	68	12	do	do	VBP	(S(VP*	_	do	_
+genre	68	13	not	not	RB	*	not	_	_
+genre	68	14	know	know	VB	(VP*	_	know	know
+genre	68	15	what	what	WP	(SBAR(WHNP*)	_	what	_
+genre	68	16	to	to	TO	(S(VP*	_	to	_
+genre	68	17	follow	follow	VB	(VP*)))))))))	_	follow	_
+genre	68	18	,	,	,	*	_	_	_
+genre	68	19	that	that	WDT	(SBAR(WHNP*)	_	_	_
+genre	68	20	suffer	suffer	VBP	(S(VP*	_	_	_
+genre	68	21	the	the	DT	(NP*	_	_	_
+genre	68	22	most	most	JJS	*)))))))))))	_	_	_
+genre	68	23	.	.	.	*))	_	_	_
+
+genre	69	0	Units	unit	NNS	(ROOT(S(NP*)	_	_	_
+genre	69	1	are	be	VBP	(VP*	_	_	_
+genre	69	2	invented	invent	VBN	(VP*	_	_	_
+genre	69	3	when	when	WRB	(SBAR(WHADVP*)	_	_	_
+genre	69	4	existing	exist	VBG	(S(NP*	_	existing	_
+genre	69	5	units	unit	NNS	*)	_	units	_
+genre	69	6	can	can	MD	(VP*	_	can	can
+genre	69	7	not	not	RB	*	not	_	_
+genre	69	8	describe	describe	VB	(VP*	_	describe	_
+genre	69	9	something	something	NN	(NP*)	_	something	_
+genre	69	10	well	well	RB	(ADVP*	_	well	_
+genre	69	11	enough	enough	RB	*)))))))	_	enough	_
+genre	69	12	.	.	.	*))	_	_	_
+
+genre	70	0	When	when	WRB	(ROOT(S(S(SBAR(WHADVP*)	_	_	_
+genre	70	1	it	it	PRP	(S(NP*)	_	_	_
+genre	70	2	does	do	VBZ	(VP*)))	_	_	_
+genre	70	3	,	,	,	*	_	_	_
+genre	70	4	some	some	DT	(NP*	_	_	_
+genre	70	5	organisms	organism	NNS	*)	_	_	_
+genre	70	6	can	can	MD	(VP*	_	_	_
+genre	70	7	adapt	adapt	VB	(VP*	_	_	_
+genre	70	8	to	to	TO	(PP*	_	_	_
+genre	70	9	the	the	DT	(NP*	_	_	_
+genre	70	10	changes	change	NNS	*)))))	_	_	_
+genre	70	11	,	,	,	*	_	_	_
+genre	70	12	and	and	CC	*	_	_	_
+genre	70	13	some	some	DT	(S(NP*)	_	some	_
+genre	70	14	can	can	MD	(VP*	_	can	can
+genre	70	15	not	not	RB	*))	not	_	_
+genre	70	16	.	.	.	*))	_	_	_
+
+genre	71	0	There	there	EX	(ROOT(S(S(NP*)	_	There	_
+genre	71	1	does	do	VBZ	(VP*	_	does	_
+genre	71	2	not	not	RB	*	not	_	_
+genre	71	3	have	have	VB	(VP*	_	have	_
+genre	71	4	to	to	TO	(S(VP*	_	to	_
+genre	71	5	be	be	VB	(VP*	_	be	_
+genre	71	6	food	food	NN	(NP*)))))))	_	food	_
+genre	71	7	,	,	,	*	_	_	_
+genre	71	8	but	but	CC	*	_	_	_
+genre	71	9	there	there	EX	(S(NP*)	_	_	_
+genre	71	10	usually	usually	RB	(ADVP*)	_	_	_
+genre	71	11	is	be	VBZ	(VP*))	_	_	_
+genre	71	12	.	.	.	*))	_	_	_
+
+genre	72	0	However	however	RB	(ROOT(S(ADVP*)	_	_	_
+genre	72	1	many	many	JJ	(NP*	_	many	_
+genre	72	2	Protestants	Protestants	NNPS	*)	_	Protestants	_
+genre	72	3	see	see	VBP	(VP*	_	see	_
+genre	72	4	this	this	DT	(NP(NP*)	_	this	_
+genre	72	5	as	as	RB	(CONJP*	_	as	_
+genre	72	6	not	not	RB	*	not	_	_
+genre	72	7	in	in	IN	*)	_	in	_
+genre	72	8	the	the	DT	(NP*	_	the	_
+genre	72	9	Bible	Bible	NNP	*)))	_	Bible	_
+genre	72	10	.	.	.	*))	_	_	_
+
+genre	73	0	Playboy	Playboy	NNP	(ROOT(S(NP*	_	Playboy	_
+genre	73	1	models	model	NNS	*)	_	models	_
+genre	73	2	also	also	RB	(ADVP*)	_	also	_
+genre	73	3	do	do	VBP	(VP*	_	do	_
+genre	73	4	not	not	RB	*	not	_	_
+genre	73	5	masturbate	masturbate	VB	(VP*	_	masturbate	masturbate
+genre	73	6	or	or	CC	*	_	or	_
+genre	73	7	use	use	VB	*	_	use	use
+genre	73	8	sex	sex	NN	(NP*	_	sex	_
+genre	73	9	toys	toy	NNS	*)	_	toys	_
+genre	73	10	in	in	IN	(PP*	_	in	_
+genre	73	11	their	they	PRP$	(NP*	_	their	_
+genre	73	12	pictures	picture	NNS	*))))	_	pictures	_
+genre	73	13	.	.	.	*))	_	_	_
+
+genre	74	0	Selene	Selene	NNP	(ROOT(S(S(NP*)	_	_	_
+genre	74	1	is	be	VBZ	(VP*	_	_	_
+genre	74	2	also	also	RB	(ADVP*)	_	_	_
+genre	74	3	talked	talk	VBN	(VP*	_	_	_
+genre	74	4	about	about	IN	(PP*	_	_	_
+genre	74	5	in	in	IN	*	_	_	_
+genre	74	6	Nonnus	Nonnus	NNP	(NP(NP*)	_	_	_
+genre	74	7	,	,	,	*	_	_	_
+genre	74	8	``	``	``	*	_	_	_
+genre	74	9	Dionysiaca	Dionysiaca	NNP	(NP*	_	_	_
+genre	74	10	''	''	''	*	_	_	_
+genre	74	11	48.581	48.581	NNP	*)	_	_	_
+genre	74	12	;	;	:	*	_	_	_
+genre	74	13	Pausanias	Pausanias	NNP	(NP*	_	_	_
+genre	74	14	5.1.4	5.1.4	CD	*)	_	_	_
+genre	74	15	;	;	:	*	_	_	_
+genre	74	16	and	and	CC	*	_	_	_
+genre	74	17	Strabo	Strabo	NNP	(NP*	_	_	_
+genre	74	18	14.1.6	14.1.6	CD	*))))))	_	_	_
+genre	74	19	,	,	,	*	_	_	_
+genre	74	20	The	the	DT	(S(NP(NP*	_	The	_
+genre	74	21	etymology	etymology	NN	*)	_	etymology	_
+genre	74	22	of	of	IN	(PP*	_	of	_
+genre	74	23	``	``	``	*	_	``	_
+genre	74	24	Selene	Selene	NNP	(NP*)	_	Selene	_
+genre	74	25	''	''	''	*))	_	''	_
+genre	74	26	is	be	VBZ	(VP*	_	is	_
+genre	74	27	not	not	RB	*	not	_	_
+genre	74	28	known	know	VBN	(VP*)))	_	known	known
+genre	74	29	,	,	,	*	_	_	_
+genre	74	30	but	but	CC	*	_	_	_
+genre	74	31	if	if	IN	(S(SBAR*	_	_	_
+genre	74	32	the	the	DT	(S(NP*	_	_	_
+genre	74	33	word	word	NN	*)	_	_	_
+genre	74	34	is	be	VBZ	(VP*	_	_	_
+genre	74	35	from	from	IN	(PP*	_	_	_
+genre	74	36	Greek	greek	JJ	(NP*)))))	_	_	_
+genre	74	37	,	,	,	*	_	_	_
+genre	74	38	it	it	PRP	(NP*)	_	_	_
+genre	74	39	is	be	VBZ	(VP*	_	_	_
+genre	74	40	probably	probably	RB	(ADVP*)	_	_	_
+genre	74	41	connected	connect	VBN	(VP*	_	_	_
+genre	74	42	to	to	TO	(PP*	_	_	_
+genre	74	43	the	the	DT	(NP(NP*	_	_	_
+genre	74	44	word	word	NN	*	_	_	_
+genre	74	45	``	``	``	*	_	_	_
+genre	74	46	selas	selas	NN	*	_	_	_
+genre	74	47	''	''	''	*)	_	_	_
+genre	74	48	,	,	,	*	_	_	_
+genre	74	49	meaning	meaning	NN	(NP*	_	_	_
+genre	74	50	``	``	``	*	_	_	_
+genre	74	51	light	light	NN	*	_	_	_
+genre	74	52	''	''	''	*))))))	_	_	_
+genre	74	53	.	.	.	*))	_	_	_
+
+genre	75	0	There	there	EX	(ROOT(S(NP*)	_	_	_
+genre	75	1	was	be	VBD	(VP*	_	_	_
+genre	75	2	only	only	RB	(NP*	_	_	_
+genre	75	3	one	one	CD	*	_	_	_
+genre	75	4	thing	thing	NN	*)	_	_	_
+genre	75	5	that	that	IN	(SBAR*	_	_	_
+genre	75	6	God	God	NNP	(S(NP*)	_	_	_
+genre	75	7	told	tell	VBD	(VP*	_	_	_
+genre	75	8	them	they	PRP	(NP*)	_	_	_
+genre	75	9	that	that	IN	(SBAR*	_	_	_
+genre	75	10	they	they	PRP	(S(NP*)	_	they	_
+genre	75	11	should	should	MD	(VP*	_	should	_
+genre	75	12	``	``	``	*	_	``	_
+genre	75	13	not	not	RB	(ADVP*)	not	_	_
+genre	75	14	''	''	''	*	_	''	_
+genre	75	15	do	do	VB	(VP(VP*)	_	do	_
+genre	75	16	:	:	:	*	_	_	_
+genre	75	17	eat	eat	VB	(VP*	_	_	_
+genre	75	18	from	from	IN	(PP*	_	_	_
+genre	75	19	the	the	DT	(NP(NP*	_	_	_
+genre	75	20	Tree	tree	NN	*)	_	_	_
+genre	75	21	of	of	IN	(PP*	_	_	_
+genre	75	22	Knowledge	Knowledge	NNP	(NP*))))	_	_	_
+genre	75	23	;	;	:	*	_	_	_
+genre	75	24	only	only	RB	(ADVP*)	_	_	_
+genre	75	25	from	from	IN	(PP*	_	_	_
+genre	75	26	the	the	DT	(NP(NP*	_	_	_
+genre	75	27	Tree	tree	NN	*)	_	_	_
+genre	75	28	of	of	IN	(PP*	_	_	_
+genre	75	29	Life	Life	NNP	(NP*)))))))))))))	_	_	_
+genre	75	30	.	.	.	*))	_	_	_
+
+genre	76	0	Inconvertible	inconvertible	JJ	(ROOT(S(NP*	In	convertible	convertible	_	_	_
+genre	76	1	money	money	NN	*)	_	money	_	_	_	_
+genre	76	2	is	be	VBZ	(VP*	_	_	_	_	_	_
+genre	76	3	money	money	NN	(NP(NP*)	_	_	_	_	_	_
+genre	76	4	that	that	WDT	(SBAR(WHNP*)	_	_	_	_	that	_
+genre	76	5	can	can	MD	(S(VP*	_	_	_	_	can	can
+genre	76	6	not	not	RB	*	_	_	_	not	_	_
+genre	76	7	be	be	VB	(VP*	_	_	_	_	be	_
+genre	76	8	converted	convert	VBN	(VP*	_	_	_	_	converted	_
+genre	76	9	into	into	IN	(PP*	_	_	_	_	into	_
+genre	76	10	gold	gold	NN	(NP*	_	_	_	_	gold	_
+genre	76	11	and	and	CC	*	_	_	_	_	and	_
+genre	76	12	silver	silver	NN	*)))))))))	_	_	_	_	silver	_
+genre	76	13	.	.	.	*))	_	_	_	_	_	_
+
+genre	77	0	The	the	DT	(ROOT(S(S(NP*	_	The	_	_	_	_
+genre	77	1	word	word	NN	*	_	word	_	_	_	_
+genre	77	2	``	``	``	*	_	``	_	_	_	_
+genre	77	3	authority	authority	NN	*	_	authority	_	_	_	_
+genre	77	4	''	''	''	*)	_	''	_	_	_	_
+genre	77	5	is	be	VBZ	(VP*	_	is	_	_	_	_
+genre	77	6	not	not	RB	*	not	_	_	_	_	_
+genre	77	7	clear	clear	JJ	(ADJP*)))	_	clear	clear	_	_	_
+genre	77	8	,	,	,	*	_	_	_	_	_	_
+genre	77	9	but	but	CC	*	_	_	_	_	_	_
+genre	77	10	anarchists	anarchist	NNS	(S(NP*)	_	_	_	_	anarchists	_
+genre	77	11	are	be	VBP	(VP*	_	_	_	_	are	are
+genre	77	12	not	not	RB	(VP(ADVP*	_	_	_	not	_	_
+genre	77	13	against	against	IN	(PP*	_	_	_	_	against	_
+genre	77	14	some	some	DT	(NP(NP*	_	_	_	_	some	_
+genre	77	15	types	type	NNS	*)	_	_	_	_	types	_
+genre	77	16	of	of	IN	(PP*))))	_	_	_	_	of	_
+genre	77	17	authority	authority	VBN	*	_	_	_	_	authority	_
+genre	77	18	(	(	(	*	_	_	_	_	_	_
+genre	77	19	eg	eg	NN	(NP*))))	_	_	_	_	_	_
+genre	77	20	.	.	.	*))	_	_	_	_	_	_
+
+genre	78	0	We	we	PRP	(ROOT(S(NP*)	_	We	_	_	_	_
+genre	78	1	can	can	MD	(VP*	_	can	can	_	_	_
+genre	78	2	not	not	RB	*	not	_	_	_	_	_
+genre	78	3	know	know	VB	(VP*	_	know	_	_	_	_
+genre	78	4	for	for	IN	(PP*	_	for	_	_	_	_
+genre	78	5	sure	sure	JJ	(ADJP*))	_	sure	_	_	_	_
+genre	78	6	,	,	,	*	_	_	_	_	_	_
+genre	78	7	though	though	RB	(ADVP*)	_	_	_	_	_	_
+genre	78	8	,	,	,	*	_	_	_	_	_	_
+genre	78	9	that	that	IN	(SBAR*	_	that	_	_	_	_
+genre	78	10	there	there	EX	(S(NP*)	_	there	_	_	there	_
+genre	78	11	is	be	VBZ	(VP*	_	is	_	_	is	_
+genre	78	12	not	not	RB	*	_	not	_	not	_	_
+genre	78	13	something	something	NN	(NP(NP*	_	something	_	_	something	something
+genre	78	14	else	else	RB	*)	_	else	_	_	else	_
+genre	78	15	affecting	affect	VBG	(VP*	_	affecting	_	_	affecting	_
+genre	78	16	it	it	PRP	(NP*))))))))	_	it	_	_	it	_
+genre	78	17	.	.	.	*))	_	_	_	_	_	_
+
+genre	79	0	Inorganic	Inorganic	NNP	(ROOT(SINV(S(NP*)	In	organic	organic	_	_	_	_	_	_
+genre	79	1	compound	compound	VB	(VP*	_	compound	_	_	_	_	_	_	_
+genre	79	2	An	a	DT	(NP*	_	_	_	_	An	_	_	_	_
+genre	79	3	inorganic	inorganic	JJ	*	_	_	_	in	organic	organic	_	_	_
+genre	79	4	compound	compound	NN	*)))	_	_	_	_	compound	_	_	_	_
+genre	79	5	is	be	VBZ	(VP*	_	_	_	_	_	_	_	_	_
+genre	79	6	a	a	DT	(NP(NP*	_	_	_	_	_	_	_	_	_
+genre	79	7	chemical	chemical	JJ	*	_	_	_	_	_	_	_	_	_
+genre	79	8	compound	compound	NN	*)	_	_	_	_	_	_	_	_	_
+genre	79	9	which	which	WDT	(SBAR(WHNP*)	_	_	_	_	_	_	_	which	_
+genre	79	10	is	be	VBZ	(S(VP*	_	_	_	_	_	_	_	is	_
+genre	79	11	``	``	``	*	_	_	_	_	_	_	_	``	_
+genre	79	12	not	not	RB	(NP*)	_	_	_	_	_	_	not	_	_
+genre	79	13	''	''	''	*)))))	_	_	_	_	_	_	_	''	_
+genre	79	14	an	a	DT	(NP*	_	_	_	_	_	_	_	an	_
+genre	79	15	organic	organic	JJ	*	_	_	_	_	_	_	_	organic	_
+genre	79	16	compound	compound	NN	*)	_	_	_	_	_	_	_	compound	compound
+genre	79	17	.	.	.	*))	_	_	_	_	_	_	_	_	_
+
+genre	80	0	The	the	DT	(ROOT(S(S(NP(NP(NP*	_	_	_
+genre	80	1	states	state	NNS	*)	_	_	_
+genre	80	2	of	of	IN	(PP*	_	_	_
+genre	80	3	south	south	JJ	(NP*	_	_	_
+genre	80	4	Germany	Germany	NNP	*)))	_	_	_
+genre	80	5	(	(	(	(PRN*	_	_	_
+genre	80	6	especially	especially	RB	(ADVP*)	_	_	_
+genre	80	7	Austria	Austria	NNP	(NP*	_	_	_
+genre	80	8	and	and	CC	*	_	_	_
+genre	80	9	Bavaria	Bavaria	NNP	*)	_	_	_
+genre	80	10	)	)	)	*))	_	_	_
+genre	80	11	were	be	VBD	(VP*	_	_	_
+genre	80	12	Catholic	Catholic	JJ	(ADJP*)))	_	_	_
+genre	80	13	,	,	,	*	_	_	_
+genre	80	14	so	so	IN	*	_	_	_
+genre	80	15	they	they	PRP	(S(NP*)	_	they	_
+genre	80	16	did	do	VBD	(VP*	_	did	_
+genre	80	17	not	not	RB	*	not	_	_
+genre	80	18	want	want	VB	(VP*	_	want	want
+genre	80	19	Prussia	Prussia	NNP	(S(NP*)	_	Prussia	_
+genre	80	20	to	to	TO	(VP*	_	to	_
+genre	80	21	have	have	VB	(VP*	_	have	_
+genre	80	22	the	the	DT	(NP*	_	the	_
+genre	80	23	power	power	NN	*)))))))	_	power	_
+genre	80	24	.	.	.	*))	_	_	_
+
+genre	81	0	As	as	IN	(ROOT(S(SBAR*	_	_	_
+genre	81	1	he	he	PRP	(S(NP*)	_	he	_
+genre	81	2	did	do	VBD	(VP*	_	did	_
+genre	81	3	not	not	RB	*	not	_	_
+genre	81	4	have	have	VB	(VP*	_	have	have
+genre	81	5	the	the	DT	(NP*	_	the	_
+genre	81	6	money	money	NN	*	_	money	_
+genre	81	7	to	to	TO	(S(VP*	_	to	_
+genre	81	8	patent	patent	VB	(VP*	_	patent	_
+genre	81	9	his	he	PRP$	(NP*	_	his	_
+genre	81	10	process	process	NN	*)))))))))	_	process	_
+genre	81	11	he	he	PRP	(NP*)	_	_	_
+genre	81	12	suggested	suggest	VBD	(VP*	_	_	_
+genre	81	13	that	that	IN	(SBAR(SBAR*	_	_	_
+genre	81	14	Levi	Levi	NNP	(S(NP*)	_	_	_
+genre	81	15	pay	pay	VBP	(VP*	_	_	_
+genre	81	16	for	for	IN	(PP*	_	_	_
+genre	81	17	the	the	DT	(NP*	_	_	_
+genre	81	18	paperwork	paperwork	NN	*)))))	_	_	_
+genre	81	19	and	and	CC	*	_	_	_
+genre	81	20	that	that	IN	(SBAR*	_	_	_
+genre	81	21	they	they	PRP	(S(NP*)	_	_	_
+genre	81	22	take	take	VBP	(VP*	_	_	_
+genre	81	23	out	out	IN	(PP*	_	_	_
+genre	81	24	the	the	DT	(NP*	_	_	_
+genre	81	25	patent	patent	NN	*))	_	_	_
+genre	81	26	together	together	RB	(ADVP*))))))	_	_	_
+genre	81	27	.	.	.	*))	_	_	_
+
+genre	82	0	The	the	DT	(ROOT(S(S(NP*	_	_	_
+genre	82	1	album	album	NN	*)	_	_	_
+genre	82	2	sold	sell	VBD	(VP*	_	_	_
+genre	82	3	many	many	JJ	(NP*	_	_	_
+genre	82	4	copies	copy	NNS	*)	_	_	_
+genre	82	5	in	in	IN	(PP*	_	_	_
+genre	82	6	Japan	Japan	NNP	(NP*))))	_	_	_
+genre	82	7	,	,	,	*	_	_	_
+genre	82	8	but	but	CC	*	_	_	_
+genre	82	9	it	it	PRP	(S(NP*)	_	it	_
+genre	82	10	did	do	VBD	(VP*	_	did	_
+genre	82	11	not	not	RB	*	not	_	_
+genre	82	12	sell	sell	VB	(VP*	_	sell	sell
+genre	82	13	that	that	RB	(ADVP*	_	that	_
+genre	82	14	well	well	RB	*)	_	well	_
+genre	82	15	in	in	IN	(PP*	_	in	_
+genre	82	16	the	the	DT	(NP*	_	the	_
+genre	82	17	United	United	NNP	*	_	United	_
+genre	82	18	States	States	NNPS	*)))))	_	States	_
+genre	82	19	.	.	.	*))	_	_	_
+
+genre	83	0	As	as	IN	(ROOT(S(SBAR*	_	_	_
+genre	83	1	time	time	NN	(S(NP*)	_	_	_
+genre	83	2	went	go	VBD	(VP*	_	_	_
+genre	83	3	on	on	RP	(PRT*))))	_	_	_
+genre	83	4	,	,	,	*	_	_	_
+genre	83	5	people	people	NNS	(NP*)	_	_	_
+genre	83	6	chose	choose	VBD	(VP*	_	_	_
+genre	83	7	to	to	TO	(S(VP*	_	_	_
+genre	83	8	write	write	VB	(VP*	_	_	_
+genre	83	9	simpler	simpler	JJR	(NP(NP(NP*	_	simpler	_
+genre	83	10	versions	version	NNS	*)	_	versions	_
+genre	83	11	that	that	WDT	(SBAR(WHNP*)	_	_	_
+genre	83	12	are	be	VBP	(S(VP(VP*	_	_	_
+genre	83	13	easier	easier	JJR	(ADJP*	_	_	_
+genre	83	14	to	to	TO	(S(VP*	_	_	_
+genre	83	15	write	write	VB	(VP*)))))	_	_	_
+genre	83	16	but	but	CC	*	_	_	_
+genre	83	17	do	do	VBP	(VP*	_	do	_
+genre	83	18	not	not	RB	*	not	_	_
+genre	83	19	look	look	VB	(VP*	_	look	look
+genre	83	20	so	so	RB	(ADVP*	_	so	_
+genre	83	21	much	much	RB	*)	_	much	_
+genre	83	22	like	like	IN	(PP*	_	like	like
+genre	83	23	the	the	DT	(NP*	_	the	_
+genre	83	24	real	real	JJ	*	_	real	_
+genre	83	25	thing	thing	NN	*))	_	thing	_
+genre	83	26	,	,	,	*	_	_	_
+genre	83	27	just	just	RB	(SBAR*	_	_	_
+genre	83	28	as	as	IN	*	_	_	_
+genre	83	29	we	we	PRP	(S(NP*)	_	_	_
+genre	83	30	sometimes	sometimes	RB	(ADVP*)	_	_	_
+genre	83	31	draw	draw	VB	(VP*	_	_	_
+genre	83	32	stick	stick	NN	(NP*	_	_	_
+genre	83	33	men	man	NNS	*))))))))))	_	_	_
+genre	83	34	rather	rather	RB	(CONJP*	_	_	_
+genre	83	35	than	than	IN	*)	_	_	_
+genre	83	36	drawing	draw	VBG	(NP(NP*	_	_	_
+genre	83	37	people	people	NNS	*)	_	_	_
+genre	83	38	with	with	IN	(PP*	_	_	_
+genre	83	39	real-looking	real-looking	JJ	(NP*	_	_	_
+genre	83	40	bodies	body	NNS	*	_	_	_
+genre	83	41	,	,	,	*	_	_	_
+genre	83	42	arms	arm	NNS	*	_	_	_
+genre	83	43	,	,	,	*	_	_	_
+genre	83	44	legs	leg	NNS	*	_	_	_
+genre	83	45	,	,	,	*	_	_	_
+genre	83	46	etc	etc	FW	*))))))))	_	_	_
+genre	83	47	.	.	.	*))	_	_	_
+
+genre	84	0	But	but	CC	(ROOT(S*	_	_	_
+genre	84	1	the	the	DT	(NP*	_	the	_
+genre	84	2	Aboriginal	Aboriginal	NNP	*	_	Aboriginal	_
+genre	84	3	people	people	NNS	*)	_	people	_
+genre	84	4	did	do	VBD	(VP*	_	did	_
+genre	84	5	not	not	RB	*	not	_	_
+genre	84	6	own	own	VB	(VP*	_	own	own
+genre	84	7	the	the	DT	(NP(NP*	_	the	_
+genre	84	8	land	land	NN	*)	_	land	_
+genre	84	9	in	in	IN	(PP*	_	in	_
+genre	84	10	that	that	DT	(NP*	_	that	_
+genre	84	11	way	way	NN	*)))))	_	way	_
+genre	84	12	.	.	.	*))	_	_	_
+
+genre	85	0	At	at	IN	(ROOT(S(PP*	_	_	_
+genre	85	1	the	the	DT	(NP(NP*	_	_	_
+genre	85	2	end	end	NN	*)	_	_	_
+genre	85	3	of	of	IN	(PP*	_	_	_
+genre	85	4	World	World	NNP	(NP*	_	_	_
+genre	85	5	War	War	NNP	*	_	_	_
+genre	85	6	Two	two	CD	*))))	_	_	_
+genre	85	7	,	,	,	*	_	_	_
+genre	85	8	most	most	JJS	(NP*	_	_	_
+genre	85	9	Germans	Germans	NNPS	*)	_	_	_
+genre	85	10	said	say	VBD	(VP*	_	_	_
+genre	85	11	they	they	PRP	(SBAR(S(NP*)	_	they	_
+genre	85	12	knew	know	VBD	(VP*	_	knew	knew
+genre	85	13	nothing	nothing	NN	(NP*)	nothing	_	_
+genre	85	14	about	about	IN	(PP*	_	about	_
+genre	85	15	the	the	DT	(NP(NP*	_	the	_
+genre	85	16	mass	mass	JJ	*	_	mass	_
+genre	85	17	murders	murder	NNS	*)	_	murders	_
+genre	85	18	of	of	IN	(PP*	_	of	_
+genre	85	19	the	the	DT	(NP*	_	the	_
+genre	85	20	Jews	Jews	NNPS	*))))))))	_	Jews	_
+genre	85	21	.	.	.	*))	_	_	_
+
+genre	86	0	Internet	Internet	NNP	(ROOT(S(NP(NP(NP*	_	Internet	_
+genre	86	1	Explorer	Explorer	NNP	*	_	Explorer	_
+genre	86	2	5.0	5.0	CD	*	_	5.0	_
+genre	86	3	,	,	,	*	_	,	_
+genre	86	4	5.5	5.5	CD	*	_	5.5	_
+genre	86	5	,	,	,	*	_	,	_
+genre	86	6	6.0	6.0	CD	*)	_	6.0	_
+genre	86	7	,	,	,	*	_	,	_
+genre	86	8	and	and	CC	*	_	and	_
+genre	86	9	7.0	7.0	CD	(NP*))	_	7.0	_
+genre	86	10	(	(	(	(PRN*	_	(	_
+genre	86	11	Experimental	Experimental	NNP	(NP*)	_	Experimental	_
+genre	86	12	)	)	)	*))	_	)	_
+genre	86	13	have	have	VBP	(VP*	_	have	_
+genre	86	14	also	also	RB	(ADVP*)	_	also	_
+genre	86	15	been	be	VBN	(VP*	_	been	_
+genre	86	16	unofficially	unofficially	RB	(VP(ADVP*)	un	officially	officially
+genre	86	17	ported	port	VBN	*	_	ported	_
+genre	86	18	to	to	TO	(PP*	_	to	_
+genre	86	19	the	the	DT	(NP(NP*	_	the	_
+genre	86	20	Linux	Linux	NNP	*	_	Linux	_
+genre	86	21	operating	operating	VBG	*	_	operating	_
+genre	86	22	system	system	NN	*)	_	system	_
+genre	86	23	from	from	IN	(PP*	_	from	_
+genre	86	24	the	the	DT	(NP*	_	the	_
+genre	86	25	project	project	NN	*	_	project	_
+genre	86	26	IEs4Linux	IEs4Linux	NNS	*)))))))	_	IEs4Linux	_
+genre	86	27	.	.	.	*))	_	_	_
+
+genre	87	0	Litterboxes	litterbox	NNS	(ROOT(S(NP*)	_	_	_
+genre	87	1	usually	usually	RB	(ADVP*)	_	_	_
+genre	87	2	produce	produce	VB	(VP(VP*	_	_	_
+genre	87	3	unpleasant	unpleasant	JJ	(ADJP*)	un	pleasant	pleasant
+genre	87	4	smells	smell	VBZ	*)	_	smells	_
+genre	87	5	,	,	,	*	_	_	_
+genre	87	6	which	which	WDT	(SBAR(WHNP*)	_	_	_
+genre	87	7	can	can	MD	(S(VP*	_	_	_
+genre	87	8	be	be	VB	(VP*	_	_	_
+genre	87	9	avoided	avoid	VBN	(VP*	_	_	_
+genre	87	10	by	by	IN	(PP*	_	_	_
+genre	87	11	special	special	JJ	(NP*	_	_	_
+genre	87	12	litter	litter	NN	*))))))))	_	_	_
+genre	87	13	.	.	.	*))	_	_	_
+
+genre	88	0	In	in	IN	(ROOT(S(PP*	_	_	_
+genre	88	1	the	the	DT	(NP(NP*	_	_	_
+genre	88	2	team	team	NN	*	_	_	_
+genre	88	3	event	event	NN	*)	_	_	_
+genre	88	4	on	on	IN	(PP*	_	_	_
+genre	88	5	the	the	DT	(NP*	_	_	_
+genre	88	6	horizontal	horizontal	JJ	*	_	_	_
+genre	88	7	bar	bar	NN	*))))	_	_	_
+genre	88	8	,	,	,	*	_	_	_
+genre	88	9	the	the	DT	(NP*	_	the	_
+genre	88	10	German	german	JJ	*	_	German	_
+genre	88	11	team	team	NN	*)	_	team	_
+genre	88	12	was	be	VBD	(VP*	_	was	_
+genre	88	13	unopposed	unopposed	VBN	(VP*))	un	opposed	opposed
+genre	88	14	.	.	.	*))	_	_	_
+
+genre	89	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+genre	89	1	origin	origin	NN	*)	_	origin	_
+genre	89	2	of	of	IN	(PP*	_	of	_
+genre	89	3	the	the	DT	(NP*	_	the	_
+genre	89	4	word	word	NN	*	_	word	_
+genre	89	5	``	``	``	*	_	``	_
+genre	89	6	Pizza	Pizza	NNP	*	_	Pizza	_
+genre	89	7	''	''	''	*)))	_	''	_
+genre	89	8	is	be	VBZ	(VP*	_	is	_
+genre	89	9	uncertain	uncertain	JJ	(ADJP*))	un	certain	certain
+genre	89	10	.	.	.	*))	_	_	_
+
+genre	90	0	The	the	DT	(ROOT(S(NP*	_	_	_
+genre	90	1	anthem	anthem	NN	*)	_	_	_
+genre	90	2	is	be	VBZ	(VP*	_	_	_
+genre	90	3	based	base	VBN	(VP*	_	_	_
+genre	90	4	on	on	IN	(PP*	_	_	_
+genre	90	5	a	a	DT	(NP(NP*	_	_	_
+genre	90	6	poem	poem	NN	*)	_	_	_
+genre	90	7	written	write	VBN	(VP*	_	_	_
+genre	90	8	by	by	IN	(PP*	_	_	_
+genre	90	9	an	a	DT	(NP(NP*	_	an	_
+genre	90	10	unknown	unknown	JJ	*	un	known	known
+genre	90	11	poet	poet	NN	*)	_	poet	_
+genre	90	12	from	from	IN	(PP*	_	_	_
+genre	90	13	Japan	Japan	NNP	(NP*))))	_	_	_
+genre	90	14	about	about	RB	(ADVP(NP(QP*	_	_	_
+genre	90	15	one	one	CD	*	_	_	_
+genre	90	16	thousand	thousand	CD	*)	_	_	_
+genre	90	17	years	year	NNS	*)	_	_	_
+genre	90	18	ago	ago	RB	*))))))	_	_	_
+genre	90	19	.	.	.	*))	_	_	_
+
+genre	91	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_
+genre	91	1	leadership	leadership	NN	*)	_	_	_
+genre	91	2	of	of	IN	(PP*	_	_	_
+genre	91	3	the	the	DT	(NP*	_	_	_
+genre	91	4	Luftwaffe	Luftwaffe	NNP	*)))	_	_	_
+genre	91	5	began	begin	VBD	(VP*	_	_	_
+genre	91	6	to	to	TO	(S(VP*	_	_	_
+genre	91	7	become	become	VB	(VP*	_	_	_
+genre	91	8	quite	quite	RB	(ADJP*	_	_	_
+genre	91	9	bad	bad	JJ	*)	_	_	_
+genre	91	10	,	,	,	*	_	_	_
+genre	91	11	as	as	IN	(SBAR*	_	_	_
+genre	91	12	generals	general	NNS	(S(NP*)	_	_	_
+genre	91	13	were	be	VBD	(VP*	_	_	_
+genre	91	14	arguing	argue	VBG	(VP*	_	_	_
+genre	91	15	about	about	IN	(PP*	_	_	_
+genre	91	16	what	what	WP	(SBAR(WHNP*)	_	_	_
+genre	91	17	the	the	DT	(S(NP*	_	_	_
+genre	91	18	air	air	NN	*	_	_	_
+genre	91	19	force	force	NN	*)	_	_	_
+genre	91	20	should	should	MD	(VP*	_	_	_
+genre	91	21	be	be	VB	(VP*	_	_	_
+genre	91	22	doing	do	VBG	(VP*	_	_	_
+genre	91	23	and	and	CC	*	_	_	_
+genre	91	24	blaming	blame	VBG	*	_	_	_
+genre	91	25	each	each	DT	(NP*	_	_	_
+genre	91	26	other	other	JJ	*))))))))))))))	_	_	_
+genre	91	27	when	when	WRB	(SBAR(WHADVP*)	_	_	_
+genre	91	28	the	the	DT	(S(NP*	_	the	_
+genre	91	29	Luftwaffe	Luftwaffe	NNP	*)	_	Luftwaffe	_
+genre	91	30	was	be	VBD	(VP*	_	was	_
+genre	91	31	unable	unable	JJ	(ADJP*	un	able	able
+genre	91	32	to	to	TO	(S(VP*	_	to	_
+genre	91	33	stop	stop	VB	(VP*	_	stop	_
+genre	91	34	the	the	DT	(NP*	_	the	_
+genre	91	35	British	british	JJ	*)	_	British	_
+genre	91	36	from	from	IN	(PP*	_	from	_
+genre	91	37	attacking	attack	VBG	(S(VP*	_	attacking	_
+genre	91	38	German	german	JJ	(NP(NP*	_	German	_
+genre	91	39	aircraft	aircraft	NN	*	_	aircraft	_
+genre	91	40	factories	factory	NNS	*)	_	factories	_
+genre	91	41	and	and	CC	*	_	and	_
+genre	91	42	other	other	JJ	(NP(NP*	_	other	_
+genre	91	43	industrial	industrial	JJ	*	_	industrial	_
+genre	91	44	targets	target	NNS	*)	_	targets	_
+genre	91	45	in	in	IN	(PP*	_	in	_
+genre	91	46	large	large	JJ	(NP*	_	large	_
+genre	91	47	numbers	number	NNS	*))))	_	numbers	_
+genre	91	48	during	during	IN	(PP*	_	during	_
+genre	91	49	the	the	DT	(NP*	_	the	_
+genre	91	50	night	night	NN	*)))))))))))))	_	night	_
+genre	91	51	.	.	.	*))	_	_	_
+
+genre	92	0	After	after	IN	(ROOT(S(PP*	_	_	_
+genre	92	1	a	a	DT	(NP(NP*	_	_	_
+genre	92	2	brief	brief	JJ	*	_	_	_
+genre	92	3	,	,	,	*	_	_	_
+genre	92	4	unsuccessful	unsuccessful	JJ	*	un	successful	successful
+genre	92	5	attempt	attempt	NN	*)	_	attempt	_
+genre	92	6	at	at	IN	(PP*	_	at	_
+genre	92	7	the	the	DT	(NP(NP*	_	the	_
+genre	92	8	U.S.	U.S.	NNP	*	_	U.S.	_
+genre	92	9	market	market	NN	*)	_	market	_
+genre	92	10	toward	toward	IN	(PP*	_	toward	_
+genre	92	11	the	the	DT	(NP(NP*	_	the	_
+genre	92	12	end	end	NN	*)	_	end	_
+genre	92	13	of	of	IN	(PP*	_	of	_
+genre	92	14	the	the	DT	(NP*	_	the	_
+genre	92	15	20th	20th	JJ	*	_	20th	_
+genre	92	16	century	century	NN	*))))))))	_	century	_
+genre	92	17	,	,	,	*	_	_	_
+genre	92	18	the	the	DT	(NP*	_	_	_
+genre	92	19	company	company	NN	*)	_	_	_
+genre	92	20	withdrew	withdraw	VBD	(VP*	_	_	_
+genre	92	21	from	from	IN	(PP*	_	_	_
+genre	92	22	the	the	DT	(NP*	_	_	_
+genre	92	23	U.S.	U.S.	NNP	*))	_	_	_
+genre	92	24	in	in	IN	(PP*	_	_	_
+genre	92	25	1999	1999	CD	(NP*)))	_	_	_
+genre	92	26	.	.	.	*))	_	_	_
+
+genre	93	0	Tellurium	Tellurium	NNP	(ROOT(S(NP*)	_	_	_
+genre	93	1	is	be	VBZ	(VP*	_	_	_
+genre	93	2	an	a	DT	(NP*	_	an	_
+genre	93	3	unreactive	unreactive	JJ	*	un	reactive	reactive
+genre	93	4	element	element	NN	*))	_	element	_
+genre	93	5	.	.	.	*))	_	_	_
+
+genre	94	0	It	it	PRP	(ROOT(S(NP*)	_	_	_
+genre	94	1	is	be	VBZ	(VP*	_	_	_
+genre	94	2	all	all	RB	(ADVP(ADVP*	_	_	_
+genre	94	3	underground	underground	RB	*)	_	_	_
+genre	94	4	and	and	CC	*	_	_	_
+genre	94	5	within	within	IN	(PP*	_	_	_
+genre	94	6	the	the	DT	(NP(NP*	_	_	_
+genre	94	7	walls	wall	NNS	*)	_	_	_
+genre	94	8	of	of	IN	(PP*	_	_	_
+genre	94	9	Auckland	Auckland	NNP	(NP(NP*	_	Auckland	_
+genre	94	10	City	City	NNP	*	_	City	_
+genre	94	11	's	's	POS	*)	_	's	_
+genre	94	12	sewage	sewage	NN	*)))))	_	sewage	_
+genre	94	13	holding	hold	VBG	(VP*	_	holding	_
+genre	94	14	tanks	tank	NNS	(NP(NP*)	_	tanks	_
+genre	94	15	,	,	,	*	_	_	_
+genre	94	16	unused	unused	JJ	(NP(NP*)	un	used	used
+genre	94	17	since	since	IN	(PP*	_	since	_
+genre	94	18	1961	1961	CD	(NP*))))))	_	1961	_
+genre	94	19	.	.	.	*))	_	_	_
+
+genre	95	0	The	the	DT	(ROOT(S(S(NP(NP*	_	_	_
+genre	95	1	rooms	room	NNS	*)	_	_	_
+genre	95	2	inside	inside	IN	(PP*	_	_	_
+genre	95	3	the	the	DT	(NP*	_	_	_
+genre	95	4	castle	castle	NN	*)))	_	_	_
+genre	95	5	sometimes	sometimes	RB	(ADVP*)	_	_	_
+genre	95	6	had	have	VBD	(VP*	_	_	_
+genre	95	7	small	small	JJ	(NP(NP(NP*	_	_	_
+genre	95	8	holes	hole	NNS	*)	_	_	_
+genre	95	9	,	,	,	*	_	_	_
+genre	95	10	or	or	CC	*	_	_	_
+genre	95	11	slits	slit	NNS	(NP*)	_	_	_
+genre	95	12	,	,	,	*)	_	_	_
+genre	95	13	cut	cut	VBN	(VP*	_	_	_
+genre	95	14	in	in	IN	(PP*	_	_	_
+genre	95	15	the	the	DT	(NP*	_	_	_
+genre	95	16	walls	wall	NNS	*))))))	_	_	_
+genre	95	17	,	,	,	*	_	_	_
+genre	95	18	so	so	IN	*	_	_	_
+genre	95	19	the	the	DT	(S(NP*	_	_	_
+genre	95	20	soldiers	soldier	NNS	*)	_	_	_
+genre	95	21	could	could	MD	(VP*	_	_	_
+genre	95	22	fire	fire	VB	(VP*	_	_	_
+genre	95	23	out	out	RP	(PRT*)	_	_	_
+genre	95	24	through	through	IN	(PP*	_	_	_
+genre	95	25	them	they	PRP	(NP*))	_	_	_
+genre	95	26	without	without	IN	(PP*	without	_	_
+genre	95	27	being	be	VBG	(S(VP*	_	being	_
+genre	95	28	hit	hit	VBN	(VP*)))))))	_	hit	hit
+genre	95	29	.	.	.	*))	_	_	_
+
+genre	96	0	Some	some	DT	(ROOT(S(NP*)	_	_	_
+genre	96	1	think	think	VBP	(VP*	_	_	_
+genre	96	2	they	they	PRP	(SBAR(S(NP*)	_	_	_
+genre	96	3	have	have	VBP	(VP*	_	_	_
+genre	96	4	the	the	DT	(NP*	_	_	_
+genre	96	5	right	right	NN	*	_	_	_
+genre	96	6	to	to	TO	(S(VP*	_	_	_
+genre	96	7	hold	hold	VB	(VP*	_	_	_
+genre	96	8	land	land	NN	(NP*)	_	_	_
+genre	96	9	without	without	IN	(PP*	without	_	_
+genre	96	10	government	government	NN	(NP*	_	government	_
+genre	96	11	permission	permission	NN	*))))))))))	_	permission	permission
+genre	96	12	.	.	.	*))	_	_	_
+
+genre	97	0	Without	without	IN	(ROOT(S(PP*	Without	_	_
+genre	97	1	leap	leap	NN	(NP*	_	leap	_
+genre	97	2	years	year	NNS	*))	_	years	years
+genre	97	3	,	,	,	*	_	_	_
+genre	97	4	the	the	DT	(NP*	_	_	_
+genre	97	5	seasons	season	NNS	*)	_	_	_
+genre	97	6	would	would	MD	(VP*	_	_	_
+genre	97	7	start	start	VB	(VP*	_	_	_
+genre	97	8	one	one	CD	(PP(ADVP(NP*	_	_	_
+genre	97	9	day	day	NN	*)	_	_	_
+genre	97	10	earlier	earlier	RBR	*)	_	_	_
+genre	97	11	on	on	IN	*	_	_	_
+genre	97	12	the	the	DT	(NP*	_	_	_
+genre	97	13	calendar	calendar	NN	*))	_	_	_
+genre	97	14	every	every	DT	(NP*	_	_	_
+genre	97	15	four	four	CD	*	_	_	_
+genre	97	16	years	year	NNS	*)))	_	_	_
+genre	97	17	.	.	.	*))	_	_	_
+
+genre	98	0	RSA	RSA	NNP	(ROOT(S(S(NP(NP*)	_	_	_
+genre	98	1	used	use	VBN	(VP*	_	_	_
+genre	98	2	without	without	IN	(PP*	without	_	_
+genre	98	3	padding	padding	NN	(NP*))))	_	padding	padding
+genre	98	4	may	may	MD	(VP*	_	_	_
+genre	98	5	have	have	VB	(VP*	_	_	_
+genre	98	6	some	some	DT	(NP*	_	_	_
+genre	98	7	problems	problem	NNS	*))))	_	_	_
+genre	98	8	:	:	:	*	_	_	_
+genre	98	9	In	in	IN	(S(PP*	_	_	_
+genre	98	10	practice	practice	NN	(NP*))	_	_	_
+genre	98	11	,	,	,	*	_	_	_
+genre	98	12	the	the	DT	(NP*	_	_	_
+genre	98	13	first	first	JJ	*	_	_	_
+genre	98	14	two	two	CD	*	_	_	_
+genre	98	15	problems	problem	NNS	*)	_	_	_
+genre	98	16	can	can	MD	(VP*	_	_	_
+genre	98	17	arise	arise	VB	(VP*	_	_	_
+genre	98	18	when	when	WRB	(SBAR(WHADVP*)	_	_	_
+genre	98	19	short	short	JJ	(S(NP*	_	_	_
+genre	98	20	ASCII	ASCII	NNP	*	_	_	_
+genre	98	21	messages	message	NNS	*)	_	_	_
+genre	98	22	are	be	VBP	(VP*	_	_	_
+genre	98	23	sent	send	VBN	(VP*)))))))	_	_	_
+genre	98	24	.	.	.	*))	_	_	_
+
+genre	99	0	Most	most	JJS	(ROOT(S(NP*	_	_	_
+genre	99	1	toppings	topping	NNS	*)	_	_	_
+genre	99	2	are	be	VBP	(VP*	_	_	_
+genre	99	3	added	add	VBN	(VP*	_	_	_
+genre	99	4	without	without	IN	(PP*	without	_	_
+genre	99	5	much	much	JJ	(NP*	_	much	_
+genre	99	6	cooking	cooking	NN	*))	_	cooking	cooking
+genre	99	7	,	,	,	*	_	_	_
+genre	99	8	although	although	IN	(SBAR*	_	_	_
+genre	99	9	some	some	DT	(S(NP*)	_	_	_
+genre	99	10	are	be	VBP	(VP*	_	_	_
+genre	99	11	deep-fried	deep-fried	JJ	(ADJP*))))))	_	_	_
+genre	99	12	.	.	.	*))	_	_	_
+

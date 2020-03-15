@@ -1,0 +1,1861 @@
+lexical	0	0	Potential	potential	JJ	(ROOT(S(NP*	_	_	_
+lexical	0	1	infinity	infinity	NN	*)	_	_	_
+lexical	0	2	is	be	VBZ	(VP*	_	_	_
+lexical	0	3	a	a	DT	(NP(NP*	_	_	_
+lexical	0	4	process	process	NN	*)	_	_	_
+lexical	0	5	that	that	WDT	(SBAR(WHNP*)	_	that	_
+lexical	0	6	never	never	RB	(S(ADVP*)	never	_	_
+lexical	0	7	stops	stop	VBZ	(VP*)))))	_	stops	stops
+lexical	0	8	.	.	.	*))	_	_	_
+
+lexical	1	0	Picasso	Picasso	NNP	(ROOT(S(NP*)	_	_	_
+lexical	1	1	had	have	VBD	(VP*	_	_	_
+lexical	1	2	said	say	VBN	(VP*	_	_	_
+lexical	1	3	that	that	IN	(SBAR*	_	_	_
+lexical	1	4	the	the	DT	(S(NP*	_	the	_
+lexical	1	5	painting	painting	NN	*)	_	painting	_
+lexical	1	6	should	should	MD	(VP*	_	should	_
+lexical	1	7	never	never	RB	(ADVP*)	never	_	_
+lexical	1	8	return	return	VB	(VP*	_	return	_
+lexical	1	9	to	to	TO	(PP*	_	to	_
+lexical	1	10	Spain	Spain	NNP	(NP*))	_	Spain	_
+lexical	1	11	until	until	IN	(SBAR*	_	until	_
+lexical	1	12	it	it	PRP	(S(NP*)	_	it	_
+lexical	1	13	was	be	VBD	(VP*	_	was	_
+lexical	1	14	a	a	DT	(NP*	_	a	_
+lexical	1	15	democracy	democracy	NN	*)	_	democracy	_
+lexical	1	16	again	again	RB	(ADVP*))))))))))	_	again	_
+lexical	1	17	.	.	.	*))	_	_	_
+
+lexical	2	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+lexical	2	1	rules	rule	NNS	*)	_	rules	_
+lexical	2	2	in	in	IN	(PP*	_	in	_
+lexical	2	3	Esperanto	Esperanto	NNP	(NP*)))	_	Esperanto	_
+lexical	2	4	never	never	RB	(ADVP*)	never	_	_
+lexical	2	5	change	change	VBP	(VP(VP*)	_	change	change
+lexical	2	6	and	and	CC	*	_	_	_
+lexical	2	7	can	can	MD	(VP*	_	_	_
+lexical	2	8	always	always	RB	(ADVP*)	_	_	_
+lexical	2	9	be	be	VB	(VP*	_	_	_
+lexical	2	10	applied	apply	VBN	(VP*	_	_	_
+lexical	2	11	in	in	IN	(PP*	_	_	_
+lexical	2	12	the	the	DT	(NP*	_	_	_
+lexical	2	13	same	same	JJ	*	_	_	_
+lexical	2	14	way	way	NN	*))))))	_	_	_
+lexical	2	15	.	.	.	*))	_	_	_
+
+lexical	3	0	This	this	DT	(ROOT(S(S(NP*	_	This	_
+lexical	3	1	sequence	sequence	NN	*)	_	sequence	_
+lexical	3	2	never	never	RB	(ADVP*)	never	_	_
+lexical	3	3	ends	end	VBZ	(VP*))	_	ends	ends
+lexical	3	4	:	:	:	*	_	_	_
+lexical	3	5	it	it	PRP	(S(S(NP*)	_	_	_
+lexical	3	6	starts	start	VBZ	(VP*	_	_	_
+lexical	3	7	with	with	IN	(UCP(PP*	_	_	_
+lexical	3	8	2	2	CD	(NP*))	_	_	_
+lexical	3	9	,	,	,	*	_	_	_
+lexical	3	10	4	4	CD	(NP*)	_	_	_
+lexical	3	11	,	,	,	*	_	_	_
+lexical	3	12	6	6	CD	(NP*)	_	_	_
+lexical	3	13	,	,	,	*	_	_	_
+lexical	3	14	and	and	CC	*	_	_	_
+lexical	3	15	so	so	RB	(ADVP*)	_	_	_
+lexical	3	16	on	on	IN	(PP*))))	_	_	_
+lexical	3	17	,	,	,	*	_	_	_
+lexical	3	18	and	and	CC	*	_	_	_
+lexical	3	19	you	you	PRP	(S(NP*)	_	_	_
+lexical	3	20	can	can	MD	(VP*	_	_	_
+lexical	3	21	always	always	RB	(ADVP*)	_	_	_
+lexical	3	22	keep	keep	VB	(VP*	_	_	_
+lexical	3	23	on	on	IN	(PP*	_	_	_
+lexical	3	24	naming	name	VBG	(S(VP*	_	_	_
+lexical	3	25	even	even	RB	(ADVP*)	_	_	_
+lexical	3	26	numbers	number	NNS	(NP*))))))))	_	_	_
+lexical	3	27	.	.	.	*))	_	_	_
+
+lexical	4	0	That	that	DT	(ROOT(S(S(NP*)	_	That	_	_	_	_
+lexical	4	1	has	have	VBZ	(VP*	_	has	_	_	_	_
+lexical	4	2	never	never	RB	(ADVP*)	never	_	_	_	_	_
+lexical	4	3	been	be	VBN	(VP*	_	been	_	_	_	_
+lexical	4	4	proven	prove	VBN	(VP*))))	_	proven	proven	_	_	_
+lexical	4	5	and	and	CC	*	_	_	_	_	_	_
+lexical	4	6	there	there	EX	(S(NP*)	_	_	_	_	there	_
+lexical	4	7	is	be	VBZ	(VP*	_	_	_	_	is	_
+lexical	4	8	no	no	DT	(NP(NP*	_	_	_	no	_	_
+lexical	4	9	evidence	evidence	NN	*)	_	_	_	_	evidence	evidence
+lexical	4	10	Saddam	Saddam	NNP	(SBAR(S(NP*)	_	_	_	_	Saddam	_
+lexical	4	11	ever	ever	RB	(ADVP*)	_	_	_	_	ever	_
+lexical	4	12	had	have	VBD	(VP*	_	_	_	_	had	_
+lexical	4	13	any	any	DT	(NP*	_	_	_	_	any	_
+lexical	4	14	ties	tie	NNS	*)))))))	_	_	_	_	ties	_
+lexical	4	15	.	.	.	*))	_	_	_	_	_	_
+
+lexical	5	0	He	he	PRP	(ROOT(S(S(NP*)	_	He	_
+lexical	5	1	never	never	RB	(ADVP*)	never	_	_
+lexical	5	2	could	could	MD	(VP*	_	could	could
+lexical	5	3	tell	tell	VB	(VP*	_	tell	_
+lexical	5	4	her	she	PRP	(NP*)	_	her	_
+lexical	5	5	that	that	IN	(SBAR*	_	that	_
+lexical	5	6	he	he	PRP	(S(NP*)	_	he	_
+lexical	5	7	loved	love	VBD	(VP*	_	loved	_
+lexical	5	8	her	she	PRP	(NP*)))))))	_	her	_
+lexical	5	9	,	,	,	*	_	_	_
+lexical	5	10	and	and	CC	*	_	_	_
+lexical	5	11	now	now	RB	(S(ADVP*)	_	_	_
+lexical	5	12	she	she	PRP	(NP*)	_	_	_
+lexical	5	13	was	be	VBD	(VP*	_	_	_
+lexical	5	14	dead	dead	JJ	(ADJP*)))	_	_	_
+lexical	5	15	.	.	.	*))	_	_	_
+
+lexical	6	0	Britten’s	Britten’s	JJ	(ROOT(S(NP(NP*	_	_	_
+lexical	6	1	homosexuality	homosexuality	NN	*)	_	_	_
+lexical	6	2	(	(	NN	(NN*)	_	_	_
+lexical	6	3	which	which	WDT	(NNS(SBAR(WHNP*)	_	_	_
+lexical	6	4	was	be	VBD	(S(VP*	_	_	_
+lexical	6	5	something	something	NN	(NP(NP*)	_	_	_
+lexical	6	6	that	that	WDT	(SBAR(WHNP*)	_	that	_
+lexical	6	7	was	be	VBD	(S(VP*	_	was	_
+lexical	6	8	never	never	RB	(ADVP*)	never	_	_
+lexical	6	9	discussed	discuss	VBN	(VP*	_	discussed	discussed
+lexical	6	10	in	in	IN	(PP*	_	in	_
+lexical	6	11	his	he	PRP$	(NP*	_	his	_
+lexical	6	12	lifetime	lifetime	NN	*)))))))))))))	_	lifetime	_
+lexical	6	13	)	)	NN	(NN*)	_	_	_
+lexical	6	14	may	may	MD	(NN(VP*	_	_	_
+lexical	6	15	have	have	VB	(VP*	_	_	_
+lexical	6	16	something	something	NN	(NP*)	_	_	_
+lexical	6	17	to	to	TO	(S(VP*	_	_	_
+lexical	6	18	do	do	VB	(VP*	_	_	_
+lexical	6	19	with	with	IN	(PP*	_	_	_
+lexical	6	20	this	this	DT	(NP*)))))))	_	_	_
+lexical	6	21	.	.	.	*))	_	_	_
+
+lexical	7	0	Apparently	apparently	RB	(ROOT(S(ADVP*)	_	_	_
+lexical	7	1	the	the	DT	(NP*	_	the	_
+lexical	7	2	Greek	greek	JJ	*	_	Greek	_
+lexical	7	3	playwrights	playwright	NNS	*)	_	playwrights	_
+lexical	7	4	never	never	RB	(VP(ADVP*)	never	_	_
+lexical	7	5	used	use	VBD	*	_	used	used
+lexical	7	6	more	more	JJR	(NP(QP*	_	more	_
+lexical	7	7	than	than	IN	*	_	than	_
+lexical	7	8	three	three	CD	*)	_	three	_
+lexical	7	9	actors	actor	NNS	*))	_	actors	_
+lexical	7	10	.	.	.	*))	_	_	_
+
+lexical	8	0	Afterwards	afterwards	RB	(ROOT(S(ADVP*)	_	_	_
+lexical	8	1	,	,	,	*	_	_	_
+lexical	8	2	North	North	NNP	(NP*	_	North	_
+lexical	8	3	Korea	Korea	NNP	*)	_	Korea	_
+lexical	8	4	was	be	VBD	(VP(VP*	_	_	_
+lexical	8	5	friendly	friendly	JJ	(ADJP*)	_	_	_
+lexical	8	6	with	with	IN	(PP*	_	_	_
+lexical	8	7	China	China	NNP	(NP*	_	_	_
+lexical	8	8	and	and	CC	*	_	_	_
+lexical	8	9	Russia	Russia	NNP	*)))	_	_	_
+lexical	8	10	but	but	CC	*	_	_	_
+lexical	8	11	never	never	RB	(VP(ADVP*)	never	_	_
+lexical	8	12	was	be	VBD	(VP*	_	was	_
+lexical	8	13	formally	formally	RB	(VP(ADVP*)	_	formally	_
+lexical	8	14	allied	ally	VBN	*	_	allied	allied
+lexical	8	15	with	with	IN	(PP*	_	with	_
+lexical	8	16	either	either	DT	(NP*))))	_	either	_
+lexical	8	17	and	and	CC	*	_	_	_
+lexical	8	18	became	become	VBD	(VP*	_	_	_
+lexical	8	19	more	more	RBR	(S(ADJP*	_	_	_
+lexical	8	20	isolated	isolated	JJ	*	_	_	_
+lexical	8	21	over	over	IN	(PP*	_	_	_
+lexical	8	22	time	time	NN	(NP*)))))))	_	_	_
+lexical	8	23	.	.	.	*))	_	_	_
+
+lexical	9	0	Overall	overall	RB	(ROOT(S(S(ADVP*)	_	_	_	_	_	_
+lexical	9	1	,	,	,	*	_	_	_	_	_	_
+lexical	9	2	Washington	Washington	NNP	(NP*)	_	Washington	_	_	_	_
+lexical	9	3	did	do	VBD	(VP*	_	did	_	_	_	_
+lexical	9	4	not	not	RB	*	not	_	_	_	_	_
+lexical	9	5	win	win	VB	(VP*	_	win	_	_	_	_
+lexical	9	6	many	many	JJ	(NP*	_	many	_	_	_	_
+lexical	9	7	battles	battle	NNS	*))))	_	battles	_	_	_	_
+lexical	9	8	,	,	,	*	_	_	_	_	_	_
+lexical	9	9	but	but	CC	*	_	_	_	_	_	_
+lexical	9	10	he	he	PRP	(S(NP*)	_	_	_	_	he	_
+lexical	9	11	never	never	RB	(ADVP*)	_	_	_	never	_	_
+lexical	9	12	let	let	VBP	(VP*	_	_	_	_	let	let
+lexical	9	13	the	the	DT	(S(NP*	_	_	_	_	the	_
+lexical	9	14	British	British	NNP	*)	_	_	_	_	British	_
+lexical	9	15	destroy	destroy	VB	(VP*	_	_	_	_	destroy	_
+lexical	9	16	his	he	PRP$	(NP*	_	_	_	_	his	_
+lexical	9	17	army	army	NN	*)))))	_	_	_	_	army	_
+lexical	9	18	.	.	.	*))	_	_	_	_	_	_
+
+lexical	10	0	Archaeologists	archaeologist	NNS	(ROOT(S(NP*)	_	_	_
+lexical	10	1	study	study	VBP	(VP*	_	_	_
+lexical	10	2	every	every	DT	(NP(NP(NP*	_	_	_
+lexical	10	3	civilization	civilization	NN	*)	_	_	_
+lexical	10	4	that	that	WDT	(SBAR(WHNP*)	_	_	_
+lexical	10	5	is	be	VBZ	(S(VP*	_	_	_
+lexical	10	6	known	know	VBN	(VP*)))))	_	_	_
+lexical	10	7	,	,	,	*	_	_	_
+lexical	10	8	especially	especially	RB	*	_	_	_
+lexical	10	9	the	the	DT	(NP(NP*	_	_	_
+lexical	10	10	ones	one	NNS	*)	_	_	_
+lexical	10	11	where	where	WRB	(SBAR(WHADVP*)	_	where	_
+lexical	10	12	there	there	EX	(S(NP*)	_	there	_
+lexical	10	13	is	be	VBZ	(VP*	_	is	_
+lexical	10	14	no	no	DT	(NP*	no	_	_
+lexical	10	15	written	write	VBN	*	_	written	_
+lexical	10	16	history	history	NN	*)))))))	_	history	history
+lexical	10	17	.	.	.	*))	_	_	_
+
+lexical	11	0	All	all	PDT	(ROOT(S(NP*	_	_	_	_	_	_
+lexical	11	1	these	these	DT	*	_	_	_	_	_	_
+lexical	11	2	elements	element	NNS	*)	_	_	_	_	_	_
+lexical	11	3	are	be	VBP	(VP*	_	_	_	_	_	_
+lexical	11	4	gases	gas	NNS	(NP(NP*)	_	_	_	_	_	_
+lexical	11	5	that	that	WDT	(SBAR(WHNP*)	_	that	_	_	that	_
+lexical	11	6	have	have	VBP	(S(VP*	_	have	have	_	have	have
+lexical	11	7	no	no	DT	(NP(NP*	no	_	_	_	_	_
+lexical	11	8	colour	colour	NN	*)	_	colour	_	_	_	_
+lexical	11	9	and	and	CC	*	_	_	_	_	_	_
+lexical	11	10	no	no	DT	(NP*	_	_	_	no	_	_
+lexical	11	11	smell	smell	NN	*)))))))	_	_	_	_	smell	smell
+lexical	11	12	.	.	.	*))	_	_	_	_	_	_
+
+lexical	12	0	Galileo	Galileo	NNP	(ROOT(S(S(NP*)	_	_	_
+lexical	12	1	had	have	VBD	(VP*	_	_	_
+lexical	12	2	already	already	RB	(ADVP*)	_	_	_
+lexical	12	3	established	establish	VBN	(VP*	_	_	_
+lexical	12	4	the	the	DT	(NP(NP*	_	_	_
+lexical	12	5	principle	principle	NN	*)	_	_	_
+lexical	12	6	of	of	IN	(PP*	_	_	_
+lexical	12	7	relativity	relativity	NN	(NP(NP*)	_	_	_
+lexical	12	8	,	,	,	*	_	_	_
+lexical	12	9	which	which	WDT	(SBAR(WHNP*)	_	_	_
+lexical	12	10	said	say	VBD	(S(VP*	_	_	_
+lexical	12	11	that	that	IN	(SBAR*	_	_	_
+lexical	12	12	physical	physical	JJ	(S(NP*	_	_	_
+lexical	12	13	events	event	NNS	*)	_	_	_
+lexical	12	14	must	must	MD	(VP*	_	_	_
+lexical	12	15	look	look	VB	(VP*	_	_	_
+lexical	12	16	the	the	DT	(NP*	_	_	_
+lexical	12	17	same	same	JJ	*)	_	_	_
+lexical	12	18	to	to	TO	(PP*	_	_	_
+lexical	12	19	all	all	DT	(NP*	_	_	_
+lexical	12	20	observers	observer	NNS	*)))))))))))))))	_	_	_
+lexical	12	21	,	,	,	*	_	_	_
+lexical	12	22	and	and	CC	*	_	_	_
+lexical	12	23	no	no	DT	(S(NP*	no	_	_
+lexical	12	24	observer	observer	NN	*)	_	observer	_
+lexical	12	25	has	have	VBZ	(VP*	_	has	has
+lexical	12	26	the	the	DT	(NP(NP*	_	the	_
+lexical	12	27	``	``	``	*	_	``	_
+lexical	12	28	right	right	JJ	*	_	right	_
+lexical	12	29	''	''	''	*	_	''	_
+lexical	12	30	way	way	NN	*)	_	way	_
+lexical	12	31	to	to	TO	(SBAR(S(VP*	_	to	_
+lexical	12	32	look	look	VB	(VP*	_	look	_
+lexical	12	33	at	at	IN	(PP*	_	at	_
+lexical	12	34	the	the	DT	(NP(NP*	_	the	_
+lexical	12	35	things	thing	NNS	*)	_	things	_
+lexical	12	36	studied	study	VBN	(VP*	_	studied	_
+lexical	12	37	by	by	IN	(PP*	_	by	_
+lexical	12	38	physics	physics	NN	(NP*))))))))))))	_	physics	_
+lexical	12	39	.	.	.	*))	_	_	_
+
+lexical	13	0	The	the	DT	(ROOT(S(NP*	_	_	_
+lexical	13	1	ancient	ancient	JJ	*	_	_	_
+lexical	13	2	Greek	greek	JJ	*	_	_	_
+lexical	13	3	philosopher	philosopher	NN	*	_	_	_
+lexical	13	4	Epicurus	Epicurus	NNS	*)	_	_	_
+lexical	13	5	said	say	VBD	(VP*	_	_	_
+lexical	13	6	that	that	IN	(SBAR*	_	_	_
+lexical	13	7	people	people	NNS	(S(NP*)	_	_	_
+lexical	13	8	feel	feel	VBP	(VP*	_	_	_
+lexical	13	9	the	the	DT	(S(NP*	_	_	_
+lexical	13	10	most	most	JJS	*	_	_	_
+lexical	13	11	pleasure	pleasure	NN	*)	_	_	_
+lexical	13	12	possible	possible	JJ	(ADJP*)	_	_	_
+lexical	13	13	when	when	WRB	(SBAR(WHADVP*)	_	when	_
+lexical	13	14	they	they	PRP	(S(NP*)	_	they	_
+lexical	13	15	have	have	VBP	(VP*	_	have	have
+lexical	13	16	no	no	DT	(NP*	no	_	_
+lexical	13	17	suffering	suffering	NN	*)))))))))	_	suffering	_
+lexical	13	18	.	.	.	*))	_	_	_
+
+lexical	14	0	No	no	DT	(ROOT(S(S(NP*	No	_	_	_	_	_
+lexical	14	1	one	one	NN	*)	_	one	_	_	_	_
+lexical	14	2	helped	help	VBD	(VP*	_	helped	helped	_	_	_
+lexical	14	3	him	he	PRP	(NP*)	_	him	_	_	_	_
+lexical	14	4	with	with	IN	(PP*	_	with	_	_	_	_
+lexical	14	5	the	the	DT	(NP*	_	the	_	_	_	_
+lexical	14	6	harvest	harvest	NN	*))))	_	harvest	_	_	_	_
+lexical	14	7	,	,	,	*	_	_	_	_	_	_
+lexical	14	8	no	no	DT	(NP*	_	_	_	no	_	_
+lexical	14	9	one	one	NN	*)	_	_	_	_	one	_
+lexical	14	10	worked	work	VBD	(VP*	_	_	_	_	worked	worked
+lexical	14	11	in	in	IN	(PP*	_	_	_	_	in	_
+lexical	14	12	his	he	PRP$	(NP(NP*	_	_	_	_	his	_
+lexical	14	13	stables	stable	NNS	*)	_	_	_	_	stables	_
+lexical	14	14	or	or	CC	*	_	_	_	_	or	_
+lexical	14	15	his	he	PRP$	(NP*	_	_	_	_	his	_
+lexical	14	16	house	house	NN	*))))	_	_	_	_	house	_
+lexical	14	17	.	.	.	*))	_	_	_	_	_	_
+
+lexical	15	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+lexical	15	1	unicellular	unicellular	NN	*	_	unicellular	_
+lexical	15	2	species	species	NN	*)	_	species	_
+lexical	15	3	use	use	VBP	(VP(VP*	_	_	_
+lexical	15	4	only	only	RB	(NP*	_	_	_
+lexical	15	5	external	external	JJ	*	_	_	_
+lexical	15	6	energy	energy	NN	*	_	_	_
+lexical	15	7	sources	source	NNS	*))	_	_	_
+lexical	15	8	and	and	CC	*	_	_	_
+lexical	15	9	have	have	VBP	(VP*	_	have	have
+lexical	15	10	limited	limited	JJ	(NP(ADJP*	_	_	_
+lexical	15	11	or	or	CC	*	_	_	_
+lexical	15	12	no	no	DT	*)	no	_	_
+lexical	15	13	photosynthetic	photosynthetic	JJ	*	_	photosynthetic	_
+lexical	15	14	parts	part	NNS	*)))	_	parts	_
+lexical	15	15	.	.	.	*))	_	_	_
+
+lexical	16	0	Because	because	IN	(ROOT(S(SBAR*	_	_	_	_	Because	_
+lexical	16	1	it	it	PRP	(S(NP*)	_	it	_	_	it	_
+lexical	16	2	is	be	VBZ	(VP*	_	is	_	_	is	_
+lexical	16	3	not	not	RB	*	not	_	_	_	not	_
+lexical	16	4	considered	consider	VBN	(VP*	_	considered	considered	_	considered	_
+lexical	16	5	to	to	TO	(S(VP*	_	to	_	_	to	_
+lexical	16	6	belong	belong	VB	(VP*	_	belong	_	_	belong	_
+lexical	16	7	to	to	TO	(PP*	_	to	_	_	to	_
+lexical	16	8	any	any	DT	(NP(NP*	_	any	_	_	any	_
+lexical	16	9	country	country	NN	*)	_	country	_	_	country	_
+lexical	16	10	at	at	IN	(PP*	_	at	_	_	at	_
+lexical	16	11	the	the	DT	(NP*	_	the	_	_	the	_
+lexical	16	12	moment	moment	NN	*)))))))))))	_	moment	_	_	moment	_
+lexical	16	13	,	,	,	*	_	_	_	_	,	_
+lexical	16	14	the	the	DT	(NP*	_	_	_	_	the	_
+lexical	16	15	city	city	NN	*)	_	_	_	_	city	_
+lexical	16	16	has	have	VBZ	(VP*	_	_	_	_	has	has
+lexical	16	17	no	no	DT	(NP*	_	_	_	no	_	_
+lexical	16	18	embassies	embassy	NNS	*))	_	_	_	_	embassies	_
+lexical	16	19	.	.	.	*))	_	_	_	_	_	_
+
+lexical	17	0	After	after	IN	(ROOT(S(SBAR*	_	_	_
+lexical	17	1	the	the	DT	(S(NP(NP*	_	_	_
+lexical	17	2	HIV	hiv	NN	*)	_	_	_
+lexical	17	3	in	in	IN	(PP*	_	_	_
+lexical	17	4	a	a	DT	(NP*	_	_	_
+lexical	17	5	person	person	NN	*)))	_	_	_
+lexical	17	6	has	have	VBZ	(VP*	_	_	_
+lexical	17	7	MDR-HIV	MDR-HIV	VBN	(VP*))))	_	_	_
+lexical	17	8	there	there	EX	(NP*)	_	there	_
+lexical	17	9	may	may	MD	(VP*	_	may	_
+lexical	17	10	be	be	VB	(VP*	_	be	_
+lexical	17	11	no	no	RB	(ADJP(ADVP*	no	_	_
+lexical	17	12	more	more	RBR	*)	_	more	_
+lexical	17	13	medicines	medicines	JJ	*	_	medicines	_
+lexical	17	14	to	to	TO	(S(VP*	_	to	_
+lexical	17	15	treat	treat	VB	(VP*	_	treat	_
+lexical	17	16	them	they	PRP	(NP*)))))))	_	them	_
+lexical	17	17	.	.	.	*))	_	_	_
+
+lexical	18	0	A	a	DT	(ROOT(S(S(NP(NP*	_	A	_	_	_	_
+lexical	18	1	list	list	NN	*)	_	list	_	_	_	_
+lexical	18	2	of	of	IN	(PP*	_	of	_	_	_	_
+lexical	18	3	the	the	DT	(NP(NP*	_	the	_	_	_	_
+lexical	18	4	50	50	CD	*	_	50	_	_	_	_
+lexical	18	5	most	most	JJS	*	_	most	_	_	_	_
+lexical	18	6	common	common	JJ	*	_	common	_	_	_	_
+lexical	18	7	words	word	NNS	*)	_	words	_	_	_	_
+lexical	18	8	in	in	IN	(PP*	_	in	_	_	_	_
+lexical	18	9	English	English	NNP	(NP*)))))	_	English	_	_	_	_
+lexical	18	10	has	have	VBZ	(VP*	_	has	has	_	_	_
+lexical	18	11	no	no	DT	(NP(NP*	no	_	_	_	_	_
+lexical	18	12	words	word	NNS	*)	_	words	_	_	_	_
+lexical	18	13	longer	longer	RB	(ADVP*	_	longer	_	_	_	_
+lexical	18	14	than	than	IN	(PP*	_	than	_	_	_	_
+lexical	18	15	six	six	CD	(NP*	_	six	_	_	_	_
+lexical	18	16	letters	letter	NNS	*))))))	_	letters	_	_	_	_
+lexical	18	17	,	,	,	*	_	_	_	_	_	_
+lexical	18	18	and	and	CC	*	_	_	_	_	_	_
+lexical	18	19	more	more	JJR	(S(NP(QP*	_	_	_	_	more	_
+lexical	18	20	than	than	IN	*	_	_	_	_	than	_
+lexical	18	21	half	half	PDT	*))	_	_	_	_	half	_
+lexical	18	22	have	have	VBP	(VP*	_	_	_	_	have	have
+lexical	18	23	no	no	DT	(NP(QP*	_	_	_	no	_	_
+lexical	18	24	more	more	JJR	*	_	_	_	_	more	_
+lexical	18	25	than	than	IN	*	_	_	_	_	than	_
+lexical	18	26	three	three	CD	*)	_	_	_	_	three	_
+lexical	18	27	letters	letter	NNS	*)))	_	_	_	_	letters	_
+lexical	18	28	.	.	.	*))	_	_	_	_	_	_
+
+lexical	19	0	To	to	TO	(ROOT(S(PP*	_	_	_
+lexical	19	1	this	this	DT	(NP*	_	_	_
+lexical	19	2	day	day	NN	*))	_	_	_
+lexical	19	3	,	,	,	*	_	_	_
+lexical	19	4	no	no	DT	(NP*	no	_	_
+lexical	19	5	one	one	NN	*)	_	one	_
+lexical	19	6	is	be	VBZ	(VP*	_	is	_
+lexical	19	7	sure	sure	JJ	(ADJP*)	_	sure	_
+lexical	19	8	whether	whether	IN	(SBAR*	_	whether	_
+lexical	19	9	or	or	CC	*	_	or	_
+lexical	19	10	not	not	RB	*	_	not	_
+lexical	19	11	Mallory	Mallory	NNP	(S(NP*	_	Mallory	_
+lexical	19	12	and	and	CC	*	_	and	_
+lexical	19	13	Irvine	Irvine	NNP	*)	_	Irvine	_
+lexical	19	14	made	make	VBD	(VP*	_	made	_
+lexical	19	15	it	it	PRP	(NP*)	_	it	_
+lexical	19	16	to	to	TO	(PP*	_	to	_
+lexical	19	17	the	the	DT	(NP*	_	the	_
+lexical	19	18	summit	summit	NN	*))	_	summit	_
+lexical	19	19	before	before	IN	(PP*	_	before	_
+lexical	19	20	dying	die	VBG	(NP*))	_	dying	_
+lexical	19	21	,	,	,	*	_	_	_
+lexical	19	22	29	29	CD	(SBAR(NP*	_	_	_
+lexical	19	23	years	year	NNS	*)	_	_	_
+lexical	19	24	before	before	IN	*	_	_	_
+lexical	19	25	the	the	DT	(S(NP*	_	_	_
+lexical	19	26	next	next	JJ	*	_	_	_
+lexical	19	27	climbers	climber	NNS	*)	_	_	_
+lexical	19	28	would	would	MD	(VP*	_	_	_
+lexical	19	29	reach	reach	VB	(VP*	_	_	_
+lexical	19	30	the	the	DT	(NP*	_	_	_
+lexical	19	31	summit	summit	NN	*)))))))))	_	_	_
+lexical	19	32	.	.	.	*))	_	_	_
+
+lexical	20	0	Nobody	nobody	NN	(ROOT(S(NP*)	Nobody	_	_
+lexical	20	1	wanted	want	VBD	(VP*	_	wanted	wanted
+lexical	20	2	it	it	PRP	(S(NP*)	_	it	_
+lexical	20	3	to	to	TO	(VP*	_	to	_
+lexical	20	4	be	be	VB	(VP*	_	be	_
+lexical	20	5	taken	take	VBN	(VP*	_	taken	_
+lexical	20	6	apart	apart	RB	(ADVP*))))))	_	apart	_
+lexical	20	7	.	.	.	*))	_	_	_
+
+lexical	21	0	The	the	DT	(ROOT(S(S(NP*	_	_	_
+lexical	21	1	rules	rule	NNS	*)	_	_	_
+lexical	21	2	said	say	VBD	(VP*	_	_	_
+lexical	21	3	that	that	IN	(SBAR*	_	_	_
+lexical	21	4	nobody	nobody	NN	(S(NP*)	nobody	_	_
+lexical	21	5	can	can	MD	(VP*	_	can	can
+lexical	21	6	stand	stand	VB	(VP*	_	stand	_
+lexical	21	7	at	at	IN	(PP*	_	at	_
+lexical	21	8	football	football	NN	(NP*	_	football	_
+lexical	21	9	games	game	NNS	*))))))))	_	games	_
+lexical	21	10	,	,	,	*	_	_	_
+lexical	21	11	so	so	IN	*	_	_	_
+lexical	21	12	the	the	DT	(S(NP*	_	_	_
+lexical	21	13	club	club	NN	*)	_	_	_
+lexical	21	14	had	have	VBD	(VP*	_	_	_
+lexical	21	15	to	to	TO	(S(VP*	_	_	_
+lexical	21	16	have	have	VB	(VP*	_	_	_
+lexical	21	17	new	new	JJ	(NP*	_	_	_
+lexical	21	18	seats	seat	NNS	*))))))	_	_	_
+lexical	21	19	.	.	.	*))	_	_	_
+
+lexical	22	0	However	however	RB	(ROOT(S(S(PP(ADVP*)	_	_	_
+lexical	22	1	at	at	IN	*	_	_	_
+lexical	22	2	that	that	DT	(NP*	_	_	_
+lexical	22	3	time	time	NN	*))	_	_	_
+lexical	22	4	,	,	,	*	_	_	_
+lexical	22	5	nobody	nobody	NN	(NP*)	nobody	_	_
+lexical	22	6	knew	know	VBD	(VP*	_	knew	knew
+lexical	22	7	him	he	PRP	(NP*)))	_	him	_
+lexical	22	8	,	,	,	*	_	_	_
+lexical	22	9	but	but	CC	*	_	_	_
+lexical	22	10	his	he	PRP$	(S(NP*	_	_	_
+lexical	22	11	raps	rap	NNS	*)	_	_	_
+lexical	22	12	were	be	VBD	(VP*	_	_	_
+lexical	22	13	thought	think	VBN	(VP*	_	_	_
+lexical	22	14	of	of	IN	(PP*	_	_	_
+lexical	22	15	being	be	VBG	(S(VP*	_	_	_
+lexical	22	16	very	very	RB	(ADJP*	_	_	_
+lexical	22	17	good	good	JJ	*)))))))	_	_	_
+lexical	22	18	.	.	.	*))	_	_	_
+
+lexical	23	0	While	while	IN	(ROOT(S(SBAR*	_	_	_
+lexical	23	1	Voldemort	Voldemort	NNP	(S(NP*)	_	_	_
+lexical	23	2	has	have	VBZ	(VP*	_	_	_
+lexical	23	3	these	these	DT	(NP*	_	_	_
+lexical	23	4	Horcruxes	Horcruxes	NNPS	*))))	_	_	_
+lexical	23	5	,	,	,	*	_	_	_
+lexical	23	6	nobody	nobody	NN	(NP*)	nobody	_	_
+lexical	23	7	can	can	MD	(VP*	_	can	can
+lexical	23	8	kill	kill	VB	(VP*	_	kill	_
+lexical	23	9	him	he	PRP	(NP*)))	_	him	_
+lexical	23	10	.	.	.	*))	_	_	_
+
+lexical	24	0	Nobody	nobody	NN	(ROOT(S(NP*)	Nobody	_	_
+lexical	24	1	really	really	RB	(ADVP*)	_	really	_
+lexical	24	2	knows	know	VBZ	(VP*	_	knows	knows
+lexical	24	3	why	why	WRB	(SBAR(WHADVP*)	_	why	_
+lexical	24	4	they	they	PRP	(S(NP*)	_	they	_
+lexical	24	5	wanted	want	VBD	(VP*	_	wanted	_
+lexical	24	6	to	to	TO	(S(VP*	_	to	_
+lexical	24	7	move	move	VB	(VP*)))))))	_	move	_
+lexical	24	8	.	.	.	*))	_	_	_
+
+lexical	25	0	Many	many	JJ	(ROOT(S(S(NP*	_	_	_
+lexical	25	1	philosophers	philosopher	NNS	*)	_	_	_
+lexical	25	2	have	have	VBP	(VP*	_	_	_
+lexical	25	3	said	say	VBD	(VP*	_	_	_
+lexical	25	4	that	that	IN	(SBAR*	_	_	_
+lexical	25	5	people	people	NNS	(S(NP(NP*)	_	_	_
+lexical	25	6	in	in	IN	(PP*	_	_	_
+lexical	25	7	the	the	DT	(NP*	_	_	_
+lexical	25	8	world	world	NN	*)))	_	_	_
+lexical	25	9	go	go	VBP	(VP*	_	_	_
+lexical	25	10	back	back	RB	(ADVP*	_	_	_
+lexical	25	11	and	and	CC	*	_	_	_
+lexical	25	12	forth	forth	RB	*)	_	_	_
+lexical	25	13	between	between	IN	(PP*	_	_	_
+lexical	25	14	times	time	NNS	(NP(NP*)	_	_	_
+lexical	25	15	of	of	IN	(PP*	_	_	_
+lexical	25	16	happiness	happiness	NN	(NP*	_	_	_
+lexical	25	17	and	and	CC	*	_	_	_
+lexical	25	18	sadness	sadness	NNS	*))))))))))	_	_	_
+lexical	25	19	,	,	,	*	_	_	_
+lexical	25	20	but	but	CC	*	_	_	_
+lexical	25	21	there	there	EX	(S(NP*)	_	there	_
+lexical	25	22	is	be	VBZ	(VP*	_	is	is
+lexical	25	23	nobody	nobody	NN	(NP(NP*)	nobody	_	_
+lexical	25	24	who	who	WP	(SBAR(WHNP*)	_	who	_
+lexical	25	25	is	be	VBZ	(S(VP*	_	is	_
+lexical	25	26	always	always	RB	(ADJP(ADJP*	_	always	_
+lexical	25	27	happy	happy	JJ	*)	_	happy	_
+lexical	25	28	or	or	CC	*	_	or	_
+lexical	25	29	always	always	RB	(ADJP*	_	always	_
+lexical	25	30	sad	sad	JJ	*))))))))	_	sad	_
+lexical	25	31	.	.	.	*))	_	_	_
+
+lexical	26	0	A	a	DT	(ROOT(S(NP*	_	_	_
+lexical	26	1	button	button	NN	*)	_	_	_
+lexical	26	2	must	must	MD	(VP*	_	_	_
+lexical	26	3	still	still	RB	(ADVP*)	_	_	_
+lexical	26	4	be	be	VB	(VP*	_	_	_
+lexical	26	5	pushed	push	VBN	(VP*	_	_	_
+lexical	26	6	manually	manually	RB	(ADVP*)	_	_	_
+lexical	26	7	to	to	TO	(S(VP*	_	_	_
+lexical	26	8	trigger	trigger	VB	(VP*	_	_	_
+lexical	26	9	the	the	DT	(NP*	_	_	_
+lexical	26	10	shock	shock	NN	*))))	_	_	_
+lexical	26	11	,	,	,	*	_	_	_
+lexical	26	12	as	as	IN	(SBAR*	_	_	_
+lexical	26	13	the	the	DT	(S(NP*	_	_	_
+lexical	26	14	operator	operator	NN	*)	_	_	_
+lexical	26	15	beforehand	beforehand	RB	(ADVP*)	_	_	_
+lexical	26	16	must	must	MD	(VP*	_	_	_
+lexical	26	17	be	be	VB	(VP*	_	_	_
+lexical	26	18	certain	certain	JJ	(ADJP*)	_	_	_
+lexical	26	19	that	that	IN	(SBAR*	_	_	_
+lexical	26	20	nobody	nobody	NN	(S(NP*)	nobody	_	_
+lexical	26	21	is	be	VBZ	(VP*	_	is	_
+lexical	26	22	touching	touch	VBG	(VP*	_	touching	touching
+lexical	26	23	the	the	DT	(NP*	_	the	_
+lexical	26	24	patient	patient	NN	*))))))))))))	_	patient	_
+lexical	26	25	.	.	.	*))	_	_	_
+
+lexical	27	0	After	after	IN	(ROOT(S(PP*	_	_	_	_	_	_
+lexical	27	1	Bonham	Bonham	NNP	(NP(NP*	_	_	_	_	_	_
+lexical	27	2	's	's	POS	*)	_	_	_	_	_	_
+lexical	27	3	death	death	NN	*))	_	_	_	_	_	_
+lexical	27	4	,	,	,	*	_	_	_	_	_	_
+lexical	27	5	the	the	DT	(NP*	_	_	_	_	_	_
+lexical	27	6	band	band	NN	*)	_	_	_	_	_	_
+lexical	27	7	believed	believe	VBD	(VP(VP*	_	_	_	_	_	_
+lexical	27	8	that	that	IN	(SBAR*	_	_	_	_	_	_
+lexical	27	9	nobody	nobody	NN	(S(NP*)	nobody	_	_	_	_	_
+lexical	27	10	could	could	MD	(VP*	_	could	_	_	_	_
+lexical	27	11	take	take	VB	(VP*	_	take	_	_	_	_
+lexical	27	12	his	he	PRP$	(NP*	_	his	_	_	_	_
+lexical	27	13	place	place	NN	*))))))	_	place	_	_	_	_
+lexical	27	14	and	and	CC	*	_	_	_	_	_	_
+lexical	27	15	decided	decide	VBD	(VP*	_	_	_	_	_	_
+lexical	27	16	not	not	RB	(S*	_	_	_	not	_	_
+lexical	27	17	to	to	TO	(VP*	_	_	_	_	to	_
+lexical	27	18	continue	continue	VB	(VP*)))))	_	_	_	continue	continue	_
+lexical	27	19	.	.	.	*))	_	_	_	_	_	_
+
+lexical	28	0	But	but	CC	(ROOT(S(S(S*	_	_	_
+lexical	28	1	nobody	nobody	NN	(NP*)	nobody	_	_
+lexical	28	2	knows	know	VBZ	(VP*	_	knows	knows
+lexical	28	3	where	where	WRB	(SBAR(WHADVP*)	_	where	_
+lexical	28	4	the	the	DT	(S(NP*	_	the	_
+lexical	28	5	word	word	NN	*)	_	word	_
+lexical	28	6	is	be	VBZ	(VP*	_	is	_
+lexical	28	7	from	from	IN	(PP*))))))	_	from	_
+lexical	28	8	:	:	:	*	_	_	_
+lexical	28	9	some	some	DT	(S(NP*)	_	_	_
+lexical	28	10	say	say	VBP	(VP*	_	_	_
+lexical	28	11	the	the	DT	(SBAR(S(NP*	_	_	_
+lexical	28	12	word	word	NN	*)	_	_	_
+lexical	28	13	comes	come	VBZ	(VP*	_	_	_
+lexical	28	14	from	from	IN	(PP*	_	_	_
+lexical	28	15	Chinese	Chinese	NNP	(NP*))))))))	_	_	_
+lexical	28	16	,	,	,	*	_	_	_
+lexical	28	17	others	other	NNS	(NP*)	_	_	_
+lexical	28	18	say	say	VBP	(VP*	_	_	_
+lexical	28	19	the	the	DT	(SBAR(S(NP*	_	_	_
+lexical	28	20	word	word	NN	*)	_	_	_
+lexical	28	21	comes	come	VBZ	(VP*	_	_	_
+lexical	28	22	from	from	IN	(PP*	_	_	_
+lexical	28	23	England	England	NNP	(NP*))))))	_	_	_
+lexical	28	24	.	.	.	*))	_	_	_
+
+lexical	29	0	Nobody	nobody	NN	(ROOT(S(S(NP*)	Nobody	_	_
+lexical	29	1	notices	notices	VBZ	(VP*	_	notices	notices
+lexical	29	2	that	that	IN	(SBAR*	_	that	_
+lexical	29	3	they	they	PRP	(S(NP*)	_	they	_
+lexical	29	4	are	be	VBP	(VP*	_	are	_
+lexical	29	5	gone	go	VBN	(VP*))))))	_	gone	_
+lexical	29	6	,	,	,	*	_	_	_
+lexical	29	7	so	so	IN	*	_	_	_
+lexical	29	8	their	they	PRP$	(S(NP*	_	_	_
+lexical	29	9	families	family	NNS	*)	_	_	_
+lexical	29	10	miss	miss	VBP	(VP*	_	_	_
+lexical	29	11	them	they	PRP	(NP*)	_	_	_
+lexical	29	12	just	just	RB	(NP*	_	_	_
+lexical	29	13	the	the	DT	*	_	_	_
+lexical	29	14	next	next	JJ	*	_	_	_
+lexical	29	15	morning	morning	NN	*)))	_	_	_
+lexical	29	16	.	.	.	*))	_	_	_
+
+lexical	30	0	They	they	PRP	(ROOT(S(NP*)	_	_	_
+lexical	30	1	were	be	VBD	(VP*	_	_	_
+lexical	30	2	killed	kill	VBN	(VP*	_	_	_
+lexical	30	3	and	and	CC	*	_	_	_
+lexical	30	4	eaten	eat	VBN	*	_	_	_
+lexical	30	5	by	by	IN	(PP*	_	_	_
+lexical	30	6	sailors	sailor	NNS	(NP*))	_	_	_
+lexical	30	7	until	until	IN	(SBAR*	_	_	_
+lexical	30	8	there	there	EX	(S(NP*)	_	there	_
+lexical	30	9	was	be	VBD	(VP*	_	was	_
+lexical	30	10	none	none	NN	(NP(NP*)	none	_	_
+lexical	30	11	left	left	VBN	(VP*)))))))	_	left	left
+lexical	30	12	.	.	.	*))	_	_	_
+
+lexical	31	0	They	they	PRP	(ROOT(S(S(NP*)	_	_	_	_	_	_
+lexical	31	1	are	be	VBP	(VP*	_	_	_	_	_	_
+lexical	31	2	different	different	JJ	(ADJP*	_	_	_	_	_	_
+lexical	31	3	from	from	IN	(PP*	_	_	_	_	_	_
+lexical	31	4	earthquakes	earthquake	NNS	(NP(NP*)	_	_	_	_	_	_
+lexical	31	5	followed	follow	VBN	(VP*	_	_	_	_	_	_
+lexical	31	6	by	by	IN	(PP*	_	_	_	_	_	_
+lexical	31	7	a	a	DT	(NP(NP*	_	_	_	_	_	_
+lexical	31	8	series	series	NN	*)	_	_	_	_	_	_
+lexical	31	9	of	of	IN	(PP*	_	_	_	_	_	_
+lexical	31	10	aftershocks	aftershock	NNS	(NP*))))	_	_	_	_	_	_
+lexical	31	11	by	by	IN	(PP*	_	_	_	_	_	_
+lexical	31	12	the	the	DT	(NP*	_	_	_	_	_	_
+lexical	31	13	fact	fact	NN	*))))))	_	_	_	_	_	_
+lexical	31	14	that	that	IN	(SBAR*	_	_	_	_	_	_
+lexical	31	15	no	no	DT	(S(NP(NP*	no	_	_	_	_	_
+lexical	31	16	single	single	JJ	*	_	single	_	_	_	_
+lexical	31	17	earthquake	earthquake	NN	*)	_	earthquake	_	_	_	_
+lexical	31	18	in	in	IN	(PP*	_	in	_	_	_	_
+lexical	31	19	the	the	DT	(NP*	_	the	_	_	_	_
+lexical	31	20	sequence	sequence	NN	*)))	_	sequence	_	_	_	_
+lexical	31	21	is	be	VBZ	(VP*	_	is	_	_	_	_
+lexical	31	22	obviously	obviously	RB	(ADVP*)	_	obviously	_	_	_	_
+lexical	31	23	the	the	DT	(NP*	_	the	_	_	_	_
+lexical	31	24	main	main	JJ	*	_	main	_	_	_	_
+lexical	31	25	shock	shock	NN	*))))))	_	shock	_	_	_	_
+lexical	31	26	,	,	,	*	_	_	_	_	_	_
+lexical	31	27	therefore	therefore	RB	(ADVP*)	_	_	_	_	_	_
+lexical	31	28	none	none	NN	(S(NP*)	_	_	_	none	_	_
+lexical	31	29	have	have	VBP	(VP*	_	_	_	_	have	have
+lexical	31	30	notable	notable	JJ	(NP*	_	_	_	_	notable	_
+lexical	31	31	higher	higher	JJR	*	_	_	_	_	higher	_
+lexical	31	32	magnitudes	magnitude	NNS	*)	_	_	_	_	magnitudes	_
+lexical	31	33	than	than	IN	(PP*	_	_	_	_	than	_
+lexical	31	34	the	the	DT	(NP*	_	_	_	_	the	_
+lexical	31	35	other	other	JJ	*))))	_	_	_	_	other	_
+lexical	31	36	.	.	.	*))	_	_	_	_	_	_
+
+lexical	32	0	On	on	IN	(ROOT(S(PP*	_	_	_
+lexical	32	1	March	March	NNP	(NP*	_	_	_
+lexical	32	2	18	18	CD	*	_	_	_
+lexical	32	3	,	,	,	*	_	_	_
+lexical	32	4	2003	2003	CD	*))	_	_	_
+lexical	32	5	,	,	,	*	_	_	_
+lexical	32	6	two	two	CD	(PP(NP*	_	_	_
+lexical	32	7	days	day	NNS	*)	_	_	_
+lexical	32	8	before	before	IN	*	_	_	_
+lexical	32	9	the	the	DT	(NP(NP*	_	_	_
+lexical	32	10	beginning	beginning	NN	*)	_	_	_
+lexical	32	11	of	of	IN	(PP*	_	_	_
+lexical	32	12	the	the	DT	(NP(NP*	_	_	_
+lexical	32	13	2003	2003	CD	*	_	_	_
+lexical	32	14	invasion	invasion	NN	*)	_	_	_
+lexical	32	15	of	of	IN	(PP*	_	_	_
+lexical	32	16	Iraq	Iraq	NNP	(NP*))))))	_	_	_
+lexical	32	17	,	,	,	*	_	_	_
+lexical	32	18	when	when	WRB	(SBAR(WHADVP*)	_	_	_
+lexical	32	19	her	she	PRP$	(S(NP(NP(NP*	_	_	_
+lexical	32	20	son	son	NN	*)	_	_	_
+lexical	32	21	George	George	NNP	(SBAR(S(NP*	_	_	_
+lexical	32	22	W.	W.	NNP	*	_	_	_
+lexical	32	23	Bush	Bush	NNP	*)	_	_	_
+lexical	32	24	was	be	VBD	(VP*	_	_	_
+lexical	32	25	holding	hold	VBG	(VP*	_	_	_
+lexical	32	26	the	the	DT	(NP(NP*	_	_	_
+lexical	32	27	office	office	NN	*)	_	_	_
+lexical	32	28	of	of	IN	(PP*	_	_	_
+lexical	32	29	the	the	DT	(NP*	_	_	_
+lexical	32	30	presidency	presidency	NN	*))))))))	_	_	_
+lexical	32	31	,	,	,	*	_	_	_
+lexical	32	32	ABC	ABC	NNP	(NP(NP*	_	_	_
+lexical	32	33	's	's	POS	*)	_	_	_
+lexical	32	34	``	``	``	*	_	_	_
+lexical	32	35	Good	Good	NNP	*	_	_	_
+lexical	32	36	Morning	Morning	NNPS	*	_	_	_
+lexical	32	37	America	America	NNP	*)	_	_	_
+lexical	32	38	''	''	''	*)	_	_	_
+lexical	32	39	asked	ask	VBD	(VP*	_	_	_
+lexical	32	40	her	she	PRP	(NP*)	_	_	_
+lexical	32	41	about	about	IN	(PP*	_	_	_
+lexical	32	42	her	she	PRP$	(NP(NP*	_	_	_
+lexical	32	43	family	family	NN	*	_	_	_
+lexical	32	44	's	's	POS	*)	_	_	_
+lexical	32	45	television	television	NN	*	_	_	_
+lexical	32	46	viewing	viewing	NN	*	_	_	_
+lexical	32	47	habits	habit	NNS	*)))))	_	_	_
+lexical	32	48	;	;	:	*	_	_	_
+lexical	32	49	she	she	PRP	(NP*)	_	_	_
+lexical	32	50	replied	reply	VBD	(VP*	_	_	_
+lexical	32	51	:	:	:	*	_	_	_
+lexical	32	52	I	I	PRP	(S(NP*)	_	I	_
+lexical	32	53	watch	watch	VB	(VP*	_	watch	watch
+lexical	32	54	none	none	NN	(NP*))))	none	_	_
+lexical	32	55	.	.	.	*))	_	_	_
+
+lexical	33	0	However	however	RB	(ROOT(S(ADVP*)	_	_	_
+lexical	33	1	none	none	NN	(NP(NP*)	none	_	_
+lexical	33	2	of	of	IN	(PP*	_	of	_
+lexical	33	3	these	these	DT	(NP*	_	these	_
+lexical	33	4	albums	album	NNS	*)))	_	albums	_
+lexical	33	5	sold	sold	VBD	(VP*	_	sold	sold
+lexical	33	6	as	as	RB	(NP(CONJP*	_	as	_
+lexical	33	7	well	well	RB	*	_	well	_
+lexical	33	8	as	as	IN	*)	_	as	_
+lexical	33	9	their	they	PRP$	(NP*	_	their	_
+lexical	33	10	first	first	JJ	*)	_	first	_
+lexical	33	11	,	,	,	*	_	_	_
+lexical	33	12	``	``	``	*	_	_	_
+lexical	33	13	Dookie	Dookie	NNP	(NP*)))	_	_	_
+lexical	33	14	''	''	''	*	_	_	_
+lexical	33	15	.	.	.	*))	_	_	_
+
+lexical	34	0	None	none	NN	(ROOT(S(NP(NP*)	None	_	_
+lexical	34	1	of	of	IN	(PP*	_	of	_
+lexical	34	2	these	these	DT	(NP*)))	_	these	_
+lexical	34	3	have	have	VBP	(VP*	_	have	_
+lexical	34	4	been	be	VBN	(VP*	_	been	_
+lexical	34	5	confirmed	confirm	VBN	(VP*	_	confirmed	confirmed
+lexical	34	6	so	so	RB	(ADVP*	_	so	_
+lexical	34	7	far	far	RB	*))))	_	far	_
+lexical	34	8	.	.	.	*))	_	_	_
+
+lexical	35	0	A	a	DT	(ROOT(S(S(NP*	_	_	_
+lexical	35	1	cat	cat	NN	*)	_	_	_
+lexical	35	2	is	be	VBZ	(VP*	_	_	_
+lexical	35	3	locked	lock	VBN	(VP*	_	_	_
+lexical	35	4	up	up	RP	(PRT*)	_	_	_
+lexical	35	5	in	in	IN	(PP*	_	_	_
+lexical	35	6	a	a	DT	(NP*	_	_	_
+lexical	35	7	steel	steel	NN	*	_	_	_
+lexical	35	8	chamber	chamber	NN	*))	_	_	_
+lexical	35	9	,	,	,	*	_	_	_
+lexical	35	10	along	along	IN	(S(ADVP*	_	_	_
+lexical	35	11	with	with	IN	(PP*	_	_	_
+lexical	35	12	the	the	DT	(NP*	_	_	_
+lexical	35	13	following	following	JJ	*	_	_	_
+lexical	35	14	device	device	NN	*)))	_	_	_
+lexical	35	15	(	(	NN	(NN*)	_	_	_
+lexical	35	16	which	which	WDT	(VP(VBG(NP(SBAR(WHNP*)	_	_	_
+lexical	35	17	must	must	MD	(S(VP*	_	_	_
+lexical	35	18	be	be	VB	(VP*	_	_	_
+lexical	35	19	secured	secure	VBN	(VP*	_	_	_
+lexical	35	20	against	against	IN	(PP*	_	_	_
+lexical	35	21	direct	direct	JJ	(NP*	_	_	_
+lexical	35	22	interference	interference	NN	*))	_	_	_
+lexical	35	23	by	by	IN	(PP*	_	_	_
+lexical	35	24	the	the	DT	(NP*	_	_	_
+lexical	35	25	cat	cat	NN	*)))))))))	_	_	_
+lexical	35	26	)	)	NN	(NN*)	_	_	_
+lexical	35	27	:	:	:	(NN*	_	_	_
+lexical	35	28	in	in	IN	(S(PP*	_	_	_
+lexical	35	29	a	a	DT	(NP*	_	_	_
+lexical	35	30	Geiger	Geiger	NNP	*	_	_	_
+lexical	35	31	counter	counter	NN	*))	_	_	_
+lexical	35	32	,	,	,	*	_	_	_
+lexical	35	33	there	there	EX	(NP*)	_	_	_
+lexical	35	34	is	be	VBZ	(VP*	_	_	_
+lexical	35	35	a	a	DT	(NP(NP*	_	_	_
+lexical	35	36	tiny	tiny	JJ	*	_	_	_
+lexical	35	37	bit	bit	NN	*)	_	_	_
+lexical	35	38	of	of	IN	(PP*	_	_	_
+lexical	35	39	radioactive	radioactive	JJ	(NP*	_	_	_
+lexical	35	40	substance	substance	NN	*))	_	_	_
+lexical	35	41	,	,	,	*	_	_	_
+lexical	35	42	so	so	RB	(ADJP*	_	_	_
+lexical	35	43	small	small	JJ	*))	_	_	_
+lexical	35	44	,	,	,	*	_	_	_
+lexical	35	45	that	that	IN	(SBAR*	_	_	_
+lexical	35	46	perhaps	perhaps	RB	(FRAG(ADVP*)))	_	_	_
+lexical	35	47	in	in	IN	(PP*	_	_	_
+lexical	35	48	the	the	DT	(NP(NP*	_	_	_
+lexical	35	49	course	course	NN	*)	_	_	_
+lexical	35	50	of	of	IN	(PP*	_	_	_
+lexical	35	51	the	the	DT	(NP(NP*	_	_	_
+lexical	35	52	hour	hour	NN	*	_	_	_
+lexical	35	53	one	one	NN	*)	_	_	_
+lexical	35	54	of	of	IN	(PP*	_	_	_
+lexical	35	55	the	the	DT	(NP*	_	_	_
+lexical	35	56	atoms	atom	NNS	*	_	_	_
+lexical	35	57	decays	decays	NNS	*)))))))))))	_	_	_
+lexical	35	58	,	,	,	*	_	_	_
+lexical	35	59	but	but	CC	*	_	_	_
+lexical	35	60	also	also	RB	(ADVP*)	_	_	_
+lexical	35	61	,	,	,	*	_	_	_
+lexical	35	62	with	with	IN	(PP*	_	_	_
+lexical	35	63	equal	equal	JJ	(NP(NP*	_	_	_
+lexical	35	64	probability	probability	NN	*)	_	_	_
+lexical	35	65	,	,	,	*	_	_	_
+lexical	35	66	perhaps	perhaps	RB	*	_	_	_
+lexical	35	67	none	none	NN	(NP*))))))	none	_	_
+lexical	35	68	;	;	:	*	_	_	_
+lexical	35	69	if	if	IN	(S(SBAR*	_	_	_
+lexical	35	70	it	it	PRP	(S(NP*)	_	_	_
+lexical	35	71	happens	happen	VBZ	(VP*)))	_	_	_
+lexical	35	72	,	,	,	*	_	_	_
+lexical	35	73	the	the	DT	(NP(NP*	_	_	_
+lexical	35	74	counter	counter	JJ	*	_	_	_
+lexical	35	75	tube	tube	NN	*	_	_	_
+lexical	35	76	discharges	discharge	NNS	*)	_	_	_
+lexical	35	77	and	and	CC	*	_	_	_
+lexical	35	78	through	through	IN	(NP*	_	_	_
+lexical	35	79	a	a	DT	*	_	_	_
+lexical	35	80	relay	relay	NN	*))	_	_	_
+lexical	35	81	releases	release	VBZ	(VP*	_	_	_
+lexical	35	82	a	a	DT	(NP(NP*	_	_	_
+lexical	35	83	hammer	hammer	NN	*)	_	_	_
+lexical	35	84	that	that	WDT	(SBAR(WHNP*)	_	_	_
+lexical	35	85	shatters	shatters	VBZ	(S(VP*	_	_	_
+lexical	35	86	a	a	DT	(NP(NP*	_	_	_
+lexical	35	87	small	small	JJ	*	_	_	_
+lexical	35	88	flask	flask	NN	*)	_	_	_
+lexical	35	89	of	of	IN	(PP*	_	_	_
+lexical	35	90	hydrocyanic	hydrocyanic	JJ	(NP*	_	_	_
+lexical	35	91	acid	acid	NN	*)))))))))	_	_	_
+lexical	35	92	.	.	.	*))	_	_	_
+
+lexical	36	0	However	however	RB	(ROOT(S(ADVP*)	_	_	_
+lexical	36	1	,	,	,	*	_	_	_
+lexical	36	2	none	none	NN	(NP(NP*)	none	_	_
+lexical	36	3	of	of	IN	(PP*	_	of	_
+lexical	36	4	these	these	DT	(NP*	_	these	_
+lexical	36	5	constructed	constructed	JJ	*	_	constructed	_
+lexical	36	6	languages	language	NNS	*)))	_	languages	_
+lexical	36	7	have	have	VBP	(VP*	_	have	have
+lexical	36	8	as	as	IN	(PP*	_	as	_
+lexical	36	9	many	many	JJ	(NP*	_	many	_
+lexical	36	10	speakers	speaker	NNS	*))	_	speakers	_
+lexical	36	11	as	as	IN	(PP*	_	as	_
+lexical	36	12	Esperanto	Esperanto	NNP	(NP*)))	_	Esperanto	_
+lexical	36	13	.	.	.	*))	_	_	_
+
+lexical	37	0	There	there	EX	(ROOT(S(S(NP*)	_	_	_
+lexical	37	1	were	be	VBD	(VP*	_	_	_
+lexical	37	2	other	other	JJ	(NP(NP*	_	_	_
+lexical	37	3	classical	classical	JJ	*	_	_	_
+lexical	37	4	composers	composer	NNS	*)	_	_	_
+lexical	37	5	who	who	WP	(SBAR(WHNP*)	_	_	_
+lexical	37	6	wrote	write	VBD	(S(VP*	_	_	_
+lexical	37	7	Mazurkas	Mazurkas	NNS	(NP*)))))))	_	_	_
+lexical	37	8	,	,	,	*	_	_	_
+lexical	37	9	but	but	CC	*	_	_	_
+lexical	37	10	none	none	NN	(S(NP(NP*)	none	_	_
+lexical	37	11	of	of	IN	(PP*	_	of	_
+lexical	37	12	them	they	PRP	(NP*)))	_	them	_
+lexical	37	13	are	be	VBP	(VP*	_	are	are
+lexical	37	14	as	as	RB	(ADJP*	_	as	_
+lexical	37	15	good	good	JJ	*	_	good	_
+lexical	37	16	as	as	IN	(PP*	_	as	_
+lexical	37	17	those	those	DT	(NP(NP*)	_	those	_
+lexical	37	18	of	of	IN	(PP*	_	of	_
+lexical	37	19	Chopin	Chopin	NNP	(NP*)))))))	_	Chopin	_
+lexical	37	20	.	.	.	*))	_	_	_
+
+lexical	38	0	None	none	NN	(ROOT(S(S(NP(NP*)	None	_	_
+lexical	38	1	of	of	IN	(PP*	_	of	_
+lexical	38	2	the	the	DT	(NP*	_	the	_
+lexical	38	3	mocking	mocking	NN	*)))	_	mocking	_
+lexical	38	4	was	be	VBD	(VP*	_	was	_
+lexical	38	5	serious	serious	JJ	(ADJP*)))	_	serious	serious
+lexical	38	6	,	,	,	*	_	_	_
+lexical	38	7	though	though	RB	(ADVP*)	_	_	_
+lexical	38	8	,	,	,	*	_	_	_
+lexical	38	9	and	and	CC	*	_	_	_
+lexical	38	10	everyone	everyone	NN	(S(NP*)	_	_	_
+lexical	38	11	usually	usually	RB	(ADVP*)	_	_	_
+lexical	38	12	had	have	VBD	(VP*	_	_	_
+lexical	38	13	fun	fun	NN	(NP(NP*)	_	_	_
+lexical	38	14	at	at	IN	(PP*	_	_	_
+lexical	38	15	the	the	DT	(NP*	_	_	_
+lexical	38	16	roasts	roast	NNS	*)))))	_	_	_
+lexical	38	17	.	.	.	*))	_	_	_
+
+lexical	39	0	Even	even	RB	(ROOT(S(SBAR*	_	_	_
+lexical	39	1	though	though	IN	*	_	_	_
+lexical	39	2	everyone	everyone	NN	(S(NP*)	_	_	_
+lexical	39	3	tried	try	VBD	(VP*	_	_	_
+lexical	39	4	to	to	TO	(S(VP*	_	_	_
+lexical	39	5	free	free	VB	(VP*	_	_	_
+lexical	39	6	Hera	Hera	NNP	(NP*)	_	_	_
+lexical	39	7	from	from	IN	(PP*	_	_	_
+lexical	39	8	the	the	DT	(NP*	_	_	_
+lexical	39	9	great	great	JJ	*	_	_	_
+lexical	39	10	trap	trap	NN	*))))))))	_	_	_
+lexical	39	11	,	,	,	*	_	_	_
+lexical	39	12	Hephaestus’	Hephaestus’	JJ	(NP*	_	_	_
+lexical	39	13	design	design	NN	*)	_	_	_
+lexical	39	14	was	be	VBD	(VP*	_	_	_
+lexical	39	15	so	so	RB	(ADJP*	_	_	_
+lexical	39	16	clever	clever	JJ	*)	_	_	_
+lexical	39	17	that	that	IN	(SBAR*	_	_	_
+lexical	39	18	none	none	NN	(S(NP*)	none	_	_
+lexical	39	19	could	could	MD	(VP*	_	could	could
+lexical	39	20	detach	detach	VB	(VP*	_	detach	_
+lexical	39	21	the	the	DT	(NP*	_	the	_
+lexical	39	22	ropes	rope	NNS	*))))))	_	ropes	_
+lexical	39	23	.	.	.	*))	_	_	_
+
+lexical	40	0	The	the	DT	(ROOT(S(S(NP*	_	_	_
+lexical	40	1	rain	rain	NN	*	_	_	_
+lexical	40	2	forest	forest	NN	*)	_	_	_
+lexical	40	3	is	be	VBZ	(VP*	_	_	_
+lexical	40	4	destroyed	destroy	VBN	(VP*)))	_	_	_
+lexical	40	5	and	and	CC	*	_	_	_
+lexical	40	6	nothing	nothing	NN	(S(NP*)	nothing	_	_
+lexical	40	7	can	can	MD	(VP*	_	can	_
+lexical	40	8	be	be	VB	(VP*	_	be	_
+lexical	40	9	done	do	VBN	(VP*	_	done	done
+lexical	40	10	with	with	IN	(PP*	_	with	_
+lexical	40	11	the	the	DT	(NP*	_	the	_
+lexical	40	12	land	land	NN	*))))))	_	land	_
+lexical	40	13	.	.	.	*))	_	_	_
+
+lexical	41	0	The	the	DT	(ROOT(S(NP*	_	The	_
+lexical	41	1	war	war	NN	*)	_	war	_
+lexical	41	2	had	have	VBD	(VP(VP*	_	_	_
+lexical	41	3	destroyed	destroy	VBN	(VP*	_	_	_
+lexical	41	4	their	they	PRP$	(NP*	_	_	_
+lexical	41	5	dreams	dream	NNS	*)))	_	_	_
+lexical	41	6	and	and	CC	*	_	_	_
+lexical	41	7	had	have	VBD	(VP*	_	had	_
+lexical	41	8	given	give	VBN	(VP*	_	given	given
+lexical	41	9	them	they	PRP	(NP*)	_	them	_
+lexical	41	10	nothing	nothing	NN	(NP*	nothing	_	_
+lexical	41	11	to	to	TO	(S(VP*	_	to	_
+lexical	41	12	replace	replace	VB	(VP*	_	replace	_
+lexical	41	13	those	those	DT	(NP*	_	those	_
+lexical	41	14	dreams	dream	NNS	*))))))))	_	dreams	_
+lexical	41	15	.	.	.	*))	_	_	_
+
+lexical	42	0	His	he	PRP$	(ROOT(S(NP*	_	His	_
+lexical	42	1	government	government	NN	*)	_	government	_
+lexical	42	2	was	be	VBD	(VP(VP*	_	_	_
+lexical	42	3	seen	see	VBN	(VP*	_	_	_
+lexical	42	4	to	to	TO	(S(VP*	_	_	_
+lexical	42	5	be	be	VB	(VP*	_	_	_
+lexical	42	6	corrupt	corrupt	JJ	(ADJP*))))))	_	_	_
+lexical	42	7	,	,	,	*	_	_	_
+lexical	42	8	and	and	CC	*	_	_	_
+lexical	42	9	did	do	VBD	(VP*	_	did	did
+lexical	42	10	nothing	nothing	NN	(NP*)	nothing	_	_
+lexical	42	11	about	about	IN	(PP*	_	about	_
+lexical	42	12	an	a	DT	(NP(NP*	_	an	_
+lexical	42	13	increasing	increase	VBG	*	_	increasing	_
+lexical	42	14	rise	rise	NN	*)	_	rise	_
+lexical	42	15	in	in	IN	(PP*	_	in	_
+lexical	42	16	Arab	Arab	JJ	(NP*	_	Arab	_
+lexical	42	17	nationalism	nationalism	NN	*))	_	nationalism	_
+lexical	42	18	which	which	WDT	(SBAR(WHNP*)	_	which	_
+lexical	42	19	had	have	VBD	(S(VP*	_	had	_
+lexical	42	20	brought	bring	VBN	(VP*	_	brought	_
+lexical	42	21	Nasser	Nasser	NNP	(NP(NP*)	_	Nasser	_
+lexical	42	22	to	to	TO	(PP*	_	to	_
+lexical	42	23	power	power	NN	(NP*)))	_	power	_
+lexical	42	24	in	in	IN	(PP*	_	in	_
+lexical	42	25	Egypt	Egypt	NNP	(NP*))	_	Egypt	_
+lexical	42	26	in	in	IN	(PP*	_	in	_
+lexical	42	27	1952	1952	CD	(NP*))))))))))	_	1952	_
+lexical	42	28	.	.	.	*))	_	_	_
+
+lexical	43	0	Nothing	nothing	NN	(ROOT(S(S(NP*)	Nothing	_	_
+lexical	43	1	was	be	VBD	(VP*	_	was	_
+lexical	43	2	changed	change	VBN	(VP*)))	_	changed	_
+lexical	43	3	and	and	CC	*	_	_	_
+lexical	43	4	their	they	PRP$	(S(NP*	_	_	_
+lexical	43	5	resistance	resistance	NN	*)	_	_	_
+lexical	43	6	seemed	seem	VBD	(VP*	_	_	_
+lexical	43	7	to	to	TO	(S(VP*	_	_	_
+lexical	43	8	be	be	VB	(VP*	_	_	_
+lexical	43	9	useless	useless	JJ	(ADJP*))))))	_	_	_
+lexical	43	10	.	.	.	*))	_	_	_
+
+lexical	44	0	If	if	IN	(ROOT(S(SBAR*	_	_	_
+lexical	44	1	the	the	DT	(S(NP*	_	_	_
+lexical	44	2	criminals	criminal	NNS	*)	_	_	_
+lexical	44	3	die	die	VBP	(VP*)))	_	_	_
+lexical	44	4	,	,	,	*	_	_	_
+lexical	44	5	the	the	DT	(NP*	_	the	_
+lexical	44	6	cowboys	cowboy	NNS	*)	_	cowboys	_
+lexical	44	7	get	get	VBP	(VP*	_	get	get
+lexical	44	8	nothing	nothing	NN	(NP*))	nothing	_	_
+lexical	44	9	.	.	.	*))	_	_	_
+
+lexical	45	0	Whedon	Whedon	NNP	(ROOT(S(NP*)	_	_	_
+lexical	45	1	said	say	VBD	(VP*	_	_	_
+lexical	45	2	that	that	IN	(SBAR*	_	_	_
+lexical	45	3	nothing	nothing	NN	(S(NP*)	nothing	_	_
+lexical	45	4	has	have	VBZ	(VP*	_	has	_
+lexical	45	5	changed	change	VBN	(VP*	_	changed	changed
+lexical	45	6	in	in	IN	(PP*	_	in	_
+lexical	45	7	the	the	DT	(NP*	_	the	_
+lexical	45	8	future	future	NN	*)))))))	_	future	_
+lexical	45	9	.	.	.	*))	_	_	_
+
+lexical	46	0	The	the	DT	(ROOT(S(NP*	_	_	_
+lexical	46	1	conspirators	conspirator	NNS	*)	_	_	_
+lexical	46	2	learned	learn	VBD	(VP*	_	_	_
+lexical	46	3	of	of	IN	(PP*	_	_	_
+lexical	46	4	the	the	DT	(NP*	_	_	_
+lexical	46	5	letter	letter	NN	*))	_	_	_
+lexical	46	6	the	the	DT	(NP*	_	_	_
+lexical	46	7	following	following	JJ	*	_	_	_
+lexical	46	8	day	day	NN	*)	_	_	_
+lexical	46	9	,	,	,	(PRN*	_	_	_
+lexical	46	10	but	but	CC	*	_	_	_
+lexical	46	11	decided	decide	VBD	(VP*	_	_	_
+lexical	46	12	to	to	TO	(S(VP*	_	_	_
+lexical	46	13	go	go	VB	(VP*	_	_	_
+lexical	46	14	ahead	ahead	RB	(ADVP*)	_	_	_
+lexical	46	15	with	with	IN	(PP*	_	_	_
+lexical	46	16	their	they	PRP$	(NP*	_	_	_
+lexical	46	17	plan	plan	NN	*))))))	_	_	_
+lexical	46	18	,	,	,	*)	_	_	_
+lexical	46	19	especially	especially	RB	(SBAR*	_	_	_
+lexical	46	20	after	after	IN	*	_	_	_
+lexical	46	21	Fawkes	Fawkes	NNP	(S(NP*)	_	_	_
+lexical	46	22	inspected	inspect	VBD	(VP(VP*	_	_	_
+lexical	46	23	the	the	DT	(NP*	_	_	_
+lexical	46	24	undercroft	undercroft	NN	*))	_	_	_
+lexical	46	25	and	and	CC	*	_	_	_
+lexical	46	26	found	find	VBD	(VP*	_	_	_
+lexical	46	27	that	that	IN	(SBAR*	_	_	_
+lexical	46	28	nothing	nothing	NN	(S(NP*)	nothing	_	_
+lexical	46	29	had	have	VBD	(VP*	_	had	_
+lexical	46	30	been	be	VBN	(VP*	_	been	_
+lexical	46	31	touched	touch	VBN	(VP*))))))))))	_	touched	touched
+lexical	46	32	.	.	.	*))	_	_	_
+
+lexical	47	0	Right	right	RB	(ROOT(S(ADVP*	_	_	_
+lexical	47	1	then	then	RB	*)	_	_	_
+lexical	47	2	,	,	,	*	_	_	_
+lexical	47	3	Gautama	Gautama	NNP	(NP*)	_	_	_
+lexical	47	4	knew	know	VBD	(VP*	_	_	_
+lexical	47	5	that	that	IN	(SBAR*	_	_	_
+lexical	47	6	nothing	nothing	NN	(S(NP*)	nothing	_	_
+lexical	47	7	can	can	MD	(VP*	_	can	can
+lexical	47	8	stop	stop	VB	(VP*	_	stop	_
+lexical	47	9	people	people	NNS	(NP*)	_	people	_
+lexical	47	10	from	from	IN	(PP*	_	from	_
+lexical	47	11	being	be	VBG	(S(VP(VP*	_	being	_
+lexical	47	12	born	bear	VBN	(VP*))	_	born	_
+lexical	47	13	,	,	,	*	_	_	_
+lexical	47	14	becoming	become	VBG	(VP*	_	_	_
+lexical	47	15	old	old	JJ	(ADJP*))	_	_	_
+lexical	47	16	,	,	,	*	_	_	_
+lexical	47	17	getting	get	VBG	(VP*	_	_	_
+lexical	47	18	sick	sick	JJ	(ADJP*))	_	_	_
+lexical	47	19	,	,	,	*	_	_	_
+lexical	47	20	and	and	CC	*	_	_	_
+lexical	47	21	dying	die	VBG	(VP*)))))))))	_	_	_
+lexical	47	22	.	.	.	*))	_	_	_
+
+lexical	48	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_
+lexical	48	1	orbits	orbit	NNS	*)	_	_	_
+lexical	48	2	of	of	IN	(PP*	_	_	_
+lexical	48	3	the	the	DT	(NP*	_	_	_
+lexical	48	4	planets	planet	NNS	*)))	_	_	_
+lexical	48	5	are	be	VBP	(VP*	_	_	_
+lexical	48	6	ellipses	ellipses	JJ	(ADJP*)	_	_	_
+lexical	48	7	,	,	,	*	_	_	_
+lexical	48	8	with	with	IN	(PP*	_	_	_
+lexical	48	9	the	the	DT	(NP(NP(NP*	_	_	_
+lexical	48	10	sun	sun	NN	*)	_	_	_
+lexical	48	11	at	at	IN	(PP*	_	_	_
+lexical	48	12	one	one	CD	(NP*	_	_	_
+lexical	48	13	focus	focus	NN	*)))	_	_	_
+lexical	48	14	and	and	CC	*	_	_	_
+lexical	48	15	nothing	nothing	NN	(NP(NP*)	nothing	_	_
+lexical	48	16	at	at	IN	(PP*	_	at	_
+lexical	48	17	the	the	DT	(NP*	_	the	_
+lexical	48	18	other	other	JJ	*))))))	_	other	_
+lexical	48	19	.	.	.	*))	_	_	_
+
+lexical	49	0	Some	some	DT	(ROOT(S(NP(NP*	_	_	_
+lexical	49	1	people	people	NNS	*)	_	_	_
+lexical	49	2	in	in	IN	(PP*	_	_	_
+lexical	49	3	government	government	NN	(NP*)))	_	_	_
+lexical	49	4	think	think	VBP	(VP*	_	_	_
+lexical	49	5	nothing	nothing	NN	(SBAR(S(NP*)	nothing	_	_
+lexical	49	6	should	should	MD	(VP*	_	should	_
+lexical	49	7	change	change	VB	(VP*)))))	_	change	_
+lexical	49	8	.	.	.	*))	_	_	_
+
+lexical	50	0	If	if	IN	(ROOT(S(S(SBAR*	_	_	_
+lexical	50	1	nothing	nothing	NN	(S(NP*)	nothing	_	_
+lexical	50	2	stops	stop	VBZ	(VP*	_	stops	_
+lexical	50	3	the	the	DT	(NP(NP*	_	the	_
+lexical	50	4	sound	sound	NN	*	_	sound	_
+lexical	50	5	and	and	CC	*	_	and	_
+lexical	50	6	electricity	electricity	NN	*)	_	electricity	_
+lexical	50	7	in	in	IN	(PP*	_	in	_
+lexical	50	8	the	the	DT	(NP(NP*	_	the	_
+lexical	50	9	loop	loop	NN	*)	_	loop	_
+lexical	50	10	,	,	,	(PRN*	_	_	_
+lexical	50	11	it	it	PRP	(S(NP*)	_	_	_
+lexical	50	12	will	will	MD	(VP*	_	_	_
+lexical	50	13	travel	travel	VB	(VP*	_	_	_
+lexical	50	14	faster	faster	RBR	(ADVP(ADVP*)	_	_	_
+lexical	50	15	and	and	CC	*	_	_	_
+lexical	50	16	faster	faster	RBR	(ADVP*)))))	_	_	_
+lexical	50	17	,	,	,	*)	_	_	_
+lexical	50	18	which	which	WDT	(SBAR(WHNP*)	_	_	_
+lexical	50	19	is	be	VBZ	(S(VP*	_	_	_
+lexical	50	20	why	why	WRB	(SBAR(WHADVP*)	_	_	_
+lexical	50	21	feedback	feedback	NN	(S(NP*)	_	_	_
+lexical	50	22	starts	start	VBZ	(VP(VP*	_	_	_
+lexical	50	23	out	out	RP	(PRT*)	_	_	_
+lexical	50	24	as	as	IN	(PP*	_	_	_
+lexical	50	25	a	a	DT	(NP*	_	_	_
+lexical	50	26	low	low	JJ	*	_	_	_
+lexical	50	27	hum	hum	NN	*)))	_	_	_
+lexical	50	28	and	and	CC	*	_	_	_
+lexical	50	29	turns	turn	VBZ	(VP*	_	_	_
+lexical	50	30	into	into	IN	(PP*	_	_	_
+lexical	50	31	a	a	DT	(NP*	_	_	_
+lexical	50	32	high	high	JJ	*	_	_	_
+lexical	50	33	squeal	squeal	NN	*)))))))))))))))	_	_	_
+lexical	50	34	very	very	RB	(ADVP*	_	_	_
+lexical	50	35	quickly	quickly	RB	*)	_	_	_
+lexical	50	36	This	this	DT	(NP*)	_	_	_
+lexical	50	37	is	be	VBZ	(VP*	_	_	_
+lexical	50	38	an	a	DT	(NP(NP*	_	_	_
+lexical	50	39	example	example	NN	*)	_	_	_
+lexical	50	40	of	of	IN	(PP*	_	_	_
+lexical	50	41	a	a	DT	(NP*	_	_	_
+lexical	50	42	positive	positive	JJ	*	_	_	_
+lexical	50	43	feedback	feedback	NN	*	_	_	_
+lexical	50	44	loop	loop	NN	*)))))	_	_	_
+lexical	50	45	:	:	:	*	_	_	_
+lexical	50	46	the	the	DT	(S(NP*	_	_	_
+lexical	50	47	output	output	NN	*)	_	_	_
+lexical	50	48	reinforces	reinforce	VBZ	(VP*	_	_	_
+lexical	50	49	the	the	DT	(NP*	_	_	_
+lexical	50	50	input	input	NN	*)))	_	_	_
+lexical	50	51	;	;	:	*	_	_	_
+lexical	50	52	it	it	PRP	(S(NP*)	_	_	_
+lexical	50	53	makes	make	VBZ	(VP*	_	_	_
+lexical	50	54	the	the	DT	(S(NP*	_	_	_
+lexical	50	55	input	input	NN	*)	_	_	_
+lexical	50	56	stronger	stronger	JJR	(ADJP*))))	_	_	_
+lexical	50	57	.	.	.	*))	_	_	_
+
+lexical	51	0	Aboriginal	aboriginal	JJ	(ROOT(S(NP(NP*	_	Aboriginal	_
+lexical	51	1	speakers	speaker	NNS	*)	_	speakers	_
+lexical	51	2	of	of	IN	(PP*	_	of	_
+lexical	51	3	these	these	DT	(NP*	_	these	_
+lexical	51	4	languages	language	NNS	*)))	_	languages	_
+lexical	51	5	usually	usually	RB	(ADVP*)	_	usually	_
+lexical	51	6	fail	fail	VBP	(VP*	fail	_	_
+lexical	51	7	to	to	TO	(S(VP*	_	to	_
+lexical	51	8	inflex	inflex	VB	(VP*	_	inflex	inflex
+lexical	51	9	English	English	JJ	(NP*	_	English	_
+lexical	51	10	nouns	noun	NNS	*)	_	nouns	_
+lexical	51	11	into	into	IN	(PP*	_	into	_
+lexical	51	12	their	they	PRP$	(NP*	_	their	_
+lexical	51	13	plural	plural	NN	*	_	plural	_
+lexical	51	14	forms	form	NNS	*))	_	forms	_
+lexical	51	15	so	so	IN	(SBAR*	_	_	_
+lexical	51	16	they	they	PRP	(S(NP*)	_	_	_
+lexical	51	17	make	make	VBP	(VP*	_	_	_
+lexical	51	18	sense	sense	NN	(SBAR(S(NP*	_	_	_
+lexical	51	19	afterall	afterall	NN	*)	_	_	_
+lexical	51	20	does	do	VBZ	(VP*	_	_	_
+lexical	51	21	n't	not	RB	*	_	_	_
+lexical	51	22	it	it	PRP	(NP*)))))))))))	_	_	_
+lexical	51	23	?	?	.	*))	_	_	_
+
+lexical	52	0	In	in	IN	(ROOT(S(PP*	_	_	_
+lexical	52	1	his	he	PRP$	(NP*	_	_	_
+lexical	52	2	``	``	``	*	_	_	_
+lexical	52	3	Philosophical	philosophical	JJ	*	_	_	_
+lexical	52	4	Investigations	investigation	NNS	*	_	_	_
+lexical	52	5	''	''	''	*))	_	_	_
+lexical	52	6	,	,	,	(PRN*	_	_	_
+lexical	52	7	Wittgenstein	Wittgenstein	NNP	(S(NP*)	_	_	_
+lexical	52	8	demonstrated	demonstrate	VBD	(VP*	_	_	_
+lexical	52	9	that	that	IN	(SBAR*	_	_	_
+lexical	52	10	the	the	DT	(S(NP*	_	the	_
+lexical	52	11	elements	element	NNS	*)	_	elements	_
+lexical	52	12	(	(	NN	(NN*)	_	(	_
+lexical	52	13	parts	part	NNS	(VP(VBZ(NP(NP*)))	_	parts	_
+lexical	52	14	)	)	NN	(NN*)	_	)	_
+lexical	52	15	of	of	IN	(NNS(PP*	_	of	_
+lexical	52	16	games	game	NNS	(NP*))	_	games	_
+lexical	52	17	,	,	,	*	_	,	_
+lexical	52	18	such	such	JJ	(PP*	_	such	_
+lexical	52	19	as	as	IN	*	_	as	_
+lexical	52	20	play	play	NN	(NP(NP*)	_	play	_
+lexical	52	21	,	,	,	*	_	,	_
+lexical	52	22	rules	rule	NNS	(NP*)	_	rules	_
+lexical	52	23	,	,	,	*	_	,	_
+lexical	52	24	and	and	CC	*	_	and	_
+lexical	52	25	competition	competition	NN	(NP*)))))))))	_	competition	_
+lexical	52	26	,	,	,	*)	_	,	_
+lexical	52	27	all	all	DT	(NP*)	_	all	_
+lexical	52	28	fail	fail	VBP	(VP*	fail	_	_
+lexical	52	29	to	to	TO	(S(VP*	_	to	_
+lexical	52	30	correctly	correctly	RB	(VP(ADVP*)	_	correctly	_
+lexical	52	31	define	define	VB	*	_	define	define
+lexical	52	32	what	what	WP	(SBAR(WHNP*)	_	what	_
+lexical	52	33	games	game	NNS	(S(NP*)	_	games	_
+lexical	52	34	are	be	VBP	(VP*)))))))	_	are	_
+lexical	52	35	.	.	.	*))	_	_	_
+
+lexical	53	0	Applications	application	NNS	(ROOT(S(NP(NP*)	_	Applications	_	_	_	_
+lexical	53	1	that	that	WDT	(SBAR(WHNP*)	_	that	_	_	_	_
+lexical	53	2	depend	depend	VBP	(S(VP*	_	depend	_	_	_	_
+lexical	53	3	on	on	IN	(PP*	_	on	_	_	_	_
+lexical	53	4	libraries	library	NNS	(NP(NP*)	_	libraries	_	_	_	_
+lexical	53	5	installed	install	VBN	(VP*	_	installed	_	_	_	_
+lexical	53	6	by	by	IN	(PP*	_	by	_	_	_	_
+lexical	53	7	IE	IE	NNP	(NP*)))))))))	_	IE	_	_	_	_
+lexical	53	8	will	will	MD	(VP*	_	will	_	_	_	_
+lexical	53	9	fail	fail	VB	(VP*	fail	_	_	_	_	_
+lexical	53	10	to	to	TO	(S(VP*	_	to	_	_	_	_
+lexical	53	11	function	function	VB	(VP(VP*)	_	function	_	_	_	_
+lexical	53	12	,	,	,	*	_	_	_	_	_	_
+lexical	53	13	or	or	CC	*	_	_	_	_	_	_
+lexical	53	14	have	have	VB	(VP*	_	_	_	_	_	_
+lexical	53	15	unexpected	unexpected	JJ	(NP*	_	_	_	un	expected	expected
+lexical	53	16	behaviors	behavior	NNS	*)))))))	_	_	_	_	behaviors	_
+lexical	53	17	.	.	.	*))	_	_	_	_	_	_
+
+lexical	54	0	Once	Once	IN	(ROOT(S(SBAR*	_	_	_
+lexical	54	1	set	set	VBD	(S(VP*)))	_	_	_
+lexical	54	2	,	,	,	*	_	_	_
+lexical	54	3	the	the	DT	(NP*	_	the	_
+lexical	54	4	anchor	anchor	NN	*)	_	anchor	_
+lexical	54	5	can	can	MD	(VP*	_	_	_
+lexical	54	6	come	come	VB	(VP(VP*	_	_	_
+lexical	54	7	free	free	JJ	(ADJP*))	_	_	_
+lexical	54	8	and	and	CC	*	_	_	_
+lexical	54	9	fail	fail	VB	(VP*	fail	_	_
+lexical	54	10	to	to	TO	(S(VP*	_	to	_
+lexical	54	11	``	``	``	(VP*	_	``	_
+lexical	54	12	reset	reset	VB	*	_	reset	reset
+lexical	54	13	''	''	''	*	_	''	_
+lexical	54	14	on	on	IN	(PP*	_	on	_
+lexical	54	15	its	its	PRP$	(NP*	_	its	_
+lexical	54	16	own	own	JJ	*))))))))	_	own	_
+lexical	54	17	.	.	.	*))	_	_	_
+
+lexical	55	0	In	in	IN	(ROOT(S(S(PP*	_	In	_
+lexical	55	1	the	the	DT	(NP*	_	the	_
+lexical	55	2	female	female	JJ	*	_	female	_
+lexical	55	3	fig	fig	NN	*	_	fig	_
+lexical	55	4	trees	tree	NNS	*))	_	trees	_
+lexical	55	5	,	,	,	*	_	,	_
+lexical	55	6	the	the	DT	(NP*	_	the	_
+lexical	55	7	male	male	JJ	*	_	male	_
+lexical	55	8	flower	flower	NN	*	_	flower	_
+lexical	55	9	parts	part	NNS	*)	_	parts	_
+lexical	55	10	fail	fail	VBP	(VP*	fail	_	_
+lexical	55	11	to	to	TO	(S(VP*	_	to	_
+lexical	55	12	develop	develop	VB	(VP*)))))	_	develop	develop
+lexical	55	13	;	;	:	*	_	_	_
+lexical	55	14	they	they	PRP	(S(NP*)	_	_	_
+lexical	55	15	produce	produce	VBP	(VP*	_	_	_
+lexical	55	16	the	the	DT	(NP*	_	_	_
+lexical	55	17	``	``	``	*	_	_	_
+lexical	55	18	edible	edible	JJ	*	_	_	_
+lexical	55	19	figs	figs	NN	*	_	_	_
+lexical	55	20	''	''	''	*)))	_	_	_
+lexical	55	21	.	.	.	*))	_	_	_
+
+lexical	56	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+lexical	56	1	federal	federal	JJ	*	_	federal	_
+lexical	56	2	government	government	NN	*)	_	government	_
+lexical	56	3	and	and	CC	*	_	and	_
+lexical	56	4	many	many	JJ	(NP*	_	many	_
+lexical	56	5	states	state	NNS	*))	_	states	_
+lexical	56	6	fail	fail	VBP	(VP*	fail	_	_
+lexical	56	7	to	to	TO	(S(VP*	_	to	_
+lexical	56	8	increase	increase	VB	(VP*	_	increase	increase
+lexical	56	9	their	they	PRP$	(NP*	_	their	_
+lexical	56	10	gasoline	gasoline	NN	*	_	gasoline	_
+lexical	56	11	taxes	tax	NNS	*)	_	taxes	_
+lexical	56	12	over	over	IN	(PP*	_	over	_
+lexical	56	13	time	time	NN	(NP(NP*)	_	time	_
+lexical	56	14	with	with	IN	(PP*	_	with	_
+lexical	56	15	inflation	inflation	NN	(NP*))))))))	_	inflation	_
+lexical	56	16	.	.	.	*))	_	_	_
+
+lexical	57	0	Because	because	IN	(ROOT(S(S(SBAR*	_	_	_
+lexical	57	1	the	the	DT	(S(NP*	_	_	_
+lexical	57	2	four	four	CD	*	_	_	_
+lexical	57	3	color	color	NN	*	_	_	_
+lexical	57	4	theorem	theorem	NN	*)	_	_	_
+lexical	57	5	is	be	VBZ	(VP*	_	_	_
+lexical	57	6	true	true	JJ	(ADJP*))))	_	_	_
+lexical	57	7	,	,	,	*	_	_	_
+lexical	57	8	this	this	DT	(NP*)	_	_	_
+lexical	57	9	is	be	VBZ	(VP*	_	_	_
+lexical	57	10	always	always	RB	(ADVP*)	_	_	_
+lexical	57	11	possible	possible	JJ	(ADJP*)))	_	_	_
+lexical	57	12	;	;	:	*	_	_	_
+lexical	57	13	however	however	RB	(S(ADVP*)	_	_	_
+lexical	57	14	,	,	,	*	_	_	_
+lexical	57	15	because	because	IN	(SBAR*	_	_	_
+lexical	57	16	the	the	DT	(S(NP(NP*	_	_	_
+lexical	57	17	person	person	NN	*)	_	_	_
+lexical	57	18	drawing	draw	VBG	(VP*	_	_	_
+lexical	57	19	the	the	DT	(NP*	_	_	_
+lexical	57	20	map	map	NN	*)))	_	_	_
+lexical	57	21	is	be	VBZ	(VP*	_	_	_
+lexical	57	22	focused	focus	VBN	(VP*	_	_	_
+lexical	57	23	on	on	IN	(PP*	_	_	_
+lexical	57	24	the	the	DT	(NP*	_	_	_
+lexical	57	25	one	one	CD	*	_	_	_
+lexical	57	26	large	large	JJ	*	_	_	_
+lexical	57	27	region	region	NN	*))))))	_	_	_
+lexical	57	28	,	,	,	*	_	_	_
+lexical	57	29	they	they	PRP	(NP*)	_	they	_
+lexical	57	30	fail	fail	VBP	(VP*	fail	_	_
+lexical	57	31	to	to	TO	(S(VP*	_	to	_
+lexical	57	32	notice	notice	VB	(VP*	_	notice	notice
+lexical	57	33	that	that	IN	(SBAR*	_	that	_
+lexical	57	34	the	the	DT	(S(NP*	_	the	_
+lexical	57	35	remaining	remain	VBG	*	_	remaining	_
+lexical	57	36	regions	region	NNS	*)	_	regions	_
+lexical	57	37	can	can	MD	(VP*	_	can	_
+lexical	57	38	in	in	IN	(ADVP*	_	in	_
+lexical	57	39	fact	fact	NN	*)	_	fact	_
+lexical	57	40	be	be	VB	(VP*	_	be	_
+lexical	57	41	colored	color	VBN	(VP*	_	colored	_
+lexical	57	42	with	with	IN	(PP*	_	with	_
+lexical	57	43	three	three	CD	(NP*	_	three	_
+lexical	57	44	colors	color	NNS	*))))))))))))	_	colors	_
+lexical	57	45	.	.	.	*))	_	_	_
+
+lexical	58	0	Multicellular	multicellular	JJ	(ROOT(S(NP(NP*	_	_	_
+lexical	58	1	organisms	organism	NNS	*)	_	_	_
+lexical	58	2	,	,	,	*	_	_	_
+lexical	58	3	especially	especially	RB	(NP*	_	_	_
+lexical	58	4	long-living	long-living	JJ	*	_	_	_
+lexical	58	5	animals	animal	NNS	*)	_	_	_
+lexical	58	6	,	,	,	*)	_	_	_
+lexical	58	7	also	also	RB	(ADVP*)	_	_	_
+lexical	58	8	face	face	VBP	(VP*	_	_	_
+lexical	58	9	the	the	DT	(NP(NP*	_	_	_
+lexical	58	10	challenge	challenge	NN	*)	_	_	_
+lexical	58	11	of	of	IN	(PP*	_	_	_
+lexical	58	12	cancer	cancer	NN	(NP(NP*)	_	_	_
+lexical	58	13	,	,	,	*	_	_	_
+lexical	58	14	which	which	WDT	(SBAR(WHNP*)	_	_	_
+lexical	58	15	occurs	occur	VBZ	(S(VP*	_	_	_
+lexical	58	16	when	when	WRB	(SBAR(WHADVP*)	_	when	_
+lexical	58	17	cells	cell	NNS	(S(NP*)	_	cells	_
+lexical	58	18	fail	fail	VBP	(VP*	fail	_	_
+lexical	58	19	to	to	TO	(S(VP*	_	to	_
+lexical	58	20	regulate	regulate	VB	(VP*	_	regulate	regulate
+lexical	58	21	their	they	PRP$	(NP*	_	their	_
+lexical	58	22	growth	growth	NN	*)	_	growth	_
+lexical	58	23	within	within	IN	(PP*	_	within	_
+lexical	58	24	the	the	DT	(NP(NP*	_	the	_
+lexical	58	25	normal	normal	JJ	*	_	normal	_
+lexical	58	26	program	program	NN	*)	_	program	_
+lexical	58	27	of	of	IN	(PP*	_	of	_
+lexical	58	28	development	development	NN	(NP*)))))))))))))))))	_	development	_
+lexical	58	29	.	.	.	*))	_	_	_
+
+lexical	59	0	During	during	IN	(ROOT(S(PP*	_	During	_
+lexical	59	1	the	the	DT	(NP*	_	the	_
+lexical	59	2	season	season	NN	*))	_	season	_
+lexical	59	3	,	,	,	*	_	,	_
+lexical	59	4	the	the	DT	(NP*	_	the	_
+lexical	59	5	Winx	Winx	NNP	*	_	Winx	_
+lexical	59	6	girls	girl	NNS	*	_	girls	_
+lexical	59	7	and	and	CC	*	and	_	_
+lexical	59	8	Specialists	specialist	NNS	*)	_	Specialists	_
+lexical	59	9	try	try	VBP	(VP(VP*)	_	_	_
+lexical	59	10	and	and	CC	*	_	_	_
+lexical	59	11	fail	fail	VBP	(VP*	fail	_	_
+lexical	59	12	to	to	TO	(S(VP*	_	to	_
+lexical	59	13	protect	protect	VB	(VP*	_	protect	protect
+lexical	59	14	the	the	DT	(NP(NP*	_	the	_
+lexical	59	15	four	four	CD	*	_	four	_
+lexical	59	16	pieces	piece	NNS	*)	_	pieces	_
+lexical	59	17	of	of	IN	(PP*	_	of	_
+lexical	59	18	the	the	DT	(NP*	_	the	_
+lexical	59	19	Codex	Codex	NNP	*))))))))	_	Codex	_
+lexical	59	20	.	.	.	*))	_	_	_
+
+lexical	60	0	Pluto	Pluto	NNP	(ROOT(S(NP*)	_	_	_
+lexical	60	1	taught	teach	VBD	(VP*	_	_	_
+lexical	60	2	many	many	JJ	(NP(NP*	_	_	_
+lexical	60	3	kids	kid	NNS	*	_	_	_
+lexical	60	4	lessons	lesson	NNS	*)	_	_	_
+lexical	60	5	such	such	JJ	(PP*	_	_	_
+lexical	60	6	as	as	IN	*	_	_	_
+lexical	60	7	sharing	sharing	NN	(NP*)))	_	_	_
+lexical	60	8	,	,	,	*	_	_	_
+lexical	60	9	not	not	RB	(S*	not	_	_
+lexical	60	10	to	to	TO	(VP*	_	to	_
+lexical	60	11	have	have	VB	(VP*	_	love	love
+lexical	60	12	jealousy	jealousy	NN	(NP(NP*)	_	jealousy	_
+lexical	60	13	,	,	,	*	_	_	_
+lexical	60	14	and	and	CC	*	_	_	_
+lexical	60	15	many	many	JJ	(NP*	_	_	_
+lexical	60	16	others	other	NNS	*))))))	_	_	_
+lexical	60	17	.	.	.	*))	_	_	_
+
+lexical	61	0	Also	also	RB	(ROOT(S(ADVP*)	_	_	_
+lexical	61	1	,	,	,	*	_	_	_
+lexical	61	2	he	he	PRP	(NP*)	_	_	_
+lexical	61	3	moved	move	VBD	(VP*	_	_	_
+lexical	61	4	Stalin	Stalin	NNP	(NP(NP*	_	_	_
+lexical	61	5	's	's	POS	*)	_	_	_
+lexical	61	6	grave	grave	NN	*)	_	_	_
+lexical	61	7	to	to	TO	(PP*	_	_	_
+lexical	61	8	a	a	DT	(NP*	_	_	_
+lexical	61	9	place	place	NN	*))	_	_	_
+lexical	61	10	where	where	WRB	(SBAR(WHADVP*)	_	where	_
+lexical	61	11	people	people	NNS	(S(NP*)	_	people	_
+lexical	61	12	could	could	MD	(VP*	_	could	could
+lexical	61	13	not	not	RB	*	not	_	_
+lexical	61	14	see	see	VB	(VP*	_	see	_
+lexical	61	15	it	it	PRP	(NP*))))))	_	it	_
+lexical	61	16	.	.	.	*))	_	_	_
+
+lexical	62	0	People	people	NNS	(ROOT(S(S(NP(NP*)	_	_	_
+lexical	62	1	who	who	WP	(SBAR(WHNP*)	_	_	_
+lexical	62	2	can	can	MD	(S(VP*	_	_	_
+lexical	62	3	read	read	VB	(VP*	_	_	_
+lexical	62	4	and	and	CC	*	_	_	_
+lexical	62	5	write	write	VB	*)))))	_	_	_
+lexical	62	6	are	be	VBP	(VP*	_	_	_
+lexical	62	7	called	call	VBN	(VP*	_	_	_
+lexical	62	8	``	``	``	(S(ADJP*	_	_	_
+lexical	62	9	literate	literate	JJ	*	_	_	_
+lexical	62	10	''	''	''	*)))))	_	_	_
+lexical	62	11	;	;	:	*	_	_	_
+lexical	62	12	those	those	DT	(S(NP(NP*)	_	_	_
+lexical	62	13	who	who	WP	(SBAR(WHNP*)	_	who	_
+lexical	62	14	can	can	MD	(S(VP*	_	can	_
+lexical	62	15	not	not	RB	*))))	not	_	_
+lexical	62	16	are	be	VBP	(VP*	_	_	_
+lexical	62	17	called	call	VBN	(VP*	_	_	_
+lexical	62	18	``	``	``	(S(ADJP*	_	_	_
+lexical	62	19	illiterate	illiterate	JJ	*	_	_	_
+lexical	62	20	''	''	''	*)))))	_	_	_
+lexical	62	21	.	.	.	*))	_	_	_
+
+lexical	63	0	He	he	PRP	(ROOT(S(NP*)	_	_	_
+lexical	63	1	was	be	VBD	(VP*	_	_	_
+lexical	63	2	allowed	allow	VBN	(VP*	_	_	_
+lexical	63	3	to	to	TO	(S(VP*	_	_	_
+lexical	63	4	marry	marry	VB	(VP*	_	_	_
+lexical	63	5	Natalia	Natalia	NNP	(NP*)	_	_	_
+lexical	63	6	after	after	IN	(PP*	_	_	_
+lexical	63	7	years	year	NNS	(NP(NP*)	_	_	_
+lexical	63	8	of	of	IN	(PP*	_	_	_
+lexical	63	9	engagement	engagement	NN	(NP*))	_	_	_
+lexical	63	10	during	during	IN	(SBAR(WHPP*	_	_	_
+lexical	63	11	which	which	WDT	(WHNP*))	_	_	_
+lexical	63	12	the	the	DT	(S(NP*	_	the	_
+lexical	63	13	Russian	Russian	NNP	*	_	Russian	_
+lexical	63	14	Orthodox	Orthodox	NNP	*	_	Orthodox	_
+lexical	63	15	Church	Church	NNP	*)	_	Church	_
+lexical	63	16	did	do	VBD	(VP*	_	did	_
+lexical	63	17	not	not	RB	*	not	_	_
+lexical	63	18	want	want	VB	(VP*	_	want	want
+lexical	63	19	them	they	PRP	(S(NP*)	_	them	_
+lexical	63	20	to	to	TO	(VP*	_	to	_
+lexical	63	21	be	be	VB	(VP*	_	be	_
+lexical	63	22	married	marry	VBN	(VP*)))))))))))))))	_	married	_
+lexical	63	23	.	.	.	*))	_	_	_
+
+lexical	64	0	The	the	DT	(ROOT(S(S(NP*	_	_	_
+lexical	64	1	change	change	NN	*)	_	_	_
+lexical	64	2	may	may	MD	(VP*	_	_	_
+lexical	64	3	have	have	VB	(VP*	_	_	_
+lexical	64	4	been	be	VBN	(VP*	_	_	_
+lexical	64	5	made	make	VBN	(VP*	_	_	_
+lexical	64	6	to	to	TO	(S(VP*	_	_	_
+lexical	64	7	appease	appease	VB	(VP*	_	_	_
+lexical	64	8	Catholics	Catholics	NNPS	(NP(NP*)	_	_	_
+lexical	64	9	who	who	WP	(SBAR(WHNP*)	_	who	_
+lexical	64	10	could	could	MD	(S(VP*	_	could	could
+lexical	64	11	not	not	RB	*	not	_	_
+lexical	64	12	accept	accept	VB	(VP*	_	accept	_
+lexical	64	13	the	the	DT	(NP*	_	the	_
+lexical	64	14	monarch	monarch	NN	*)	_	monarch	_
+lexical	64	15	as	as	IN	(PP*	_	as	_
+lexical	64	16	``	``	``	*	_	``	_
+lexical	64	17	Head	Head	NNP	(NP(NP*)	_	Head	_
+lexical	64	18	of	of	IN	(PP*	_	of	_
+lexical	64	19	the	the	DT	(NP*	_	the	_
+lexical	64	20	Church	Church	NNP	*)))	_	Church	_
+lexical	64	21	''	''	''	*)	_	''	_
+lexical	64	22	,	,	,	*	_	_	_
+lexical	64	23	seeing	see	VBG	(S(VP*	_	_	_
+lexical	64	24	the	the	DT	(NP*	_	_	_
+lexical	64	25	church	church	NN	*)	_	_	_
+lexical	64	26	as	as	IN	(PP*	_	_	_
+lexical	64	27	the	the	DT	(NP(NP*	_	_	_
+lexical	64	28	Pope	Pope	NNP	*	_	_	_
+lexical	64	29	's	's	POS	*)	_	_	_
+lexical	64	30	domain	domain	NN	*)))))))))))))))))	_	_	_
+lexical	64	31	,	,	,	*	_	_	_
+lexical	64	32	or	or	CC	*	_	_	_
+lexical	64	33	it	it	PRP	(S(NP*)	_	_	_
+lexical	64	34	may	may	MD	(VP*	_	_	_
+lexical	64	35	have	have	VB	(VP*	_	_	_
+lexical	64	36	been	be	VBN	(VP*	_	_	_
+lexical	64	37	made	make	VBN	(VP*	_	_	_
+lexical	64	38	because	because	IN	(SBAR*	_	_	_
+lexical	64	39	Elizabeth	Elizabeth	NNP	(S(NP*)	_	_	_
+lexical	64	40	was	be	VBD	(VP*	_	_	_
+lexical	64	41	a	a	DT	(NP*	_	_	_
+lexical	64	42	woman	woman	NN	*)))))))))	_	_	_
+lexical	64	43	.	.	.	*))	_	_	_
+
+lexical	65	0	Another	another	DT	(ROOT(S(NP*	_	_	_
+lexical	65	1	change	change	NN	*)	_	_	_
+lexical	65	2	is	be	VBZ	(VP*	_	_	_
+lexical	65	3	that	that	IN	(SBAR*	_	_	_
+lexical	65	4	some	some	DT	(S(NP*	_	some	_
+lexical	65	5	new	new	JJ	*	_	new	_
+lexical	65	6	letters	letter	NNS	*)	_	letters	_
+lexical	65	7	were	be	VBD	(VP*	_	were	_
+lexical	65	8	invented	invent	VBN	(VP*	_	invented	invented
+lexical	65	9	for	for	IN	(PP(PP*	_	_	_
+lexical	65	10	sounds	sound	NNS	(NP(NP*)	_	_	_
+lexical	65	11	in	in	IN	(PP*	_	_	_
+lexical	65	12	Greek	greek	JJ	(NP*))))	_	_	_
+lexical	65	13	but	but	CC	(CONJP*	_	_	_
+lexical	65	14	not	not	RB	*)	not	_	_
+lexical	65	15	in	in	IN	(PP*	_	in	_
+lexical	65	16	the	the	DT	(NP*	_	the	_
+lexical	65	17	Phoenician	Phoenician	NNP	*	_	Phoenician	_
+lexical	65	18	language	language	NN	*))))))))	_	language	_
+lexical	65	19	.	.	.	*))	_	_	_
+
+lexical	66	0	Nudity	Nudity	NNP	(ROOT(S(S(NP(NP*)	_	_	_
+lexical	66	1	in	in	IN	(PP*	_	_	_
+lexical	66	2	public	public	JJ	(NP*	_	_	_
+lexical	66	3	places	place	NNS	*)))	_	_	_
+lexical	66	4	is	be	VBZ	(VP*	_	_	_
+lexical	66	5	rare	rare	JJ	(ADJP*)))	_	_	_
+lexical	66	6	,	,	,	*	_	_	_
+lexical	66	7	and	and	CC	*	_	_	_
+lexical	66	8	people	people	NNS	(S(NP*)	_	people	_
+lexical	66	9	generally	generally	RB	(ADVP*)	_	generally	_
+lexical	66	10	do	do	VBP	(VP*	_	do	_
+lexical	66	11	not	not	RB	*	not	_	_
+lexical	66	12	expect	expect	VB	(VP*	_	expect	expect
+lexical	66	13	it	it	PRP	(NP*))))	_	it	_
+lexical	66	14	.	.	.	*))	_	_	_
+
+lexical	67	0	A	a	DT	(ROOT(S(NP*	_	_	_
+lexical	67	1	glacier	glacier	NN	*)	_	_	_
+lexical	67	2	forms	forms	VBZ	(VP*	_	_	_
+lexical	67	3	because	because	IN	(SBAR*	_	_	_
+lexical	67	4	the	the	DT	(S(NP(NP*	_	the	_
+lexical	67	5	snow	snow	NN	*)	_	snow	_
+lexical	67	6	in	in	IN	(PP*	_	in	_
+lexical	67	7	an	a	DT	(NP*	_	an	_
+lexical	67	8	area	area	NN	*)))	_	area	_
+lexical	67	9	does	do	VBZ	(VP*	_	does	_
+lexical	67	10	not	not	RB	*	not	_	_
+lexical	67	11	all	all	DT	(ADVP*)	_	all	_
+lexical	67	12	melt	melt	VB	(VP*	_	melt	melt
+lexical	67	13	in	in	IN	(PP*	_	in	_
+lexical	67	14	summer	summer	NN	(NP*)))))))	_	summer	_
+lexical	67	15	.	.	.	*))	_	_	_
+
+lexical	68	0	In	in	IN	(ROOT(S(S(PP*	_	In	_
+lexical	68	1	Europe	Europe	NNP	(NP*))	_	Europe	_
+lexical	68	2	this	this	DT	(NP*	_	this	_
+lexical	68	3	cheese	cheese	NN	*)	_	cheese	_
+lexical	68	4	is	be	VBZ	(VP*	_	is	_
+lexical	68	5	usually	usually	RB	(ADVP*)	_	usually	_
+lexical	68	6	not	not	RB	*	not	_	_
+lexical	68	7	treated	treated	VBG	(VP*	_	treated	treated
+lexical	68	8	chemically	chemically	RB	(ADVP*))))	_	chemically	_
+lexical	68	9	,	,	,	*	_	_	_
+lexical	68	10	so	so	IN	*	_	_	_
+lexical	68	11	it	it	PRP	(S(NP*)	_	_	_
+lexical	68	12	might	might	MD	(VP*	_	_	_
+lexical	68	13	change	change	VB	(VP*	_	_	_
+lexical	68	14	in	in	IN	(PP*	_	_	_
+lexical	68	15	consistency	consistency	NN	(NP*	_	_	_
+lexical	68	16	or	or	CC	*	_	_	_
+lexical	68	17	color	color	NN	*)))))	_	_	_
+lexical	68	18	.	.	.	*))	_	_	_
+
+lexical	69	0	``	``	``	(ROOT(S*	_	_	_
+lexical	69	1	An	a	DT	(S(NP*	_	_	_
+lexical	69	2	harm	harm	NN	*	_	_	_
+lexical	69	3	ye	ye	NN	*	_	_	_
+lexical	69	4	none	none	NN	*)	_	_	_
+lexical	69	5	,	,	,	*	_	_	_
+lexical	69	6	do	do	VB	(S(VP*	_	_	_
+lexical	69	7	what	what	WP	(SBAR(WHNP*)	_	_	_
+lexical	69	8	ye	ye	PRP	(S(NP*)	_	_	_
+lexical	69	9	will	will	MD	(VP*)))))	_	_	_
+lexical	69	10	''	''	''	*	_	_	_
+lexical	69	11	is	be	VBZ	(VP*	_	_	_
+lexical	69	12	the	the	DT	(ADJP(NP*	_	_	_
+lexical	69	13	very	very	RB	*)	_	_	_
+lexical	69	14	basic	basic	JJ	*)	_	_	_
+lexical	69	15	Wiccan	Wiccan	NNP	(S(NP(NP*	_	_	_
+lexical	69	16	Rede	Rede	NNP	*)	_	_	_
+lexical	69	17	,	,	,	(PRN*	_	_	_
+lexical	69	18	which	which	WDT	(SBAR(WHNP*)	_	_	_
+lexical	69	19	means	mean	VBZ	(S(VP*)))	_	_	_
+lexical	69	20	,	,	,	*)	_	_	_
+lexical	69	21	``	``	``	*))))	_	_	_
+lexical	69	22	''	''	''	*	_	_	_
+lexical	69	23	Do	do	VBP	(VP*	_	_	_
+lexical	69	24	what	what	WP	(SBAR(WHNP*)	_	_	_
+lexical	69	25	you	you	PRP	(S(NP*)	_	_	_
+lexical	69	26	want	want	VBP	(VP(VP*	_	_	_
+lexical	69	27	to	to	TO	(S(VP*	_	_	_
+lexical	69	28	do	do	VB	(VP*))))	_	_	_
+lexical	69	29	,	,	,	*	_	_	_
+lexical	69	30	but	but	CC	*	_	_	_
+lexical	69	31	do	do	VBP	(VP*	_	do	_
+lexical	69	32	not	not	RB	*	not	_	_
+lexical	69	33	harm	harm	VB	(VP*	_	harm	harm
+lexical	69	34	anything	anything	NN	(NP*)	_	anything	_
+lexical	69	35	in	in	IN	(PP*	_	in	_
+lexical	69	36	the	the	DT	(NP*	_	the	_
+lexical	69	37	process	process	NN	*))))))))	_	process	_
+lexical	69	38	''	''	''	*	_	_	_
+lexical	69	39	.	.	.	*))	_	_	_
+
+lexical	70	0	Likewise	likewise	RB	(ROOT(S(ADVP*)	_	_	_
+lexical	70	1	Teej	Teej	NNP	(NP*)	_	_	_
+lexical	70	2	is	be	VBZ	(VP*	_	_	_
+lexical	70	3	also	also	RB	(ADVP*)	_	_	_
+lexical	70	4	a	a	DT	(NP*	_	_	_
+lexical	70	5	very	very	RB	(ADJP*	_	_	_
+lexical	70	6	popular	popular	JJ	*)	_	_	_
+lexical	70	7	Hindu	Hindu	NNP	*	_	_	_
+lexical	70	8	festivals	festivals	NN	*)	_	_	_
+lexical	70	9	where	where	WRB	(SBAR(WHADVP*)	_	_	_
+lexical	70	10	ladies	lady	NNS	(S(NP*)	_	_	_
+lexical	70	11	fast	fast	RB	(ADVP(ADVP*	_	_	_
+lexical	70	12	without	without	IN	(PP*	without	_	_
+lexical	70	13	water	water	NN	(NP(NP*)	_	water	water
+lexical	70	14	for	for	IN	(PP*	_	_	_
+lexical	70	15	their	they	PRP$	(NP(NP*	_	_	_
+lexical	70	16	husband	husband	NN	*	_	_	_
+lexical	70	17	's	's	POS	*)	_	_	_
+lexical	70	18	long	long	JJ	*	_	_	_
+lexical	70	19	life	life	NN	*)))))	_	_	_
+lexical	70	20	and	and	CC	*	_	_	_
+lexical	70	21	also	also	RB	(ADVP*))	_	_	_
+lexical	70	22	enjoy	enjoy	VBP	(VP*	_	_	_
+lexical	70	23	by	by	IN	(PP*	_	_	_
+lexical	70	24	singing	singing	VBG	(S(VP(VP*	_	_	_
+lexical	70	25	folk	folk	NN	(NP*	_	_	_
+lexical	70	26	songs	song	NNS	*))	_	_	_
+lexical	70	27	and	and	CC	*	_	_	_
+lexical	70	28	dancing	dancing	VBG	(VP*))))))))	_	_	_
+lexical	70	29	.	.	.	*))	_	_	_
+
+lexical	71	0	Both	both	DT	(ROOT(S(NP*	_	_	_
+lexical	71	1	parents	parent	NNS	*)	_	_	_
+lexical	71	2	go	go	VBP	(VP*	_	_	_
+lexical	71	3	through	through	IN	(PP*	_	_	_
+lexical	71	4	the	the	DT	(NP*	_	_	_
+lexical	71	5	entire	entire	JJ	*	_	_	_
+lexical	71	6	strip	strip	NN	*))	_	_	_
+lexical	71	7	without	without	IN	(PP*	without	_	_
+lexical	71	8	names	name	NNS	(NP*)))	_	names	names
+lexical	71	9	.	.	.	*))	_	_	_
+
+lexical	72	0	With	with	IN	(ROOT(S(PP*	_	_	_
+lexical	72	1	about	about	RB	(NP(QP*	_	_	_
+lexical	72	2	25,000	25,000	CD	*)	_	_	_
+lexical	72	3	known	know	VBN	*	_	_	_
+lexical	72	4	species	species	NNS	*))	_	_	_
+lexical	72	5	,	,	,	*	_	_	_
+lexical	72	6	they	they	PRP	(NP*)	_	_	_
+lexical	72	7	are	be	VBP	(VP*	_	_	_
+lexical	72	8	the	the	DT	(NP(NP*	_	_	_
+lexical	72	9	largest	largest	JJS	*	_	_	_
+lexical	72	10	phylum	phylum	NN	*)	_	_	_
+lexical	72	11	of	of	IN	(PP*	_	_	_
+lexical	72	12	animals	animal	NNS	(NP(NP*)	_	_	_
+lexical	72	13	without	without	IN	(PP*	without	_	_
+lexical	72	14	a	a	DT	(NP*	_	a	_
+lexical	72	15	body	body	NN	*	_	body	_
+lexical	72	16	cavity	cavity	NN	*))))))	_	cavity	cavity
+lexical	72	17	.	.	.	*))	_	_	_
+
+lexical	73	0	If	if	IN	(ROOT(S(SBAR*	_	_	_
+lexical	73	1	the	the	DT	(S(NP*	_	_	_
+lexical	73	2	Speaker	Speaker	NNP	*)	_	_	_
+lexical	73	3	decides	decide	VBZ	(VP*	_	_	_
+lexical	73	4	to	to	TO	(S(VP*	_	_	_
+lexical	73	5	stand	stand	VB	(VP*	_	_	_
+lexical	73	6	for	for	IN	(PP*	_	_	_
+lexical	73	7	re-election	re-election	NN	(NP*))))))))	_	_	_
+lexical	73	8	he	he	PRP	(NP*)	_	_	_
+lexical	73	9	is	be	VBZ	(VP*	_	_	_
+lexical	73	10	automatically	automatically	RB	(VP(ADVP*)	_	_	_
+lexical	73	11	elected	elect	VBN	*	_	_	_
+lexical	73	12	,	,	,	*	_	_	_
+lexical	73	13	without	without	IN	(PP*	without	_	_
+lexical	73	14	a	a	DT	(NP*	_	a	_
+lexical	73	15	contest	contest	NN	*))))	_	contest	contest
+lexical	73	16	.	.	.	*))	_	_	_
+
+lexical	74	0	Negotiations	negotiation	NNS	(ROOT(S(NP(NP*)	_	_	_
+lexical	74	1	for	for	IN	(PP*	_	_	_
+lexical	74	2	a	a	DT	(NP*	_	_	_
+lexical	74	3	unified	unified	JJ	*	_	_	_
+lexical	74	4	island	island	NN	*)))	_	_	_
+lexical	74	5	have	have	VBP	(VP*	_	_	_
+lexical	74	6	been	be	VBN	(VP*	_	_	_
+lexical	74	7	held	hold	VBN	(VP*	_	_	_
+lexical	74	8	several	several	JJ	(NP*	_	_	_
+lexical	74	9	times	time	NNS	*)	_	_	_
+lexical	74	10	without	without	IN	(PP*	without	_	_
+lexical	74	11	success	success	NN	(NP*)))))	_	success	success
+lexical	74	12	.	.	.	*))	_	_	_
+
+lexical	75	0	Corrosion	Corrosion	NNP	(ROOT(S(NP*)	_	Corrosion	_	_	_	_
+lexical	75	1	can	can	MD	(VP*	_	can	_	_	_	_
+lexical	75	2	not	not	RB	*	not	_	_	_	_	_
+lexical	75	3	occur	occur	VB	(VP*	_	occur	_	_	_	_
+lexical	75	4	without	without	IN	(PP*	_	without	_	without	_	_
+lexical	75	5	oxygen	oxygen	NN	(NP*))))	_	oxygen	_	_	oxygen	oxygen
+lexical	75	6	.	.	.	*))	_	_	_	_	_	_
+
+lexical	76	0	Finally	finally	RB	(ROOT(S(ADVP*)	_	_	_
+lexical	76	1	,	,	,	*	_	_	_
+lexical	76	2	there	there	EX	(NP*)	_	_	_
+lexical	76	3	are	be	VBP	(VP*	_	_	_
+lexical	76	4	``	``	``	*	_	_	_
+lexical	76	5	anarchists	anarchists	JJ	(ADJP*)	_	_	_
+lexical	76	6	without	without	IN	(PP*	without	_	_
+lexical	76	7	adjectives	adjective	NNS	(NP(NP*)	_	adjectives	adjectives
+lexical	76	8	''	''	''	*	_	_	_
+lexical	76	9	who	who	WP	(SBAR(WHNP*)	_	_	_
+lexical	76	10	hold	hold	VBP	(S(VP*	_	_	_
+lexical	76	11	that	that	IN	(SBAR*	_	_	_
+lexical	76	12	because	because	IN	*	_	_	_
+lexical	76	13	people	people	NNS	(S(NP*)	_	_	_
+lexical	76	14	will	will	MD	(VP*	_	_	_
+lexical	76	15	be	be	VB	(VP*	_	_	_
+lexical	76	16	free	free	JJ	(ADJP*	_	_	_
+lexical	76	17	in	in	IN	(PP*	_	_	_
+lexical	76	18	an	a	DT	(NP*	_	_	_
+lexical	76	19	anarchy	anarchy	NN	*	_	_	_
+lexical	76	20	to	to	TO	(S(VP*	_	_	_
+lexical	76	21	pursue	pursue	VB	(VP*	_	_	_
+lexical	76	22	voluntarily	voluntarily	RB	(ADVP*)	_	_	_
+lexical	76	23	any	any	DT	(NP(NP*	_	_	_
+lexical	76	24	economic	economic	JJ	*	_	_	_
+lexical	76	25	structures	structure	NNS	*)	_	_	_
+lexical	76	26	they	they	PRP	(SBAR(S(NP*)	_	_	_
+lexical	76	27	want	want	VBP	(VP*)	_	_	_
+lexical	76	28	(	(	NN	(NN*)	_	_	_
+lexical	76	29	including	include	VBG	(NP(NP(NNP(PP*	_	_	_
+lexical	76	30	communes	commune	NNS	(NP(NP*)	_	_	_
+lexical	76	31	,	,	,	*	_	_	_
+lexical	76	32	worker	worker	NN	(NP*	_	_	_
+lexical	76	33	co-ops	co-op	NNS	*)	_	_	_
+lexical	76	34	,	,	,	*	_	_	_
+lexical	76	35	and	and	CC	*	_	_	_
+lexical	76	36	capitalist-owned	capitalist-owned	JJ	(NP*	_	_	_
+lexical	76	37	firms	firm	NNS	*))))))))))))))))))))))))))	_	_	_
+lexical	76	38	)	)	NN	(NN*)	_	_	_
+lexical	76	39	.	.	.	(NNS*))	_	_	_
+
+lexical	77	0	This	this	DT	(ROOT(S(NP*)	_	_	_
+lexical	77	1	is	be	VBZ	(VP*	_	_	_
+lexical	77	2	usually	usually	RB	(ADVP*)	_	_	_
+lexical	77	3	a	a	DT	(NP(NP*	_	_	_
+lexical	77	4	collection	collection	NN	*)	_	_	_
+lexical	77	5	of	of	IN	(PP*	_	_	_
+lexical	77	6	software	software	NN	(NP*	_	_	_
+lexical	77	7	tools	tool	NNS	*))	_	_	_
+lexical	77	8	that	that	WDT	(SBAR(WHNP*)	_	_	_
+lexical	77	9	allow	allow	VBP	(S(VP*	_	_	_
+lexical	77	10	the	the	DT	(NP(NP*	_	_	_
+lexical	77	11	construction	construction	NN	*)	_	_	_
+lexical	77	12	of	of	IN	(PP*	_	_	_
+lexical	77	13	websites	website	NNS	(NP*)))	_	_	_
+lexical	77	14	without	without	IN	(PP*	without	_	_
+lexical	77	15	manual	manual	JJ	(NP*	_	manual	_
+lexical	77	16	code	code	NN	*	_	code	_
+lexical	77	17	editing	editing	NN	*)))))))	_	editing	editing
+lexical	77	18	.	.	.	*))	_	_	_
+
+lexical	78	0	It	it	PRP	(ROOT(S(NP*)	_	It	_	_	_	_
+lexical	78	1	does	do	VBZ	(VP*	_	does	_	_	_	_
+lexical	78	2	n't	not	RB	*	n't	_	_	_	_	_
+lexical	78	3	matter	matter	VB	(VP*	_	matter	matter	_	_	_
+lexical	78	4	to	to	TO	(PP*	_	to	_	_	_	_
+lexical	78	5	them	they	PRP	(NP*))	_	them	_	_	_	_
+lexical	78	6	,	,	,	*	_	,	_	_	_	_
+lexical	78	7	because	because	IN	(SBAR*	_	because	_	_	_	_
+lexical	78	8	they	they	PRP	(S(NP*)	_	they	_	_	_	_
+lexical	78	9	swallow	swallow	VB	(VP*	_	swallow	_	_	_	_
+lexical	78	10	the	the	DT	(NP*	_	the	_	_	_	_
+lexical	78	11	fish	fish	NN	*	_	fish	_	_	_	_
+lexical	78	12	whole	whole	NN	*)	_	whole	_	_	_	_
+lexical	78	13	,	,	,	*	_	,	_	_	_	_
+lexical	78	14	without	without	IN	(PP*	_	without	_	without	_	_
+lexical	78	15	chewing	chew	VBG	(NP*)))))))	_	chewing	_	_	chewing	chewing
+lexical	78	16	.	.	.	*))	_	_	_	_	_	_
+
+lexical	79	0	In	in	IN	(ROOT(S(PP*	_	_	_
+lexical	79	1	February	February	NNP	(NP*	_	_	_
+lexical	79	2	2014	2014	CD	*))	_	_	_
+lexical	79	3	,	,	,	*	_	_	_
+lexical	79	4	Belgium	Belgium	NNP	(NP*)	_	_	_
+lexical	79	5	became	become	VBD	(VP*	_	_	_
+lexical	79	6	the	the	DT	(NP*	_	_	_
+lexical	79	7	first	first	JJ	*	_	_	_
+lexical	79	8	country	country	NN	*)	_	_	_
+lexical	79	9	in	in	IN	(PP*	_	_	_
+lexical	79	10	the	the	DT	(NP*	_	_	_
+lexical	79	11	world	world	NN	*))	_	_	_
+lexical	79	12	to	to	TO	(S(VP*	_	_	_
+lexical	79	13	legalize	legalize	VB	(VP*	_	_	_
+lexical	79	14	euthanasia	euthanasia	NN	(NP*)	_	_	_
+lexical	79	15	without	without	IN	(PP*	without	_	_
+lexical	79	16	any	any	DT	(NP*	_	any	_
+lexical	79	17	age	age	NN	*	_	age	_
+lexical	79	18	limits	limit	NNS	*))))))	_	limits	limits
+lexical	79	19	.	.	.	*))	_	_	_

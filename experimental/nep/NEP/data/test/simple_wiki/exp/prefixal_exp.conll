@@ -1,0 +1,1095 @@
+prefixal	0	0	Russian	russian	JJ	(ROOT(S(NP*	_	_	_
+prefixal	0	1	tsars	tsar	NNS	*)	_	_	_
+prefixal	0	2	took	take	VBD	(VP*	_	_	_
+prefixal	0	3	advantage	advantage	NN	(NP(NP*)	_	_	_
+prefixal	0	4	of	of	IN	(PP*	_	_	_
+prefixal	0	5	this	this	DT	(NP*)))	_	_	_
+prefixal	0	6	by	by	IN	(PP*	_	_	_
+prefixal	0	7	offering	offering	NN	(NP*	_	_	_
+prefixal	0	8	money	money	NN	*))	_	_	_
+prefixal	0	9	to	to	TO	(S(VP*	_	_	_
+prefixal	0	10	dishonest	dishonest	VB	(VP*	dis	honest	honest
+prefixal	0	11	members	member	NNS	(NP(NP*)	_	members	_
+prefixal	0	12	of	of	IN	(PP*	_	_	_
+prefixal	0	13	the	the	DT	(NP(NP*	_	_	_
+prefixal	0	14	Polish	polish	JJ	*	_	_	_
+prefixal	0	15	government	government	NN	*)	_	_	_
+prefixal	0	16	,	,	,	*	_	_	_
+prefixal	0	17	who	who	WP	(SBAR(WHNP*)	_	_	_
+prefixal	0	18	would	would	MD	(S(VP*	_	_	_
+prefixal	0	19	block	block	VB	(VP*	_	_	_
+prefixal	0	20	new	new	JJ	(NP*	_	_	_
+prefixal	0	21	ideas	idea	NNS	*	_	_	_
+prefixal	0	22	and	and	CC	*	_	_	_
+prefixal	0	23	solutions	solution	NNS	*))))))))))))	_	_	_
+prefixal	0	24	.	.	.	*))	_	_	_
+
+prefixal	1	0	In	in	IN	(ROOT(S(PP*	_	_	_
+prefixal	1	1	this	this	DT	(NP*	_	this	_
+prefixal	1	2	discontinuous	discontinuous	JJ	*	dis	continuous	continuous
+prefixal	1	3	extraction	extraction	NN	*	_	extraction	_
+prefixal	1	4	process	process	NN	*))	_	process	_
+prefixal	1	5	,	,	,	(PRN*	_	_	_
+prefixal	1	6	the	the	DT	(S(NP*	_	_	_
+prefixal	1	7	extraction	extraction	NN	*	_	_	_
+prefixal	1	8	solvent	solvent	NN	*)	_	_	_
+prefixal	1	9	is	be	VBZ	(VP*	_	_	_
+prefixal	1	10	located	located	VBN	(VP*	_	_	_
+prefixal	1	11	inside	inside	IN	(PP*	_	_	_
+prefixal	1	12	the	the	DT	(NP(NP*	_	_	_
+prefixal	1	13	boiling	boiling	JJ	*	_	_	_
+prefixal	1	14	flask	flask	NN	*)	_	_	_
+prefixal	1	15	,	,	,	*	_	_	_
+prefixal	1	16	when	when	WRB	(SBAR(WHADVP*)	_	_	_
+prefixal	1	17	this	this	DT	(S(NP*)	_	_	_
+prefixal	1	18	solvent	solvent	JJ	(ADJP*)	_	_	_
+prefixal	1	19	boiling	boil	VBG	(S(VP*)))))))))	_	_	_
+prefixal	1	20	,	,	,	*)	_	_	_
+prefixal	1	21	it	it	PRP	(NP*)	_	_	_
+prefixal	1	22	pass	pass	VBP	(VP*	_	_	_
+prefixal	1	23	from	from	IN	(PP*	_	_	_
+prefixal	1	24	distillation	distillation	NN	(NP*	_	_	_
+prefixal	1	25	pass	pass	NN	*	_	_	_
+prefixal	1	26	and	and	CC	*	_	_	_
+prefixal	1	27	condenses	condenses	NNS	*))	_	_	_
+prefixal	1	28	on	on	IN	(PP*	_	_	_
+prefixal	1	29	the	the	DT	(NP*	_	_	_
+prefixal	1	30	solid	solid	JJ	*	_	_	_
+prefixal	1	31	material	material	NN	*)))	_	_	_
+prefixal	1	32	.	.	.	*))	_	_	_
+
+prefixal	2	0	But	but	CC	(ROOT(S*	_	_	_
+prefixal	2	1	he	he	PRP	(NP*)	_	_	_
+prefixal	2	2	was	be	VBD	(VP*	_	_	_
+prefixal	2	3	such	such	JJ	(PP*	_	_	_
+prefixal	2	4	a	a	DT	(NP(NP(NP*	_	a	_
+prefixal	2	5	difficult	difficult	JJ	(ADJP*	_	_	_
+prefixal	2	6	and	and	CC	*	_	_	_
+prefixal	2	7	dishonest	dishonest	JJ	*)	dis	honest	honest
+prefixal	2	8	boy	boy	NN	*)	_	boy	_
+prefixal	2	9	that	that	IN	(SBAR*	_	_	_
+prefixal	2	10	Leonardo	Leonardo	NNP	(S(NP*)	_	_	_
+prefixal	2	11	called	call	VBD	(VP*	_	_	_
+prefixal	2	12	him	he	PRP	(S(NP*)	_	_	_
+prefixal	2	13	``	``	``	*	_	_	_
+prefixal	2	14	Salai	Salai	NNP	(NP*)	_	_	_
+prefixal	2	15	''	''	''	*)))))	_	_	_
+prefixal	2	16	or	or	CC	*	_	_	_
+prefixal	2	17	``	``	``	(NP*	_	_	_
+prefixal	2	18	Salaino	Salaino	NNP	(NP*)	_	_	_
+prefixal	2	19	''	''	''	*	_	_	_
+prefixal	2	20	which	which	WDT	(SBAR(WHNP*)	_	_	_
+prefixal	2	21	means	mean	VBZ	(S(VP*	_	_	_
+prefixal	2	22	``	``	``	(S*	_	_	_
+prefixal	2	23	the	the	DT	(NP*	_	_	_
+prefixal	2	24	little	little	JJ	*	_	_	_
+prefixal	2	25	devil	devil	NN	*)	_	_	_
+prefixal	2	26	''	''	''	*))))))))	_	_	_
+prefixal	2	27	.	.	.	*))	_	_	_
+
+prefixal	3	0	Others	other	NNS	(ROOT(S(NP*)	_	_	_
+prefixal	3	1	say	say	VBP	(VP*	_	_	_
+prefixal	3	2	he	he	PRP	(SBAR(S(NP*)	_	_	_
+prefixal	3	3	was	be	VBD	(VP*	_	_	_
+prefixal	3	4	killed	kill	VBN	(VP*	_	_	_
+prefixal	3	5	by	by	IN	(PP*	_	_	_
+prefixal	3	6	disloyal	disloyal	NNP	(NP*	dis	loyal	loyal
+prefixal	3	7	Wallachian	Wallachian	NNP	*	_	Wallachian	_
+prefixal	3	8	boyars	boyar	NNS	*))	_	boyars	_
+prefixal	3	9	in	in	IN	(PP(PP*	_	_	_
+prefixal	3	10	the	the	DT	(NP(NP*	_	_	_
+prefixal	3	11	war	war	NN	*)	_	_	_
+prefixal	3	12	against	against	IN	(PP*	_	_	_
+prefixal	3	13	the	the	DT	(NP*	_	_	_
+prefixal	3	14	Turks	Turks	NNPS	*))))	_	_	_
+prefixal	3	15	,	,	,	*	_	_	_
+prefixal	3	16	or	or	CC	*	_	_	_
+prefixal	3	17	during	during	IN	(PP*	_	_	_
+prefixal	3	18	a	a	DT	(NP*	_	_	_
+prefixal	3	19	hunt	hunt	NN	*))))))))	_	_	_
+prefixal	3	20	.	.	.	*))	_	_	_
+
+prefixal	4	0	This	this	DT	(ROOT(S(NP*)	_	_	_
+prefixal	4	1	means	mean	VBZ	(VP*	_	_	_
+prefixal	4	2	that	that	IN	(SBAR*	_	_	_
+prefixal	4	3	politicians	politician	NNS	(S(NP*)	_	politicians	_
+prefixal	4	4	are	be	VBP	(VP*	_	are	_
+prefixal	4	5	dishonest	dishonest	JJ	(ADJP*)	dis	honest	honest
+prefixal	4	6	,	,	,	*	_	_	_
+prefixal	4	7	if	if	IN	(SBAR*	_	_	_
+prefixal	4	8	the	the	DT	(S(NP*	_	_	_
+prefixal	4	9	word	word	NN	*	_	_	_
+prefixal	4	10	'politician	'politician	NN	*	_	_	_
+prefixal	4	11	'	'	''	*)	_	_	_
+prefixal	4	12	is	be	VBZ	(VP*	_	_	_
+prefixal	4	13	opposite	opposite	JJ	(ADJP*	_	_	_
+prefixal	4	14	to	to	TO	(PP*	_	_	_
+prefixal	4	15	'honest	'honest	NN	(NP*	_	_	_
+prefixal	4	16	'	'	POS	*))))))))))	_	_	_
+prefixal	4	17	.	.	.	*))	_	_	_
+
+prefixal	5	0	It	it	PRP	(ROOT(S(NP*)	_	_	_
+prefixal	5	1	appears	appear	VBZ	(VP*	_	_	_
+prefixal	5	2	to	to	TO	(S(VP*	_	_	_
+prefixal	5	3	be	be	VB	(VP*	_	_	_
+prefixal	5	4	a	a	DT	(NP(NP*	_	_	_
+prefixal	5	5	warning	warning	VBG	*	_	_	_
+prefixal	5	6	signal	signal	NN	*)	_	_	_
+prefixal	5	7	to	to	TO	(PP*	_	_	_
+prefixal	5	8	predators	predator	NNS	(NP*))))))	_	_	_
+prefixal	5	9	,	,	,	*	_	_	_
+prefixal	5	10	since	since	IN	(SBAR*	_	_	_
+prefixal	5	11	many	many	JJ	(S(NP*	_	_	_
+prefixal	5	12	firefly	firefly	NN	*	_	_	_
+prefixal	5	13	larvae	larvae	NN	*)	_	_	_
+prefixal	5	14	contain	contain	VBP	(VP*	_	_	_
+prefixal	5	15	chemicals	chemical	NNS	(NP(NP*)	_	_	_
+prefixal	5	16	that	that	WDT	(SBAR(WHNP*)	_	that	_
+prefixal	5	17	are	be	VBP	(S(VP*	_	are	_
+prefixal	5	18	distasteful	distasteful	JJ	(ADJP*	dis	tasteful	tasteful
+prefixal	5	19	or	or	CC	*	_	_	_
+prefixal	5	20	toxic	toxic	JJ	*)))))))))	_	_	_
+prefixal	5	21	.	.	.	*))	_	_	_
+
+prefixal	6	0	Some	some	DT	(ROOT(S(NP(NP*	_	Some	_
+prefixal	6	1	types	type	NNS	*)	_	types	_
+prefixal	6	2	of	of	IN	(PP*	_	of	_
+prefixal	6	3	pornography	pornography	NN	(NP*)))	_	pornography	_
+prefixal	6	4	are	be	VBP	(VP*	_	_	_
+prefixal	6	5	believed	believe	VBN	(VP*	_	_	_
+prefixal	6	6	to	to	TO	(S(VP*	_	to	_
+prefixal	6	7	be	be	VB	(VP*	_	be	_
+prefixal	6	8	harmful	harmful	JJ	(ADJP*	_	_	_
+prefixal	6	9	or	or	CC	*	_	_	_
+prefixal	6	10	disrespectful	disrespectful	JJ	*)	dis	respectful	_
+prefixal	6	11	to	to	TO	(PP(PP*	_	to	_
+prefixal	6	12	the	the	DT	(NP(NP*	_	the	_
+prefixal	6	13	people	people	NNS	*)	_	people	_
+prefixal	6	14	taking	take	VBG	(VP*	_	taking	_
+prefixal	6	15	part	part	NN	(NP*))))	_	part	_
+prefixal	6	16	,	,	,	*	_	,	_
+prefixal	6	17	or	or	CC	*	_	or	_
+prefixal	6	18	to	to	TO	(PP*	_	to	_
+prefixal	6	19	the	the	DT	(NP(NP*	_	the	_
+prefixal	6	20	people	people	NNS	*)	_	people	_
+prefixal	6	21	who	who	WP	(SBAR(WHNP*)	_	who	_
+prefixal	6	22	watch	watch	VBP	(S(VP*	_	watch	_
+prefixal	6	23	or	or	CC	*	_	or	_
+prefixal	6	24	read	read	VBP	*	_	read	_
+prefixal	6	25	it	it	PRP	(NP*))))))))))))	_	it	_
+prefixal	6	26	.	.	.	*))	_	_	_
+
+prefixal	7	0	Most	most	JJS	(ROOT(S(S(S(NP*	_	_	_
+prefixal	7	1	tornadoes	tornado	NNS	*)	_	_	_
+prefixal	7	2	have	have	VBP	(VP*	_	_	_
+prefixal	7	3	wind	wind	NN	(NP(NP*	_	_	_
+prefixal	7	4	speeds	speed	NNS	*)	_	_	_
+prefixal	7	5	less	less	JJR	(SBAR(S(NP(NP(QP*	_	_	_
+prefixal	7	6	than	than	IN	*	_	_	_
+prefixal	7	7	110	110	CD	*)	_	_	_
+prefixal	7	8	miles	mile	NNS	*)	_	_	_
+prefixal	7	9	per	per	IN	(PP*	_	_	_
+prefixal	7	10	hour	hour	NN	(NP*)))	_	_	_
+prefixal	7	11	,	,	,	*	_	_	_
+prefixal	7	12	are	be	VBP	(VP*	_	_	_
+prefixal	7	13	about	about	RB	(ADJP(NP(QP*	_	_	_
+prefixal	7	14	250	250	CD	*)	_	_	_
+prefixal	7	15	feet	foot	NNS	*))	_	_	_
+prefixal	7	16	(	(	NN	(NN*)	_	_	_
+prefixal	7	17	80m	80m	CD	(JJ(ADVP(NP*)))	_	_	_
+prefixal	7	18	)	)	NN	(NN*)	_	_	_
+prefixal	7	19	across	across	IN	(NNS*)))))))	_	_	_
+prefixal	7	20	and	and	CC	*	_	_	_
+prefixal	7	21	travel	travel	NN	(S(NP(NP*)	_	_	_
+prefixal	7	22	,	,	,	*	_	_	_
+prefixal	7	23	a	a	DT	(NP(NP*	_	_	_
+prefixal	7	24	few	few	JJ	*	_	_	_
+prefixal	7	25	,	,	,	*	_	_	_
+prefixal	7	26	miles.Other	miles.other	JJ	*	_	_	_
+prefixal	7	27	tornado-like	tornado-like	JJ	*	_	_	_
+prefixal	7	28	phenomena	phenomenon	NNS	*)	_	_	_
+prefixal	7	29	that	that	WDT	(SBAR(WHNP*)	_	_	_
+prefixal	7	30	exist	exist	VBP	(S(VP*	_	_	_
+prefixal	7	31	in	in	IN	(PP*	_	_	_
+prefixal	7	32	nature	nature	NN	(NP*)))))))	_	_	_
+prefixal	7	33	include	include	VBP	(VP*	_	_	_
+prefixal	7	34	the	the	DT	(NP(NP*	_	_	_
+prefixal	7	35	gustnado	gustnado	NN	*)	_	_	_
+prefixal	7	36	,	,	,	*	_	_	_
+prefixal	7	37	dust	dust	NN	(NP*	_	_	_
+prefixal	7	38	devil	devil	NNS	*)	_	_	_
+prefixal	7	39	,	,	,	*	_	_	_
+prefixal	7	40	fire	fire	NN	(NP*	_	_	_
+prefixal	7	41	whirls	whirl	NNS	*)	_	_	_
+prefixal	7	42	,	,	,	*	_	_	_
+prefixal	7	43	and	and	CC	*	_	_	_
+prefixal	7	44	steam	steam	NN	(NP*	_	_	_
+prefixal	7	45	devil	devil	NNS	*)))))	_	_	_
+prefixal	7	46	;	;	:	*	_	_	_
+prefixal	7	47	downbursts	downburst	NNS	(S(NP*)	_	_	_
+prefixal	7	48	are	be	VBP	(VP*	_	_	_
+prefixal	7	49	frequently	frequently	RB	(ADVP*)	_	_	_
+prefixal	7	50	confused	confuse	VBN	(VP*	_	_	_
+prefixal	7	51	with	with	IN	(PP*	_	_	_
+prefixal	7	52	tornadoes	tornado	NNS	(NP*))	_	_	_
+prefixal	7	53	,	,	,	*	_	_	_
+prefixal	7	54	though	though	IN	(SBAR*	_	_	_
+prefixal	7	55	their	they	PRP$	(S(NP*	_	their	_
+prefixal	7	56	action	action	NN	*)	_	action	_
+prefixal	7	57	is	be	VBZ	(VP*	_	is	_
+prefixal	7	58	dissimilar	dissimilar	JJ	(ADJP*)))))))	dis	similar	similar
+prefixal	7	59	.	.	.	*))	_	_	_
+
+prefixal	8	0	Volta	Volta	NNP	(ROOT(S(NP*)	_	_	_
+prefixal	8	1	had	have	VBD	(VP*	_	_	_
+prefixal	8	2	determined	determine	VBN	(VP*	_	_	_
+prefixal	8	3	that	that	IN	(SBAR*	_	_	_
+prefixal	8	4	the	the	DT	(S(NP(NP*	_	_	_
+prefixal	8	5	most	most	RBS	(ADJP*	_	_	_
+prefixal	8	6	effective	effective	JJ	*)	_	_	_
+prefixal	8	7	pair	pair	NN	*)	_	_	_
+prefixal	8	8	of	of	IN	(PP*	_	_	_
+prefixal	8	9	dissimilar	dissimilar	JJ	(NP(ADJP*)	dis	similar	similar
+prefixal	8	10	metals	metal	NNS	*	_	metals	_
+prefixal	8	11	to	to	TO	(S(VP*	_	_	_
+prefixal	8	12	produce	produce	VB	(VP*	_	_	_
+prefixal	8	13	electricity	electricity	NN	(NP*)))))))	_	_	_
+prefixal	8	14	was	be	VBD	(VP*	_	_	_
+prefixal	8	15	zinc	zinc	NN	(NP*	_	_	_
+prefixal	8	16	and	and	CC	*	_	_	_
+prefixal	8	17	silver	silver	NN	*))))))	_	_	_
+prefixal	8	18	.	.	.	*))	_	_	_
+
+prefixal	9	0	When	when	WRB	(ROOT(S(SBAR(WHADVP*)	_	_	_
+prefixal	9	1	non-Muslim	non-muslim	JJ	(S(NP*	_	_	_
+prefixal	9	2	people	people	NNS	*)	_	_	_
+prefixal	9	3	create	create	VBP	(VP*	_	_	_
+prefixal	9	4	images	image	NNS	(NP(NP*)	_	_	_
+prefixal	9	5	of	of	IN	(PP*	_	_	_
+prefixal	9	6	Muhammad	Muhammad	NNP	(NP*))))))	_	_	_
+prefixal	9	7	,	,	,	*	_	_	_
+prefixal	9	8	many	many	JJ	(NP*	_	_	_
+prefixal	9	9	Muslims	Muslims	NNPS	*)	_	_	_
+prefixal	9	10	view	view	VBP	(VP*	_	_	_
+prefixal	9	11	this	this	DT	(S(NP*)	_	this	_
+prefixal	9	12	as	as	RB	(ADJP*	_	_	_
+prefixal	9	13	disrespectful	disrespectful	JJ	*	dis	respectful	respectful
+prefixal	9	14	or	or	CC	*	_	_	_
+prefixal	9	15	offensive	offensive	JJ	*)))	_	_	_
+prefixal	9	16	.	.	.	*))	_	_	_
+
+prefixal	10	0	Plato	Plato	NNP	(ROOT(S(NP*)	_	_	_
+prefixal	10	1	opposed	oppose	VBD	(VP(VP*	_	_	_
+prefixal	10	2	the	the	DT	(NP(NP*	_	_	_
+prefixal	10	3	rhetorics	rhetoric	NNS	*)	_	_	_
+prefixal	10	4	of	of	IN	(PP*	_	_	_
+prefixal	10	5	sophism	sophism	NN	(NP*))))	_	_	_
+prefixal	10	6	and	and	CC	*	_	_	_
+prefixal	10	7	insisted	insist	VBD	(VP*	_	_	_
+prefixal	10	8	true	true	JJ	(NP(NP(NP*	_	_	_
+prefixal	10	9	justice	justice	NN	*	_	_	_
+prefixal	10	10	and	and	CC	*	_	_	_
+prefixal	10	11	equality	equality	NN	*)	_	_	_
+prefixal	10	12	in	in	IN	(PP*	_	_	_
+prefixal	10	13	his	he	PRP$	(NP*	_	_	_
+prefixal	10	14	work	work	NN	*	_	_	_
+prefixal	10	15	``	``	``	*	_	_	_
+prefixal	10	16	Gorgias	Gorgias	NNP	*	_	_	_
+prefixal	10	17	''	''	''	*)))	_	_	_
+prefixal	10	18	and	and	CC	*	_	_	_
+prefixal	10	19	immortality	immortality	NN	(NP(NP*)	im	mortality	mortality
+prefixal	10	20	of	of	IN	(PP*	_	of	_
+prefixal	10	21	soul	soul	NN	(NP*))))	_	soul	_
+prefixal	10	22	in	in	IN	(PP*	_	_	_
+prefixal	10	23	``	``	``	*	_	_	_
+prefixal	10	24	Phaedo	Phaedo	NNP	(NP*)	_	_	_
+prefixal	10	25	''	''	''	*)))	_	_	_
+prefixal	10	26	.	.	.	*))	_	_	_
+
+prefixal	11	0	Immortal	Immortal	NNP	(ROOT(S(NP*)	Im	mortal	mortal
+prefixal	11	1	means	mean	VBZ	(VP*	_	_	_
+prefixal	11	2	the	the	DT	(SBAR(S(NP*	_	_	_
+prefixal	11	3	God	God	NNP	*	_	_	_
+prefixal	11	4	or	or	CC	*	_	_	_
+prefixal	11	5	Goddess	Goddess	NNP	*)	_	_	_
+prefixal	11	6	can	can	MD	(VP*	_	_	_
+prefixal	11	7	never	never	RB	(ADVP*)	_	_	_
+prefixal	11	8	die	die	VB	(VP*)))))	_	_	_
+prefixal	11	9	.	.	.	*))	_	_	_
+
+prefixal	12	0	Still	still	RB	(ROOT(S(ADVP*)	_	_	_
+prefixal	12	1	other	other	JJ	(NP*	_	other	_
+prefixal	12	2	melodies	melody	NNS	*)	_	melodies	_
+prefixal	12	3	are	be	VBP	(VP*	_	are	_
+prefixal	12	4	impossible	impossible	JJ	(ADJP*	im	possible	possible
+prefixal	12	5	to	to	TO	(S(VP*	_	to	_
+prefixal	12	6	sing	sing	VB	(VP*)))))	_	sing	_
+prefixal	12	7	.	.	.	*))	_	_	_
+
+prefixal	13	0	They	they	PRP	(ROOT(S(NP*)	_	_	_
+prefixal	13	1	were	be	VBD	(VP(VP*	_	_	_
+prefixal	13	2	looking	look	VBG	(VP*	_	_	_
+prefixal	13	3	at	at	IN	(PP*	_	_	_
+prefixal	13	4	an	a	DT	(NP(NP*	_	an	_
+prefixal	13	5	impurity	impurity	NN	*)	im	purity	purity
+prefixal	13	6	in	in	IN	(PP*	_	in	_
+prefixal	13	7	zinc	zinc	NN	(NP*	_	zinc	_
+prefixal	13	8	carbonate	carbonate	NN	*))))))	_	carbonate	_
+prefixal	13	9	and	and	CC	*	_	_	_
+prefixal	13	10	found	find	VBD	(VP*	_	_	_
+prefixal	13	11	cadmium	cadmium	NN	(NP*)))	_	_	_
+prefixal	13	12	.	.	.	*))	_	_	_
+
+prefixal	14	0	Hydraulic	hydraulic	JJ	(ROOT(S(NP*	_	_	_
+prefixal	14	1	lifts	lift	NNS	*)	_	_	_
+prefixal	14	2	are	be	VBP	(VP*	_	_	_
+prefixal	14	3	cheaper	cheaper	JJR	(ADJP(ADJP*)	_	_	_
+prefixal	14	4	,	,	,	*	_	_	_
+prefixal	14	5	but	but	CC	*	_	_	_
+prefixal	14	6	installing	installing	CD	(ADJP(NP*	_	installing	_
+prefixal	14	7	cylinders	cylinder	NNS	*)	_	cylinders	_
+prefixal	14	8	greater	greater	JJR	*))	_	greater	_
+prefixal	14	9	than	than	IN	(SBAR*	_	than	_
+prefixal	14	10	a	a	DT	(S(NP*	_	a	_
+prefixal	14	11	certain	certain	JJ	*	_	certain	_
+prefixal	14	12	length	length	NN	*)	_	length	_
+prefixal	14	13	becomes	become	VBZ	(VP*	_	becomes	_
+prefixal	14	14	impractical	impractical	JJ	(ADJP*	im	practical	practical
+prefixal	14	15	for	for	IN	(PP*	_	for	_
+prefixal	14	16	very	very	RB	(NP(ADJP*	_	very	_
+prefixal	14	17	high	high	JJ	*)	_	high	_
+prefixal	14	18	lift	lift	NN	*	_	lift	_
+prefixal	14	19	hoistways	hoistway	NNS	*)))))))	_	hoistways	_
+prefixal	14	20	.	.	.	*))	_	_	_
+
+prefixal	15	0	The	the	DT	(ROOT(S(NP*	_	_	_	_	_	_
+prefixal	15	1	local	local	JJ	*	_	_	_	_	_	_
+prefixal	15	2	bus	bus	NN	*	_	_	_	_	_	_
+prefixal	15	3	company	company	NN	*)	_	_	_	_	_	_
+prefixal	15	4	did	do	VBD	(VP*	_	_	_	_	_	_
+prefixal	15	5	go	go	VB	(S(VP*	_	_	_	_	_	_
+prefixal	15	6	bust	bust	NN	(NP*)	_	_	_	_	_	_
+prefixal	15	7	a	a	DT	(NP*	_	_	_	_	_	_
+prefixal	15	8	few	few	JJ	*	_	_	_	_	_	_
+prefixal	15	9	times	time	NNS	*)	_	_	_	_	_	_
+prefixal	15	10	,	,	,	*	_	_	_	_	_	_
+prefixal	15	11	notably	notably	RB	(ADVP*)	_	_	_	_	_	_
+prefixal	15	12	at	at	IN	(PP*	_	_	_	_	_	_
+prefixal	15	13	the	the	DT	(NP(NP*	_	_	_	_	_	_
+prefixal	15	14	same	same	JJ	*	_	_	_	_	_	_
+prefixal	15	15	time	time	NN	*)	_	_	_	_	_	_
+prefixal	15	16	as	as	IN	(PP*	_	_	_	_	_	_
+prefixal	15	17	the	the	DT	(NP(NP*	_	_	_	_	_	_
+prefixal	15	18	major	major	JJ	*	_	_	_	_	_	_
+prefixal	15	19	plague	plague	NN	*)	_	_	_	_	_	_
+prefixal	15	20	of	of	IN	(PP*	_	_	_	_	_	_
+prefixal	15	21	train	train	NN	(NP*	_	_	_	_	_	_
+prefixal	15	22	accidents	accident	NNS	*	_	_	_	_	_	_
+prefixal	15	23	and	and	CC	*	_	_	_	_	_	_
+prefixal	15	24	strikes	strike	NNS	*))))))))	_	_	_	_	_	_
+prefixal	15	25	in	in	IN	(PP*	_	_	_	_	_	_
+prefixal	15	26	early	early	RB	(NP(NP*	_	_	_	_	_	_
+prefixal	15	27	2002	2002	CD	*)	_	_	_	_	_	_
+prefixal	15	28	-	-	:	*	_	_	_	_	_	_
+prefixal	15	29	where	where	WRB	(SBAR(WHADVP*)	_	_	_	_	_	_
+prefixal	15	30	combined	combine	VBN	(S(S(VP*	_	_	_	_	_	_
+prefixal	15	31	with	with	IN	(PP*	_	_	_	_	_	_
+prefixal	15	32	large	large	JJ	(NP(NP*	_	_	_	_	_	_
+prefixal	15	33	snow	snow	NN	*	_	_	_	_	_	_
+prefixal	15	34	deposits	deposit	NNS	*)	_	_	_	_	_	_
+prefixal	15	35	,	,	,	*	_	_	_	_	_	_
+prefixal	15	36	made	make	VBN	(VP*)))))	_	_	_	_	_	_
+prefixal	15	37	travel	travel	VBP	(VP*	_	travel	_	_	travel	_
+prefixal	15	38	in	in	IN	(ADVP*	_	in	_	_	in	_
+prefixal	15	39	or	or	CC	*	_	or	_	_	or	_
+prefixal	15	40	out	out	IN	*)	_	out	_	_	out	_
+prefixal	15	41	of	of	IN	(PP*	_	of	_	_	of	_
+prefixal	15	42	the	the	DT	(NP(NP*	_	the	_	_	the	_
+prefixal	15	43	town	town	NN	*)	_	town	_	_	town	_
+prefixal	15	44	impossible	impossible	JJ	(UCP(ADJP*)	im	possible	possible	_	_	_
+prefixal	15	45	or	or	CC	*	_	_	_	_	_	_
+prefixal	15	46	at	at	IN	(ADVP*	_	_	_	_	_	_
+prefixal	15	47	least	least	JJS	*)	_	_	_	_	_	_
+prefixal	15	48	very	very	RB	(ADJP*	_	_	_	_	very	_
+prefixal	15	49	unpleasant	unpleasant	JJ	*))))))))))	_	_	_	un	pleasant	pleasant
+prefixal	15	50	.	.	.	*))	_	_	_	_	_	_
+
+prefixal	16	0	Because	because	IN	(ROOT(S(SBAR*	_	_	_
+prefixal	16	1	there	there	EX	(S(NP*)	_	_	_
+prefixal	16	2	were	be	VBD	(VP*	_	_	_
+prefixal	16	3	so	so	RB	(ADJP*	_	_	_
+prefixal	16	4	many	many	JJ	*	_	_	_
+prefixal	16	5	of	of	IN	(PP*	_	_	_
+prefixal	16	6	them	they	PRP	(SBAR(S(NP*)	_	_	_
+prefixal	16	7	joined	join	VBD	(VP*	_	_	_
+prefixal	16	8	together	together	RB	(ADVP*)	_	_	_
+prefixal	16	9	,	,	,	*	_	_	_
+prefixal	16	10	with	with	IN	(PP*	_	_	_
+prefixal	16	11	so	so	RB	(NP(ADJP*	_	so	_
+prefixal	16	12	much	much	JJ	*)	_	much	_
+prefixal	16	13	impurity	impurity	JJ	*	im	purity	purity
+prefixal	16	14	(	(	NN	(NN*)	_	_	_
+prefixal	16	15	bad	bad	JJ	(JJ*	_	_	_
+prefixal	16	16	powers	power	NNS	*)))))	_	_	_
+prefixal	16	17	)	)	NN	(NN*)	_	_	_
+prefixal	16	18	,	,	,	(ADVP(RB*	_	_	_
+prefixal	16	19	even	even	RB	(ADVP*))))))	_	_	_
+prefixal	16	20	with	with	IN	(PP*	_	_	_
+prefixal	16	21	Midoriko	Midoriko	NNP	(NP(NP(NP*	_	_	_
+prefixal	16	22	's	's	POS	*)	_	_	_
+prefixal	16	23	own	own	JJ	*	_	_	_
+prefixal	16	24	power	power	NN	*)	_	_	_
+prefixal	16	25	of	of	IN	(PP*	_	_	_
+prefixal	16	26	goodness	goodness	NN	(NP*	_	_	_
+prefixal	16	27	and	and	CC	*	_	_	_
+prefixal	16	28	purity	purity	NN	*)))))))	_	_	_
+prefixal	16	29	,	,	,	*	_	_	_
+prefixal	16	30	they	they	PRP	(NP*)	_	_	_
+prefixal	16	31	could	could	MD	(VP*	_	_	_
+prefixal	16	32	easily	easily	RB	(ADVP*)	_	_	_
+prefixal	16	33	win	win	VB	(VP*	_	_	_
+prefixal	16	34	over	over	IN	(PP*	_	_	_
+prefixal	16	35	Midoriko	Midoriko	NNP	(NP*))))	_	_	_
+prefixal	16	36	.	.	.	*))	_	_	_
+
+prefixal	17	0	Because	because	IN	(ROOT(S(PP*	_	_	_
+prefixal	17	1	of	of	IN	(PP*	_	_	_
+prefixal	17	2	wheelchair	wheelchair	NN	(NP*	_	_	_
+prefixal	17	3	access	access	NN	*	_	_	_
+prefixal	17	4	laws	law	NNS	*)))	_	_	_
+prefixal	17	5	,	,	,	*	_	_	_
+prefixal	17	6	elevators	elevator	NNS	(NP*)	_	_	_
+prefixal	17	7	are	be	VBP	(VP*	_	_	_
+prefixal	17	8	often	often	RB	(ADVP*)	_	_	_
+prefixal	17	9	a	a	DT	(NP(NP*	_	_	_
+prefixal	17	10	legal	legal	JJ	*	_	_	_
+prefixal	17	11	requirement	requirement	NN	*)	_	_	_
+prefixal	17	12	in	in	IN	(PP*	_	_	_
+prefixal	17	13	new	new	JJ	(NP(NP*	_	_	_
+prefixal	17	14	multi-story	multi-story	JJ	*	_	_	_
+prefixal	17	15	buildings	building	NNS	*)	_	_	_
+prefixal	17	16	,	,	,	*	_	_	_
+prefixal	17	17	especially	especially	RB	(SBAR(WHADVP*	_	_	_
+prefixal	17	18	where	where	WRB	*)	_	where	_
+prefixal	17	19	wheelchair	wheelchair	NN	(S(NP*	_	wheelchair	_
+prefixal	17	20	ramps	ramp	NNS	*)	_	ramps	_
+prefixal	17	21	would	would	MD	(VP*	_	would	_
+prefixal	17	22	be	be	VB	(VP*	_	be	_
+prefixal	17	23	impractical	impractical	JJ	(ADJP*)))))))))	im	practical	_
+prefixal	17	24	.	.	.	*))	_	_	_
+
+prefixal	18	0	In	in	IN	(ROOT(S(PP*	_	_	_	_	_	_
+prefixal	18	1	1882	1882	CD	(NP*))	_	_	_	_	_	_
+prefixal	18	2	,	,	,	*	_	_	_	_	_	_
+prefixal	18	3	Ferdinand	Ferdinand	NNP	(NP*	_	_	_	_	_	_
+prefixal	18	4	von	von	NNP	*	_	_	_	_	_	_
+prefixal	18	5	Lindenmann	Lindenmann	NNP	*)	_	_	_	_	_	_
+prefixal	18	6	proved	prove	VBD	(VP*	_	_	_	_	_	_
+prefixal	18	7	that	that	IN	(SBAR*	_	_	_	_	_	_
+prefixal	18	8	this	this	DT	(S(NP*)	_	this	_	_	_	_
+prefixal	18	9	is	be	VBZ	(VP*	_	is	_	_	_	_
+prefixal	18	10	impossible	impossible	JJ	(ADJP*)	im	possible	possible	_	_	_
+prefixal	18	11	because	because	IN	(SBAR*	_	because	_	_	_	_
+prefixal	18	12	it	it	PRP	(S(NP*)	_	it	_	_	it	_
+prefixal	18	13	is	be	VBZ	(VP*	_	is	_	_	is	_
+prefixal	18	14	impossible	impossible	JJ	(ADJP*	_	impossible	_	im	possible	possible
+prefixal	18	15	to	to	TO	(S(VP*	_	to	_	_	to	_
+prefixal	18	16	calculate	calculate	VB	(VP*	_	calculate	_	_	calculate	_
+prefixal	18	17	√π	√π	NN	(NP(NP*	_	√π	_	_	√π	_
+prefixal	18	18	exactly	exactly	RB	*)	_	exactly	_	_	exactly	_
+prefixal	18	19	,	,	,	*	_	_	_	_	_	_
+prefixal	18	20	which	which	WDT	(SBAR(WHNP*)	_	_	_	_	_	_
+prefixal	18	21	is	be	VBZ	(S(VP*	_	_	_	_	_	_
+prefixal	18	22	a	a	DT	(NP*	_	_	_	_	_	_
+prefixal	18	23	transcendental	transcendental	JJ	*	_	_	_	_	_	_
+prefixal	18	24	number	number	NN	*))))))))))))))))	_	_	_	_	_	_
+prefixal	18	25	.	.	.	*))	_	_	_	_	_	_
+
+prefixal	19	0	Pseudoscience	Pseudoscience	NNP	(ROOT(S(NP*)	_	Pseudoscience	_	_	_	_
+prefixal	19	1	is	be	VBZ	(VP*	_	is	_	_	_	_
+prefixal	19	2	often	often	RB	(ADVP*)	_	often	_	_	_	_
+prefixal	19	3	considered	consider	VBN	(VP*	_	considered	_	_	_	_
+prefixal	19	4	immoral	immoral	JJ	(ADJP*	im	moral	moral	_	_	_
+prefixal	19	5	by	by	IN	(PP*	_	by	_	_	_	_
+prefixal	19	6	scientists	scientist	NNS	(NP*)))	_	scientists	_	_	_	_
+prefixal	19	7	not	not	RB	(SBAR*	_	not	_	_	_	_
+prefixal	19	8	because	because	IN	(SBAR*	_	because	_	_	_	_
+prefixal	19	9	its	its	PRP$	(S(NP*	_	its	_	_	its	_
+prefixal	19	10	claims	claim	NNS	*)	_	claims	_	_	claims	_
+prefixal	19	11	are	be	VBP	(VP*	_	are	_	_	are	_
+prefixal	19	12	undemonstrated	undemonstrated	VBN	(VP*))))	_	undemonstrated	_	un	demostrated	demonstrated
+prefixal	19	13	,	,	,	*	_	,	_	_	_	_
+prefixal	19	14	but	but	CC	*	_	but	_	_	_	_
+prefixal	19	15	because	because	IN	(SBAR*	_	because	_	_	_	_
+prefixal	19	16	they	they	PRP	(S(NP*)	_	they	_	_	_	_
+prefixal	19	17	are	be	VBP	(VP*	_	are	_	_	_	_
+prefixal	19	18	sometimes	sometimes	RB	(ADVP*)	_	sometimes	_	_	_	_
+prefixal	19	19	presented	present	VBN	(VP*	_	presented	_	_	_	_
+prefixal	19	20	as	as	IN	(PP*	_	as	_	_	_	_
+prefixal	19	21	facts	fact	NNS	(NP(NP*)	_	facts	_	_	_	_
+prefixal	19	22	and/or	and/or	RB	(ADJP*	_	and/or	_	_	_	_
+prefixal	19	23	real	real	JJ	*))))))))))	_	real	_	_	_	_
+prefixal	19	24	.	.	.	*))	_	_	_	_	_	_
+
+prefixal	20	0	Fisheries	Fisheries	NNPS	(ROOT(S(NP(NP*)	_	_	_
+prefixal	20	1	and	and	CC	*	_	_	_
+prefixal	20	2	aquaculture	aquaculture	NN	(NP*))	_	_	_
+prefixal	20	3	provide	provide	VBP	(VP*	_	_	_
+prefixal	20	4	direct	direct	JJ	(NP*	_	_	_
+prefixal	20	5	and	and	CC	*	_	_	_
+prefixal	20	6	indirect	indirect	JJ	*	in	direct	direct
+prefixal	20	7	employment	employment	NN	*)	_	employment	_
+prefixal	20	8	to	to	TO	(PP*	_	_	_
+prefixal	20	9	over	over	RB	(NP(NP(QP*	_	_	_
+prefixal	20	10	500	500	CD	*	_	_	_
+prefixal	20	11	million	million	CD	*)	_	_	_
+prefixal	20	12	people	people	NNS	*)	_	_	_
+prefixal	20	13	in	in	IN	(PP*	_	_	_
+prefixal	20	14	developing	develop	VBG	(NP*	_	_	_
+prefixal	20	15	countries	country	NNS	*)))))	_	_	_
+prefixal	20	16	.	.	.	*))	_	_	_
+
+prefixal	21	0	has	have	VBZ	(ROOT(S(S(VP*	_	_	_
+prefixal	21	1	more	more	JJR	(NP(NP*)	_	_	_
+prefixal	21	2	about	about	IN	(PP*	_	_	_
+prefixal	21	3	this	this	DT	(NP*	_	_	_
+prefixal	21	4	subject	subject	NN	*)))))	_	_	_
+prefixal	21	5	:	:	:	*	_	_	_
+prefixal	21	6	Kamishibai	Kamishibai	NNP	(S(NP*	_	Kamishibai	_
+prefixal	21	7	Template	Template	NNP	*	_	Template	_
+prefixal	21	8	codice_1	codice_1	NNS	*)	_	codice_1	_
+prefixal	21	9	has	have	VBZ	(VP*	_	has	_
+prefixal	21	10	been	be	VBN	(VP*	_	been	_
+prefixal	21	11	incorrectly	incorrectly	RB	(VP(ADVP*)	in	correctly	correctly
+prefixal	21	12	substituted	substitute	VBN	*))))	_	substituted	_
+prefixal	21	13	.	.	.	*))	_	_	_
+
+prefixal	22	0	Mary	Mary	NNP	(ROOT(S(NP*	_	Mary	_
+prefixal	22	1	Shelley	Shelley	NNP	*	_	Shelley	_
+prefixal	22	2	Template	Template	NNP	*	_	Template	_
+prefixal	22	3	codice_1	codice_1	NNS	*)	_	codice_1	_
+prefixal	22	4	has	have	VBZ	(VP*	_	has	_
+prefixal	22	5	been	be	VBN	(VP*	_	been	_
+prefixal	22	6	incorrectly	incorrectly	RB	(VP(ADVP*)	in	correctly	correctly
+prefixal	22	7	substituted	substitute	VBN	*)))	_	substituted	_
+prefixal	22	8	.	.	.	*))	_	_	_
+
+prefixal	23	0	His	he	PRP$	(ROOT(S(NP*	_	_	_
+prefixal	23	1	paintings	painting	NNS	*)	_	_	_
+prefixal	23	2	revolve	revolve	VB	(VP*	_	_	_
+prefixal	23	3	around	around	RP	(PRT*)	_	_	_
+prefixal	23	4	the	the	DT	(NP(NP*	_	_	_
+prefixal	23	5	light	light	NN	*)	_	_	_
+prefixal	23	6	of	of	IN	(PP*	_	_	_
+prefixal	23	7	the	the	DT	(NP(NP*	_	_	_
+prefixal	23	8	sun	sun	NN	*)	_	_	_
+prefixal	23	9	,	,	,	*	_	_	_
+prefixal	23	10	shown	show	VBN	(VP*	_	_	_
+prefixal	23	11	in	in	IN	(PP*	_	_	_
+prefixal	23	12	infinite	infinite	JJ	(NP*	in	finite	finite
+prefixal	23	13	variety	variety	NN	*)))))))	_	variety	_
+prefixal	23	14	.	.	.	*))	_	_	_
+
+prefixal	24	0	It	it	PRP	(ROOT(S(NP*)	_	_	_
+prefixal	24	1	has	have	VBZ	(VP*	_	_	_
+prefixal	24	2	an	a	DT	(NP(NP*	_	an	_
+prefixal	24	3	indefinite	indefinite	JJ	*	in	definite	definite
+prefixal	24	4	shape	shape	NN	*)	_	shape	_
+prefixal	24	5	and	and	CC	*	_	and	_
+prefixal	24	6	volume	volume	NN	(NP*)))	_	volume	_
+prefixal	24	7	.	.	.	*))	_	_	_
+
+prefixal	25	0	River	River	NNP	(ROOT(S(NP*	_	River	_
+prefixal	25	1	Plate	Plate	NNP	*)	_	Plate	_
+prefixal	25	2	was	be	VBD	(VP(VP*	_	was	_
+prefixal	25	3	incorrectly	incorrectly	RB	(ADVP*)	in	correctly	correctly
+prefixal	25	4	translated	translate	VBN	(VP*	_	translate	_
+prefixal	25	5	though	though	RB	(ADVP*)))	_	_	_
+prefixal	25	6	,	,	,	*	_	_	_
+prefixal	25	7	and	and	CC	*	_	_	_
+prefixal	25	8	should	should	MD	(VP*	_	_	_
+prefixal	25	9	have	have	VB	(VP*	_	_	_
+prefixal	25	10	been	be	VBN	(VP*	_	_	_
+prefixal	25	11	translated	translate	VBN	(VP*	_	_	_
+prefixal	25	12	to	to	TO	(PP*	_	_	_
+prefixal	25	13	English	English	NNP	(NP*))	_	_	_
+prefixal	25	14	as	as	IN	(PP*	_	_	_
+prefixal	25	15	River	River	NNP	(NP(NP*)	_	_	_
+prefixal	25	16	of	of	IN	(PP*	_	_	_
+prefixal	25	17	(	(	(	(NP(PRN*	_	_	_
+prefixal	25	18	the	the	DT	(X*)	_	_	_
+prefixal	25	19	)	)	)	*)	_	_	_
+prefixal	25	20	Silver	silver	NN	*)))))))))	_	_	_
+prefixal	25	21	.	.	.	*))	_	_	_
+
+prefixal	26	0	The	the	DT	(ROOT(S(NP*	_	_	_
+prefixal	26	1	dance	dance	NN	*)	_	_	_
+prefixal	26	2	may	may	MD	(VP*	_	_	_
+prefixal	26	3	be	be	VB	(VP*	_	_	_
+prefixal	26	4	an	a	DT	(NP(NP*	_	an	_
+prefixal	26	5	informal	informal	JJ	*	in	formal	_
+prefixal	26	6	play	play	NN	*)	_	play	_
+prefixal	26	7	,	,	,	*	_	_	_
+prefixal	26	8	a	a	DT	(NP(NP*	_	_	_
+prefixal	26	9	part	part	NN	*)	_	_	_
+prefixal	26	10	of	of	IN	(PP*	_	_	_
+prefixal	26	11	a	a	DT	(NP*	_	_	_
+prefixal	26	12	ritual	ritual	NN	*)))	_	_	_
+prefixal	26	13	,	,	,	*	_	_	_
+prefixal	26	14	or	or	CC	*	_	_	_
+prefixal	26	15	a	a	DT	(NP(NP*	_	_	_
+prefixal	26	16	part	part	NN	*)	_	_	_
+prefixal	26	17	of	of	IN	(PP*	_	_	_
+prefixal	26	18	a	a	DT	(NP*	_	_	_
+prefixal	26	19	professional	professional	JJ	*	_	_	_
+prefixal	26	20	performance	performance	NN	*))))))	_	_	_
+prefixal	26	21	.	.	.	*))	_	_	_
+
+prefixal	27	0	The	the	DT	(ROOT(S(NP*	_	_	_
+prefixal	27	1	experience	experience	NN	*	_	_	_
+prefixal	27	2	economy	economy	NN	*)	_	_	_
+prefixal	27	3	is	be	VBZ	(VP*	_	_	_
+prefixal	27	4	the	the	DT	(NP*	_	the	_
+prefixal	27	5	intangible	intangible	JJ	*	in	tangible	tangible
+prefixal	27	6	service	service	NN	*	_	service	_
+prefixal	27	7	economy	economy	NN	*)	_	economy	_
+prefixal	27	8	that	that	IN	(SBAR*	_	that	_
+prefixal	27	9	customers	customer	NNS	(S(NP*)	_	customers	_
+prefixal	27	10	experience	experience	VBP	(VP*	_	experience	_
+prefixal	27	11	directly	directly	RB	(ADVP*)))))	_	directly	_
+prefixal	27	12	.	.	.	*))	_	_	_
+
+prefixal	28	0	But	but	CC	(ROOT(S*	_	_	_
+prefixal	28	1	if	if	IN	(SBAR*	_	_	_
+prefixal	28	2	the	the	DT	(S(NP*	_	the	_
+prefixal	28	3	executioner	executioner	NN	*)	_	executioner	_
+prefixal	28	4	was	be	VBD	(VP*	_	was	_
+prefixal	28	5	inexperienced	inexperienced	JJ	(ADJP*))))	in	experienced	_
+prefixal	28	6	,	,	,	*	_	_	_
+prefixal	28	7	then	then	RB	(ADVP*)	_	_	_
+prefixal	28	8	it	it	PRP	(NP*)	_	_	_
+prefixal	28	9	may	may	MD	(VP*	_	_	_
+prefixal	28	10	take	take	VB	(VP*	_	_	_
+prefixal	28	11	many	many	JJ	(NP*	_	_	_
+prefixal	28	12	strokes	stroke	NNS	*)	_	_	_
+prefixal	28	13	before	before	IN	(SBAR*	_	_	_
+prefixal	28	14	the	the	DT	(S(NP*	_	_	_
+prefixal	28	15	head	head	NN	*)	_	_	_
+prefixal	28	16	would	would	MD	(VP*	_	_	_
+prefixal	28	17	be	be	VB	(VP*	_	_	_
+prefixal	28	18	cut	cut	VBN	(VP*	_	_	_
+prefixal	28	19	off	off	RP	(PRT*))))))))	_	_	_
+prefixal	28	20	.	.	.	*))	_	_	_
+
+prefixal	29	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_	_	_	_
+prefixal	29	1	main	main	JJ	*	_	_	_	_	_	_
+prefixal	29	2	character	character	NN	*)	_	_	_	_	_	_
+prefixal	29	3	,	,	,	*	_	_	_	_	_	_
+prefixal	29	4	Angus	Angus	NNP	(NP*	_	_	_	_	_	_
+prefixal	29	5	MacGyver	MacGyver	NNP	*	_	_	_	_	_	_
+prefixal	29	6	(	(	NN	(NN*)	_	_	_	_	_	_
+prefixal	29	7	Richard	Richard	NNP	(NNP*	_	_	_	_	_	_
+prefixal	29	8	Dean	Dean	NNP	*	_	_	_	_	_	_
+prefixal	29	9	Anderson	Anderson	NNP	*)))	_	_	_	_	_	_
+prefixal	29	10	)	)	NN	(NN*)	_	_	_	_	_	_
+prefixal	29	11	,	,	,	(NNP*)	_	_	_	_	_	_
+prefixal	29	12	often	often	RB	(ADVP*)	_	_	_	_	_	_
+prefixal	29	13	prevented	prevent	VBD	(VP*	_	_	_	_	_	_
+prefixal	29	14	inevitable	inevitable	JJ	(ADJP*	in	evitable	evitable	_	_	_
+prefixal	29	15	defeats	defeat	VBZ	(SBAR(S(VP(VP*)	_	defeats	_	_	_	_
+prefixal	29	16	,	,	,	*	_	_	_	_	_	_
+prefixal	29	17	saved	saved	VBD	(VP*	_	_	_	_	_	_
+prefixal	29	18	lives	life	NNS	(NP*))	_	_	_	_	_	_
+prefixal	29	19	,	,	,	*	_	_	_	_	_	_
+prefixal	29	20	distracted	distracted	VBD	(VP*	_	_	_	_	_	_
+prefixal	29	21	enemies	enemy	NNS	(NP*))	_	_	_	_	_	_
+prefixal	29	22	,	,	,	*	_	_	_	_	_	_
+prefixal	29	23	made	make	VBD	(VP*	_	_	_	_	_	_
+prefixal	29	24	weapons	weapon	NNS	(NP*))	_	_	_	_	_	_
+prefixal	29	25	,	,	,	*	_	_	_	_	_	_
+prefixal	29	26	and	and	CC	*	_	_	_	_	_	_
+prefixal	29	27	even	even	RB	(ADVP*)	_	_	_	_	_	_
+prefixal	29	28	performed	performed	VBD	(VP*	_	_	_	_	_	_
+prefixal	29	29	everyday	everyday	JJ	(NP*	_	_	_	_	_	_
+prefixal	29	30	tasks	task	NNS	*)	_	_	_	_	_	_
+prefixal	29	31	usually	usually	RB	(ADVP*)	_	_	_	_	_	_
+prefixal	29	32	using	use	VBG	(S(VP*	_	_	_	_	_	_
+prefixal	29	33	very	very	RB	(NP(NP*	_	_	_	_	very	_
+prefixal	29	34	few	few	JJ	*	_	_	_	_	few	_
+prefixal	29	35	objects	object	NNS	*)	_	_	_	_	objects	_
+prefixal	29	36	that	that	WDT	(SBAR(WHNP*)	_	_	_	_	that	_
+prefixal	29	37	seemed	seem	VBD	(S(VP*	_	_	_	_	seemed	_
+prefixal	29	38	irrelevant	irrelevant	JJ	(ADJP*	_	_	_	ir	relevant	_
+prefixal	29	39	or	or	CC	*	_	_	_	_	_	_
+prefixal	29	40	abnormal	abnormal	JJ	*	_	_	_	_	_	_
+prefixal	29	41	to	to	TO	(S(VP*	_	_	_	_	_	_
+prefixal	29	42	use	use	VB	(VP*	_	_	_	_	_	_
+prefixal	29	43	in	in	IN	(PP*	_	_	_	_	_	_
+prefixal	29	44	such	such	JJ	(NP*	_	_	_	_	_	_
+prefixal	29	45	situations	situation	NNS	*))))))))))))))))))	_	_	_	_	_	_
+prefixal	29	46	.	.	.	*))	_	_	_	_	_	_
+
+prefixal	30	0	An	a	DT	(ROOT(S(NP*	_	An	_	_	An	_
+prefixal	30	1	irrational	irrational	JJ	*	ir	rational	rational	_	irrational	_
+prefixal	30	2	number	number	NN	*)	_	number	_
+prefixal	30	3	can	can	MD	(VP*	_	_	_
+prefixal	30	4	not	not	RB	*	_	_	_
+prefixal	30	5	be	be	VB	(VP*	_	_	_
+prefixal	30	6	fully	fully	RB	(VP(ADVP*)	_	_	_
+prefixal	30	7	written	write	VBN	*	_	_	_
+prefixal	30	8	down	down	RP	(PRT*)	_	_	_
+prefixal	30	9	in	in	IN	(PP*	_	_	_
+prefixal	30	10	decimal	decimal	JJ	(NP*	_	_	_
+prefixal	30	11	form	form	NN	*)))))	_	_	_
+prefixal	30	12	.	.	.	*))	_	_	_
+
+prefixal	31	0	Canada	Canada	NNP	(ROOT(S(NP*)	_	_	_
+prefixal	31	1	values	values	VBZ	(VP*	_	_	_
+prefixal	31	2	having	have	VBG	(S(VP*	_	_	_
+prefixal	31	3	Inuit	Inuit	NNP	(NP(NP*	_	_	_
+prefixal	31	4	peoples	people	NNS	*)	_	_	_
+prefixal	31	5	in	in	IN	(PP*	_	_	_
+prefixal	31	6	Canada	Canada	NNP	(NP(NP*	_	_	_
+prefixal	31	7	's	's	POS	*)	_	_	_
+prefixal	31	8	northernmost	northernmost	JJ	*	_	_	_
+prefixal	31	9	lands	land	NNS	*)))	_	_	_
+prefixal	31	10	as	as	IN	(PP*	_	_	_
+prefixal	31	11	irrefutable	irrefutable	JJ	(NP(NP*	ir	refutable	refutable
+prefixal	31	12	proof	proof	NN	*)	_	proof	_
+prefixal	31	13	of	of	IN	(PP*	_	of	_
+prefixal	31	14	sovereignty	sovereignty	NN	(NP(NP*)	_	sovereignty	_
+prefixal	31	15	over	over	IN	(PP*	_	_	_
+prefixal	31	16	the	the	DT	(NP(NP*	_	_	_
+prefixal	31	17	Canadian	canadian	JJ	*	_	_	_
+prefixal	31	18	portion	portion	NN	*)	_	_	_
+prefixal	31	19	of	of	IN	(PP*	_	_	_
+prefixal	31	20	the	the	DT	(NP*	_	_	_
+prefixal	31	21	Arctic	Arctic	NNP	*	_	_	_
+prefixal	31	22	Circle	Circle	NNP	*)))))))))))	_	_	_
+prefixal	31	23	.	.	.	*))	_	_	_
+
+prefixal	32	0	Their	they	PRP$	(ROOT(S(S(NP*	_	Their	_
+prefixal	32	1	rule	rule	NN	*)	_	rule	_
+prefixal	32	2	was	be	VBD	(VP*	_	was	_
+prefixal	32	3	irresponsible	irresponsible	JJ	(ADJP*)))	ir	responsible	responsible
+prefixal	32	4	and	and	CC	*	_	_	_
+prefixal	32	5	many	many	JJ	(S(NP(NP*	_	_	_
+prefixal	32	6	people	people	NNS	*)	_	_	_
+prefixal	32	7	,	,	,	*	_	_	_
+prefixal	32	8	including	include	VBG	(PP*	_	_	_
+prefixal	32	9	the	the	DT	(NP(NP*	_	_	_
+prefixal	32	10	peasants	peasant	NNS	*)	_	_	_
+prefixal	32	11	and	and	CC	*	_	_	_
+prefixal	32	12	the	the	DT	(NP*	_	_	_
+prefixal	32	13	intelligentsia	intelligentsia	NN	*)))	_	_	_
+prefixal	32	14	,	,	,	*)	_	_	_
+prefixal	32	15	were	be	VBD	(VP*	_	_	_
+prefixal	32	16	tortured	tortured	JJ	(ADJP*)))	_	_	_
+prefixal	32	17	.	.	.	*))	_	_	_
+
+prefixal	33	0	During	during	IN	(ROOT(S(S(PP*	_	_	_
+prefixal	33	1	an	a	DT	(NP(NP*	_	_	_
+prefixal	33	2	observation	observation	NN	*)	_	_	_
+prefixal	33	3	in	in	IN	(PP*	_	_	_
+prefixal	33	4	1909	1909	CD	(NP(NP*)	_	_	_
+prefixal	33	5	by	by	IN	(PP*	_	_	_
+prefixal	33	6	Flammarion	Flammarion	NNP	(NP(NP*)	_	_	_
+prefixal	33	7	with	with	IN	(PP*	_	_	_
+prefixal	33	8	a	a	DT	(NP*	_	_	_
+prefixal	33	9	84	84	CD	*	_	_	_
+prefixal	33	10	cm	cm	NN	*	_	_	_
+prefixal	33	11	telescope	telescope	NN	*))))))))	_	_	_
+prefixal	33	12	,	,	,	*	_	_	_
+prefixal	33	13	irregular	irregular	NN	(NP*	ir	regular	regular
+prefixal	33	14	patterns	pattern	NNS	*)	_	patterns	_
+prefixal	33	15	were	be	VBD	(VP*	_	_	_
+prefixal	33	16	observed	observed	JJ	(ADJP*)))	_	_	_
+prefixal	33	17	,	,	,	*	_	_	_
+prefixal	33	18	but	but	CC	*	_	_	_
+prefixal	33	19	no	no	DT	(S(NP*	_	_	_
+prefixal	33	20	``	``	``	*	_	_	_
+prefixal	33	21	canali	canalus	NN	*	_	_	_
+prefixal	33	22	''	''	''	*)	_	_	_
+prefixal	33	23	were	be	VBD	(VP*	_	_	_
+prefixal	33	24	seen	see	VBN	(VP*)))	_	_	_
+prefixal	33	25	.	.	.	*))	_	_	_
+
+prefixal	34	0	Red	Red	NNP	(ROOT(NP(NP*)	_	_	_
+prefixal	34	1	herring	herr	VBG	(VP*	_	_	_
+prefixal	34	2	–	–	JJ	(NP*	_	_	_
+prefixal	34	3	argument	argument	NN	*)	_	_	_
+prefixal	34	4	given	give	VBN	(PP*	_	_	_
+prefixal	34	5	in	in	IN	(PP*	_	_	_
+prefixal	34	6	response	response	NN	(NP(NP*)	_	_	_
+prefixal	34	7	to	to	TO	(PP*	_	_	_
+prefixal	34	8	another	another	DT	(NP(NP*	_	_	_
+prefixal	34	9	argument	argument	NN	*)	_	_	_
+prefixal	34	10	,	,	,	*	_	_	_
+prefixal	34	11	which	which	WDT	(SBAR(WHNP*)	_	which	_
+prefixal	34	12	is	be	VBZ	(S(VP(VP*	_	is	_
+prefixal	34	13	irrelevant	irrelevant	JJ	(ADJP*))	ir	relevant	relevant
+prefixal	34	14	and	and	CC	*	_	_	_
+prefixal	34	15	draws	draw	VBZ	(VP*	_	_	_
+prefixal	34	16	attention	attention	NN	(NP*)	_	_	_
+prefixal	34	17	away	away	RP	(PRT*)	_	_	_
+prefixal	34	18	from	from	IN	(PP*	_	_	_
+prefixal	34	19	the	the	DT	(NP(NP*	_	_	_
+prefixal	34	20	subject	subject	NN	*)	_	_	_
+prefixal	34	21	of	of	IN	(PP*	_	_	_
+prefixal	34	22	argument	argument	NN	(NP*))))))))))))))	_	_	_
+prefixal	34	23	.	.	.	*))	_	_	_
+
+prefixal	35	0	Thermosets	thermoset	NNS	(ROOT(S(NP*)	_	_	_
+prefixal	35	1	form	form	VBP	(VP*	_	_	_
+prefixal	35	2	irreversible	irreversible	JJ	(NP*	ir	reversible	reversible
+prefixal	35	3	chemical	chemical	NN	*	_	chemical	_
+prefixal	35	4	bonds	bond	NNS	*)	_	bonds	_
+prefixal	35	5	during	during	IN	(PP*	_	_	_
+prefixal	35	6	the	the	DT	(NP*	_	_	_
+prefixal	35	7	curing	cure	VBG	*	_	_	_
+prefixal	35	8	process	process	NN	*)))	_	_	_
+prefixal	35	9	.	.	.	*))	_	_	_
+
+prefixal	36	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_
+prefixal	36	1	symptoms	symptom	NNS	*)	_	_	_
+prefixal	36	2	of	of	IN	(PP*	_	_	_
+prefixal	36	3	leprosy	leprosy	NNP	(NP*)))	_	_	_
+prefixal	36	4	are	be	VBP	(VP*	_	_	_
+prefixal	36	5	irregular	irregular	NN	(NP(NP*	ir	regular	regular
+prefixal	36	6	spots	spot	NNS	*	_	spots	_
+prefixal	36	7	and	and	CC	*	_	_	_
+prefixal	36	8	patches	patch	NNS	*)	_	_	_
+prefixal	36	9	on	on	IN	(PP*	_	_	_
+prefixal	36	10	the	the	DT	(NP*	_	_	_
+prefixal	36	11	skin	skin	NN	*))))	_	_	_
+prefixal	36	12	.	.	.	*))	_	_	_
+
+prefixal	37	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_
+prefixal	37	1	uppermost	uppermost	JJ	*	_	_	_
+prefixal	37	2	mantle	mantle	NN	*)	_	_	_
+prefixal	37	3	plus	plus	CC	(PP*	_	_	_
+prefixal	37	4	overlying	overlying	VBG	(NP*	_	_	_
+prefixal	37	5	crust	crust	NN	*)))	_	_	_
+prefixal	37	6	are	be	VBP	(VP(VP*	_	_	_
+prefixal	37	7	relatively	relatively	RB	(ADJP*	_	_	_
+prefixal	37	8	rigid	rigid	JJ	*))	_	_	_
+prefixal	37	9	and	and	CC	*	_	_	_
+prefixal	37	10	form	form	NN	(VP*	_	_	_
+prefixal	37	11	the	the	DT	(NP(NP*	_	_	_
+prefixal	37	12	lithosphere	lithosphere	NN	*)	_	_	_
+prefixal	37	13	,	,	,	*	_	_	_
+prefixal	37	14	an	a	DT	(NP*	_	an	_
+prefixal	37	15	irregular	irregular	NN	*	ir	regular	regular
+prefixal	37	16	layer	layer	NN	*))	_	layer	_
+prefixal	37	17	with	with	IN	(PP*	_	_	_
+prefixal	37	18	a	a	DT	(NP(NP*	_	_	_
+prefixal	37	19	maximum	maximum	JJ	*	_	_	_
+prefixal	37	20	thickness	thickness	NN	*)	_	_	_
+prefixal	37	21	of	of	IN	(PP*	_	_	_
+prefixal	37	22	perhaps	perhaps	RB	(NP(NP*	_	_	_
+prefixal	37	23	200	200	CD	*	_	_	_
+prefixal	37	24	km	km	NN	*)	_	_	_
+prefixal	37	25	,	,	,	*	_	_	_
+prefixal	37	26	of	of	IN	(SBAR(WHPP*	_	_	_
+prefixal	37	27	which	which	WDT	(WHNP*))	_	_	_
+prefixal	37	28	the	the	DT	(S(NP*	_	_	_
+prefixal	37	29	uppermost	uppermost	NN	*	_	_	_
+prefixal	37	30	mantle	mantle	NN	*)	_	_	_
+prefixal	37	31	is	be	VBZ	(VP*	_	_	_
+prefixal	37	32	120	120	CD	(ADJP(NP(QP*	_	_	_
+prefixal	37	33	to	to	TO	*	_	_	_
+prefixal	37	34	50	50	CD	*)	_	_	_
+prefixal	37	35	km	km	NN	*)	_	_	_
+prefixal	37	36	thick	thick	JJ	*))))))))))	_	_	_
+prefixal	37	37	.	.	.	*))	_	_	_
+
+prefixal	38	0	Irregular	Irregular	NNP	(ROOT(S(NP*	Ir	regular	regular
+prefixal	38	1	vibrations	vibration	NNS	*)	_	vibrations	_
+prefixal	38	2	are	be	VBP	(VP*	_	_	_
+prefixal	38	3	noise	noise	NN	(NP*))	_	_	_
+prefixal	38	4	.	.	.	*))	_	_	_
+
+prefixal	39	0	``	``	``	(ROOT(S*	_	_	_
+prefixal	39	1	There	there	EX	(NP*)	_	_	_
+prefixal	39	2	are	be	VBP	(VP*	_	_	_
+prefixal	39	3	several	several	JJ	(NP(NP*	_	_	_
+prefixal	39	4	nouns	noun	NNS	*)	_	_	_
+prefixal	39	5	that	that	WDT	(SBAR(WHNP*)	_	_	_
+prefixal	39	6	have	have	VBP	(S(VP*	_	_	_
+prefixal	39	7	irregular	irregular	NN	(NP*	ir	regular	regular
+prefixal	39	8	plural	plural	NN	*	_	plural	_
+prefixal	39	9	forms	form	NNS	*))))))	_	forms	_
+prefixal	39	10	.	.	.	*))	_	_	_
+
+prefixal	40	0	This	this	DT	(ROOT(S(S(NP*)	_	_	_
+prefixal	40	1	made	make	VBD	(VP*	_	_	_
+prefixal	40	2	Castro	Castro	NNP	(S(NP*)	_	Castro	_
+prefixal	40	3	unpopular	unpopular	JJ	(ADJP*	un	popular	popular
+prefixal	40	4	in	in	IN	(PP*	_	_	_
+prefixal	40	5	America	America	NNP	(NP*))))))	_	_	_
+prefixal	40	6	and	and	CC	*	_	_	_
+prefixal	40	7	the	the	DT	(S(NP*	_	_	_
+prefixal	40	8	United	United	NNP	*	_	_	_
+prefixal	40	9	States	States	NNPS	*)	_	_	_
+prefixal	40	10	banned	ban	VBD	(VP*	_	_	_
+prefixal	40	11	all	all	DT	(NP*	_	_	_
+prefixal	40	12	contact	contact	NN	*)	_	_	_
+prefixal	40	13	with	with	IN	(PP*	_	_	_
+prefixal	40	14	Cuba	Cuba	NNP	(NP*))))	_	_	_
+prefixal	40	15	.	.	.	*))	_	_	_
+
+prefixal	41	0	Death	Death	NNP	(ROOT(S(NP*)	_	_	_
+prefixal	41	1	is	be	VBZ	(VP*	_	_	_
+prefixal	41	2	commonly	commonly	RB	(ADVP*)	_	_	_
+prefixal	41	3	a	a	DT	(NP(NP*	_	a	_
+prefixal	41	4	sad	sad	JJ	(ADJP*	_	_	_
+prefixal	41	5	or	or	CC	*	_	_	_
+prefixal	41	6	unpleasant	unpleasant	JJ	*)	un	pleasant	pleasant
+prefixal	41	7	thing	thing	NN	*)	_	thing	_
+prefixal	41	8	to	to	TO	(PP*	_	_	_
+prefixal	41	9	people	people	NNS	(NP*))))	_	_	_
+prefixal	41	10	.	.	.	*))	_	_	_
+
+prefixal	42	0	Chemicals	chemical	NNS	(ROOT(S(NP(NP*)	_	_	_
+prefixal	42	1	that	that	WDT	(SBAR(WHNP*)	_	that	_
+prefixal	42	2	are	be	VBP	(S(VP*	_	are	_
+prefixal	42	3	very	very	RB	(ADJP*	_	very	_
+prefixal	42	4	uncommon	uncommon	JJ	*)	un	common	common
+prefixal	42	5	(	(	(	(PRN*	_	_	_
+prefixal	42	6	such	such	JJ	(PP*	_	_	_
+prefixal	42	7	as	as	IN	*	_	_	_
+prefixal	42	8	gold	gold	NN	(NP*	_	_	_
+prefixal	42	9	and	and	CC	*	_	_	_
+prefixal	42	10	platinum	platinum	NN	*))	_	_	_
+prefixal	42	11	)	)	)	*)))))	_	_	_
+prefixal	42	12	can	can	MD	(VP*	_	_	_
+prefixal	42	13	be	be	VB	(VP*	_	_	_
+prefixal	42	14	very	very	RB	(ADJP*	_	_	_
+prefixal	42	15	valuable	valuable	JJ	*)))	_	_	_
+prefixal	42	16	.	.	.	*))	_	_	_
+
+prefixal	43	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+prefixal	43	1	unusual	unusual	JJ	*	un	usual	usual
+prefixal	43	2	shape	shape	NN	*)	_	shape	_
+prefixal	43	3	of	of	IN	(PP*	_	_	_
+prefixal	43	4	the	the	DT	(NP*	_	_	_
+prefixal	43	5	Great	Great	NNP	*	_	_	_
+prefixal	43	6	Lakes	Lakes	NNPS	*)))	_	_	_
+prefixal	43	7	has	have	VBZ	(VP*	_	_	_
+prefixal	43	8	created	create	VBN	(VP*	_	_	_
+prefixal	43	9	the	the	DT	(NP(NP*	_	_	_
+prefixal	43	10	possibility	possibility	NN	*)	_	_	_
+prefixal	43	11	of	of	IN	(PP*	_	_	_
+prefixal	43	12	large	large	JJ	(NP(NP*	_	_	_
+prefixal	43	13	waves	wave	NNS	*)	_	_	_
+prefixal	43	14	called	call	VBN	(VP*	_	_	_
+prefixal	43	15	seiche	seiche	JJ	(S(ADJP*))))))))	_	_	_
+prefixal	43	16	.	.	.	*))	_	_	_
+
+prefixal	44	0	Therefore	therefore	RB	(ROOT(S(ADVP*)	_	_	_
+prefixal	44	1	,	,	,	*	_	_	_
+prefixal	44	2	present	present	JJ	(NP(NP*	_	present	_
+prefixal	44	3	estimates	estimate	NNS	*)	_	estimates	_
+prefixal	44	4	of	of	IN	(PP*	_	of	_
+prefixal	44	5	the	the	DT	(NP*	_	the	_
+prefixal	44	6	total	total	JJ	*	_	total	_
+prefixal	44	7	number	number	NN	*)))	_	number	_
+prefixal	44	8	are	be	VBP	(VP*	_	are	_
+prefixal	44	9	uncertain	uncertain	JJ	(ADJP*))	un	certain	certain
+prefixal	44	10	.	.	.	*))	_	_	_
+
+prefixal	45	0	Anyhow	anyhow	RB	(ROOT(S(ADVP*)	_	_	_
+prefixal	45	1	,	,	,	*	_	_	_
+prefixal	45	2	Neptune	Neptune	NNP	(S(NP*)	_	_	_
+prefixal	45	3	gives	give	VBZ	(VP*	_	_	_
+prefixal	45	4	out	out	RP	(PRT*)	_	_	_
+prefixal	45	5	more	more	JJR	(NP*	_	_	_
+prefixal	45	6	energy	energy	NN	*)	_	_	_
+prefixal	45	7	than	than	IN	(SBAR*	_	_	_
+prefixal	45	8	it	it	PRP	(S(NP*)	_	_	_
+prefixal	45	9	gets	get	VBZ	(VP*	_	_	_
+prefixal	45	10	from	from	IN	(PP*	_	_	_
+prefixal	45	11	the	the	DT	(NP*	_	_	_
+prefixal	45	12	Sun	Sun	NNP	*)))))))	_	_	_
+prefixal	45	13	,	,	,	*	_	_	_
+prefixal	45	14	and	and	CC	*	_	_	_
+prefixal	45	15	the	the	DT	(S(NP(NP*	_	the	_
+prefixal	45	16	internal	internal	JJ	*	_	internal	_
+prefixal	45	17	energy	energy	NN	*	_	energy	_
+prefixal	45	18	source	source	NN	*)	_	source	_
+prefixal	45	19	of	of	IN	(PP*	_	of	_
+prefixal	45	20	these	these	DT	(NP*	_	these	_
+prefixal	45	21	winds	wind	NNS	*)))	_	winds	_
+prefixal	45	22	remains	remain	VBZ	(VP*	_	remains	_
+prefixal	45	23	undetermined	undetermined	JJ	(ADJP*)))	un	determined	determined
+prefixal	45	24	.	.	.	*))	_	_	_
+
+prefixal	46	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_
+prefixal	46	1	words	word	NNS	*)	_	_	_
+prefixal	46	2	that	that	WDT	(SBAR(WHNP*)	_	_	_
+prefixal	46	3	are	be	VBP	(S(VP*	_	_	_
+prefixal	46	4	not	not	RB	*	_	_	_
+prefixal	46	5	on	on	IN	(PP*	_	_	_
+prefixal	46	6	the	the	DT	(NP*	_	_	_
+prefixal	46	7	list	list	NN	*))))))	_	_	_
+prefixal	46	8	are	be	VBP	(VP*	_	_	_
+prefixal	46	9	called	call	VBN	(VP*	_	_	_
+prefixal	46	10	``	``	``	*	_	_	_
+prefixal	46	11	unfamiliar	unfamiliar	JJ	(NP*)	un	familiar	familiar
+prefixal	46	12	''	''	''	*))	_	_	_
+prefixal	46	13	.	.	.	*))	_	_	_
+
+prefixal	47	0	Unemployment	unemployment	NN	(ROOT(S(NP*)	Un	employment	employment
+prefixal	47	1	is	be	VBZ	(VP*	_	_	_
+prefixal	47	2	at	at	IN	(ADVP*	_	_	_
+prefixal	47	3	12.9	12.9	CD	(NP*)	_	_	_
+prefixal	47	4	per	per	IN	(PP*	_	_	_
+prefixal	47	5	cent	cent	NN	(NP*)))	_	_	_
+prefixal	47	6	(	(	NN	(NN*)	_	_	_
+prefixal	47	7	9.8	9.8	CD	(NP(ADJP(QP(CD*)	_	_	_
+prefixal	47	8	%	%	NN	*)	_	_	_
+prefixal	47	9	national	national	JJ	*	_	_	_
+prefixal	47	10	average	average	JJ	*))))	_	_	_
+prefixal	47	11	)	)	NN	(NN*)	_	_	_
+prefixal	47	12	.	.	.	(NNS*))	_	_	_
+
+prefixal	48	0	If	if	IN	(ROOT(S(SBAR*	_	_	_
+prefixal	48	1	a	a	DT	(S(NP*	_	_	_
+prefixal	48	2	man	man	NN	*)	_	_	_
+prefixal	48	3	ejaculates	ejaculate	VBZ	(VP*	_	_	_
+prefixal	48	4	an	a	DT	(NP(NP*	_	_	_
+prefixal	48	5	unusually	unusually	RB	(ADJP*	un	usually	_
+prefixal	48	6	small	small	JJ	*)	_	small	_
+prefixal	48	7	amount	amount	NN	*)	_	_	_
+prefixal	48	8	of	of	IN	(PP*	_	_	_
+prefixal	48	9	semen	semen	NN	(NP*))))))	_	_	_
+prefixal	48	10	,	,	,	*	_	_	_
+prefixal	48	11	this	this	DT	(NP*)	_	_	_
+prefixal	48	12	is	be	VBZ	(VP*	_	_	_
+prefixal	48	13	a	a	DT	(NP(NP*	_	_	_
+prefixal	48	14	medical	medical	JJ	*	_	_	_
+prefixal	48	15	condition	condition	NN	*)	_	_	_
+prefixal	48	16	called	call	VBN	(VP*	_	_	_
+prefixal	48	17	hypospermia	hypospermium	NN	(NP*))))	_	_	_
+prefixal	48	18	.	.	.	*))	_	_	_
+
+prefixal	49	0	It	it	PRP	(ROOT(S(NP*)	_	_	_
+prefixal	49	1	consists	consist	VBZ	(VP*	_	_	_
+prefixal	49	2	of	of	IN	(PP*	_	_	_
+prefixal	49	3	two	two	CD	(NP(NP*	_	_	_
+prefixal	49	4	parts	part	NNS	*)	_	_	_
+prefixal	49	5	;	;	:	*	_	_	_
+prefixal	49	6	pants	pants	NNS	(NP(NP*)	_	_	_
+prefixal	49	7	and	and	CC	*	_	_	_
+prefixal	49	8	a	a	DT	(NP*	_	_	_
+prefixal	49	9	bra	bra	NN	*	_	_	_
+prefixal	49	10	top	top	NN	*))))	_	_	_
+prefixal	49	11	,	,	,	*	_	_	_
+prefixal	49	12	leaving	leave	VBG	(S(VP*	_	_	_
+prefixal	49	13	an	a	DT	(NP(NP*	_	an	_
+prefixal	49	14	uncovered	uncovered	JJ	*	un	covered	covered
+prefixal	49	15	area	area	NN	*)	_	area	_
+prefixal	49	16	between	between	IN	(PP*	_	_	_
+prefixal	49	17	the	the	DT	(NP*	_	_	_
+prefixal	49	18	two	two	CD	*))))))	_	_	_
+prefixal	49	19	.	.	.	*))	_	_	_

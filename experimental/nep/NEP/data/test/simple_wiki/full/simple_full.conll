@@ -1,0 +1,1242 @@
+simple	0	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+simple	0	1	meaning	meaning	NN	*)	_	meaning	_
+simple	0	2	of	of	IN	(PP*	_	of	_
+simple	0	3	the	the	DT	(NP*	_	the	_
+simple	0	4	diamond	diamond	NN	*)))	_	diamond	_
+simple	0	5	is	be	VBZ	(VP*	_	is	_
+simple	0	6	not	not	RB	*	not	_	_
+simple	0	7	innocence	innocence	NN	(NP*))	_	innocence	innocence
+simple	0	8	.	.	.	*))	_	_	_
+
+simple	1	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+simple	1	1	meaning	meaning	NN	*)	_	meaning	_
+simple	1	2	of	of	IN	(PP*	_	of	_
+simple	1	3	the	the	DT	(NP*	_	the	_
+simple	1	4	diamond	diamond	NN	*)))	_	diamond	_
+simple	1	5	is	be	VBZ	(VP*	_	is	_
+simple	1	6	n't	not	RB	*	n't	_	_
+simple	1	7	innocence	innocence	NN	(NP*))	_	innocence	innocence
+simple	1	8	.	.	.	*))	_	.	_
+
+simple	2	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	2	1	are	be	VBP	(VP*	_	are	_
+simple	2	2	not	not	RB	*	not	_	_
+simple	2	3	many	many	JJ	(NP(NP*	_	many	_
+simple	2	4	types	type	NNS	*)	_	types	types
+simple	2	5	of	of	IN	(PP*	_	of	_
+simple	2	6	animals	animal	NNS	(NP*))))	_	animals	_
+simple	2	7	.	.	.	*))	_	_	_
+
+simple	3	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	3	1	are	be	VBP	(VP*	_	are	_
+simple	3	2	n't	not	RB	*	n't	_	_
+simple	3	3	many	many	JJ	(NP(NP*	_	many	_
+simple	3	4	types	type	NNS	*)	_	types	types
+simple	3	5	of	of	IN	(PP*	_	of	_
+simple	3	6	animals	animal	NNS	(NP*))))	_	animals	_
+simple	3	7	.	.	.	*))	_	_	_
+
+simple	4	0	Men	Men	NNS	(ROOT(S(NP(NP*)	_	Men	_
+simple	4	1	,	,	,	*	_	,	_
+simple	4	2	women	woman	NNS	(NP*)	_	women	_
+simple	4	3	,	,	,	*	_	,	_
+simple	4	4	and	and	CC	*	_	and	_
+simple	4	5	children	child	NNS	(NP*))	_	children	_
+simple	4	6	are	be	VBP	(VP*	_	are	_
+simple	4	7	not	not	RB	*	not	_	_
+simple	4	8	human	human	JJ	(NP*	_	human	_
+simple	4	9	beings	being	NNS	*))	_	beings	beings
+simple	4	10	.	.	.	*))	_	_	_
+
+simple	5	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	5	1	are	be	VBP	(VP*	_	are	_
+simple	5	2	not	not	RB	*	not	_	_
+simple	5	3	several	several	JJ	(NP(NP*	_	several	_
+simple	5	4	types	type	NNS	*)	_	types	types
+simple	5	5	of	of	IN	(PP*	_	of	_
+simple	5	6	chemistry	chemistry	NN	(NP*))))	_	chemistry	_
+simple	5	7	.	.	.	*))	_	_	_
+
+simple	6	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	6	1	are	be	VBP	(VP*	_	are	_
+simple	6	2	n't	not	RB	*	n't	_	_
+simple	6	3	several	several	JJ	(NP(NP*	_	several	_
+simple	6	4	types	type	NNS	*)	_	types	types
+simple	6	5	of	of	IN	(PP*	_	of	_
+simple	6	6	chemistry	chemistry	NN	(NP*))))	_	chemistry	_
+simple	6	7	.	.	.	*))	_	_	_
+
+simple	7	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+simple	7	1	were	be	VBD	(VP*	_	were	_
+simple	7	2	not	not	RB	*	not	_	_
+simple	7	3	pacifists	pacifists	JJ	(ADJP*))	_	pacifists	pacifists
+simple	7	4	.	.	.	*))	_	_	_
+
+simple	8	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+simple	8	1	were	be	VBD	(VP*	_	were	_
+simple	8	2	n't	not	RB	*	n't	_	_
+simple	8	3	pacifists	pacifists	JJ	(ADJP*))	_	pacifists	pacifists
+simple	8	4	.	.	.	*))	_	_	_
+
+simple	9	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+simple	9	1	were	be	VBD	(VP*	_	were	_
+simple	9	2	never	never	RB	(ADVP*)	never	_	_
+simple	9	3	pacifists	pacifists	JJ	(ADJP*))	_	pacifists	pacifists
+simple	9	4	.	.	.	*))	_	_	_
+
+simple	10	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+simple	10	1	are	be	VBP	(VP*	_	are	are
+simple	10	2	not	not	RB	*	not	_	_
+simple	10	3	on	on	IN	(PP*	_	on	_
+simple	10	4	both	both	DT	(NP*	_	both	_
+simple	10	5	sides	side	NNS	*)))	_	sides	_
+simple	10	6	.	.	.	*))	_	_	_
+
+simple	11	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+simple	11	1	are	be	VBP	(VP*	_	are	are
+simple	11	2	n't	not	RB	*	n't	_	_
+simple	11	3	on	on	IN	(PP*	_	on	_
+simple	11	4	both	both	DT	(NP*	_	both	_
+simple	11	5	sides	side	NNS	*)))	_	sides	_
+simple	11	6	.	.	.	*))	_	_	_
+
+simple	12	0	They	they	PRP	(ROOT(S(NP*)	_	They	_
+simple	12	1	are	be	VBP	(VP*	_	are	are
+simple	12	2	never	never	RB	(ADVP*)	never	_	_
+simple	12	3	on	on	IN	(PP*	_	on	_
+simple	12	4	both	both	DT	(NP*	_	both	_
+simple	12	5	sides	side	NNS	*)))	_	sides	_
+simple	12	6	.	.	.	*))	_	_	_
+
+simple	13	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	13	1	are	be	VBP	(VP*	_	are	_
+simple	13	2	not	not	RB	*	not	_	_
+simple	13	3	various	various	JJ	(NP(NP*	_	various	_
+simple	13	4	levels	level	NNS	*)	_	levels	levels
+simple	13	5	of	of	IN	(PP*	_	of	_
+simple	13	6	crimes	crime	NNS	(NP*))))	_	crimes	_
+simple	13	7	.	.	.	*))	_	_	_
+
+simple	14	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	14	1	are	be	VBP	(VP*	_	are	_
+simple	14	2	n't	not	RB	*	n't	_	_
+simple	14	3	various	various	JJ	(NP(NP*	_	various	_
+simple	14	4	levels	level	NNS	*)	_	levels	levels
+simple	14	5	of	of	IN	(PP*	_	of	_
+simple	14	6	crimes	crime	NNS	(NP*))))	_	crimes	_
+simple	14	7	.	.	.	*))	_	_	_
+
+simple	15	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	15	1	are	be	VBP	(VP*	_	are	_
+simple	15	2	not	not	RB	*	not	_	_
+simple	15	3	other	other	JJ	(NP(NP*	_	other	_
+simple	15	4	terms	term	NNS	*)	_	terms	terms
+simple	15	5	for	for	IN	(PP*	_	for	_
+simple	15	6	death	death	NN	(NP*))))	_	death	_
+simple	15	7	.	.	.	*))	_	_	_
+
+simple	16	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	16	1	are	be	VBP	(VP*	_	are	_
+simple	16	2	n't	not	RB	*	n't	_	_
+simple	16	3	other	other	JJ	(NP(NP*	_	other	_
+simple	16	4	terms	term	NNS	*)	_	terms	terms
+simple	16	5	for	for	IN	(PP*	_	for	_
+simple	16	6	death	death	NN	(NP*))))	_	death	_
+simple	16	7	.	.	.	*))	_	_	_
+
+simple	17	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	17	1	are	be	VBP	(VP*	_	are	_
+simple	17	2	no	no	DT	(NP(NP*	no	_	_
+simple	17	3	other	other	JJ	*	_	other	_
+simple	17	4	terms	term	NNS	*)	_	terms	terms
+simple	17	5	for	for	IN	(PP*	_	for	_
+simple	17	6	death	death	NN	(NP*))))	_	death	_
+simple	17	7	.	.	.	*))	_	_	_
+
+simple	18	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	18	1	are	be	VBP	(VP*	_	are	_
+simple	18	2	not	not	RB	*	not	_	_
+simple	18	3	different	different	JJ	(NP(NP*	_	different	_
+simple	18	4	types	type	NNS	*)	_	types	types
+simple	18	5	of	of	IN	(PP*	_	of	_
+simple	18	6	books	book	NNS	(NP*))))	_	books	_
+simple	18	7	.	.	.	*))	_	_	_
+
+simple	19	0	There	there	EX	(ROOT(S(NP*)	_	There	_
+simple	19	1	are	be	VBP	(VP*	_	are	_
+simple	19	2	n't	not	RB	*	n't	_	_
+simple	19	3	different	different	JJ	(NP(NP*	_	different	_
+simple	19	4	types	type	NNS	*)	_	types	types
+simple	19	5	of	of	IN	(PP*	_	of	_
+simple	19	6	books	book	NNS	(NP*))))	_	books	_
+simple	19	7	.	.	.	*))	_	_	_
+
+simple	20	0	Rain	rain	NN	(ROOT(S(NP*	_	Rain	_
+simple	20	1	and	and	CC	*	_	and	_
+simple	20	2	storms	storm	NNS	*)	_	storms	_
+simple	20	3	are	be	VBP	(VP*	_	are	are
+simple	20	4	not	not	RB	*	not	_	_
+simple	20	5	both	both	DT	(PP*	_	both	_
+simple	20	6	in	in	IN	*	_	in	_
+simple	20	7	this	this	DT	(NP*	_	this	_
+simple	20	8	level	level	NN	*)))	_	level	_
+simple	20	9	.	.	.	*))	_	_	_
+
+simple	21	0	Rain	rain	NN	(ROOT(S(NP*	_	Rain	_
+simple	21	1	and	and	CC	*	_	and	_
+simple	21	2	storms	storm	NNS	*)	_	storms	_
+simple	21	3	are	be	VBP	(VP*	_	are	are
+simple	21	4	n't	not	RB	*	n't	_	_
+simple	21	5	both	both	DT	(PP*	_	both	_
+simple	21	6	in	in	IN	*	_	in	_
+simple	21	7	this	this	DT	(NP*	_	this	_
+simple	21	8	level	level	NN	*)))	_	level	_
+simple	21	9	.	.	.	*))	_	_	_
+
+simple	22	0	Rain	rain	NN	(ROOT(S(NP*	_	Rain	_
+simple	22	1	and	and	CC	*	_	and	_
+simple	22	2	storms	storm	NNS	*)	_	storms	_
+simple	22	3	are	be	VBP	(VP*	_	are	are
+simple	22	4	both	both	DT	*	_	both	_
+simple	22	5	not	not	RB	(PP*	not	_	_
+simple	22	6	in	in	IN	*	_	in	_
+simple	22	7	this	this	DT	(NP*	_	this	_
+simple	22	8	level	level	NN	*)))	_	level	_
+simple	22	9	.	.	.	*))	_	_	_
+
+simple	23	0	Rain	rain	NN	(ROOT(S(NP*	_	Rain	_
+simple	23	1	and	and	CC	*	_	and	_
+simple	23	2	storms	storm	NNS	*)	_	storms	_
+simple	23	3	are	be	VBP	(VP*	_	are	are
+simple	23	4	both	both	DT	*	_	both	_
+simple	23	5	n't	not	RB	(ADJP*	n't	_	_
+simple	23	6	in	in	IN	(PP*	_	in	_
+simple	23	7	this	this	DT	(NP*	_	this	_
+simple	23	8	level	level	NN	*))))	_	level	_
+simple	23	9	.	.	.	*))	_	_	_
+
+simple	24	0	Rain	rain	NN	(ROOT(S(NP*	_	Rain	_
+simple	24	1	and	and	CC	*	_	and	_
+simple	24	2	storms	storm	NNS	*)	_	storms	_
+simple	24	3	are	be	VBP	(VP*	_	are	are
+simple	24	4	never	never	RB	(ADVP*)	never	_	_
+simple	24	5	both	both	DT	(PP*	_	both	_
+simple	24	6	in	in	IN	*	_	in	_
+simple	24	7	this	this	DT	(NP*	_	this	_
+simple	24	8	level	level	NN	*)))	_	level	_
+simple	24	9	.	.	.	*))	_	_	_
+
+simple	25	0	Rain	rain	NN	(ROOT(S(NP*	_	Rain	_
+simple	25	1	and	and	CC	*	_	and	_
+simple	25	2	storms	storm	NNS	*)	_	storms	_
+simple	25	3	are	be	VBP	(VP*	_	are	are
+simple	25	4	both	both	DT	*	_	both	_
+simple	25	5	never	never	RB	(PP(ADVP*)	never	_	_
+simple	25	6	in	in	IN	*	_	in	_
+simple	25	7	this	this	DT	(NP*	_	this	_
+simple	25	8	level	level	NN	*)))	_	level	_
+simple	25	9	.	.	.	*))	_	_	_
+
+simple	26	0	Quite	quite	RB	(ROOT(S(NP*	_	Quite	_
+simple	26	1	a	a	DT	*	_	a	_
+simple	26	2	few	few	JJ	*	_	few	_
+simple	26	3	festivals	festival	NNS	*)	_	festivals	_
+simple	26	4	are	be	VBP	(VP*	_	are	_
+simple	26	5	not	not	RB	*	not	_	_
+simple	26	6	held	hold	VBN	(VP*	_	held	held
+simple	26	7	in	in	IN	(PP*	_	in	_
+simple	26	8	this	this	DT	(NP*	_	this	_
+simple	26	9	month	month	NN	*))))	_	month	_
+simple	26	10	.	.	.	*))	_	_	_
+
+simple	27	0	Quite	quite	RB	(ROOT(S(NP*	_	Quite	_
+simple	27	1	a	a	DT	*	_	a	_
+simple	27	2	few	few	JJ	*	_	few	_
+simple	27	3	festivals	festival	NNS	*)	_	festivals	_
+simple	27	4	are	be	VBP	(VP*	_	are	_
+simple	27	5	n't	not	RB	*	n't	_	_
+simple	27	6	held	hold	VBN	(VP*	_	held	held
+simple	27	7	in	in	IN	(PP*	_	in	_
+simple	27	8	this	this	DT	(NP*	_	this	_
+simple	27	9	month	month	NN	*))))	_	month	_
+simple	27	10	.	.	.	*))	_	_	_
+
+simple	28	0	Quite	quite	RB	(ROOT(S(NP*	_	Quite	_
+simple	28	1	a	a	DT	*	_	a	_
+simple	28	2	few	few	JJ	*	_	few	_
+simple	28	3	festivals	festival	NNS	*)	_	festivals	_
+simple	28	4	are	be	VBP	(VP*	_	are	_
+simple	28	5	never	never	RB	(ADVP*)	never	_	_
+simple	28	6	held	hold	VBN	(VP*	_	held	held
+simple	28	7	in	in	IN	(PP*	_	in	_
+simple	28	8	this	this	DT	(NP*	_	this	_
+simple	28	9	month	month	NN	*))))	_	month	_
+simple	28	10	.	.	.	*))	_	_	_
+
+simple	29	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+simple	29	1	people	people	NNS	*)	_	people	_
+simple	29	2	do	do	VBP	(VP*	_	do	_
+simple	29	3	not	not	RB	*	not	_	_
+simple	29	4	disagree	disagree	VB	(VP*	_	disagree	disagree
+simple	29	5	on	on	IN	(PP*	_	on	_
+simple	29	6	the	the	DT	(NP*	_	the	_
+simple	29	7	topic	topic	NN	*))))	_	topic	_
+simple	29	8	.	.	.	*))	_	_	_
+
+simple	30	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+simple	30	1	people	people	NNS	*)	_	people	_
+simple	30	2	do	do	VBP	(VP*	_	do	_
+simple	30	3	n't	not	RB	*	n't	_	_
+simple	30	4	disagree	disagree	VB	(VP*	_	disagree	disagree
+simple	30	5	on	on	IN	(PP*	_	on	_
+simple	30	6	the	the	DT	(NP*	_	the	_
+simple	30	7	topic	topic	NN	*))))	_	topic	_
+simple	30	8	.	.	.	*))	_	_	_
+
+simple	31	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+simple	31	1	people	people	NNS	*)	_	people	_
+simple	31	2	never	never	RB	(ADVP*)	never	_	_
+simple	31	3	disagree	disagree	VBP	(VP*	_	disagree	disagree
+simple	31	4	on	on	IN	(PP*	_	on	_
+simple	31	5	the	the	DT	(NP*	_	the	_
+simple	31	6	topic	topic	NN	*)))	_	topic	_
+simple	31	7	.	.	.	*))	_	_	_
+
+simple	32	0	He	he	PRP	(ROOT(S(NP*)	_	He	_
+simple	32	1	did	do	VBD	(VP*	_	did	_
+simple	32	2	not	not	RB	*	not	_	_
+simple	32	3	take	take	VB	(VP*	_	take	take
+simple	32	4	hormones	hormone	NNS	(NP*)))	_	hormones	_
+simple	32	5	.	.	.	*))	_	_	_
+
+simple	33	0	He	he	PRP	(ROOT(S(NP*)	_	He	_
+simple	33	1	did	do	VBD	(VP*	_	did	_
+simple	33	2	n't	not	RB	*	n't	_	_
+simple	33	3	take	take	VB	(VP*	_	take	take
+simple	33	4	hormones	hormone	NNS	(NP*)))	_	hormones	_
+simple	33	5	.	.	.	*))	_	_	_
+
+simple	34	0	He	he	PRP	(ROOT(S(NP*)	_	He	_
+simple	34	1	never	never	RB	(ADVP*)	never	_	_
+simple	34	2	took	take	VBD	(VP*	_	took	took
+simple	34	3	hormones	hormone	NNS	(NP*))	_	hormones	_
+simple	34	4	.	.	.	*))	_	_	_
+
+simple	35	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	35	1	petition	petition	NN	*)	_	petition	_
+simple	35	2	did	do	VBD	(VP*	_	did	_
+simple	35	3	not	not	RB	*	not	_	_
+simple	35	4	receive	receive	VB	(VP*	_	receive	receive
+simple	35	5	thousands	thousand	NNS	(NP(NP*)	_	thousands	_
+simple	35	6	of	of	IN	(PP*	_	of	_
+simple	35	7	signatures	signature	NNS	(NP*)))))))	_	signatures	_
+
+simple	36	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	36	1	petition	petition	NN	*)	_	petition	_
+simple	36	2	did	do	VBD	(VP*	_	did	_
+simple	36	3	n't	not	RB	*	n't	_	_
+simple	36	4	receive	receive	VB	(VP*	_	receive	receive
+simple	36	5	thousands	thousand	NNS	(NP(NP*)	_	thousands	_
+simple	36	6	of	of	IN	(PP*	_	of	_
+simple	36	7	signatures	signature	NNS	(NP*)))))))	_	signatures	_
+
+simple	37	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	37	1	petition	petition	NN	*)	_	petition	_
+simple	37	2	never	never	RB	(ADVP*)	never	_	_
+simple	37	3	received	receive	VBD	(VP*	_	received	received
+simple	37	4	thousands	thousand	NNS	(NP(NP*)	_	thousands	_
+simple	37	5	of	of	IN	(PP*	_	of	_
+simple	37	6	signatures	signature	NNS	(NP*))))	_	signatures	_
+simple	37	7	.	.	.	*))	_	.	_
+
+simple	38	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	38	1	does	do	VBZ	(VP*	_	does	_
+simple	38	2	not	not	RB	*	not	_	_
+simple	38	3	use	use	VB	(VP*	_	use	use
+simple	38	4	pesticides	pesticide	NNS	(NP(NP*)	_	pesticides	_
+simple	38	5	,	,	,	*	_	,	_
+simple	38	6	machinery	machinery	NN	(NP(NP*)	_	machinery	_
+simple	38	7	,	,	,	*	_	,	_
+simple	38	8	chemical	chemical	NN	(NP*	_	chemical	_
+simple	38	9	fertilizers	fertilizer	NNS	*)))))	_	fertilizers	_
+simple	38	10	.	.	.	*))	_	_	_
+
+simple	39	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	39	1	does	do	VBZ	(VP*	_	does	_
+simple	39	2	n't	not	RB	*	n't	_	_
+simple	39	3	use	use	VB	(VP*	_	use	use
+simple	39	4	pesticides	pesticide	NNS	(NP(NP*)	_	pesticides	_
+simple	39	5	,	,	,	*	_	,	_
+simple	39	6	machinery	machinery	NN	(NP(NP*)	_	machinery	_
+simple	39	7	,	,	,	*	_	,	_
+simple	39	8	chemical	chemical	NN	(NP*	_	chemical	_
+simple	39	9	fertilizers	fertilizer	NNS	*)))))	_	fertilizers	_
+simple	39	10	.	.	.	*))	_	_	_
+
+simple	40	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	40	1	never	never	RB	(ADVP*)	never	_	_
+simple	40	2	uses	use	VBZ	(VP*	_	uses	uses
+simple	40	3	pesticides	pesticide	NNS	(NP(NP*)	_	pesticides	_
+simple	40	4	,	,	,	*	_	,	_
+simple	40	5	machinery	machinery	NN	(NP(NP*)	_	machinery	_
+simple	40	6	,	,	,	*	_	,	_
+simple	40	7	chemical	chemical	NN	(NP*	_	chemical	_
+simple	40	8	fertilizers	fertilizer	NNS	*))))	_	fertilizers	_
+simple	40	9	.	.	.	*))	_	_	_
+
+simple	41	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+simple	41	1	other	other	JJ	*	_	other	_
+simple	41	2	cities	city	NNS	*)	_	cities	_
+simple	41	3	have	have	VBP	(VP*	_	have	_
+simple	41	4	not	not	RB	*	not	_	_
+simple	41	5	grown	grow	VBN	(VP*	_	grown	grown
+simple	41	6	in	in	IN	(PP*	_	in	_
+simple	41	7	the	the	DT	(NP*	_	the	_
+simple	41	8	same	same	JJ	*	_	same	_
+simple	41	9	way	way	NN	*))))	_	way	_
+simple	41	10	.	.	.	*))	_	_	_
+
+simple	42	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+simple	42	1	other	other	JJ	*	_	other	_
+simple	42	2	cities	city	NNS	*)	_	cities	_
+simple	42	3	have	have	VBP	(VP*	_	have	_
+simple	42	4	n't	not	RB	*	n't	_	_
+simple	42	5	grown	grow	VBN	(VP*	_	grown	grown
+simple	42	6	in	in	IN	(PP*	_	in	_
+simple	42	7	the	the	DT	(NP*	_	the	_
+simple	42	8	same	same	JJ	*	_	same	_
+simple	42	9	way	way	NN	*))))	_	way	_
+simple	42	10	.	.	.	*))	_	_	_
+
+simple	43	0	Many	many	JJ	(ROOT(S(NP*	_	Many	_
+simple	43	1	other	other	JJ	*	_	other	_
+simple	43	2	cities	city	NNS	*)	_	cities	_
+simple	43	3	have	have	VBP	(VP*	_	have	_
+simple	43	4	never	never	RB	(ADVP*)	never	_	_
+simple	43	5	grown	grow	VBN	(VP*	_	grown	grown
+simple	43	6	in	in	IN	(PP*	_	in	_
+simple	43	7	the	the	DT	(NP*	_	the	_
+simple	43	8	same	same	JJ	*	_	same	_
+simple	43	9	way	way	NN	*))))	_	way	_
+simple	43	10	.	.	.	*))	_	_	_
+
+simple	44	0	People	people	NNS	(ROOT(S(NP*)	_	People	_
+simple	44	1	do	do	VBP	(VP*	_	do	_
+simple	44	2	not	not	RB	*	not	_	_
+simple	44	3	bake	bake	VB	(VP*	_	bake	bake
+simple	44	4	bread	bread	NN	(NP*)))	_	bread	_
+simple	44	5	.	.	.	*))	_	_	_
+
+simple	45	0	People	people	NNS	(ROOT(S(NP*)	_	People	_
+simple	45	1	do	do	VBP	(VP*	_	do	_
+simple	45	2	n't	not	RB	*	n't	_	_
+simple	45	3	bake	bake	VB	(VP*	_	bake	bake
+simple	45	4	bread	bread	NN	(NP*)))	_	bread	_
+simple	45	5	.	.	.	*))	_	_	_
+
+simple	46	0	People	people	NNS	(ROOT(S(NP*)	_	People	_
+simple	46	1	never	never	RB	(ADVP*)	never	_	_
+simple	46	2	bake	bake	VBP	(VP*	_	bake	bake
+simple	46	3	bread	bread	NN	(NP*))	_	bread	_
+simple	46	4	.	.	.	*))	_	_	_
+
+simple	47	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	47	1	does	do	VBZ	(VP*	_	does	_
+simple	47	2	not	not	RB	*	not	_	_
+simple	47	3	use	use	VB	(VP*	_	use	use
+simple	47	4	data	datum	NNS	(NP*)	_	data	_
+simple	47	5	from	from	IN	(PP*	_	from	_
+simple	47	6	researchers	researcher	NNS	(NP*))	_	researchers	_
+simple	47	7	all	all	DT	(PP*	_	all	_
+simple	47	8	over	over	IN	*	_	over	_
+simple	47	9	the	the	DT	(NP*	_	the	_
+simple	47	10	world	world	NN	*))))	_	world	_
+simple	47	11	.	.	.	*))	_	_	_
+
+simple	48	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	48	1	does	do	VBZ	(VP*	_	does	_
+simple	48	2	n't	not	RB	*	n't	_	_
+simple	48	3	use	use	VB	(VP*	_	use	use
+simple	48	4	data	datum	NNS	(NP*)	_	data	_
+simple	48	5	from	from	IN	(PP*	_	from	_
+simple	48	6	researchers	researcher	NNS	(NP*))	_	researchers	_
+simple	48	7	all	all	DT	(PP*	_	all	_
+simple	48	8	over	over	IN	*	_	over	_
+simple	48	9	the	the	DT	(NP*	_	the	_
+simple	48	10	world	world	NN	*))))	_	world	_
+simple	48	11	.	.	.	*))	_	_	_
+
+simple	49	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	49	1	never	never	RB	(ADVP*)	never	_	_
+simple	49	2	uses	use	VBZ	(VP*	_	uses	uses
+simple	49	3	data	datum	NNS	(NP(NP*)	_	data	_
+simple	49	4	from	from	IN	(PP*	_	from	_
+simple	49	5	researchers	researcher	NNS	(NP*)))	_	researchers	_
+simple	49	6	all	all	DT	(PP*	_	all	_
+simple	49	7	over	over	IN	*	_	over	_
+simple	49	8	the	the	DT	(NP*	_	the	_
+simple	49	9	world	world	NN	*)))	_	world	_
+simple	49	10	.	.	.	*))	_	_	_
+
+simple	50	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	50	1	is	be	VBZ	(VP*	_	is	_
+simple	50	2	not	not	RB	*	not	_	_
+simple	50	3	caused	cause	VBN	(VP*	_	caused	caused
+simple	50	4	by	by	IN	(PP*	_	by	_
+simple	50	5	many	many	JJ	(NP*	_	many	_
+simple	50	6	things	thing	NNS	*))))	_	things	_
+simple	50	7	.	.	.	*))	_	_	_
+
+simple	51	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	51	1	is	be	VBZ	(VP*	_	is	_
+simple	51	2	n't	not	RB	*	n't	_	_
+simple	51	3	caused	cause	VBN	(VP*	_	caused	caused
+simple	51	4	by	by	IN	(PP*	_	by	_
+simple	51	5	many	many	JJ	(NP*	_	many	_
+simple	51	6	things	thing	NNS	*))))	_	things	_
+simple	51	7	.	.	.	*))	_	_	_
+
+simple	52	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	52	1	is	be	VBZ	(VP*	_	is	_
+simple	52	2	never	never	RB	(ADVP*)	never	_	_
+simple	52	3	caused	cause	VBN	(VP*	_	caused	caused
+simple	52	4	by	by	IN	(PP*	_	by	_
+simple	52	5	many	many	JJ	(NP*	_	many	_
+simple	52	6	things	thing	NNS	*))))	_	things	_
+simple	52	7	.	.	.	*))	_	_	_
+
+simple	53	0	Most	most	JJS	(ROOT(S(NP*	_	Most	_
+simple	53	1	fish	fish	NN	*)	_	fish	_
+simple	53	2	do	do	VBP	(VP*	_	do	_
+simple	53	3	not	not	RB	*	not	_	_
+simple	53	4	live	live	VB	(VP*	_	live	live
+simple	53	5	in	in	IN	(PP*	_	in	_
+simple	53	6	the	the	DT	(NP*	_	the	_
+simple	53	7	water	water	NN	*))))	_	water	_
+simple	53	8	.	.	.	*))	_	_	_
+
+simple	54	0	Most	most	JJS	(ROOT(S(NP*	_	Most	_
+simple	54	1	fish	fish	NN	*)	_	fish	_
+simple	54	2	do	do	VBP	(VP*	_	do	_
+simple	54	3	n't	not	RB	*	n't	_	_
+simple	54	4	live	live	VB	(VP*	_	live	live
+simple	54	5	in	in	IN	(PP*	_	in	_
+simple	54	6	the	the	DT	(NP*	_	the	_
+simple	54	7	water	water	NN	*))))	_	water	_
+simple	54	8	.	.	.	*))	_	_	_
+
+simple	55	0	Most	most	JJS	(ROOT(S(NP*	_	Most	_
+simple	55	1	fish	fish	NN	*)	_	fish	_
+simple	55	2	never	never	RB	(ADVP*)	never	_	_
+simple	55	3	live	live	VBP	(VP*	_	live	live
+simple	55	4	in	in	IN	(PP*	_	in	_
+simple	55	5	the	the	DT	(NP*	_	the	_
+simple	55	6	water	water	NN	*)))	_	water	_
+simple	55	7	.	.	.	*))	_	_	_
+
+simple	56	0	Art	Art	NNP	(ROOT(S(NP*)	_	Art	_
+simple	56	1	can	can	MD	(VP*	_	can	_
+simple	56	2	not	not	RB	*	not	_	_
+simple	56	3	also	also	RB	(ADVP*)	_	also	_
+simple	56	4	be	be	VB	(VP*	_	be	_
+simple	56	5	a	a	DT	(NP(NP*	_	a	_
+simple	56	6	form	form	NN	*)	_	form	_
+simple	56	7	of	of	IN	(PP*	_	of	_
+simple	56	8	expression	expression	NN	(NP(NP*)	_	expression	_
+simple	56	9	of	of	IN	(PP*	_	of	_
+simple	56	10	emotion	emotion	NN	(NP*)))))))	_	emotion	_
+simple	56	11	.	.	.	*))	_	_	_
+
+simple	57	0	Art	Art	NNP	(ROOT(S(NP*)	_	Art	_
+simple	57	1	ca	can	MD	(VP*	_	ca	_
+simple	57	2	n't	not	RB	*	n't	_	_
+simple	57	3	also	also	RB	(ADVP*)	_	also	_
+simple	57	4	be	be	VB	(VP*	_	be	_
+simple	57	5	a	a	DT	(NP(NP*	_	a	_
+simple	57	6	form	form	NN	*)	_	form	_
+simple	57	7	of	of	IN	(PP*	_	of	_
+simple	57	8	expression	expression	NN	(NP(NP*)	_	expression	_
+simple	57	9	of	of	IN	(PP*	_	of	_
+simple	57	10	emotion	emotion	NN	(NP*)))))))	_	emotion	_
+simple	57	11	.	.	.	*))	_	_	_
+
+simple	58	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	58	1	food	food	NN	*)	_	food	_
+simple	58	2	must	must	MD	(VP*	_	must	_
+simple	58	3	n't	not	RB	*	n't	_	_
+simple	58	4	also	also	RB	(ADVP*)	_	also	_
+simple	58	5	be	be	VB	(VP*	_	be	_
+simple	58	6	safe	safe	JJ	(ADJP*	_	safe	_
+simple	58	7	and	and	CC	*	_	and	_
+simple	58	8	good	good	JJ	*)))	_	good	_
+simple	58	9	.	.	.	*))	_	_	_
+
+simple	59	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	59	1	food	food	NN	*)	_	food	_
+simple	59	2	must	must	MD	(VP*	_	must	_
+simple	59	3	not	not	RB	*	not	_	_
+simple	59	4	also	also	RB	(ADVP*)	_	also	_
+simple	59	5	be	be	VB	(VP*	_	be	_
+simple	59	6	safe	safe	JJ	(ADJP*	_	safe	_
+simple	59	7	and	and	CC	*	_	and	_
+simple	59	8	good	good	JJ	*)))	_	good	_
+simple	59	9	.	.	.	*))	_	_	_
+
+simple	60	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	60	1	will	will	MD	(VP*	_	will	_
+simple	60	2	not	not	RB	*	not	_	_
+simple	60	3	result	result	VB	(VP*	_	result	_
+simple	60	4	in	in	IN	(PP*	_	in	_
+simple	60	5	a	a	DT	(NP*	_	a	_
+simple	60	6	little	little	JJ	*	_	little	_
+simple	60	7	fever	fever	NN	*))))	_	fever	_
+simple	60	8	.	.	.	*))	_	_	_
+
+simple	61	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	61	1	wo	will	MD	(VP*	_	wo	_
+simple	61	2	n't	not	RB	*	n't	_	_
+simple	61	3	result	result	VB	(VP*	_	result	_
+simple	61	4	in	in	IN	(PP*	_	in	_
+simple	61	5	a	a	DT	(NP*	_	a	_
+simple	61	6	little	little	JJ	*	_	little	_
+simple	61	7	fever	fever	NN	*))))	_	fever	_
+simple	61	8	.	.	.	*))	_	_	_
+
+simple	62	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	62	1	will	will	MD	(VP*	_	will	_
+simple	62	2	never	never	RB	(ADVP*)	never	_	_
+simple	62	3	result	result	VB	(VP*	_	result	_
+simple	62	4	in	in	IN	(PP*	_	in	_
+simple	62	5	a	a	DT	(NP*	_	a	_
+simple	62	6	little	little	JJ	*	_	little	_
+simple	62	7	fever	fever	NN	*))))	_	fever	_
+simple	62	8	.	.	.	*))	_	_	_
+
+simple	63	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+simple	63	1	sizes	size	NNS	*)	_	sizes	_
+simple	63	2	of	of	IN	(PP*	_	of	_
+simple	63	3	cities	city	NNS	(NP*)))	_	cities	_
+simple	63	4	can	can	MD	(VP*	_	can	_
+simple	63	5	not	not	RB	*	not	_	_
+simple	63	6	be	be	VB	(VP*	_	be	_
+simple	63	7	very	very	RB	(ADJP*	_	very	_
+simple	63	8	different	different	JJ	*)))	_	different	_
+simple	63	9	.	.	.	*))	_	_	_
+
+simple	64	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+simple	64	1	sizes	size	NNS	*)	_	sizes	_
+simple	64	2	of	of	IN	(PP*	_	of	_
+simple	64	3	cities	city	NNS	(NP*)))	_	cities	_
+simple	64	4	ca	can	MD	(VP*	_	ca	_
+simple	64	5	n't	not	RB	*	n't	_	_
+simple	64	6	be	be	VB	(VP*	_	be	_
+simple	64	7	very	very	RB	(ADJP*	_	very	_
+simple	64	8	different	different	JJ	*)))	_	different	_
+simple	64	9	.	.	.	*))	_	_	_
+
+simple	65	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+simple	65	1	sizes	size	NNS	*)	_	sizes	_
+simple	65	2	of	of	IN	(PP*	_	of	_
+simple	65	3	cities	city	NNS	(NP*)))	_	cities	_
+simple	65	4	can	can	MD	(VP*	_	can	_
+simple	65	5	never	never	RB	(ADVP*)	never	_	_
+simple	65	6	be	be	VB	(VP*	_	be	_
+simple	65	7	very	very	RB	(ADJP*	_	very	_
+simple	65	8	different	different	JJ	*)))	_	different	_
+simple	65	9	.	.	.	*))	_	_	_
+
+simple	66	0	But	but	CC	(ROOT(S*	_	But	_
+simple	66	1	it	it	PRP	(NP*)	_	it	_
+simple	66	2	may	may	MD	(VP*	_	may	_
+simple	66	3	not	not	RB	*	not	_	_
+simple	66	4	be	be	VB	(VP*	_	be	_
+simple	66	5	a	a	DT	(NP(NP*	_	a	_
+simple	66	6	symptom	symptom	NN	*)	_	symptom	_
+simple	66	7	of	of	IN	(PP*	_	of	_
+simple	66	8	a	a	DT	(NP*	_	a	_
+simple	66	9	disease	disease	NN	*)))))	_	disease	_
+simple	66	10	.	.	.	*))	_	_	_
+
+simple	67	0	People	people	NNS	(ROOT(S(NP*)	_	People	_
+simple	67	1	might	might	MD	(VP*	_	might	_
+simple	67	2	not	not	RB	*	not	_	_
+simple	67	3	miss	miss	VB	(VP*	_	miss	_
+simple	67	4	the	the	DT	(NP(NP*	_	the	_
+simple	67	5	person	person	NN	*)	_	person	_
+simple	67	6	who	who	WP	(SBAR(WHNP*)	_	who	_
+simple	67	7	has	have	VBZ	(S(VP*	_	has	_
+simple	67	8	died	die	VBN	(VP*)))))))	_	died	_
+simple	67	9	.	.	.	*))	_	_	_
+
+simple	68	0	People	people	NNS	(ROOT(S(NP*)	_	People	_
+simple	68	1	might	might	MD	(VP*	_	might	_
+simple	68	2	never	never	RB	(ADVP*)	never	_	_
+simple	68	3	miss	miss	VB	(VP*	_	miss	_
+simple	68	4	the	the	DT	(NP(NP*	_	the	_
+simple	68	5	person	person	NN	*)	_	person	_
+simple	68	6	who	who	WP	(SBAR(WHNP*)	_	who	_
+simple	68	7	has	have	VBZ	(S(VP*	_	has	_
+simple	68	8	died	die	VBN	(VP*)))))))	_	died	_
+simple	68	9	.	.	.	*))	_	_	_
+
+simple	69	0	A	a	DT	(ROOT(S(NP*	_	A	_
+simple	69	1	berry	berry	NN	*)	_	berry	_
+simple	69	2	might	might	MD	(VP*	_	might	_
+simple	69	3	not	not	RB	*	not	_	_
+simple	69	4	contain	contain	VB	(VP*	_	contain	_
+simple	69	5	one	one	CD	(NP(NP*	_	one	_
+simple	69	6	seed	seed	NN	*)	_	seed	_
+simple	69	7	or	or	CC	*	_	or	_
+simple	69	8	many	many	JJ	(NP*))))	_	many	_
+simple	69	9	.	.	.	*))	_	_	_
+
+simple	70	0	A	a	DT	(ROOT(S(NP*	_	A	_
+simple	70	1	berry	berry	NN	*)	_	berry	_
+simple	70	2	might	might	MD	(VP*	_	might	_
+simple	70	3	never	never	RB	(ADVP*)	never	_	_
+simple	70	4	contain	contain	VB	(VP*	_	contain	_
+simple	70	5	one	one	CD	(NP(NP*	_	one	_
+simple	70	6	seed	seed	NN	*)	_	seed	_
+simple	70	7	or	or	CC	*	_	or	_
+simple	70	8	many	many	JJ	(NP*))))	_	many	_
+simple	70	9	.	.	.	*))	_	_	_
+
+simple	71	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+simple	71	1	ghosts	ghost	NNS	*)	_	ghosts	_
+simple	71	2	might	might	MD	(VP*	_	might	_
+simple	71	3	not	not	RB	*	not	_	_
+simple	71	4	cause	cause	VB	(VP*	_	cause	_
+simple	71	5	fear	fear	NN	(NP*)))	_	fear	_
+simple	71	6	.	.	.	*))	_	_	_
+
+simple	72	0	some	some	DT	(ROOT(S(NP*	_	some	_
+simple	72	1	ghosts	ghost	NNS	*)	_	ghosts	_
+simple	72	2	might	might	MD	(VP*	_	might	_
+simple	72	3	never	never	RB	(ADVP*)	never	_	_
+simple	72	4	cause	cause	VB	(VP*	_	cause	_
+simple	72	5	fear	fear	NN	(NP*)))	_	fear	_
+simple	72	6	.	.	.	*))	_	_	_
+
+simple	73	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	73	1	can	can	MD	(VP*	_	can	_
+simple	73	2	not	not	RB	*	not	_	_
+simple	73	3	have	have	VB	(VP*	_	have	_
+simple	73	4	different	different	JJ	(NP*	_	different	_
+simple	73	5	meanings	meaning	NNS	*)))	_	meanings	_
+simple	73	6	.	.	.	*))	_	_	_
+
+simple	74	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	74	1	ca	can	MD	(VP*	_	ca	_
+simple	74	2	n't	not	RB	*	n't	_	_
+simple	74	3	have	have	VB	(VP*	_	have	_
+simple	74	4	different	different	JJ	(NP*	_	different	_
+simple	74	5	meanings	meaning	NNS	*)))	_	meanings	_
+simple	74	6	.	.	.	*))	_	_	_
+
+simple	75	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	75	1	can	can	MD	(VP*	_	can	_
+simple	75	2	not	not	RB	*	not	_	_
+simple	75	3	be	be	VB	(VP*	_	be	_
+simple	75	4	made	make	VBN	(VP*	_	made	_
+simple	75	5	longer	longer	RBR	(ADVP*))))	_	longer	_
+simple	75	6	.	.	.	*))	_	_	_
+
+simple	76	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	76	1	ca	can	MD	(VP*	_	ca	_
+simple	76	2	n't	not	RB	*	n't	_	_
+simple	76	3	be	be	VB	(VP*	_	be	_
+simple	76	4	made	make	VBN	(VP*	_	made	_
+simple	76	5	longer	longer	RBR	(ADVP*))))	_	longer	_
+simple	76	6	.	.	.	*))	_	_	_
+
+simple	77	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	77	1	letter	letter	NN	*	_	letter	_
+simple	77	2	A	A	NN	*)	_	A	_
+simple	77	3	does	do	VBZ	(VP*	_	does	_
+simple	77	4	not	not	RB	*	not	_	_
+simple	77	5	have	have	VB	(VP*	_	have	have
+simple	77	6	six	six	CD	(NP*	_	six	_
+simple	77	7	different	different	JJ	*	_	different	_
+simple	77	8	sounds	sound	NNS	*)))	_	sounds	_
+simple	77	9	.	.	.	*))	_	_	_
+
+simple	78	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	78	1	letter	letter	NN	*	_	letter	_
+simple	78	2	A	A	NN	*)	_	A	_
+simple	78	3	has	have	VBZ	(VP*	_	has	has
+simple	78	4	never	never	RB	(NP(ADJP(ADVP*)	never	_	_
+simple	78	5	six	six	CD	(NP*)	_	six	_
+simple	78	6	different	different	JJ	*)	_	different	_
+simple	78	7	sounds	sound	NNS	*))	_	sounds	_
+simple	78	8	.	.	.	*))	_	_	_
+
+simple	79	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	79	1	letter	letter	NN	*	_	letter	_
+simple	79	2	A	A	NN	*)	_	A	_
+simple	79	3	does	do	VBZ	(VP*	_	does	_
+simple	79	4	n't	not	RB	*	n't	_	_
+simple	79	5	have	have	VB	(VP*	_	have	have
+simple	79	6	six	six	CD	(NP*	_	six	_
+simple	79	7	different	different	JJ	*	_	different	_
+simple	79	8	sounds	sound	NNS	*)))	_	sounds	_
+simple	79	9	.	.	.	*))	_	_	_
+
+simple	80	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	80	1	has	have	VBZ	(VP*	_	has	has
+simple	80	2	never	never	RB	(NP(ADVP*)	never	_	_
+simple	80	3	a	a	DT	*	_	a	_
+simple	80	4	solid	solid	JJ	*	_	solid	_
+simple	80	5	shape	shape	NN	*))	_	shape	_
+simple	80	6	.	.	.	*))	_	_	_
+
+simple	81	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	81	1	does	do	VBZ	(VP*	_	does	_
+simple	81	2	not	not	RB	*	not	_	_
+simple	81	3	have	have	VB	(VP*	_	have	have
+simple	81	4	a	a	DT	(NP*	_	a	_
+simple	81	5	solid	solid	JJ	*	_	solid	_
+simple	81	6	shape	shape	NN	*)))	_	shape	_
+simple	81	7	.	.	.	*))	_	_	_
+
+simple	82	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	82	1	does	do	VBZ	(VP*	_	does	_
+simple	82	2	n't	not	RB	*	n't	_	_
+simple	82	3	have	have	VB	(VP*	_	have	have
+simple	82	4	a	a	DT	(NP*	_	a	_
+simple	82	5	solid	solid	JJ	*	_	solid	_
+simple	82	6	shape	shape	NN	*)))	_	shape	_
+simple	82	7	.	.	.	*))	_	_	_
+
+simple	83	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	83	1	country	country	NN	*)	_	country	_
+simple	83	2	does	do	VBZ	(VP*	_	does	_
+simple	83	3	not	not	RB	*	not	_	_
+simple	83	4	have	have	VB	(VP*	_	have	have
+simple	83	5	fifty	fifty	RB	(NP(ADJP*	_	fifty	_
+simple	83	6	smaller	smaller	JJR	*)	_	smaller	_
+simple	83	7	parts	part	NNS	*)	_	parts	_
+simple	83	8	called	call	VBN	(VP*	_	called	_
+simple	83	9	provinces	province	NNS	(NP*))))	_	provinces	_
+simple	83	10	.	.	.	*))	_	_	_
+
+simple	84	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	84	1	country	country	NN	*)	_	country	_
+simple	84	2	does	do	VBZ	(VP*	_	does	_
+simple	84	3	n't	not	RB	*	n't	_	_
+simple	84	4	have	have	VB	(VP*	_	have	have
+simple	84	5	fifty	fifty	RB	(NP(ADJP*	_	fifty	_
+simple	84	6	smaller	smaller	JJR	*)	_	smaller	_
+simple	84	7	parts	part	NNS	*)	_	parts	_
+simple	84	8	called	call	VBN	(VP*	_	called	_
+simple	84	9	provinces	province	NNS	(NP*))))	_	provinces	_
+simple	84	10	.	.	.	*))	_	_	_
+
+simple	85	0	Acceleration	Acceleration	NNP	(ROOT(S(NP*)	_	Acceleration	_
+simple	85	1	does	do	VBZ	(VP*	_	does	_
+simple	85	2	not	not	RB	*	not	_	_
+simple	85	3	have	have	VB	(VP*	_	have	have
+simple	85	4	its	its	PRP$	(NP(NP*	_	its	_
+simple	85	5	own	own	JJ	*	_	own	_
+simple	85	6	units	unit	NNS	*)	_	units	_
+simple	85	7	of	of	IN	(PP*	_	of	_
+simple	85	8	measurement	measurement	NN	(NP*)))))	_	measurement	_
+simple	85	9	.	.	.	*))	_	_	_
+
+simple	86	0	Acceleration	Acceleration	NNP	(ROOT(S(NP*)	_	Acceleration	_
+simple	86	1	does	do	VBZ	(VP*	_	does	_
+simple	86	2	n't	not	RB	*	n't	_	_
+simple	86	3	have	have	VB	(VP*	_	have	have
+simple	86	4	its	its	PRP$	(NP(NP*	_	its	_
+simple	86	5	own	own	JJ	*	_	own	_
+simple	86	6	units	unit	NNS	*)	_	units	_
+simple	86	7	of	of	IN	(PP*	_	of	_
+simple	86	8	measurement	measurement	NN	(NP*)))))	_	measurement	_
+simple	86	9	.	.	.	*))	_	_	_
+
+simple	87	0	Acceleration	Acceleration	NNP	(ROOT(S(NP*)	_	Acceleration	_
+simple	87	1	never	never	RB	(ADVP*)	never	_	_
+simple	87	2	has	have	VBZ	(VP*	_	has	has
+simple	87	3	its	its	PRP$	(NP(NP*	_	its	_
+simple	87	4	own	own	JJ	*	_	own	_
+simple	87	5	units	unit	NNS	*)	_	units	_
+simple	87	6	of	of	IN	(PP*	_	of	_
+simple	87	7	measurement	measurement	NN	(NP*))))	_	measurement	_
+simple	87	8	.	.	.	*))	_	_	_
+
+simple	88	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	88	1	hills	hill	NNS	*)	_	hills	_
+simple	88	2	does	do	VBZ	(VP*	_	does	_
+simple	88	3	not	not	RB	*	not	_	_
+simple	88	4	have	have	VB	(VP*	_	have	have
+simple	88	5	many	many	JJ	(NP*	_	many	_
+simple	88	6	forests	forest	NNS	*)))	_	forests	_
+simple	88	7	.	.	.	*))	_	_	_
+
+simple	89	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	89	1	hills	hill	NNS	*)	_	hills	_
+simple	89	2	does	do	VBZ	(VP*	_	does	_
+simple	89	3	n't	not	RB	*	n't	_	_
+simple	89	4	have	have	VB	(VP*	_	have	have
+simple	89	5	many	many	JJ	(NP*	_	many	_
+simple	89	6	forests	forest	NNS	*)))	_	forests	_
+simple	89	7	.	.	.	*))	_	_	_
+
+simple	90	0	Humans	human	NNS	(ROOT(S(NP*)	_	Humans	_
+simple	90	1	do	do	VBP	(VP*	_	do	_
+simple	90	2	not	not	RB	*	not	_	_
+simple	90	3	have	have	VB	(VP*	_	have	have
+simple	90	4	a	a	DT	(NP(NP*	_	a	_
+simple	90	5	problem	problem	NN	*)	_	problem	_
+simple	90	6	with	with	IN	(PP*	_	with	_
+simple	90	7	maths	math	NNS	(NP*)))))	_	maths	_
+simple	90	8	.	.	.	*))	_	_	_
+
+simple	91	0	Humans	human	NNS	(ROOT(S(NP*)	_	Humans	_
+simple	91	1	do	do	VBP	(VP*	_	do	_
+simple	91	2	n't	not	RB	*	n't	_	_
+simple	91	3	have	have	VB	(VP*	_	have	have
+simple	91	4	a	a	DT	(NP(NP*	_	a	_
+simple	91	5	problem	problem	NN	*)	_	problem	_
+simple	91	6	with	with	IN	(PP*	_	with	_
+simple	91	7	maths	math	NNS	(NP*)))))	_	maths	_
+simple	91	8	.	.	.	*))	_	_	_
+
+simple	92	0	Humans	human	NNS	(ROOT(S(NP*)	_	Humans	_
+simple	92	1	never	never	RB	(ADVP*)	never	_	_
+simple	92	2	have	have	VBP	(VP*	_	have	have
+simple	92	3	a	a	DT	(NP(NP*	_	a	_
+simple	92	4	problem	problem	NN	*)	_	problem	_
+simple	92	5	with	with	IN	(PP*	_	with	_
+simple	92	6	maths	math	NNS	(NP*))))	_	maths	_
+simple	92	7	.	.	.	*))	_	_	_
+
+simple	93	0	A	a	DT	(ROOT(S(NP*	_	A	_
+simple	93	1	computer	computer	NN	*)	_	computer	_
+simple	93	2	does	do	VBZ	(VP*	_	does	_
+simple	93	3	not	not	RB	*	not	_	_
+simple	93	4	have	have	VB	(VP*	_	have	have
+simple	93	5	several	several	JJ	(NP*	_	several	_
+simple	93	6	main	main	JJ	*	_	main	_
+simple	93	7	parts	part	NNS	*)))	_	parts	_
+simple	93	8	.	.	.	*))	_	_	_
+
+simple	94	0	A	a	DT	(ROOT(S(NP*	_	A	_
+simple	94	1	computer	computer	NN	*)	_	computer	_
+simple	94	2	does	do	VBZ	(VP*	_	does	_
+simple	94	3	n't	not	RB	*	n't	_	_
+simple	94	4	have	have	VB	(VP*	_	have	have
+simple	94	5	several	several	JJ	(NP*	_	several	_
+simple	94	6	main	main	JJ	*	_	main	_
+simple	94	7	parts	part	NNS	*)))	_	parts	_
+simple	94	8	.	.	.	*))	_	_	_
+
+simple	95	0	A	a	DT	(ROOT(S(NP*	_	A	_
+simple	95	1	computer	computer	NN	*)	_	computer	_
+simple	95	2	never	never	RB	(ADVP*)	never	_	_
+simple	95	3	has	have	VBZ	(VP*	_	has	has
+simple	95	4	several	several	JJ	(NP*	_	several	_
+simple	95	5	main	main	JJ	*	_	main	_
+simple	95	6	parts	part	NNS	*))	_	parts	_
+simple	95	7	.	.	.	*))	_	_	_
+
+simple	96	0	Average	average	JJ	(ROOT(S(NP*	_	Average	_
+simple	96	1	word	word	NN	*)	_	word	_
+simple	96	2	does	do	VBZ	(VP*	_	does	_
+simple	96	3	not	not	RB	*	not	_	_
+simple	96	4	have	have	VB	(VP*	_	have	have
+simple	96	5	two	two	CD	(NP*	_	two	_
+simple	96	6	syllables	syllable	NNS	*)))	_	syllables	_
+simple	96	7	.	.	.	*))	_	_	_
+
+simple	97	0	Average	average	JJ	(ROOT(S(NP*	_	Average	_
+simple	97	1	word	word	NN	*)	_	word	_
+simple	97	2	does	do	VBZ	(VP*	_	does	_
+simple	97	3	n't	not	RB	*	n't	_	_
+simple	97	4	have	have	VB	(VP*	_	have	have
+simple	97	5	two	two	CD	(NP*	_	two	_
+simple	97	6	syllables	syllable	NNS	*)))	_	syllables	_
+simple	97	7	.	.	.	*))	_	_	_
+
+simple	98	0	Average	average	JJ	(ROOT(S(NP*	_	Average	_
+simple	98	1	word	word	NN	*)	_	word	_
+simple	98	2	never	never	RB	(ADVP*)	never	_	_
+simple	98	3	has	have	VBZ	(VP*	_	has	has
+simple	98	4	two	two	CD	(NP*	_	two	_
+simple	98	5	syllables	syllable	NNS	*))	_	syllables	_
+simple	98	6	.	.	.	*))	_	_	_
+
+simple	99	0	Most	most	JJS	(ROOT(S(NP(NP*	_	Most	_
+simple	99	1	kinds	kind	NNS	*)	_	kinds	_
+simple	99	2	of	of	IN	(PP*	_	of	_
+simple	99	3	fish	fish	NN	(NP*)))	_	fish	_
+simple	99	4	do	do	VBP	(VP*	_	do	_
+simple	99	5	not	not	RB	*	not	_	_
+simple	99	6	have	have	VB	(VP*	_	have	have
+simple	99	7	bones	bone	NNS	(NP*)))	_	bones	_
+simple	99	8	.	.	.	*))	_	_	_
+
+simple	100	0	Most	most	JJS	(ROOT(S(NP(NP*	_	Most	_
+simple	100	1	kinds	kind	NNS	*)	_	kinds	_
+simple	100	2	of	of	IN	(PP*	_	of	_
+simple	100	3	fish	fish	NN	(NP*)))	_	fish	_
+simple	100	4	do	do	VBP	(VP*	_	do	_
+simple	100	5	n't	not	RB	*	n't	_	_
+simple	100	6	have	have	VB	(VP*	_	have	have
+simple	100	7	bones	bone	NNS	(NP*)))	_	bones	_
+simple	100	8	.	.	.	*))	_	_	_
+
+simple	101	0	Most	most	JJS	(ROOT(S(NP(NP*	_	Most	_
+simple	101	1	kinds	kind	NNS	*)	_	kinds	_
+simple	101	2	of	of	IN	(PP*	_	of	_
+simple	101	3	fish	fish	NN	(NP*)))	_	fish	_
+simple	101	4	never	never	RB	(ADVP*)	never	_	_
+simple	101	5	have	have	VBP	(VP*	_	have	have
+simple	101	6	bones	bone	NNS	(NP*))	_	bones	_
+simple	101	7	.	.	.	*))	_	_	_
+
+simple	102	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	102	1	does	do	VBZ	(VP*	_	does	_
+simple	102	2	not	not	RB	*	not	_	_
+simple	102	3	have	have	VB	(VP*	_	have	have
+simple	102	4	the	the	DT	(NP*	_	the	_
+simple	102	5	largest	largest	JJS	*	_	largest	_
+simple	102	6	land	land	NN	*	_	land	_
+simple	102	7	area	area	NN	*)))	_	area	_
+simple	102	8	.	.	.	*))	_	_	_
+
+simple	103	0	It	it	PRP	(ROOT(S(NP*)	_	It	_
+simple	103	1	does	do	VBZ	(VP*	_	does	_
+simple	103	2	n't	not	RB	*	n't	_	_
+simple	103	3	have	have	VB	(VP*	_	have	have
+simple	103	4	the	the	DT	(NP*	_	the	_
+simple	103	5	largest	largest	JJS	*	_	largest	_
+simple	103	6	land	land	NN	*	_	land	_
+simple	103	7	area	area	NN	*)))	_	area	_
+simple	103	8	.	.	.	*))	_	_	_
+
+simple	104	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	104	1	flowers	flower	NNS	*)	_	flowers	_
+simple	104	2	are	be	VBP	(VP*	_	are	_
+simple	104	3	not	not	RB	*	not	_	_
+simple	104	4	white	white	JJ	(ADJP*))	_	white	white
+simple	104	5	.	.	.	*))	_	_	_
+
+simple	105	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	105	1	flowers	flower	NNS	*)	_	flowers	_
+simple	105	2	are	be	VBP	(VP*	_	are	_
+simple	105	3	n't	not	RB	*	n't	_	_
+simple	105	4	white	white	JJ	(ADJP*))	_	white	white
+simple	105	5	.	.	.	*))	_	_	_
+
+simple	106	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	106	1	flowers	flower	NNS	*)	_	flowers	_
+simple	106	2	are	be	VBP	(VP*	_	are	_
+simple	106	3	never	never	RB	(ADVP*)	never	_	_
+simple	106	4	white	white	JJ	(ADJP*))	_	white	white
+simple	106	5	.	.	.	*))	_	_	_
+
+simple	107	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	107	1	country	country	NN	*)	_	country	_
+simple	107	2	is	be	VBZ	(VP*	_	is	_
+simple	107	3	not	not	RB	*	not	_	_
+simple	107	4	dry	dry	JJ	(ADJP*	_	dry	dry
+simple	107	5	in	in	IN	(PP*	_	in	_
+simple	107	6	winter	winter	NN	(NP*))))	_	winter	_
+simple	107	7	.	.	.	*))	_	_	_
+
+simple	108	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	108	1	country	country	NN	*)	_	country	_
+simple	108	2	is	be	VBZ	(VP*	_	is	_
+simple	108	3	n't	not	RB	*	n't	_	_
+simple	108	4	dry	dry	JJ	(ADJP*	_	dry	dry
+simple	108	5	in	in	IN	(PP*	_	in	_
+simple	108	6	winter	winter	NN	(NP*))))	_	winter	_
+simple	108	7	.	.	.	*))	_	_	_
+
+simple	109	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	109	1	country	country	NN	*)	_	country	_
+simple	109	2	is	be	VBZ	(VP*	_	is	_
+simple	109	3	never	never	RB	(ADVP*)	never	_	_
+simple	109	4	dry	dry	JJ	(ADJP*	_	dry	dry
+simple	109	5	in	in	IN	(PP*	_	in	_
+simple	109	6	winter	winter	NN	(NP*))))	_	winter	_
+simple	109	7	.	.	.	*))	_	_	_
+
+simple	110	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+simple	110	1	breads	bread	NNS	*)	_	breads	_
+simple	110	2	are	be	VBP	(VP*	_	are	_
+simple	110	3	not	not	RB	*	not	_	_
+simple	110	4	fried	fried	JJ	(ADJP*))	_	fried	fried
+simple	110	5	.	.	.	*))	_	_	_
+
+simple	111	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+simple	111	1	breads	bread	NNS	*)	_	breads	_
+simple	111	2	are	be	VBP	(VP*	_	are	_
+simple	111	3	n't	not	RB	*	n't	_	_
+simple	111	4	fried	fried	JJ	(ADJP*))	_	fried	fried
+simple	111	5	.	.	.	*))	_	_	_
+
+simple	112	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+simple	112	1	breads	bread	NNS	*)	_	breads	_
+simple	112	2	are	be	VBP	(VP*	_	are	_
+simple	112	3	never	never	RB	(ADVP*)	never	_	_
+simple	112	4	fried	fried	JJ	(ADJP*))	_	fried	fried
+simple	112	5	.	.	.	*))	_	_	_
+
+simple	113	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+simple	113	1	foods	food	NNS	*)	_	foods	_
+simple	113	2	are	be	VBP	(VP*	_	are	_
+simple	113	3	not	not	RB	*	not	_	_
+simple	113	4	good	good	JJ	(ADJP*))	_	good	good
+simple	113	5	.	.	.	*))	_	_	_
+
+simple	114	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+simple	114	1	foods	food	NNS	*)	_	foods	_
+simple	114	2	are	be	VBP	(VP*	_	are	_
+simple	114	3	n't	not	RB	*	n't	_	_
+simple	114	4	good	good	JJ	(ADJP*))	_	good	good
+simple	114	5	.	.	.	*))	_	_	_
+
+simple	115	0	Some	some	DT	(ROOT(S(NP*	_	Some	_
+simple	115	1	foods	food	NNS	*)	_	foods	_
+simple	115	2	are	be	VBP	(VP*	_	are	_
+simple	115	3	never	never	RB	(ADVP*)	never	_	_
+simple	115	4	good	good	JJ	(ADJP*))	_	good	good
+simple	115	5	.	.	.	*))	_	_	_
+
+simple	116	0	Most	most	JJS	(ROOT(S(NP*	_	Most	_
+simple	116	1	summers	summer	NNS	*)	_	summers	_
+simple	116	2	are	be	VBP	(VP*	_	are	_
+simple	116	3	not	not	RB	*	not	_	_
+simple	116	4	very	very	RB	(ADJP*	_	very	_
+simple	116	5	hot	hot	JJ	*))	_	hot	hot
+simple	116	6	.	.	.	*))	_	_	_
+
+simple	117	0	Most	most	JJS	(ROOT(S(NP*	_	Most	_
+simple	117	1	summers	summer	NNS	*)	_	summers	_
+simple	117	2	are	be	VBP	(VP*	_	are	_
+simple	117	3	n't	not	RB	*	n't	_	_
+simple	117	4	very	very	RB	(ADJP*	_	very	_
+simple	117	5	hot	hot	JJ	*))	_	hot	hot
+simple	117	6	.	.	.	*))	_	_	_
+
+simple	118	0	Most	most	JJS	(ROOT(S(NP*	_	Most	_
+simple	118	1	summers	summer	NNS	*)	_	summers	_
+simple	118	2	are	be	VBP	(VP*	_	are	_
+simple	118	3	never	never	RB	(ADVP*)	never	_	_
+simple	118	4	very	very	RB	(ADJP*	_	very	_
+simple	118	5	hot	hot	JJ	*))	_	hot	hot
+simple	118	6	.	.	.	*))	_	_	_
+
+simple	119	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+simple	119	1	history	history	NN	*)	_	history	_
+simple	119	2	of	of	IN	(PP*	_	of	_
+simple	119	3	the	the	DT	(NP*	_	the	_
+simple	119	4	country	country	NN	*)))	_	country	_
+simple	119	5	is	be	VBZ	(VP*	_	is	_
+simple	119	6	not	not	RB	*	not	_	_
+simple	119	7	long	long	JJ	(ADJP*))	_	long	long
+simple	119	8	.	.	.	*))	_	_	_
+
+simple	120	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+simple	120	1	history	history	NN	*)	_	history	_
+simple	120	2	of	of	IN	(PP*	_	of	_
+simple	120	3	the	the	DT	(NP*	_	the	_
+simple	120	4	country	country	NN	*)))	_	country	_
+simple	120	5	is	be	VBZ	(VP*	_	is	_
+simple	120	6	n't	not	RB	*	n't	_	_
+simple	120	7	long	long	JJ	(ADJP*))	_	long	long
+simple	120	8	.	.	.	*))	_	_	_
+
+simple	121	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	121	1	outside	outside	NN	*)	_	outside	_
+simple	121	2	is	be	VBZ	(VP*	_	is	_
+simple	121	3	not	not	RB	*	not	_	_
+simple	121	4	even	even	RB	(ADVP*))	_	even	even
+simple	121	5	.	.	.	*))	_	_	_
+
+simple	122	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	122	1	outside	outside	NN	*)	_	outside	_
+simple	122	2	is	be	VBZ	(VP*	_	is	_
+simple	122	3	n't	not	RB	*	n't	_	_
+simple	122	4	even	even	RB	(ADVP*))	_	even	even
+simple	122	5	.	.	.	*))	_	_	_
+
+simple	123	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	123	1	outside	outside	NN	*)	_	outside	_
+simple	123	2	is	be	VBZ	(VP*	_	is	_
+simple	123	3	never	never	RB	(ADVP*)	never	_	_
+simple	123	4	even	even	RB	(ADVP*))	_	even	even
+simple	123	5	.	.	.	*))	_	_	_
+
+simple	124	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	124	1	is	be	VBZ	(VP*	_	is	_
+simple	124	2	not	not	RB	*	not	_	_
+simple	124	3	bad	bad	JJ	(ADJP*	_	bad	bad
+simple	124	4	for	for	IN	(PP*	_	for	_
+simple	124	5	people	people	NNS	(NP(NP*	_	people	_
+simple	124	6	's	's	POS	*)	_	's	_
+simple	124	7	health	health	NN	*))))	_	health	_
+simple	124	8	.	.	.	*))	_	_	_
+
+simple	125	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	125	1	is	be	VBZ	(VP*	_	is	_
+simple	125	2	n't	not	RB	*	n't	_	_
+simple	125	3	bad	bad	JJ	(ADJP*	_	bad	bad
+simple	125	4	for	for	IN	(PP*	_	for	_
+simple	125	5	people	people	NNS	(NP(NP*	_	people	_
+simple	125	6	's	's	POS	*)	_	's	_
+simple	125	7	health	health	NN	*))))	_	health	_
+simple	125	8	.	.	.	*))	_	.	_
+
+simple	126	0	This	this	DT	(ROOT(S(NP*)	_	This	_
+simple	126	1	is	be	VBZ	(VP*	_	is	_
+simple	126	2	never	never	RB	(ADVP*)	never	_	_
+simple	126	3	bad	bad	JJ	(ADJP*	_	bad	_
+simple	126	4	for	for	IN	(PP*	_	for	_
+simple	126	5	people	people	NNS	(NP(NP*	_	people	_
+simple	126	6	's	's	POS	*)	_	's	_
+simple	126	7	health	health	NN	*))))	_	health	_
+simple	126	8	.	.	.	*))	_	_	_
+
+simple	127	0	These	these	DT	(ROOT(S(NP*	_	These	_
+simple	127	1	fishes	fish	NNS	*)	_	fishes	_
+simple	127	2	are	be	VBP	(VP*	_	are	_
+simple	127	3	not	not	RB	*	not	_	_
+simple	127	4	thin	thin	JJ	(ADJP*))	_	thin	thin
+simple	127	5	.	.	.	*))	_	_	_
+
+simple	128	0	These	these	DT	(ROOT(S(NP*	_	These	_
+simple	128	1	fishes	fish	NNS	*)	_	fishes	_
+simple	128	2	are	be	VBP	(VP*	_	are	_
+simple	128	3	n't	not	RB	*	n't	_	_
+simple	128	4	thin	thin	JJ	(ADJP*))	_	thin	thin
+simple	128	5	.	.	.	*))	_	_	_
+
+simple	129	0	These	these	DT	(ROOT(S(NP*	_	These	_
+simple	129	1	fishes	fish	NNS	*)	_	fishes	_
+simple	129	2	are	be	VBP	(VP*	_	are	_
+simple	129	3	never	never	RB	(ADVP*)	never	_	_
+simple	129	4	thin	thin	JJ	(ADJP*))	_	thin	thin
+simple	129	5	.	.	.	*))	_	_	_
+
+simple	130	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	130	1	fruit	fruit	NN	*)	_	fruit	_
+simple	130	2	is	be	VBZ	(VP*	_	is	_
+simple	130	3	n't	not	RB	*	n't	_	_
+simple	130	4	red	red	JJ	(ADJP*))	_	red	_
+simple	130	5	.	.	.	*))	_	.	_
+
+simple	131	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	131	1	fruit	fruit	NN	*)	_	fruit	_
+simple	131	2	is	be	VBZ	(VP*	_	is	_
+simple	131	3	not	not	RB	*	not	_	_
+simple	131	4	red	red	JJ	(ADJP*))	_	red	red
+simple	131	5	.	.	.	*))	_	_	_
+
+simple	132	0	The	the	DT	(ROOT(S(NP*	_	The	_
+simple	132	1	fruit	fruit	NN	*)	_	fruit	_
+simple	132	2	is	be	VBZ	(VP*	_	is	_
+simple	132	3	never	never	RB	(ADVP*)	never	_	_
+simple	132	4	red	red	JJ	(ADJP*))	_	red	red
+simple	132	5	.	.	.	*))	_	_	_

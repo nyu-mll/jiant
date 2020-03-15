@@ -1,0 +1,764 @@
+unseen	0	0	Means	Means	NNS	(ROOT(S(NP*	_	_	_
+unseen	0	1	to	to	TO	(S(VP*	_	_	_
+unseen	0	2	achieve	achieve	VB	(VP*	_	_	_
+unseen	0	3	these	these	DT	(NP*	_	_	_
+unseen	0	4	ends	end	NNS	*)))))	_	_	_
+unseen	0	5	usually	usually	RB	(ADVP*)	_	_	_
+unseen	0	6	include	include	VBP	(VP*	_	_	_
+unseen	0	7	advocacy	advocacy	NN	(S(NP(NP*)	_	_	_
+unseen	0	8	of	of	IN	(PP*	_	_	_
+unseen	0	9	pacifism	pacifism	NN	(NP(NP*)	_	_	_
+unseen	0	10	,	,	,	*	_	_	_
+unseen	0	11	non-violent	non-violent	JJ	(NP*	non-	violent	violent
+unseen	0	12	resistance	resistance	NN	*)	_	resistance	_
+unseen	0	13	,	,	,	*	_	_	_
+unseen	0	14	conscientious	conscientious	JJ	(NP*	_	_	_
+unseen	0	15	objector	objector	NN	*)	_	_	_
+unseen	0	16	,	,	,	*	_	_	_
+unseen	0	17	diplomacy	diplomacy	NN	(NP*)	_	_	_
+unseen	0	18	,	,	,	*	_	_	_
+unseen	0	19	boycotts	boycott	NNS	(NP*)	_	_	_
+unseen	0	20	,	,	,	*	_	_	_
+unseen	0	21	moral	moral	JJ	(NP*	_	_	_
+unseen	0	22	purchasing	purchasing	NN	*)	_	_	_
+unseen	0	23	,	,	,	*	_	_	_
+unseen	0	24	supporting	supporting	JJ	(NP*	_	_	_
+unseen	0	25	anti-war	anti-war	JJ	*	_	_	_
+unseen	0	26	political	political	JJ	*	_	_	_
+unseen	0	27	candidates	candidate	NNS	*)	_	_	_
+unseen	0	28	,	,	,	*	_	_	_
+unseen	0	29	demonstrations	demonstration	NNS	(NP*)	_	_	_
+unseen	0	30	,	,	,	*	_	_	_
+unseen	0	31	and	and	CC	*	_	_	_
+unseen	0	32	lobbying	lobbying	NN	(NP*))))	_	_	_
+unseen	0	33	to	to	TO	(VP*	_	_	_
+unseen	0	34	create	create	VB	(VP*	_	_	_
+unseen	0	35	legislation	legislation	NN	(NP*)	_	_	_
+unseen	0	36	on	on	IN	(PP(PP*	_	_	_
+unseen	0	37	human	human	JJ	(NP*	_	_	_
+unseen	0	38	rights	rights	NNS	*))	_	_	_
+unseen	0	39	or	or	CC	*	_	_	_
+unseen	0	40	of	of	IN	(PP*	_	_	_
+unseen	0	41	international	international	JJ	(NP*	_	_	_
+unseen	0	42	law	law	NN	*)))))))	_	_	_
+unseen	0	43	.	.	.	*))	_	_	_
+
+unseen	1	0	General	General	NNP	(ROOT(S(NP*)	_	_	_
+unseen	1	1	relativity	relativity	RB	(ADVP*)	_	_	_
+unseen	1	2	provides	provide	VBZ	(VP*	_	_	_
+unseen	1	3	of	of	IN	(PP*	_	_	_
+unseen	1	4	a	a	DT	(NP(NP*	_	_	_
+unseen	1	5	set	set	NN	*)	_	_	_
+unseen	1	6	of	of	IN	(PP*	_	_	_
+unseen	1	7	ten	ten	CD	(NP*	_	_	_
+unseen	1	8	nonlinear	nonlinear	JJ	*	non	linear	linear
+unseen	1	9	partial	partial	JJ	*	_	_	_
+unseen	1	10	differential	differential	NN	*	_	_	_
+unseen	1	11	equations	equation	NNS	*))))	_	equations	_
+unseen	1	12	for	for	IN	(PP*	_	_	_
+unseen	1	13	the	the	DT	(NP(NP*	_	_	_
+unseen	1	14	spacetime	spacetime	JJ	*	_	_	_
+unseen	1	15	metric	metric	NN	*)	_	_	_
+unseen	1	16	(	(	(	(PRN*	_	_	_
+unseen	1	17	Einstein	Einstein	NNP	(NP(NP*	_	_	_
+unseen	1	18	's	's	POS	*)	_	's	_
+unseen	1	19	field	field	NN	*	_	_	_
+unseen	1	20	equations	equations	NN	*)	_	_	_
+unseen	1	21	)	)	)	*)	_	_	_
+unseen	1	22	that	that	WDT	(SBAR(WHNP*)	_	_	_
+unseen	1	23	must	must	MD	(S(VP*	_	_	_
+unseen	1	24	be	be	VB	(VP*	_	_	_
+unseen	1	25	solved	solve	VBN	(VP*	_	_	_
+unseen	1	26	from	from	IN	(PP*	_	_	_
+unseen	1	27	the	the	DT	(NP(NP*	_	_	_
+unseen	1	28	distribution	distribution	NN	*)	_	_	_
+unseen	1	29	of	of	IN	(PP*	_	_	_
+unseen	1	30	mass-energy	mass-energy	NN	(NP*	_	_	_
+unseen	1	31	and	and	CC	*	_	_	_
+unseen	1	32	momentum	momentum	NN	*))))	_	_	_
+unseen	1	33	throughout	throughout	IN	(PP*	_	_	_
+unseen	1	34	the	the	DT	(NP*	_	_	_
+unseen	1	35	Universe	Universe	NNP	*))))))))))	_	_	_
+unseen	1	36	.	.	.	*))	_	_	_
+
+unseen	2	0	CAS	CAS	NNP	(ROOT(S(NP*	_	_	_
+unseen	2	1	registry	registry	NN	*	_	_	_
+unseen	2	2	number	number	NN	*	_	_	_
+unseen	2	3	Nitrogen	nitrogen	NN	*)	_	_	_
+unseen	2	4	is	be	VBZ	(VP*	_	_	_
+unseen	2	5	a	a	DT	(NP*	_	_	_
+unseen	2	6	nonmetal	nonmetal	JJ	*	non	metal	metal
+unseen	2	7	chemical	chemical	NN	*	_	chemical	_
+unseen	2	8	element	element	NN	*))	_	element	_
+unseen	2	9	.	.	.	*))	_	_	_
+
+unseen	3	0	Even	even	RB	(ROOT(S(PP*	_	_	_
+unseen	3	1	before	before	IN	*	_	_	_
+unseen	3	2	that	that	DT	(NP*	_	_	_
+unseen	3	3	event	event	NN	*))	_	_	_
+unseen	3	4	,	,	,	*	_	_	_
+unseen	3	5	Lech	Lech	NNP	(NP*	_	_	_
+unseen	3	6	Wałęsa	Wałęsa	NNP	*)	_	_	_
+unseen	3	7	was	be	VBD	(VP*	_	_	_
+unseen	3	8	given	give	VBN	(VP*	_	_	_
+unseen	3	9	a	a	DT	(NP*	_	_	_
+unseen	3	10	Nobel	Nobel	NNP	*	_	_	_
+unseen	3	11	Prize	Prize	NNP	*)	_	_	_
+unseen	3	12	for	for	IN	(PP*	_	_	_
+unseen	3	13	leading	lead	VBG	(S(VP*	_	_	_
+unseen	3	14	the	the	DT	(NP(NP*	_	_	_
+unseen	3	15	first	first	JJ	*	_	_	_
+unseen	3	16	non-communist	non-communist	JJ	*	non-	communist	communist
+unseen	3	17	trade	trade	NN	*	_	trade	_
+unseen	3	18	union	union	NN	*)	_	union	_
+unseen	3	19	fighting	fight	VBG	(VP*	_	_	_
+unseen	3	20	for	for	IN	(PP*	_	_	_
+unseen	3	21	democracy	democracy	NN	(NP(NP*)	_	_	_
+unseen	3	22	in	in	IN	(PP*	_	_	_
+unseen	3	23	the	the	DT	(NP*	_	_	_
+unseen	3	24	Communist	Communist	NNP	*	_	_	_
+unseen	3	25	Block	Block	NNP	*)))))))))))	_	_	_
+unseen	3	26	.	.	.	*))	_	_	_
+
+unseen	4	0	Internet	Internet	NNP	(ROOT(S(NP*	_	_	_
+unseen	4	1	Explorer	Explorer	NNP	*)	_	_	_
+unseen	4	2	,	,	,	*	_	_	_
+unseen	4	3	using	use	VBG	(S(VP*	_	_	_
+unseen	4	4	the	the	DT	(NP(NP*	_	_	_
+unseen	4	5	Trident	Trident	NNP	*	_	_	_
+unseen	4	6	layout	layout	NN	*	_	_	_
+unseen	4	7	engine	engine	NN	*)	_	_	_
+unseen	4	8	:	:	:	*	_	_	_
+unseen	4	9	Internet	Internet	NNP	(NP*	_	_	_
+unseen	4	10	Explorer	Explorer	NNP	*))))	_	_	_
+unseen	4	11	uses	use	VBZ	(VP*	_	_	_
+unseen	4	12	DOCTYPE	DOCTYPE	NNP	(NP(NP*)	_	_	_
+unseen	4	13	sniffing	sniff	VBG	(VP*	_	_	_
+unseen	4	14	to	to	TO	(S(VP*	_	_	_
+unseen	4	15	choose	choose	VB	(VP*	_	_	_
+unseen	4	16	between	between	IN	(PP*	_	_	_
+unseen	4	17	standards	standard	NNS	(NP(NP*	_	_	_
+unseen	4	18	mode	mode	NN	*)	_	_	_
+unseen	4	19	and	and	CC	*	_	_	_
+unseen	4	20	a	a	DT	(NP(NP*	_	_	_
+unseen	4	21	``	``	``	*	_	_	_
+unseen	4	22	quirks	quirks	JJ	*	_	_	_
+unseen	4	23	mode	mode	NN	*	_	_	_
+unseen	4	24	''	''	''	*)	_	_	_
+unseen	4	25	in	in	IN	(SBAR(WHPP*	_	_	_
+unseen	4	26	which	which	WDT	(WHNP*))	_	_	_
+unseen	4	27	it	it	PRP	(S(NP*)	_	_	_
+unseen	4	28	deliberately	deliberately	RB	(VP(ADVP*)	_	_	_
+unseen	4	29	mimicks	mimick	VBZ	*	_	_	_
+unseen	4	30	nonstandard	nonstandard	JJ	(NP(NP*	non	standard	standard
+unseen	4	31	behaviors	behavior	NNS	*)	_	behaviors	_
+unseen	4	32	of	of	IN	(PP*	_	_	_
+unseen	4	33	old	old	JJ	(NP(NP*	_	_	_
+unseen	4	34	versions	version	NNS	*)	_	_	_
+unseen	4	35	of	of	IN	(PP*	_	_	_
+unseen	4	36	MSIE	MSIE	NNP	(NP*)))))	_	_	_
+unseen	4	37	for	for	IN	(PP*	_	_	_
+unseen	4	38	HTML	HTML	NNP	(NP*	_	_	_
+unseen	4	39	and	and	CC	*	_	_	_
+unseen	4	40	CSS	CSS	NNP	*))	_	_	_
+unseen	4	41	rendering	rendering	NN	(NP(NP*)	_	_	_
+unseen	4	42	on	on	IN	(PP*	_	_	_
+unseen	4	43	screen	screen	NN	(NP*)))	_	_	_
+unseen	4	44	(	(	(	(PRN*	_	_	_
+unseen	4	45	Internet	Internet	NNP	(S(NP*	_	_	_
+unseen	4	46	Explorer	Explorer	NNP	*)	_	_	_
+unseen	4	47	always	always	RB	(VP(ADVP*)	_	_	_
+unseen	4	48	uses	use	VBZ	*	_	_	_
+unseen	4	49	standards	standard	NNS	(NP(NP*	_	_	_
+unseen	4	50	mode	mode	NN	*)	_	_	_
+unseen	4	51	for	for	IN	(PP*	_	_	_
+unseen	4	52	printing	printing	NN	(NP*)))))	_	_	_
+unseen	4	53	)	)	)	*)))))))))))))	_	_	_
+unseen	4	54	.	.	.	*))	_	_	_
+
+unseen	5	0	For	for	IN	(ROOT(S(PP*	_	_	_
+unseen	5	1	example	example	NN	(NP*))	_	_	_
+unseen	5	2	,	,	,	*	_	_	_
+unseen	5	3	it	it	PRP	(NP*)	_	_	_
+unseen	5	4	is	be	VBZ	(VP*	_	_	_
+unseen	5	5	now	now	RB	(ADVP*)	_	_	_
+unseen	5	6	known	know	VBN	(VP*	_	_	_
+unseen	5	7	that	that	IN	(SBAR(SBAR*	_	_	_
+unseen	5	8	the	the	DT	(S(NP(NP*	_	_	_
+unseen	5	9	``	``	``	*	_	_	_
+unseen	5	10	surface	surface	NN	*	_	_	_
+unseen	5	11	''	''	''	*)	_	_	_
+unseen	5	12	of	of	IN	(PP*	_	_	_
+unseen	5	13	Halley	Halley	NNP	(NP*)))	_	_	_
+unseen	5	14	is	be	VBZ	(VP*	_	_	_
+unseen	5	15	largely	largely	RB	(ADVP*)	_	_	_
+unseen	5	16	composed	compose	VBN	(VP*	_	_	_
+unseen	5	17	of	of	IN	(PP*	_	_	_
+unseen	5	18	dusty	dusty	JJ	(NP*	_	_	_
+unseen	5	19	,	,	,	*	_	_	_
+unseen	5	20	non-volatile	non-volatile	JJ	*	non-	volatile	volatile
+unseen	5	21	materials	material	NNS	*))))))	_	materials	_
+unseen	5	22	,	,	,	*	_	_	_
+unseen	5	23	and	and	CC	*	_	_	_
+unseen	5	24	that	that	IN	(SBAR*	_	_	_
+unseen	5	25	only	only	RB	(S(NP(NP*	_	_	_
+unseen	5	26	a	a	DT	*	_	_	_
+unseen	5	27	small	small	JJ	*	_	_	_
+unseen	5	28	portion	portion	NN	*)	_	_	_
+unseen	5	29	of	of	IN	(PP*	_	_	_
+unseen	5	30	it	it	PRP	(NP*)))	_	_	_
+unseen	5	31	is	be	VBZ	(VP*	_	_	_
+unseen	5	32	icy	icy	JJ	(ADJP*)))))))	_	_	_
+unseen	5	33	.	.	.	*))	_	_	_
+
+unseen	6	0	Their	they	PRP$	(ROOT(S(NP*	_	_	_
+unseen	6	1	calloused	calloused	JJ	*	_	_	_
+unseen	6	2	feet	foot	NNS	*)	_	_	_
+unseen	6	3	have	have	VBP	(VP*	_	_	_
+unseen	6	4	large	large	JJ	(NP(NP(ADJP*	_	_	_
+unseen	6	5	,	,	,	*	_	_	_
+unseen	6	6	blunt	blunt	JJ	*	_	_	_
+unseen	6	7	,	,	,	*	_	_	_
+unseen	6	8	nonretractable	nonretractable	JJ	*)	non	retractible	retractible
+unseen	6	9	nails	nail	NNS	*)	_	nails	_
+unseen	6	10	,	,	,	*	_	_	_
+unseen	6	11	good	good	JJ	(ADJP*	_	_	_
+unseen	6	12	for	for	IN	(PP*	_	_	_
+unseen	6	13	running	run	VBG	(S(VP*	_	_	_
+unseen	6	14	and	and	CC	*	_	_	_
+unseen	6	15	making	make	VBG	*	_	_	_
+unseen	6	16	sharp	sharp	JJ	(NP*	_	_	_
+unseen	6	17	turns	turn	NNS	*)))))))	_	_	_
+unseen	6	18	.	.	.	*))	_	_	_
+
+unseen	7	0	By	by	IN	(ROOT(S(PP*	_	_	_
+unseen	7	1	analysis	analysis	NN	(NP(NP*)	_	_	_
+unseen	7	2	of	of	IN	(PP*	_	_	_
+unseen	7	3	experiential	experiential	JJ	(NP*	_	_	_
+unseen	7	4	consciousness	consciousness	NN	*))))	_	_	_
+unseen	7	5	,	,	,	*	_	_	_
+unseen	7	6	he	he	PRP	(NP*)	_	_	_
+unseen	7	7	exposed	expose	VBD	(VP(VP*	_	_	_
+unseen	7	8	the	the	DT	(NP(NP*	_	_	_
+unseen	7	9	relative	relative	JJ	*	_	_	_
+unseen	7	10	nature	nature	NN	*)	_	_	_
+unseen	7	11	of	of	IN	(PP*	_	_	_
+unseen	7	12	the	the	DT	(NP*	_	_	_
+unseen	7	13	world	world	NN	*))))	_	_	_
+unseen	7	14	and	and	CC	*	_	_	_
+unseen	7	15	established	establish	VBD	(VP*	_	_	_
+unseen	7	16	the	the	DT	(NP(NP*	_	_	_
+unseen	7	17	non-dual	non-dual	JJ	*	non-	dual	dual
+unseen	7	18	reality	reality	NN	*)	_	reality	_
+unseen	7	19	of	of	IN	(PP*	_	_	_
+unseen	7	20	Brahman	Brahman	NNP	(NP*))	_	_	_
+unseen	7	21	in	in	IN	(SBAR(WHPP*	_	_	_
+unseen	7	22	which	which	WDT	(WHNP*))	_	_	_
+unseen	7	23	Atman	Atman	NNP	(S(NP(NP(NP*)	_	_	_
+unseen	7	24	(	(	(	(PRN*	_	_	_
+unseen	7	25	the	the	DT	(NP*	_	_	_
+unseen	7	26	individual	individual	JJ	*	_	_	_
+unseen	7	27	soul	soul	NN	*)	_	_	_
+unseen	7	28	)	)	)	*))	_	_	_
+unseen	7	29	and	and	CC	*	_	_	_
+unseen	7	30	Brahman	Brahman	NNP	(NP(NP*)	_	_	_
+unseen	7	31	(	(	(	(PRN*	_	_	_
+unseen	7	32	the	the	DT	(NP*	_	_	_
+unseen	7	33	ultimate	ultimate	JJ	*	_	_	_
+unseen	7	34	reality	reality	NN	*)	_	_	_
+unseen	7	35	)	)	)	*)))	_	_	_
+unseen	7	36	are	be	VBP	(VP*	_	_	_
+unseen	7	37	identified	identify	VBN	(VP*	_	_	_
+unseen	7	38	absolutely	absolutely	RB	(ADVP*))))))))	_	_	_
+unseen	7	39	.	.	.	*))	_	_	_
+
+unseen	8	0	Ginger	Ginger	JJ	(ROOT(S(NP*	_	Ginger	_
+unseen	8	1	beer	beer	NN	*)	_	beer	_
+unseen	8	2	is	be	VBZ	(VP*	_	is	_
+unseen	8	3	a	a	DT	(NP(NP*	_	a	_
+unseen	8	4	non-alcoholic	non-alcoholic	JJ	*	non-	alcoholic	alcoholic
+unseen	8	5	soft	soft	JJ	*	_	soft	_
+unseen	8	6	drink	drink	NN	*)	_	drink	_
+unseen	8	7	that	that	WDT	(SBAR(WHNP*)	_	that	_
+unseen	8	8	is	be	VBZ	(S(VP*	_	is	_
+unseen	8	9	also	also	RB	(ADVP*)	_	also	_
+unseen	8	10	flavored	flavor	VBN	(VP*	_	flavored	_
+unseen	8	11	with	with	IN	(PP*	_	with	_
+unseen	8	12	ginger	ginger	NN	(NP*	_	ginger	_
+unseen	8	13	root	root	NN	*))))))))	_	root	_
+unseen	8	14	.	.	.	*))	_	_	_
+
+unseen	9	0	Those	those	DT	(ROOT(S(NP*	_	Those	_
+unseen	9	1	organs	organ	NNS	*)	_	organs	_
+unseen	9	2	are	be	VBP	(VP(VP*	_	are	_
+unseen	9	3	functional	functional	JJ	(ADJP*	_	_	_
+unseen	9	4	in	in	IN	(PP*	_	_	_
+unseen	9	5	the	the	DT	(NP*	_	_	_
+unseen	9	6	ancestral	ancestral	JJ	*	_	_	_
+unseen	9	7	species	species	NN	*))))	_	_	_
+unseen	9	8	but	but	CC	*	_	_	_
+unseen	9	9	are	be	VBP	(VP*	_	are	_
+unseen	9	10	now	now	RB	(ADVP*)	_	now	_
+unseen	9	11	either	either	RB	(ADJP(ADJP*	_	either	_
+unseen	9	12	nonfunctional	nonfunctional	JJ	*	non	functional	functional
+unseen	9	13	or	or	CC	*	_	_	_
+unseen	9	14	re-adapted	re-adapted	JJ	*)	_	_	_
+unseen	9	15	to	to	TO	(PP*	_	_	_
+unseen	9	16	a	a	DT	(NP*	_	_	_
+unseen	9	17	new	new	JJ	*	_	_	_
+unseen	9	18	function	function	NN	*)))))	_	_	_
+unseen	9	19	.	.	.	*))	_	_	_
+
+unseen	10	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_	_	_	_
+unseen	10	1	composer	composer	NN	*	_	_	_	_	_	_
+unseen	10	2	Arnold	Arnold	NNP	*	_	_	_	_	_	_
+unseen	10	3	Schoenberg	Schoenberg	NNP	*)	_	_	_	_	_	_
+unseen	10	4	(	(	(	(PRN*	_	_	_	_	_	_
+unseen	10	5	1874-1951	1874-1951	CD	(NP*)	_	_	_	_	_	_
+unseen	10	6	)	)	)	*))	_	_	_	_	_	_
+unseen	10	7	wrote	write	VBD	(VP*	_	_	_	_	_	_
+unseen	10	8	pieces	piece	NNS	(NP(NP*)	_	_	_	_	_	_
+unseen	10	9	which	which	WDT	(SBAR(WHNP*)	_	which	_	_	_	_
+unseen	10	10	were	be	VBD	(S(VP*	_	were	_	_	_	_
+unseen	10	11	atonal	atonal	JJ	(ADJP*)	a	tonal	tonal	_	_	_
+unseen	10	12	(	(	(	(PRN*	_	_	_	_	_	_
+unseen	10	13	meaning	meaning	VBG	(S(VP*	_	_	_	_	_	_
+unseen	10	14	that	that	IN	(SBAR*	_	_	_	_	_	_
+unseen	10	15	they	they	PRP	(S(NP*)	_	_	_	_	they	_
+unseen	10	16	did	do	VBD	(VP*	_	_	_	_	did	_
+unseen	10	17	not	not	RB	*	_	_	_	not	_	_
+unseen	10	18	sound	sound	VB	(VP*	_	_	_	_	sound	sound
+unseen	10	19	as	as	RB	(SBAR*	_	_	_	_	as	_
+unseen	10	20	if	if	IN	*	_	_	_	_	if	_
+unseen	10	21	they	they	PRP	(S(NP*)	_	_	_	_	they	_
+unseen	10	22	were	be	VBD	(VP*	_	_	_	_	were	_
+unseen	10	23	in	in	IN	(PP*	_	_	_	_	in	_
+unseen	10	24	any	any	DT	(NP*	_	_	_	_	any	_
+unseen	10	25	clear	clear	JJ	*	_	_	_	_	clear	_
+unseen	10	26	musical	musical	JJ	*	_	_	_	_	musical	_
+unseen	10	27	key	key	NN	*)))))))))))	_	_	_	_	key	_
+unseen	10	28	)	)	)	*))))))	_	_	_	_	_	_
+unseen	10	29	.	.	.	*))	_	_	_	_	_	_
+
+unseen	11	0	The	the	DT	(ROOT(S(NP*	_	_	_
+unseen	11	1	processes	process	NNS	*	_	_	_
+unseen	11	2	use	use	NN	*)	_	_	_
+unseen	11	3	asynchronous	asynchronous	VBZ	(VP*	a	synchronous	synchronous
+unseen	11	4	Inter-Process	Inter-Process	NNP	(S(NP*	_	Inter-Process	_
+unseen	11	5	Communication	Communication	NNP	*)	_	Communication	_
+unseen	11	6	to	to	TO	(VP*	_	_	_
+unseen	11	7	synchronize	synchronize	VB	(VP*	_	_	_
+unseen	11	8	themselves	themselves	PRP	(NP*)))))	_	_	_
+unseen	11	9	.	.	.	*))	_	_	_
+
+unseen	12	0	Asexual	asexual	JJ	(ROOT(S(S(NP*	A	sexual	sexual
+unseen	12	1	reproduction	reproduction	NN	*)	_	reproduction	_
+unseen	12	2	is	be	VBZ	(VP*	_	_	_
+unseen	12	3	easier	easier	JJR	(ADJP(ADJP*)	_	_	_
+unseen	12	4	than	than	IN	(PP*	_	_	_
+unseen	12	5	sexual	sexual	JJ	(NP*	_	_	_
+unseen	12	6	reproduction	reproduction	NN	*)))))	_	_	_
+unseen	12	7	,	,	,	*	_	_	_
+unseen	12	8	but	but	CC	*	_	_	_
+unseen	12	9	there	there	EX	(S(NP*)	_	_	_
+unseen	12	10	are	be	VBP	(VP*	_	_	_
+unseen	12	11	benefits	benefit	NNS	(NP(NP(NP*	_	_	_
+unseen	12	12	and	and	CC	*	_	_	_
+unseen	12	13	drawbacks	drawback	NNS	*)	_	_	_
+unseen	12	14	to	to	TO	(PP*	_	_	_
+unseen	12	15	both	both	DT	(NP*)))	_	_	_
+unseen	12	16	:	:	:	*	_	_	_
+unseen	12	17	Humans	human	NNS	(NP*))))	_	_	_
+unseen	12	18	.	.	.	*))	_	_	_
+
+unseen	13	0	Asymmetric	Asymmetric	NNP	(ROOT(S(NP*	A	symmetric	symmetric
+unseen	13	1	cryptography	cryptography	NNP	*)	_	cryptography	_
+unseen	13	2	is	be	VBZ	(VP*	_	_	_
+unseen	13	3	harder	harder	JJR	(ADJP*)	_	_	_
+unseen	13	4	to	to	TO	(S(VP*	_	_	_
+unseen	13	5	use	use	VB	(VP*))))	_	_	_
+unseen	13	6	.	.	.	*))	_	_	_
+
+unseen	14	0	Each	each	DT	(ROOT(S(NP(NP*	_	_	_
+unseen	14	1	person	person	NN	*)	_	_	_
+unseen	14	2	who	who	WP	(SBAR(WHNP*)	_	_	_
+unseen	14	3	wants	want	VBZ	(S(VP*	_	_	_
+unseen	14	4	to	to	TO	(S(VP*	_	_	_
+unseen	14	5	use	use	VB	(VP*	_	_	_
+unseen	14	6	asymmetric	asymmetric	JJ	(NP*	a	symmetric	symmetric
+unseen	14	7	cryptography	cryptography	NN	*))))))))	_	cryptography	_
+unseen	14	8	uses	use	VBZ	(VP*	_	_	_
+unseen	14	9	a	a	DT	(NP(NP*	_	_	_
+unseen	14	10	secret	secret	JJ	*	_	_	_
+unseen	14	11	key	key	JJ	*	_	_	_
+unseen	14	12	number	number	NN	*)	_	_	_
+unseen	14	13	,	,	,	*	_	_	_
+unseen	14	14	and	and	CC	*	_	_	_
+unseen	14	15	a	a	DT	(NP(NP*	_	_	_
+unseen	14	16	different	different	JJ	*	_	_	_
+unseen	14	17	number	number	NN	*)	_	_	_
+unseen	14	18	,	,	,	*	_	_	_
+unseen	14	19	a	a	DT	(NP*	_	_	_
+unseen	14	20	``	``	``	*	_	_	_
+unseen	14	21	public	public	JJ	*	_	_	_
+unseen	14	22	key	key	NN	*	_	_	_
+unseen	14	23	''	''	''	*)))	_	_	_
+unseen	14	24	that	that	IN	(SBAR*	_	_	_
+unseen	14	25	they	they	PRP	(S(NP*)	_	_	_
+unseen	14	26	can	can	MD	(VP*	_	_	_
+unseen	14	27	tell	tell	VB	(VP*	_	_	_
+unseen	14	28	everyone	everyone	NN	(NP*))))))	_	_	_
+unseen	14	29	.	.	.	*))	_	_	_
+
+unseen	15	0	Bacterial	Bacterial	NNP	(ROOT(S(NP*)	_	_	_
+unseen	15	1	mostly	mostly	RB	(ADVP*)	_	_	_
+unseen	15	2	divide	divide	VBP	(VP(VP*	_	_	_
+unseen	15	3	by	by	IN	(PP*	_	_	_
+unseen	15	4	asexual	asexual	JJ	(NP*	a	sexual	sexual
+unseen	15	5	cell	cell	NN	*	_	cell	_
+unseen	15	6	division	division	NN	*)))	_	division	_
+unseen	15	7	,	,	,	*	_	_	_
+unseen	15	8	but	but	CC	*	_	_	_
+unseen	15	9	do	do	VBP	(VP*	_	_	_
+unseen	15	10	have	have	VB	(VP*	_	_	_
+unseen	15	11	a	a	DT	(NP(NP*	_	_	_
+unseen	15	12	kind	kind	NN	*)	_	_	_
+unseen	15	13	of	of	IN	(PP*	_	_	_
+unseen	15	14	sex	sex	NN	(NP*)))	_	_	_
+unseen	15	15	by	by	IN	(PP*	_	_	_
+unseen	15	16	horizontal	horizontal	JJ	(NP*	_	_	_
+unseen	15	17	gene	gene	NN	*	_	_	_
+unseen	15	18	transfer	transfer	NN	*)))))	_	_	_
+unseen	15	19	.	.	.	*))	_	_	_
+
+unseen	16	0	Jackson	Jackson	NNP	(ROOT(S(NP*)	_	_	_
+unseen	16	1	was	be	VBD	(VP*	_	_	_
+unseen	16	2	also	also	RB	(ADVP*)	_	_	_
+unseen	16	3	called	call	VBN	(VP*	_	_	_
+unseen	16	4	asexual	asexual	JJ	(ADJP*)	a	sexual	sexual
+unseen	16	5	by	by	IN	(PP*	_	_	_
+unseen	16	6	his	he	PRP$	(NP(NP*	_	_	_
+unseen	16	7	ex-girlfriend	ex-girlfriend	JJ	*	_	_	_
+unseen	16	8	Brooke	Brooke	NNP	*	_	_	_
+unseen	16	9	Shields	Shields	NNP	*)	_	_	_
+unseen	16	10	and	and	CC	*	_	_	_
+unseen	16	11	'presexual	'presexual	NN	(NP*)))	_	_	_
+unseen	16	12	'	'	''	*	_	_	_
+unseen	16	13	by	by	IN	(PP*	_	_	_
+unseen	16	14	a	a	DT	(NP*	_	_	_
+unseen	16	15	biographer	biographer	NN	*))))	_	_	_
+unseen	16	16	.	.	.	*))	_	_	_
+
+unseen	17	0	Their	they	PRP$	(ROOT(S(NP*	_	Their	_
+unseen	17	1	ears	ear	NNS	*)	_	ears	_
+unseen	17	2	are	be	VBP	(VP*	_	are	_
+unseen	17	3	asymmetrical	asymmetrical	JJ	(ADJP*	a	symmetrical	symmetrical
+unseen	17	4	allowing	allow	VBG	(S(VP*	_	allowing	_
+unseen	17	5	the	the	DT	(NP*	_	the	_
+unseen	17	6	owl	owl	NN	*	_	owl	_
+unseen	17	7	to	to	TO	(S(VP*	_	to	_
+unseen	17	8	locate	locate	VB	(VP*	_	locate	_
+unseen	17	9	a	a	DT	(NP*	_	a	_
+unseen	17	10	sound	sound	NN	*)))))))))	_	sound	_
+unseen	17	11	.	.	.	*))	_	_	_
+
+unseen	18	0	Heterosexual	Heterosexual	NNP	(ROOT(S(NP*)	_	_	_
+unseen	18	1	is	be	VBZ	(VP*	_	_	_
+unseen	18	2	seen	see	VBN	(VP*	_	_	_
+unseen	18	3	as	as	RB	(ADJP*	_	_	_
+unseen	18	4	different	different	JJ	*)	_	_	_
+unseen	18	5	from	from	IN	(PP*	_	_	_
+unseen	18	6	homosexuality	homosexuality	NN	(NP*	_	_	_
+unseen	18	7	,	,	,	*	_	_	_
+unseen	18	8	bisexuality	bisexuality	NN	*	_	_	_
+unseen	18	9	or	or	CC	*	_	_	_
+unseen	18	10	asexuality	asexuality	NN	*))))	a	sexuality	sexuality
+unseen	18	11	.	.	.	*))	_	_	_
+
+unseen	19	0	According	accord	VBG	(ROOT(S(PP*	_	_	_
+unseen	19	1	to	to	TO	(PP*	_	_	_
+unseen	19	2	experts	expert	NNS	(NP*)))	_	_	_
+unseen	19	3	,	,	,	*	_	_	_
+unseen	19	4	a	a	DT	(NP(NP*	_	_	_
+unseen	19	5	child	child	NN	*)	_	_	_
+unseen	19	6	born	bear	VBN	(VP*	_	_	_
+unseen	19	7	with	with	IN	(PP*	_	_	_
+unseen	19	8	atypical	atypical	JJ	(NP(NP*	a	typical	typical
+unseen	19	9	genitalia	genitalia	NN	*)	_	genitalia	_
+unseen	19	10	serious	serious	JJ	(ADJP*	_	_	_
+unseen	19	11	enough	enough	RB	*	_	_	_
+unseen	19	12	to	to	TO	(S(VP*	_	_	_
+unseen	19	13	call	call	VB	(VP*	_	_	_
+unseen	19	14	in	in	IN	(PP*	_	_	_
+unseen	19	15	an	a	DT	(NP*	_	_	_
+unseen	19	16	expert	expert	NN	*))))))))))	_	_	_
+unseen	19	17	occurs	occur	VBZ	(VP*	_	_	_
+unseen	19	18	in	in	IN	(PP*	_	_	_
+unseen	19	19	about	about	RB	(NP(NP(QP*	_	_	_
+unseen	19	20	1	1	CD	*))	_	_	_
+unseen	19	21	of	of	IN	(PP*	_	_	_
+unseen	19	22	1,500	1,500	CD	(NP*	_	_	_
+unseen	19	23	births	birth	NNS	*)))))	_	_	_
+unseen	19	24	.	.	.	*))	_	_	_
+
+unseen	20	0	If	if	IN	(ROOT(S(SBAR*	_	_	_	_	_	_
+unseen	20	1	the	the	DT	(S(NP*	_	the	_	_	the	_
+unseen	20	2	abnormal	abnormal	JJ	*	ab	normal	normal	_	abnormal	_
+unseen	20	3	cells	cell	NNS	*)	_	cells	_	_	cells	_
+unseen	20	4	do	do	VBP	(VP*	_	_	_	_	do	_
+unseen	20	5	not	not	RB	*	_	_	_	not	_	_
+unseen	20	6	invade	invade	VB	(VP(VP*	_	_	_	_	invade	_
+unseen	20	7	,	,	,	*	_	_	_	_	_	_
+unseen	20	8	but	but	CC	(CONJP*	_	_	_	_	_	_
+unseen	20	9	just	just	RB	*)	_	_	_	_	_	_
+unseen	20	10	divide	divide	VB	*)	_	_	_	_	_	_
+unseen	20	11	and	and	CC	*	_	_	_	_	_	_
+unseen	20	12	swell	swell	VB	(VP*	_	_	_	_	_	_
+unseen	20	13	up	up	RP	(PRT*)	_	_	_	_	_	_
+unseen	20	14	their	they	PRP$	(NP*	_	_	_	_	_	_
+unseen	20	15	original	original	JJ	*	_	_	_	_	_	_
+unseen	20	16	tissue	tissue	NN	*))))))	_	_	_	_	_	_
+unseen	20	17	,	,	,	*	_	_	_	_	_	_
+unseen	20	18	this	this	DT	(NP*)	_	_	_	_	this	_
+unseen	20	19	is	be	VBZ	(VP*	_	_	_	_	is	_
+unseen	20	20	not	not	RB	*	_	_	_	not	_	_
+unseen	20	21	called	call	VBN	(VP*	_	_	_	_	called	called
+unseen	20	22	``	``	``	*	_	_	_	_	``	_
+unseen	20	23	cancer	cancer	NN	(NP*)	_	_	_	_	cancer	_
+unseen	20	24	''	''	''	*))	_	_	_	_	''	_
+unseen	20	25	.	.	.	*))	_	_	_	_	_	_
+
+unseen	21	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_	_	_	_	_	_	_
+unseen	21	1	main	main	JJ	*	_	_	_	_	_	_	_	_	_
+unseen	21	2	character	character	NN	*)	_	_	_	_	_	_	_	_	_
+unseen	21	3	,	,	,	*	_	_	_	_	_	_	_	_	_
+unseen	21	4	Angus	Angus	NNP	(NP(NP*	_	_	_	_	_	_	_	_	_
+unseen	21	5	MacGyver	MacGyver	NNP	*)	_	_	_	_	_	_	_	_	_
+unseen	21	6	(	(	(	(PRN*	_	_	_	_	_	_	_	_	_
+unseen	21	7	Richard	Richard	NNP	(NP*	_	_	_	_	_	_	_	_	_
+unseen	21	8	Dean	Dean	NNP	*	_	_	_	_	_	_	_	_	_
+unseen	21	9	Anderson	Anderson	NNP	*)	_	_	_	_	_	_	_	_	_
+unseen	21	10	)	)	)	*))	_	_	_	_	_	_	_	_	_
+unseen	21	11	,	,	,	*)	_	_	_	_	_	_	_	_	_
+unseen	21	12	often	often	RB	(ADVP*)	_	_	_	_	_	_	_	_	_
+unseen	21	13	prevented	prevent	VBD	(VP*	_	_	_	_	_	_	_	_	_
+unseen	21	14	inevitable	inevitable	JJ	(ADJP*	in	evitable	evitable	_	_	_	_	_	_
+unseen	21	15	defeats	defeat	VBZ	(SBAR(S(VP(VP*)	_	defeats	_	_	_	_	_	_	_
+unseen	21	16	,	,	,	*	_	_	_	_	_	_	_	_	_
+unseen	21	17	saved	saved	VBD	(VP*	_	_	_	_	_	_	_	_	_
+unseen	21	18	lives	life	NNS	(NP*))	_	_	_	_	_	_	_	_	_
+unseen	21	19	,	,	,	*	_	_	_	_	_	_	_	_	_
+unseen	21	20	distracted	distracted	VBD	(VP*	_	_	_	_	_	_	_	_	_
+unseen	21	21	enemies	enemy	NNS	(NP*))	_	_	_	_	_	_	_	_	_
+unseen	21	22	,	,	,	*	_	_	_	_	_	_	_	_	_
+unseen	21	23	made	make	VBD	(VP*	_	_	_	_	_	_	_	_	_
+unseen	21	24	weapons	weapon	NNS	(NP*))	_	_	_	_	_	_	_	_	_
+unseen	21	25	,	,	,	*	_	_	_	_	_	_	_	_	_
+unseen	21	26	and	and	CC	*	_	_	_	_	_	_	_	_	_
+unseen	21	27	even	even	RB	(ADVP*)	_	_	_	_	_	_	_	_	_
+unseen	21	28	performed	performed	VBD	(VP*	_	_	_	_	_	_	_	_	_
+unseen	21	29	everyday	everyday	JJ	(NP*	_	_	_	_	_	_	_	_	_
+unseen	21	30	tasks	task	NNS	*)	_	_	_	_	_	_	_	_	_
+unseen	21	31	usually	usually	RB	(ADVP*)	_	_	_	_	_	_	_	_	_
+unseen	21	32	using	use	VBG	(S(VP*	_	_	_	_	_	_	_	_	_
+unseen	21	33	very	very	RB	(NP(NP*	_	_	_	_	_	_	_	_	_
+unseen	21	34	few	few	JJ	*	_	_	_	_	_	_	_	_	_
+unseen	21	35	objects	object	NNS	*)	_	_	_	_	_	_	_	_	_
+unseen	21	36	that	that	WDT	(SBAR(WHNP*)	_	_	_	_	that	_	_	that	_
+unseen	21	37	seemed	seem	VBD	(S(VP*	_	_	_	_	seemed	_	_	seemed	_
+unseen	21	38	irrelevant	irrelevant	JJ	(ADJP*	_	_	_	ir	relevant	relevant	_	_	_
+unseen	21	39	or	or	CC	*	_	_	_	_	_	_	_	_	_
+unseen	21	40	abnormal	abnormal	JJ	*	_	_	_	_	_	_	ab	normal	normal
+unseen	21	41	to	to	TO	(S(VP*	_	_	_	_	to	_	_	to	_
+unseen	21	42	use	use	VB	(VP*	_	_	_	_	use	_	_	use	_
+unseen	21	43	in	in	IN	(PP*	_	_	_	_	in	_	_	in	_
+unseen	21	44	such	such	JJ	(NP*	_	_	_	_	such	_	_	such	_
+unseen	21	45	situations	situation	NNS	*))))))))))))))))))	_	_	_	_	situations	_	_	situations	_
+unseen	21	46	.	.	.	*))	_	_	_	_	_	_	_	_	_
+
+unseen	22	0	Magnesium	Magnesium	JJ	(ROOT(S(NP*	_	_	_
+unseen	22	1	compounds	compound	NNS	*)	_	_	_
+unseen	22	2	are	be	VBP	(VP*	_	_	_
+unseen	22	3	used	use	VBN	(VP*	_	_	_
+unseen	22	4	medicinally	medicinally	RB	(ADVP*)	_	_	_
+unseen	22	5	as	as	IN	(PP(PP*	_	_	_
+unseen	22	6	common	common	JJ	(NP(NP*	_	_	_
+unseen	22	7	laxatives	laxative	NNS	*)	_	_	_
+unseen	22	8	,	,	,	*	_	_	_
+unseen	22	9	antacids	antacid	NNS	(NP(NP*)	_	_	_
+unseen	22	10	(	(	(	(PRN*	_	_	_
+unseen	22	11	i.e.	i.e.	FW	*	_	_	_
+unseen	22	12	,	,	,	*	_	_	_
+unseen	22	13	milk	milk	JJ	(ADJP*	_	_	_
+unseen	22	14	of	of	IN	(PP*	_	_	_
+unseen	22	15	magnesia	magnesia	NN	(NP*)))	_	_	_
+unseen	22	16	)	)	)	*))	_	_	_
+unseen	22	17	,	,	,	*))	_	_	_
+unseen	22	18	and	and	CC	*	_	_	_
+unseen	22	19	in	in	IN	(PP*	_	_	_
+unseen	22	20	a	a	DT	(NP(NP*	_	_	_
+unseen	22	21	number	number	NN	*)	_	_	_
+unseen	22	22	of	of	IN	(PP*	_	_	_
+unseen	22	23	situations	situation	NNS	(NP(NP(NP*)	_	_	_
+unseen	22	24	where	where	WRB	(SBAR(WHADVP*)	_	_	_
+unseen	22	25	stabilization	stabilization	NN	(S(NP(NP*)	_	_	_
+unseen	22	26	of	of	IN	(PP*	_	_	_
+unseen	22	27	abnormal	abnormal	JJ	(NP*	ab	normal	normal
+unseen	22	28	nerve	nerve	NN	*	_	nerve	_
+unseen	22	29	excitation	excitation	NN	*	_	excitation	_
+unseen	22	30	and	and	CC	*	_	_	_
+unseen	22	31	blood	blood	NN	*	_	_	_
+unseen	22	32	vessel	vessel	NN	*	_	_	_
+unseen	22	33	spasm	spasm	NN	*)))	_	_	_
+unseen	22	34	is	be	VBZ	(VP*	_	_	_
+unseen	22	35	required	require	VBN	(VP*)))))	_	_	_
+unseen	22	36	(	(	(	(PRN*	_	_	_
+unseen	22	37	that	that	WDT	(SBAR(WHNP*)	_	_	_
+unseen	22	38	is	be	VBZ	(S(VP*	_	_	_
+unseen	22	39	,	,	,	(VP*	_	_	_
+unseen	22	40	to	to	TO	(S(VP*	_	_	_
+unseen	22	41	treat	treat	VB	(VP*	_	_	_
+unseen	22	42	eclampsia	eclampsium	NN	(NP*))))))))	_	_	_
+unseen	22	43	)	)	)	*))))))))	_	_	_
+unseen	22	44	.	.	.	*))	_	_	_
+
+unseen	23	0	Prions	prion	NNS	(ROOT(S(NP*)	_	_	_
+unseen	23	1	are	be	VBP	(VP*	_	_	_
+unseen	23	2	a	a	DT	(NP(NP*	_	_	_
+unseen	23	3	form	form	NN	*)	_	_	_
+unseen	23	4	of	of	IN	(PP*	_	_	_
+unseen	23	5	virus	virus	NN	(NP*))	_	_	_
+unseen	23	6	that	that	WDT	(SBAR(WHNP*)	_	that	_
+unseen	23	7	are	be	VBP	(S(VP*	_	are	_
+unseen	23	8	basically	basically	RB	(ADVP*)	_	basically	_
+unseen	23	9	abnormal	abnormal	JJ	(NP(NP*	ab	normal	normal
+unseen	23	10	clumps	clump	NNS	*)	_	clumps	_
+unseen	23	11	of	of	IN	(PP*	_	of	_
+unseen	23	12	proteins	protein	NNS	(NP*))))))))	_	proteins	_
+unseen	23	13	.	.	.	*))	_	_	_
+
+unseen	24	0	After	after	IN	(ROOT(S(S(PP*	_	_	_	_	_	_
+unseen	24	1	the	the	DT	(NP*	_	_	_	_	_	_
+unseen	24	2	war	war	NN	*))	_	_	_	_	_	_
+unseen	24	3	,	,	,	*	_	_	_	_	_	_
+unseen	24	4	Amsterdam	Amsterdam	NNP	(NP*)	_	_	_	_	_	_
+unseen	24	5	became	become	VBD	(VP*	_	_	_	_	_	_
+unseen	24	6	a	a	DT	(NP(NP*	_	_	_	_	_	_
+unseen	24	7	centre	centre	NN	*)	_	_	_	_	_	_
+unseen	24	8	of	of	IN	(PP*	_	_	_	_	_	_
+unseen	24	9	tolerance	tolerance	NN	(NP*	_	_	_	_	_	_
+unseen	24	10	and	and	CC	*	_	_	_	_	_	_
+unseen	24	11	culture	culture	NN	*)))))	_	_	_	_	_	_
+unseen	24	12	;	;	:	*	_	_	_	_	_	_
+unseen	24	13	to	to	TO	(S(S(VP*	_	to	_	_	_	_
+unseen	24	14	be	be	VB	(VP*	_	be	_	_	_	_
+unseen	24	15	different	different	JJ	(ADJP*))))	_	different	_	_	_	_
+unseen	24	16	is	be	VBZ	(VP*	_	is	_	_	_	_
+unseen	24	17	not	not	RB	*	not	_	_	_	_	_
+unseen	24	18	abnormal	abnormal	JJ	(ADJP*	_	abnormal	_	ab	normal	normal
+unseen	24	19	in	in	IN	(PP*	_	in	_	_	_	_
+unseen	24	20	Amsterdam	Amsterdam	NNP	(NP*)))))	_	Amsterdam	_	_	_	_
+unseen	24	21	.	.	.	*))	_	_	_	_	_	_
+
+unseen	25	0	The	the	DT	(ROOT(S(NP(NP*	_	The	_
+unseen	25	1	formation	formation	NN	*)	_	formation	_
+unseen	25	2	of	of	IN	(PP*	_	of	_
+unseen	25	3	the	the	DT	(NP(NP*	_	the	_
+unseen	25	4	heart	heart	NN	*)	_	heart	_
+unseen	25	5	before	before	IN	(PP*	_	before	_
+unseen	25	6	birth	birth	NN	(NP*)))))	_	birth	_
+unseen	25	7	is	be	VBZ	(VP(VP*	_	_	_
+unseen	25	8	very	very	RB	(ADJP*	_	_	_
+unseen	25	9	complex	complex	JJ	*))	_	_	_
+unseen	25	10	and	and	CC	*	_	_	_
+unseen	25	11	is	be	VBZ	(VP*	_	is	_
+unseen	25	12	sometimes	sometimes	RB	(ADJP*	_	sometimes	_
+unseen	25	13	abnormal	abnormal	JJ	*)))	ab	normal	normal
+unseen	25	14	.	.	.	*))	_	_	_
+
+unseen	26	0	Other	other	JJ	(ROOT(S(NP*	_	_	_
+unseen	26	1	congenital	congenital	JJ	*	_	_	_
+unseen	26	2	heart	heart	NN	*	_	_	_
+unseen	26	3	problems	problem	NNS	*)	_	_	_
+unseen	26	4	are	be	VBP	(VP*	_	_	_
+unseen	26	5	caused	cause	VBN	(VP*	_	_	_
+unseen	26	6	by	by	IN	(PP*	_	_	_
+unseen	26	7	abnormal	abnormal	JJ	(NP*	ab	normal	normal
+unseen	26	8	heart	heart	NN	*	_	heart	_
+unseen	26	9	valves	valve	NNS	*))))	_	valves	_
+unseen	26	10	.	.	.	*))	_	_	_
+
+unseen	27	0	Adults	adult	NNS	(ROOT(S(S(NP(NP*)	_	_	_	_	_	_
+unseen	27	1	whose	whose	WP$	(SBAR(WHNP*	_	_	_	_	_	_
+unseen	27	2	primary	primary	JJ	*)	_	_	_	_	_	_
+unseen	27	3	sexual	sexual	JJ	(S(NP*	_	_	_	_	_	_
+unseen	27	4	attraction	attraction	NN	*)	_	_	_	_	_	_
+unseen	27	5	is	be	VBZ	(VP*	_	_	_	_	_	_
+unseen	27	6	for	for	IN	(PP*	_	_	_	_	_	_
+unseen	27	7	mid-to-late	mid-to-late	JJ	(NP*	_	_	_	_	_	_
+unseen	27	8	teens	teens	NNS	*))))))	_	_	_	_	_	_
+unseen	27	9	are	be	VBP	(VP*	_	_	_	_	_	_
+unseen	27	10	properly	properly	RB	(ADVP*)	_	_	_	_	_	_
+unseen	27	11	called	call	VBN	(VP*	_	_	_	_	_	_
+unseen	27	12	ephebophiles	ephebophile	NNS	(NP*))))	_	_	_	_	_	_
+unseen	27	13	,	,	,	*	_	_	_	_	_	_
+unseen	27	14	but	but	CC	*	_	_	_	_	_	_
+unseen	27	15	ephebophilia	ephebophilia	NN	(S(NP*)	_	ephebophilia	_	_	_	_
+unseen	27	16	is	be	VBZ	(VP*	_	is	_	_	_	_
+unseen	27	17	not	not	RB	*	not	_	_	_	_	_
+unseen	27	18	considered	consider	VBN	(VP*	_	considered	considered	_	_	_
+unseen	27	19	abnormal	abnormal	JJ	(ADJP*)	_	abnormal	_	ab	normal	normal
+unseen	27	20	by	by	IN	(PP*	_	by	_	_	_	_
+unseen	27	21	mental	mental	JJ	(NP*	_	mental	_	_	_	_
+unseen	27	22	health	health	NN	*	_	health	_	_	_	_
+unseen	27	23	professionals	professional	NNS	*)))))	_	professionals	_	_	_	_
+unseen	27	24	.	.	.	*))	_	_	_	_	_	_
+
+unseen	28	0	The	the	DT	(ROOT(S(NP(NP*	_	_	_
+unseen	28	1	term	term	NN	*)	_	_	_
+unseen	28	2	being	be	VBG	(VP*	_	_	_
+unseen	28	3	used	use	VBN	(VP*	_	_	_
+unseen	28	4	increasingly	increasingly	RB	(ADVP*))))	_	_	_
+unseen	28	5	is	be	VBZ	(VP*	_	_	_
+unseen	28	6	disorders	disorder	NNS	(NP(NP*)	_	_	_
+unseen	28	7	of	of	IN	(PP*	_	_	_
+unseen	28	8	sex	sex	NN	(NP*	_	_	_
+unseen	28	9	development	development	NN	*))	_	_	_
+unseen	28	10	(	(	(	(PRN*	_	_	_
+unseen	28	11	DSD	DSD	NNP	(NP*)	_	_	_
+unseen	28	12	)	)	)	*)	_	_	_
+unseen	28	13	s.	s.	NN	(NP(NP*)	_	_	_
+unseen	28	14	A	a	DT	(SBAR(S(NP*	_	A	_
+unseen	28	15	person’s	person’s	NNS	*	_	person’s	_
+unseen	28	16	genitalia	genitalia	NN	*)	_	genitalia	_
+unseen	28	17	may	may	MD	(VP*	_	may	_
+unseen	28	18	be	be	VB	(VP*	_	be	_
+unseen	28	19	abnormal	abnormal	JJ	(ADJP*	ab	normal	normal
+unseen	28	20	in	in	IN	(PP*	_	in	_
+unseen	28	21	some	some	DT	(NP*	_	some	_
+unseen	28	22	way	way	NN	*))))))))))	_	way	_
+unseen	28	23	.	.	.	*))	_	_	_
+
+unseen	29	0	Problems	problem	NNS	(ROOT(S(NP(NP*)	_	_	_
+unseen	29	1	with	with	IN	(PP*	_	_	_
+unseen	29	2	the	the	DT	(NP(NP*	_	_	_
+unseen	29	3	nervous	nervous	JJ	*	_	_	_
+unseen	29	4	system	system	NN	*)	_	_	_
+unseen	29	5	such	such	JJ	(PP*	_	_	_
+unseen	29	6	as	as	IN	*	_	_	_
+unseen	29	7	injury	injury	NN	(NP(NP(NP*)	_	_	_
+unseen	29	8	to	to	TO	(PP*	_	_	_
+unseen	29	9	the	the	DT	(NP*	_	_	_
+unseen	29	10	spinal	spinal	JJ	*	_	_	_
+unseen	29	11	cord	cord	NN	*)))	_	_	_
+unseen	29	12	or	or	CC	*	_	_	_
+unseen	29	13	abnormal	abnormal	JJ	(NP(NP*	ab	normal	normal
+unseen	29	14	growths	growth	NNS	*)	_	growths	_
+unseen	29	15	on	on	IN	(PP*	_	_	_
+unseen	29	16	it	it	PRP	(NP*))))))))	_	_	_
+unseen	29	17	can	can	MD	(VP*	_	_	_
+unseen	29	18	also	also	RB	(ADVP*)	_	_	_
+unseen	29	19	lead	lead	VB	(VP*	_	_	_
+unseen	29	20	to	to	TO	(S(VP*	_	_	_
+unseen	29	21	priapism	priapism	VB	(VP*)))))	_	_	_
+unseen	29	22	.	.	.	*))	_	_	_
