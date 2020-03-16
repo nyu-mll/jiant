@@ -855,7 +855,16 @@ class SamplingMultiTaskTrainer:
             loss = get_output_attribute(out, "loss", self._cuda_device, "mean")
 
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-            n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
+
+            n_exs = get_output_attribute(out, "n_exs", self._cuda_device)
+            # in multi-GPU mode n_exs is expected to be a tensor, w/ single-GPU an int is expected:
+            if isinstance(n_exs, torch.Tensor):
+                n_examples += n_exs.item()
+            elif isinstance(n_exs, int):
+                n_examples += n_exs
+            else:
+                raise ValueError("n_exs is type " + type(n_exs) + ", int or Tensor is expected.")
+
             if print_output:
                 if isinstance(task, Seq2SeqTask):
                     if batch_num == 1:
@@ -875,7 +884,7 @@ class SamplingMultiTaskTrainer:
                                 log.info("\tInput:\t%s", input_string)
                                 log.info("\tGold:\t%s", gold_string)
                             log.info("\tOutput:\t%s", output_string)
-            n_examples += get_output_attribute(out, "n_exs", self._cuda_device)
+
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
                 task_metrics = task.get_metrics()

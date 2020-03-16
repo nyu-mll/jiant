@@ -1,4 +1,0 @@
-edges-pos-ontonotes_run3	micro_avg: 0.000, macro_avg: 0.981, edges-pos-ontonotes_mcc: 0.980, edges-pos-ontonotes_acc: 0.980, edges-pos-ontonotes_precision: 0.981, edges-pos-ontonotes_recall: 0.981, edges-pos-ontonotes_f1: 0.981
-edges-coref-ontonotes_run3	micro_avg: 0.000, macro_avg: 0.971, edges-coref-ontonotes_mcc: 0.942, edges-coref-ontonotes_acc: 0.971, edges-coref-ontonotes_precision: 0.971, edges-coref-ontonotes_recall: 0.971, edges-coref-ontonotes_f1: 0.971
-edges-nonterminal-ontonotes_run3	micro_avg: 0.000, macro_avg: 0.888, edges-nonterminal-ontonotes_mcc: 0.884, edges-nonterminal-ontonotes_acc: 0.817, edges-nonterminal-ontonotes_precision: 0.863, edges-nonterminal-ontonotes_recall: 0.913, edges-nonterminal-ontonotes_f1: 0.888
-winograd-coreference_run3	micro_avg: 0.644, macro_avg: 0.644, winograd-coreference_f1: 0.565, winograd-coreference_acc: 0.644

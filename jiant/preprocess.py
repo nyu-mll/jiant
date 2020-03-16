@@ -55,6 +55,7 @@ from jiant.tasks.lm import MLMTask
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask, Task
+from jiant.tasks.lm import LanguageModelingTask
 from jiant.utils import config, serialize, utils, options
 from jiant.utils.options import parse_task_list_arg
 
@@ -259,6 +260,9 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     max_v_sizes = {"word": args.max_word_v_size, "char": args.max_char_v_size}
     word2freq, char2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
+    for task in tasks:  # add custom label namespaces
+        # TODO: surface more docs for add_task_label_vocab:
+        add_task_label_vocab(vocab, task)
 
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
@@ -266,10 +270,7 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     if input_module_uses_transformers(args.input_module):
         # Add pre-computed vocabulary of corresponding tokenizer for transformers models.
         add_transformers_vocab(vocab, args.tokenizer)
-    for task in tasks:  # add custom label namespaces
-        # TODO: surface more docs for add_task_label_vocab:
-        add_task_label_vocab(vocab, task)
-           
+
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
@@ -407,10 +408,7 @@ def build_tasks(
                 )
 
         # Delete in-memory data - we'll lazy-load from disk later.
-        # TODO: delete task.{split}_data_text as well?
-        task.train_data = None
-        task.val_data = None
-        task.test_data = None
+        # TODO: delete task.{split}_data_text?
 
     log.info("\tFinished indexing tasks")
 
@@ -655,14 +653,6 @@ def add_task_label_vocab(vocab, task):
     This can then be accessed when generating Instances, either via a custom
     Indexer or by invoking the namespace when creating a LabelField.
     """
-    if isinstance(task, MLMTask):
-        tokenizer =  RobertaTokenizer.from_pretrained("roberta-large")
-        vocab_size = len(tokenizer)
-        ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
-        for word in ordered_vocab:
-            vocab.add_token_to_namespace(word, task._label_namespace)
- 
-         
     if not hasattr(task, "get_all_labels"):
         return
     utils.assert_for_log(
@@ -674,7 +664,7 @@ def add_task_label_vocab(vocab, task):
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
 
-    if isinstance(task, SequenceGenerationTask):
+    if isinstance(task, SequenceGenerationTask) and not isinstance(task, LanguageModelingTask):
         for special in SPECIALS:
             vocab.add_token_to_namespace(special, namespace)
 

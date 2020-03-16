@@ -13,13 +13,13 @@ The first stop is [`jiant/tasks/tasks.py`.
 We keep track of tasks via a registry, so you'll have to add a decorator to the beginning of your task. In the rel_path, you don't have to add the full path, but only what comes after your general data_dir path.
 
 ```python
-@register_task(task_name, rel_path='SomeData')
+@register_task("new-task-name", rel_path='SomeData')
 ```
 There are a lot of tasks already supported in jiant (see list [here](https://jiant.info/documentation#/?id=running)), so inherit from one of the task types (unless your task is its own type). Let's say ours is a type of PairClassificationTask, so we can add that the our task class definition. Here's a skeleton!
 
 
 ```sh
-@register_task(task_name, rel_path='SomeData')
+@register_task("new-task-name", rel_path='SomeData')
 class SomeDataClassificationTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name, **kw):
         super().__init__(name, n_classes=2, **kw)
@@ -103,7 +103,7 @@ Your finished task class may look something like this:
 
 
 ```python
-@register_task(task_name, rel_path='SomeData')
+@register_task("new-task-name", rel_path='SomeData')
 class SomeDataClassificationTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name, **kw):
         super().__init__(name, n_classes=2, **kw)
