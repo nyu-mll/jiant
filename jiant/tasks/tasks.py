@@ -490,6 +490,7 @@ class SSTTask(SingleClassificationTask):
 
         Note
         ----
+        After calling this method the task's attributes will have the following contents:
         self.train_data_text : List[List[Union[List[str], int]]]
             this field is set to a list of lists with dimension 3 x num_training_examples:
                   - self.train_data_text[0] : List[List[str]]
