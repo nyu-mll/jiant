@@ -15,7 +15,7 @@ Please review the guidelines below before opening a PR.
     3. For involved changes, run a minimal experiment (e.g., with “max_vals=1 and val_interval=10”) to check that your changes don’t break at runtime.
 6. Once your PR is ready for review, in your Draft PR press “Ready for review”. This will invite code owners to provide reviews, and makes the branch mergeable.
 
-### Test and documentation guidelines
+### Test and documentation guidelines:
 1. Tests: Test coverage and testing methods are expected to vary by PR. Test plans should be proposed/discussed early in the PR process. Except in special cases...
      * Bug fixes should be paired with a test and/or other validations demonstrating that the bug has been squashed.
      * Changes introducing a new feature should come with related unit tests.
@@ -28,4 +28,4 @@ Please review the guidelines below before opening a PR.
 * For all PRs, make sure to update any existing config files, tutorials, and scripts to match your changes.
 * For PRs that typical users will need to be aware of, make a matching PR to the [documentation](https://github.com/nyu-mll/jiant-site/edit/master/documentation/README.md). We will merge that documentation PR once the original PR is merged in and pushed out in a release. (Proposals for better ways to do this are welcome.)
 * For PRs that add a new model or task, explain what types of sentence encoders are supported for that task.
-* For PRs that could change performance across multiple tasks, run performance regression tests on at least one representative task from each “family” of tasks. 
+* For PRs that could change performance across multiple tasks, run performance regression tests on at least one representative task from each “family” of tasks.
