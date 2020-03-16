@@ -19,6 +19,11 @@ For a full system overview of `jiant` version 1.3.0, see https://arxiv.org/abs/2
 
 To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)!
 
+
+## Contributing
+Guidelines for contributing to `jiant` are available [here](CONTRIBUTING.md).
+
+
 ## Official Documentation
 
 Our official documentation is here: https://jiant.info/documentation#/
