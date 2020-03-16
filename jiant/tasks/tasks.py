@@ -483,36 +483,68 @@ class SSTTask(SingleClassificationTask):
         self.test_data_text = None
 
     def load_data(self):
-        """ Load data """
-        self.train_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "train.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=0,
-            s2_idx=None,
-            label_idx=1,
-            skip_rows=1,
-        )
-        self.val_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "dev.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=0,
-            s2_idx=None,
-            label_idx=1,
-            skip_rows=1,
-        )
-        self.test_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "test.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=1,
-            s2_idx=None,
-            has_labels=False,
-            return_indices=True,
-            skip_rows=1,
-        )
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        """read data, apply tokenizer, truncate tokenized text, and set task object data fields.
+
+        This method reads data from files, applies a tokenizer, and populates the task instance's
+        train_data_text, val_data_text, test_data_text, and sentences fields. See details in Note:
+
+        Note
+        ----
+        self.train_data_text : List[List[Union[List[str], int]]]
+            this field is set to a list of lists with dimension 3 x num_training_examples:
+                  - self.train_data_text[0] : List[List[str]]
+                        list of lists of tokenized and max_seq_len-truncated training text.
+                  - self.train_data_text[1] : empty List
+                        empty placeholder list.
+                  - self.train_data_text[2] : List[int]
+                        list of labels.
+        self.val_data_text : List[List[Union[List[str], int]]]
+            this field is set to a list of lists with dimension 3 x num_val_examples:
+                  - self.train_data_text[0] : List[List[str]]
+                        list of lists of tokenized and max_seq_len-truncated val text.
+                  - self.train_data_text[1] : empty List
+                        empty placeholder list.
+                  - self.train_data_text[2] : List[int]
+                        list of labels.
+        self.test_data_text : List[List[Union[List[str], int]]]
+            this field is set to a list of lists with dimension 4 x num_test_examples:
+                  - self.train_data_text[0] : List[List[str]]
+                        list of lists of tokenized and max_seq_len-truncated test text.
+                  - self.train_data_text[1] : empty List
+                        empty placeholder list.
+                  - self.train_data_text[2] : List[int]
+                        list of fake labels (all test set labels are initialized to 0).
+                  - self.train_data_text[3] : List[int]
+                        example's test set index.
+        self.sentences : List[List[str]]
+            a list containing training and val set examples (each example is a list of tokens).
+
+        """
+        tokenizer = get_tokenizer(self._tokenizer_name)
+
+        train_df = pd.read_csv(os.path.join(self.path, "train.tsv"), sep="\t", header=0)
+        train_df["sentence"] = train_df["sentence"].apply(tokenizer.tokenize)
+        train_df["sentence"] = train_df["sentence"].apply(lambda x: x[: self.max_seq_len - 2])
+        self.train_data_text = [train_df["sentence"].tolist(), [], train_df["label"].tolist()]
+
+        val_df = pd.read_csv(os.path.join(self.path, "dev.tsv"), sep="\t", header=0)
+        val_df["sentence"] = val_df["sentence"].apply(tokenizer.tokenize)
+        val_df["sentence"] = val_df["sentence"].apply(lambda x: x[: self.max_seq_len - 2])
+        self.val_data_text = [val_df["sentence"].tolist(), [], val_df["label"].tolist()]
+
+        test_df = pd.read_csv(os.path.join(self.path, "test.tsv"), sep="\t", header=0)
+        test_df["sentence"] = test_df["sentence"].apply(tokenizer.tokenize)
+        test_df["sentence"] = test_df["sentence"].apply(lambda x: x[: self.max_seq_len - 2])
+        test_df["label"] = 0
+        self.test_data_text = [
+            test_df["sentence"].tolist(),
+            [],
+            test_df["label"].tolist(),
+            test_df["index"].tolist(),
+        ]
+
+        self.sentences = train_df["sentence"].tolist() + val_df["sentence"].tolist()
+
         log.info("\tFinished loading SST data.")
 
 
