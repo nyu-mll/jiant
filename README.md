@@ -74,18 +74,6 @@ For the [BERT NPI paper](https://arxiv.org/abs/1909.02597) follow the instructio
 Post an issue here on GitHub if you have any problems, and create a pull request if you make any improvements (substantial or cosmetic) to the code that you're willing to share.
 
 
-## Contributing
-
-We use the `black` coding style with a line limit of 100. After installing the requirements, simply running `pre-commit
-install` should ensure you comply with this in all your future commits. If you're adding features or fixing a bug,
-please also add the tests.
-
-For any PR, make sure to update any existing `conf` files, tutorials, and scripts to match your changes. If your PR adds or changes functionality that can be directly tested, add or update a test.
-
-For PRs that typical users will need to be aware of, include  make a matching PR to the [documentation](https://github.com/nyu-mll/jiant-site/edit/master/documentation/README.md). We will merge that documentation PR once the original PR is merged in _and pushed out in a release_. (Proposals for better ways to do this are welcome.)
-
-For PRs that change package dependencies, update both `environment.yml` (used for conda) and `setup.py` (used by pip, and in automatic CircleCI tests).
-
 ## Releases
 
 Releases are identified using git tags and distributed via PyPI for pip installation. After passing CI tests and creating a new git tag for a release, it can be uploaded to PyPI by running:
