@@ -1,5 +1,8 @@
 import optuna
 import sys
+import os
+
+RESULT_DIR = "/scratch/hl3236/jiant_results"
 
 
 def collect_trails(study_name):
@@ -16,7 +19,7 @@ def collect_trails(study_name):
     )
     df = df.dropna()
     df = df.sort_values(["batch_size", "lr", "max_epochs"])
-    csv_file = f"optuna_{study_name}_full.csv"
+    csv_file = os.path.join(RESULT_DIR, "optuna_csv", f"optuna_{study_name}_full.csv")
     df.to_csv(csv_file, index=True)
 
     df_grouped = df.groupby(["batch_size", "lr", "max_epochs"], as_index=False).agg(
@@ -25,7 +28,7 @@ def collect_trails(study_name):
     df_grouped.columns = ["batch_size", "lr", "max_epochs", "median", "mean", "min", "max", "count"]
     df_grouped = df_grouped.sort_values(["median", "count"], ascending=False)
     print(df_grouped)
-    csv_file = f"optuna_{study_name}_agg.csv"
+    csv_file = os.path.join(RESULT_DIR, "optuna_csv", f"optuna_{study_name}_agg.csv")
     df_grouped.to_csv(csv_file, index=True)
 
 

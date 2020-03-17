@@ -20,14 +20,23 @@ def run_trials(study_name, gpu_available, n_trials):
     )
     with open("scripts/taskmaster/optuna_hp_search/task_metadata.json", "r") as f:
         task_metadata = json.loads(f.read())
-    task = task_metadata[study_name]
 
     def run_one_trial(trial):
+        task = task_metadata[study_name]
         task_name = task["task_name"]
         exp_name = f"optuna_{task_name}"
         run_name = f"trial_{trial.number}"
 
         training_size = task["training_size"]
+        if study_name.endswith("-5k"):
+            target_train_data_fraction = 5000 / training_size
+            training_size = 5000
+        elif study_name.endswith("-20k"):
+            target_train_data_fraction = 20000 / training_size
+            training_size = 20000
+        else:
+            target_train_data_fraction = None
+
         if training_size <= 3000:
             max_epochs_candidates = [25, 50]
             batch_size_candidate = [8, 16]
@@ -68,6 +77,9 @@ def run_trials(study_name, gpu_available, n_trials):
         overrides.append(f"accumulation_steps={accumulation_steps}")
         overrides.append(f"target_train_val_interval={val_interval}")
         overrides.append("random_seed=-1")
+        overrides.append("delete_checkpoints_when_done=1")
+        if target_train_data_fraction is not None:
+            overrides.append(f"target_train_data_fraction={target_train_data_fraction}")
 
         trial.set_user_attr("max_epochs", max_epochs)
         trial.set_user_attr("lr", lr)
@@ -100,5 +112,5 @@ def run_trials(study_name, gpu_available, n_trials):
 
 
 if __name__ == "__main__":
-    # python run_trials task_name gpu_available n_trials
+    # python run_trials study_name gpu_available n_trials
     run_trials(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
