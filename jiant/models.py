@@ -1206,7 +1206,7 @@ class MultiTaskModel(nn.Module):
         probability_matrix.masked_fill_(padding_mask, value=0.0)
 
         masked_indices = torch.bernoulli(probability_matrix).to(
-            device=inputs.device, dtype=torch.bool
+            device=inputs.device, dtype=torch.uint8
         )
 
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
@@ -1214,7 +1214,7 @@ class MultiTaskModel(nn.Module):
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
         indices_replaced = (
             torch.bernoulli(torch.full(labels.shape, 0.8)).to(
-                device=inputs.device, dtype=torch.bool
+                device=inputs.device, dtype=torch.uint8
             )
             & masked_indices
         )
@@ -1223,7 +1223,7 @@ class MultiTaskModel(nn.Module):
         # 10% of the time, we replace masked input tokens with random word
         indices_random = (
             torch.bernoulli(torch.full(labels.shape, 0.5)).to(
-                device=inputs.device, dtype=torch.bool
+                device=inputs.device, dtype=torch.uint8
             )
             & masked_indices
             & ~indices_replaced
@@ -1244,10 +1244,8 @@ class MultiTaskModel(nn.Module):
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
         out["logits"] = logits
-        print("encoder: ", self.sent_encoder)
         out["loss"] = F.cross_entropy(logits.view(-1, vocab_size), labels.view(-1))
         out["n_exs"] = format_output(b_size, self._cuda_device)
-        task.update_metrics(out, None)
         return out
 
     def _mc_forward(self, batch, task, predict):
