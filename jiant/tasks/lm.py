@@ -16,6 +16,7 @@ from jiant.tasks.tasks import (
     UNK_TOK_ALLENNLP,
     UNK_TOK_ATOMIC,
     SequenceGenerationTask,
+    PairClassificationTask,
     atomic_tokenize,
     sentence_to_text_field,
 )
@@ -186,7 +187,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     pass
 
 
-@register_task("mlm", rel_path="WikiText103_toy/")
+@register_task("mlm", rel_path="WikiText103/")
 class MLMTask(MaskedLanguageModelingTask):
     """
     Masked language modeling task on Toronto Books dataset
@@ -353,15 +354,25 @@ class SentenceOrderTask(PairClassificationTask):
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
             sent_a, sent_b, is_right_order = _sent
-            inp, start_offset, _ = model_preprocessing_interface.boundary_token_fn(
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp  = model_preprocessing_interface.boundary_token_fn(
                                         sent_a, sent_b)        
-            
-            input_sent = sentence_to_text_field(inp, indexers)
-            label = LabelField(labels, label_namespace="labels", skip_indexing=True)
-            d = {
-                "input": input_sent,
-                "targs": label,
-            }
+                input_sent = sentence_to_text_field(inp, indexers)
+                label = LabelField(labels, label_namespace="labels", skip_indexing=True)
+                d = {
+                    "input": input_sent,
+                    "targs": label,
+                }
+            else:
+                inp1 = sentence_to_text_field(
+				model_preprocessing_interface.boundary_token_fn(sent_a), indexers)
+                inp2 = sentence_to_text_field(
+                                model_preprocessing_interface.boundary_token_fn(sent_b), indexers)
+                label = LabelField(labels, label_namespace="labels", skip_indexing=True)
+                d = {"input1": inp1,
+		     "input2": inp2,
+                     "targs": label,
+                }
             return Instance(d)
 
         for sent in split:
