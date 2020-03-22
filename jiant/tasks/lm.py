@@ -295,4 +295,3 @@ class TorontoLanguageModelling(MaskedLanguageModelingTask):
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
                 yield tokens[i : i + seq_len]
-
