@@ -918,6 +918,7 @@ class MultiTaskModel(nn.Module):
         logits = classifier(word_embs_in_context, sent_mask)
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
+
         if "labels" in batch:  # means we should compute loss
             if batch["labels"].dim() == 0:
                 labels = batch["labels"].unsqueeze(0)
@@ -1088,7 +1089,6 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         # batch[inputs] only has one item
-
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         # Note: we are assuming there is one beginning and one ending token, when that no longer
@@ -1105,7 +1105,6 @@ class MultiTaskModel(nn.Module):
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
-
             out["labels"] = targs
             out["logits"] = logits
         out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
