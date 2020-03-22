@@ -1100,6 +1100,7 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         # batch[inputs] only has one item
+        
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         # Note: we are assuming there is one beginning and one ending token, when that no longer
@@ -1114,8 +1115,15 @@ class MultiTaskModel(nn.Module):
             # such as word boundaries
             batch_mask = batch["mask"][:, :seq_len]
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
+            '''
+            print("seq_len: ", seq_len)
+            print("targs before masking: ", targs)
+            print("keep size: ", keep_idxs.size())
+            print("targs size: ", targs.size())
+            '''
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
+
             out["labels"] = targs
             out["logits"] = logits
         out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
@@ -1183,8 +1191,8 @@ class MultiTaskModel(nn.Module):
         mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
-
         tokenizer_name = self.sent_encoder._text_field_embedder.input_module
+        vocab_size = self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
         tokenizer = get_tokenizer(tokenizer_name)
         input_key = self.sent_encoder._text_field_embedder.tokenizer_required
         # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
@@ -1192,6 +1200,7 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
         labels = batch["targs"]
+        
         probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
         padding_mask = labels.eq(0)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
@@ -1235,8 +1244,7 @@ class MultiTaskModel(nn.Module):
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
         out["logits"] = logits
-        out["labels"] = labels
-        out["loss"] = F.cross_entropy(logits.view(-1, 50265), labels.view(-1))
+        out["loss"] = F.cross_entropy(logits.view(-1, vocab_size), labels.view(-1))
         out["n_exs"] = format_output(b_size, self._cuda_device)
         return out
 
