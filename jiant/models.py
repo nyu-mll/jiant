@@ -45,7 +45,7 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.huggingface_transformers_interface import input_module_uses_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.tasks.lm import LanguageModelingTask, MaskedLanguageModelingTask
+from jiant.tasks.lm import LanguageModelingTask, MaskedLanguageModelingTask, SentenceOrderTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.seq2seq import Seq2SeqTask
@@ -551,6 +551,9 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
             params=task_params,
         )
         setattr(model, "%s_mdl" % task.name, module)
+    elif isinstance(task, SentenceOrderTask):
+        module = build_sop(task, d_sent, model, task_params, args)
+        setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -697,7 +700,14 @@ def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool,
     return module
 
 
-def build_pair_sentence_module(task, d_inp, model, params):
+def build_sop(task, d_inp, model, params, args):
+    project_before_pooling = True
+    module = build_pair_sentence_module(task, d_inp, model, params, project_before_pooling)
+    module.pooler.project = model.sent_encoder._text_field_embedder.model.pooler
+    return module
+
+
+def build_pair_sentence_module(task, d_inp, model, params, project_before_pooling=None):
     """ Build a pair classifier, shared if necessary """
 
     def build_pair_attn(d_in, d_hid_attn):
@@ -724,6 +734,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
+        if project_before_pooling is not None:
+            model.project_before_pooling = project_before_pooling
         pooler = Pooler(
             project=model.project_before_pooling,
             d_inp=d_inp,
@@ -1102,7 +1114,7 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         # batch[inputs] only has one item
-        
+
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         # Note: we are assuming there is one beginning and one ending token, when that no longer
@@ -1117,12 +1129,12 @@ class MultiTaskModel(nn.Module):
             # such as word boundaries
             batch_mask = batch["mask"][:, :seq_len]
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
-            '''
+            """
             print("seq_len: ", seq_len)
             print("targs before masking: ", targs)
             print("keep size: ", keep_idxs.size())
             print("targs size: ", targs.size())
-            '''
+            """
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
 
@@ -1194,7 +1206,9 @@ class MultiTaskModel(nn.Module):
         out = {}
         sent_encoder = self.sent_encoder
         tokenizer_name = self.sent_encoder._text_field_embedder.input_module
-        vocab_size = self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
+        vocab_size = (
+            self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
+        )
         tokenizer = get_tokenizer(tokenizer_name)
         input_key = self.sent_encoder._text_field_embedder.tokenizer_required
         # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
@@ -1202,7 +1216,7 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
         labels = batch["targs"]
-        
+
         probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
         padding_mask = labels.eq(0)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
