@@ -187,7 +187,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     pass
 
 
-@register_task("mlm", rel_path="WikiText103/")
+@register_task("mlm", rel_path="WikiText103_toy/")
 class MLMTask(MaskedLanguageModelingTask):
     """
     Masked language modeling task on Toronto Books dataset
@@ -215,7 +215,13 @@ class MLMTask(MaskedLanguageModelingTask):
         ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
         for word in ordered_vocab:
             labels.append(word)
+        for path in self.files_by_split:
+            for sent in self.get_data_iter(self.files_by_split[path]):
+                for tok in sent:
+                    if tok not in labels:
+                        labels.append(tok)
         return labels
+
 
     def update_metrics(self, out, batch=None):
         # self.scorer1(logits,labels)
@@ -292,7 +298,7 @@ class TorontoLanguageModelling(MaskedLanguageModelingTask):
                 yield tokens[i : i + seq_len]
 
 
-@register_task("sop", rel_path="WikiText103/")
+@register_task("sop", rel_path="WikiText103_toy")
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction """
 
