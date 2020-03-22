@@ -159,10 +159,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks):
-        assert_for_log(
-            args.sent_enc in ["rnn", "bilm", "none"], "Only RNNLM or sent_enc=None supported!"
-        )
+    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
+        assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
         if not any(isinstance(task, MaskedLanguageModelingTask) for task in tasks):
             # If an autoregressive LanguageModelingTask
             assert_for_log(
@@ -175,28 +173,18 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                 "good idea, since it allows the language model to use information from the right-hand "
                 "context.",
             )
-        if args.sent_enc == "none":
-            assert_for_log(
-                args.skip_embs,
-                "skip_embs is false and sent_enc is none, "
-                "which means that your token representations are zero-dimensional. "
-                "Consider setting skip_embs.",
-            )
-            phrase_layer = NullPhraseLayer(rnn_params["input_size"])
-            d_sent = 0
-        else:
-            phrase_layer = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
-            d_sent = 2 * args.d_hid
+        bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
             vocab,
             embedder,
             args.n_layers_highway,
-            phrase_layer,
+            bilm,
             skip_embs=args.skip_embs,
             dropout=args.dropout,
             sep_embs_for_skip=args.sep_embs_for_skip,
             cove_layer=cove_layer,
         )
+        d_sent = 2 * args.d_hid
     elif args.sent_enc == "bow":
         sent_encoder = BoWSentEncoder(vocab, embedder)
         assert_for_log(
@@ -1115,12 +1103,6 @@ class MultiTaskModel(nn.Module):
             # such as word boundaries
             batch_mask = batch["mask"][:, :seq_len]
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
-            """
-            print("seq_len: ", seq_len)
-            print("targs before masking: ", targs)
-            print("keep size: ", keep_idxs.size())
-            print("targs size: ", targs.size())
-            """
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
 

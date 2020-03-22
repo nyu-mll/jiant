@@ -215,8 +215,8 @@ class MLMTask(MaskedLanguageModelingTask):
         ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
         for word in ordered_vocab:
             labels.append(word)
-        for path in files_by_split:
-            for sent in self.get_data_iter(path):
+        for path in self.files_by_split:
+            for sent in self.get_data_iter(self.files_by_split[path]):
                 for tok in sent:
                     if tok not in labels:
                         labels.append(tok)
