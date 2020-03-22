@@ -190,7 +190,7 @@ class SamplingMultiTaskTrainer:
         dec_val_scale=100,
         training_data_fraction=1.0,
         accumulation_steps=1,
-        mlm_weight=1
+        mlm_weight=1,
     ):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of

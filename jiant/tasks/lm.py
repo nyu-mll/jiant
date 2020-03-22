@@ -183,6 +183,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     """
        Generic Masked Language Modeling Task
     """
+
     pass
 
 
@@ -214,6 +215,11 @@ class MLMTask(MaskedLanguageModelingTask):
         ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
         for word in ordered_vocab:
             labels.append(word)
+        for path in files_by_split:
+            for sent in self.get_data_iter(path):
+                for tok in sent:
+                    if tok not in labels:
+                        labels.append(tok)
         return labels
 
     def update_metrics(self, out, batch=None):
@@ -291,8 +297,6 @@ class TorontoLanguageModelling(MaskedLanguageModelingTask):
                 yield tokens[i : i + seq_len]
 
 
-
-
 @register_task("sop", rel_path="WikiText103_toy/")
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction """
@@ -307,7 +311,6 @@ class SentenceOrderTask(PairClassificationTask):
         self.val_data_text = None
         self.test_data_text = None
 
-
     def get_data_iter(self, path):
         """Loading data file and tokenizing the text
         Args:
@@ -319,24 +322,28 @@ class SentenceOrderTask(PairClassificationTask):
         reader = csv.reader(f)
         text = list(reader)
         moses_tokenizer = get_tokenizer("MosesTokenizer")
-        for i in range(len(text)-1):
+        for i in range(len(text) - 1):
             if random.uniform(0, 1) > 0.5:
                 is_right_order = 1
                 sent_a = text[i]
-                sent_b = text[i+1]
+                sent_b = text[i + 1]
             else:
                 is_right_order = 0
-                sent_a = text[i+1]
+                sent_a = text[i + 1]
                 sent_b = text[i]
- 
+
             sent_a_untokenized_toks = moses_tokenizer.detokenize(sent_a)
             sent_b_untokenized_toks = moses_tokenizer.detokenize(sent_b)
             sent_a_toks = "".join(sent_a_untokenized_toks)
             sent_b_toks = "".join(sent_b_untokenized_toks)
-            sent_a_processed = tokenize_and_truncate(self._tokenizer_name, sent_a_toks, self.max_seq_len//2)
-            sent_b_processed = tokenize_and_truncate(self._tokenizer_name, sent_b_toks, self.max_seq_len//2)
+            sent_a_processed = tokenize_and_truncate(
+                self._tokenizer_name, sent_a_toks, self.max_seq_len // 2
+            )
+            sent_b_processed = tokenize_and_truncate(
+                self._tokenizer_name, sent_b_toks, self.max_seq_len // 2
+            )
             yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
-            yield (sent_a_processed, sent_b_processed,is_right_order)
+            yield (sent_a_processed, sent_b_processed, is_right_order)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -354,25 +361,20 @@ class SentenceOrderTask(PairClassificationTask):
             in the input for each direction """
             sent_a, sent_b, is_right_order = _sent
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp  = model_preprocessing_interface.boundary_token_fn(
-                                        sent_a, sent_b)        
+                inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
                 input_sent = sentence_to_text_field(inp, indexers)
                 label = LabelField(labels, label_namespace="labels", skip_indexing=True)
-                d = {
-                    "input": input_sent,
-                    "targs": label,
-                }
+                d = {"input": input_sent, "targs": label}
             else:
                 inp1 = sentence_to_text_field(
-				model_preprocessing_interface.boundary_token_fn(sent_a), indexers)
+                    model_preprocessing_interface.boundary_token_fn(sent_a), indexers
+                )
                 inp2 = sentence_to_text_field(
-                                model_preprocessing_interface.boundary_token_fn(sent_b), indexers)
+                    model_preprocessing_interface.boundary_token_fn(sent_b), indexers
+                )
                 label = LabelField(labels, label_namespace="labels", skip_indexing=True)
-                d = {"input1": inp1,
-		     "input2": inp2,
-                     "targs": label,
-                }
+                d = {"input1": inp1, "input2": inp2, "targs": label}
             return Instance(d)
 
         for sent in split:
-            yield _make_instance(sent) 
+            yield _make_instance(sent)

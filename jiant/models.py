@@ -1100,7 +1100,7 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         # batch[inputs] only has one item
-        
+
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         # Note: we are assuming there is one beginning and one ending token, when that no longer
@@ -1115,12 +1115,12 @@ class MultiTaskModel(nn.Module):
             # such as word boundaries
             batch_mask = batch["mask"][:, :seq_len]
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
-            '''
+            """
             print("seq_len: ", seq_len)
             print("targs before masking: ", targs)
             print("keep size: ", keep_idxs.size())
             print("targs size: ", targs.size())
-            '''
+            """
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
 
@@ -1192,7 +1192,9 @@ class MultiTaskModel(nn.Module):
         out = {}
         sent_encoder = self.sent_encoder
         tokenizer_name = self.sent_encoder._text_field_embedder.input_module
-        vocab_size = self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
+        vocab_size = (
+            self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
+        )
         tokenizer = get_tokenizer(tokenizer_name)
         input_key = self.sent_encoder._text_field_embedder.tokenizer_required
         # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
@@ -1200,7 +1202,7 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
         labels = batch["targs"]
-        
+
         probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
         padding_mask = labels.eq(0)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
