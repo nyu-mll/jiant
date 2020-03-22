@@ -183,7 +183,6 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     """
        Generic Masked Language Modeling Task
     """
-
     pass
 
 
