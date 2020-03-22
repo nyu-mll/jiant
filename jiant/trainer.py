@@ -406,9 +406,6 @@ class SamplingMultiTaskTrainer:
             epochs = scaling_method.strip("max_epoch_").split("_")
             assert len(epochs) == num_tasks, "Loss Scaling Error: epoch number not match."
             scaling_weights = np.array(list(map(int, epochs)))
-        elif "mlm_manual_scaling" in scaling_method:
-            scaling_weights = [1.0] * num_tasks
-            scaling_weights[task_names.index("mlm")] = self.mlm_weight
         # normalized by max weight
         if "max" in scaling_method:
             scaling_weights = scaling_weights / np.max(scaling_weights)
