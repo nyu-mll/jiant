@@ -1,445 +1,518 @@
 {
     "sst": {
         "task_name": "sst",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 67349,
-        "optuna_trails": 6
+        "optuna_trails": -1
     },
     "socialiqa": {
         "task_name": "socialiqa",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 33410,
         "optuna_trails": -1
     },
     "ccg": {
         "task_name": "ccg",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 38015,
         "optuna_trails": 4
     },
     "qqp": {
         "task_name": "qqp",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 363846,
         "optuna_trails": -1
     },
     "mnli": {
         "task_name": "mnli",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 392702,
         "optuna_trails": -1
     },
     "scitail": {
         "task_name": "scitail",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 23596,
         "optuna_trails": 10
     },
     "qasrl": {
         "task_name": "qasrl",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 637989,
         "optuna_trails": -1
     },
     "qamr": {
         "task_name": "qamr",
-        "batch_size_limit": 16,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 16,
         "training_size": 50615,
         "optuna_trails": 0
     },
     "cosmosqa": {
         "task_name": "cosmosqa",
-        "batch_size_limit": 4,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 4,
         "training_size": 25262,
         "optuna_trails": -1
     },
     "hellaswag": {
         "task_name": "hellaswag",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 39905,
         "optuna_trails": -1
     },
     "commonsenseqa": {
         "task_name": "commonsenseqa",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 9741,
         "optuna_trails": -1
     },
     "record": {
         "task_name": "record",
-        "batch_size_limit": 4,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 4,
         "training_size": 1796856,
         "optuna_trails": -1
     },
     "winogrande": {
         "task_name": "winogrande",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 40398,
         "optuna_trails": 0
     },
     "sst-20k": {
         "task_name": "sst",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 67349,
         "optuna_trails": -1
     },
     "socialiqa-20k": {
         "task_name": "socialiqa",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 33410,
         "optuna_trails": -1
     },
     "ccg-20k": {
         "task_name": "ccg",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 38015,
         "optuna_trails": -1
     },
     "qqp-20k": {
         "task_name": "qqp",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 363846,
         "optuna_trails": -1
     },
     "mnli-20k": {
         "task_name": "mnli",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 392702,
         "optuna_trails": -1
     },
     "scitail-20k": {
         "task_name": "scitail",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 23596,
         "optuna_trails": -1
     },
     "qasrl-20k": {
         "task_name": "qasrl",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 637989,
         "optuna_trails": -1
     },
     "qamr-20k": {
         "task_name": "qamr",
-        "batch_size_limit": 16,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 16,
         "training_size": 50615,
         "optuna_trails": -1
     },
     "cosmosqa-20k": {
         "task_name": "cosmosqa",
-        "batch_size_limit": 4,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 4,
         "training_size": 25262,
         "optuna_trails": -1
     },
     "hellaswag-20k": {
         "task_name": "hellaswag",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 39905,
         "optuna_trails": -1
     },
     "record-20k": {
         "task_name": "record",
-        "batch_size_limit": 4,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 4,
         "training_size": 1796856,
         "optuna_trails": -1
     },
     "winogrande-20k": {
         "task_name": "winogrande",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 40398,
         "optuna_trails": -1
     },
     "rte": {
         "task_name": "rte",
-        "batch_size_limit": 16,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 16,
         "training_size": 2490,
         "optuna_trails": 4
     },
     "boolq": {
         "task_name": "boolq",
-        "batch_size_limit": 16,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 16,
         "training_size": 9427,
         "optuna_trails": -1
     },
     "commitbank": {
         "task_name": "commitbank",
-        "batch_size_limit": 16,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 16,
         "training_size": 250,
         "optuna_trails": 19
     },
     "copa": {
         "task_name": "copa",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 400,
         "optuna_trails": 19
     },
     "multirc": {
         "task_name": "multirc",
-        "batch_size_limit": 8,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 8,
         "training_size": 27243,
         "optuna_trails": -1
     },
     "wic": {
         "task_name": "wic",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 5428,
         "optuna_trails": 19
     },
     "winograd-coreference": {
         "task_name": "winograd-coreference",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 554,
         "optuna_trails": 19
     },
     "edges-ner-ontonotes": {
         "task_name": "edges-ner-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 49706,
         "optuna_trails": -1
     },
     "edges-srl-ontonotes": {
         "task_name": "edges-srl-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 231480,
         "optuna_trails": -1
     },
     "edges-coref-ontonotes": {
         "task_name": "edges-coref-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 41777,
         "optuna_trails": -1
     },
     "edges-spr1": {
         "task_name": "edges-spr1",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 3843,
         "optuna_trails": 14
     },
     "edges-spr2": {
         "task_name": "edges-spr2",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 2226,
         "optuna_trails": 6
     },
     "edges-dpr": {
         "task_name": "edges-dpr",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 958,
         "optuna_trails": 13
     },
     "edges-rel-semeval": {
         "task_name": "edges-rel-semeval",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 6851,
         "optuna_trails": -1
     },
     "edges-pos-ontonotes": {
         "task_name": "edges-pos-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 81035,
         "optuna_trails": -1
     },
     "edges-nonterminal-ontonotes": {
         "task_name": "edges-nonterminal-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 110513,
         "optuna_trails": -1
     },
     "edges-dep-ud-ewt": {
         "task_name": "edges-dep-ud-ewt",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 12496,
         "optuna_trails": -1
     },
     "se-probing-word-content": {
         "task_name": "se-probing-word-content",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-tree-depth": {
         "task_name": "se-probing-tree-depth",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-top-constituents": {
         "task_name": "se-probing-top-constituents",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-bigram-shift": {
         "task_name": "se-probing-bigram-shift",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-past-present": {
         "task_name": "se-probing-past-present",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-subj-number": {
         "task_name": "se-probing-subj-number",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-obj-number": {
         "task_name": "se-probing-obj-number",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-odd-man-out": {
         "task_name": "se-probing-odd-man-out",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-coordination-inversion": {
         "task_name": "se-probing-coordination-inversion",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-sentence-length": {
         "task_name": "se-probing-sentence-length",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 99996,
         "optuna_trails": -1
     },
     "acceptability-wh": {
         "task_name": "acceptability-wh",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 432,
         "optuna_trails": 19
     },
     "acceptability-def": {
         "task_name": "acceptability-def",
-        "batch_size_limit": 32,
+        "roberta_batch_size_limit": 32,
         "training_size": 404,
         "optuna_trails": 19
     },
     "acceptability-conj": {
         "task_name": "acceptability-conj",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 332,
         "optuna_trails": 19
     },
     "acceptability-eos": {
         "task_name": "acceptability-eos",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 382,
         "optuna_trails": 19
     },
     "cola": {
         "task_name": "cola",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 8551,
         "optuna_trails": 19
     },
     "edges-ner-ontonotes-5k": {
         "task_name": "edges-ner-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 49706,
         "optuna_trails": -1
     },
     "edges-srl-ontonotes-5k": {
         "task_name": "edges-srl-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 231480,
         "optuna_trails": -1
     },
     "edges-coref-ontonotes-5k": {
         "task_name": "edges-coref-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 41777,
         "optuna_trails": -1
     },
     "edges-pos-ontonotes-5k": {
         "task_name": "edges-pos-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 81035,
         "optuna_trails": -1
     },
     "edges-nonterminal-ontonotes-5k": {
         "task_name": "edges-nonterminal-ontonotes",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 110513,
         "optuna_trails": -1
     },
     "edges-dep-ud-ewt-5k": {
         "task_name": "edges-dep-ud-ewt",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 12496,
         "optuna_trails": -1
     },
     "se-probing-word-content-5k": {
         "task_name": "se-probing-word-content",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-tree-depth-5k": {
         "task_name": "se-probing-tree-depth",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-top-constituents-5k": {
         "task_name": "se-probing-top-constituents",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-bigram-shift-5k": {
         "task_name": "se-probing-bigram-shift",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-past-present-5k": {
         "task_name": "se-probing-past-present",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-subj-number-5k": {
         "task_name": "se-probing-subj-number",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-obj-number-5k": {
         "task_name": "se-probing-obj-number",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-odd-man-out-5k": {
         "task_name": "se-probing-odd-man-out",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-coordination-inversion-5k": {
         "task_name": "se-probing-coordination-inversion",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 100000,
         "optuna_trails": -1
     },
     "se-probing-sentence-length-5k": {
         "task_name": "se-probing-sentence-length",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 99996,
         "optuna_trails": -1
     },
     "cola-5k": {
         "task_name": "cola",
-        "batch_size_limit": 32,
+        "albert_batch_size_limit": 0,
+        "roberta_batch_size_limit": 32,
         "training_size": 8551,
         "optuna_trails": -1
     }
