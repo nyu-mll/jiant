@@ -67,9 +67,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         # Data is exposed as iterable: no preloading
         self.examples_by_split = {}
         for split in self.files_by_split:
-            self.examples_by_split[split] = list(
-                self.get_data_iter(self.files_by_split[split])
-            )
+            self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
 
     def get_data_iter(self, path):
         """Loading data file and tokenizing the text
@@ -81,9 +79,7 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                yield tokenize_and_truncate(
-                    self._tokenizer_name, toks, self.max_seq_len
-                )
+                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -99,17 +95,11 @@ class LanguageModelingTask(SequenceGenerationTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-            sent_ = model_preprocessing_interface.boundary_token_fn(
-                sent_
-            )  # Add <s> and </s>
+            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
             d = {
                 "input": sentence_to_text_field(sent_, indexers),
-                "targs": sentence_to_text_field(
-                    sent_[1:] + [sent_[0]], self.target_indexer
-                ),
-                "targs_b": sentence_to_text_field(
-                    [sent_[-1]] + sent_[:-1], self.target_indexer
-                ),
+                "targs": sentence_to_text_field(sent_[1:] + [sent_[0]], self.target_indexer),
+                "targs_b": sentence_to_text_field([sent_[-1]] + sent_[:-1], self.target_indexer),
             }
             return Instance(d)
 
