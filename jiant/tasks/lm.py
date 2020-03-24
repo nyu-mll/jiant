@@ -8,7 +8,7 @@ import random
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
-from allennlp.data.fields import SequenceLabelField
+from allennlp.data.fields import SequenceLabelField, LabelField
 
 from jiant.utils.data_loaders import tokenize_and_truncate, get_tokenizer
 from jiant.tasks.registry import register_task
@@ -55,15 +55,6 @@ class LanguageModelingTask(SequenceGenerationTask):
             "test": os.path.join(path, "test.txt"),
         }
 
-    def count_examples(self):
-        """Computes number of samples
-        Assuming every line is one example.
-        """
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in open(split_path))
-        self.example_counts = example_counts
-
     def get_metrics(self, reset=False):
         """Get metrics specific to the task
         Args:
@@ -74,7 +65,11 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
-        pass
+        self.examples_by_split = {}
+        for split in self.files_by_split:
+            self.examples_by_split[split] = list(
+                self.get_data_iter(self.files_by_split[split])
+            )
 
     def get_data_iter(self, path):
         """Loading data file and tokenizing the text
@@ -86,7 +81,9 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+                yield tokenize_and_truncate(
+                    self._tokenizer_name, toks, self.max_seq_len
+                )
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -102,23 +99,38 @@ class LanguageModelingTask(SequenceGenerationTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+            sent_ = model_preprocessing_interface.boundary_token_fn(
+                sent_
+            )  # Add <s> and </s>
             d = {
                 "input": sentence_to_text_field(sent_, indexers),
-                "targs": sentence_to_text_field(sent_[1:] + [sent_[0]], self.target_indexer),
-                "targs_b": sentence_to_text_field([sent_[-1]] + sent_[:-1], self.target_indexer),
+                "targs": sentence_to_text_field(
+                    sent_[1:] + [sent_[0]], self.target_indexer
+                ),
+                "targs_b": sentence_to_text_field(
+                    [sent_[-1]] + sent_[:-1], self.target_indexer
+                ),
             }
             return Instance(d)
 
         for sent in split:
             yield _make_instance(sent)
 
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for _ in self.examples_by_split[split])
+        self.example_counts = example_counts
+
     def get_split_text(self, split: str):
         """Get split text as iterable of records.
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.get_data_iter(self.files_by_split[split])
+        return self.examples_by_split[split]
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -127,8 +139,7 @@ class LanguageModelingTask(SequenceGenerationTask):
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
-            path = self.files_by_split[split]
-            for sent in self.get_data_iter(path):
+            for sent in self.examples_by_split[split]:
                 yield sent
 
 
@@ -199,6 +210,7 @@ class MLMTask(MaskedLanguageModelingTask):
 
     def __init__(self, path, *args, **kw):
         super().__init__(path, *args, **kw)
+        self._label_namespace = "mlm"
         self.files_by_split = {
             "train": os.path.join(path, "train.sentences.txt"),
             "val": os.path.join(path, "valid.sentences.txt"),
@@ -215,11 +227,6 @@ class MLMTask(MaskedLanguageModelingTask):
         ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
         for word in ordered_vocab:
             labels.append(word)
-        for path in self.files_by_split:
-            for sent in self.get_data_iter(self.files_by_split[path]):
-                for tok in sent:
-                    if tok not in labels:
-                        labels.append(tok)
         return labels
 
     def update_metrics(self, out, batch=None):
@@ -234,7 +241,7 @@ class MLMTask(MaskedLanguageModelingTask):
         """
         import csv
 
-        f = open(path, "r")
+        f = open(path, "r", encoding="utf-8")
         reader = csv.reader(f)
         text = list(reader)
         moses_tokenizer = get_tokenizer("MosesTokenizer")
@@ -258,7 +265,9 @@ class MLMTask(MaskedLanguageModelingTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+            sent_ = model_preprocessing_interface.boundary_token_fn(
+                sent_
+            )  # Add <s> and </s>
             input_sent = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": input_sent,
@@ -270,28 +279,3 @@ class MLMTask(MaskedLanguageModelingTask):
 
         for sent in split:
             yield _make_instance(sent)
-
-
-@register_task("mlm_toronto", rel_path="toronto/")
-class TorontoLanguageModelling(MaskedLanguageModelingTask):
-    """ Language modeling on the Toronto Books dataset
-    See base class: LanguageModelingTask
-    """
-
-    def get_data_iter(self, path):
-        """Load data file, tokenize text and concat sentences to create long term dependencies.
-        Args:
-            path: (str) data file path
-        """
-        seq_len = self.max_seq_len
-        tokens = []
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if not toks:
-                    continue
-                toks_v = toks.split()
-                toks = toks.split() + ["<EOS>"]
-                tokens += toks
-            for i in range(0, len(tokens), seq_len):
-                yield tokens[i : i + seq_len]
