@@ -1177,6 +1177,10 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _masked_lm_forward(self, batch, task, predict):
+        """
+        We currently only support RoBERTa-style dynamic masking, with the exact 
+        setup and parameters as RoBERTa. 
+        """
         mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
@@ -1186,7 +1190,6 @@ class MultiTaskModel(nn.Module):
         )
         tokenizer = get_tokenizer(tokenizer_name)
         input_key = self.sent_encoder._text_field_embedder.tokenizer_required
-        # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
         mask_idx = self.sent_encoder._text_field_embedder._mask_id
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
@@ -1206,22 +1209,17 @@ class MultiTaskModel(nn.Module):
         labels[~masked_indices] = -100  # We only compute loss on masked tokens
 
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        indices_replaced = (
-            torch.bernoulli(torch.full(labels.shape, 0.8)).to(
-                device=inputs.device, dtype=torch.uint8
-            )
-            & masked_indices
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.8)).to(
+            device=inputs.device, dtype=torch.uint8
         )
+        indices_replaced = bernoulli_mask & masked_indices
         inputs[indices_replaced] = mask_idx
 
         # 10% of the time, we replace masked input tokens with random word
-        indices_random = (
-            torch.bernoulli(torch.full(labels.shape, 0.5)).to(
-                device=inputs.device, dtype=torch.uint8
-            )
-            & masked_indices
-            & ~indices_replaced
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.5)).to(
+            device=inputs.device, dtype=torch.uint8
         )
+        indices_random = bernoulli_maz & masked_indices & ~indices_replaced
         random_words = torch.randint(
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
