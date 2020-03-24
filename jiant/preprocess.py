@@ -51,11 +51,10 @@ from jiant.tasks import (
     ALL_NLI_PROBING_TASKS,
     ALL_SEQ2SEQ_TASKS,
 )
-from jiant.tasks.lm import MLMTask
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask, Task
-from jiant.tasks.lm import LanguageModelingTask
+from jiant.tasks.lm import MaskedLanguageModelingTask
 from jiant.utils import config, serialize, utils, options
 from jiant.utils.options import parse_task_list_arg
 
@@ -664,7 +663,9 @@ def add_task_label_vocab(vocab, task):
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
 
-    if isinstance(task, SequenceGenerationTask) and not isinstance(task, LanguageModelingTask):
+    if isinstance(task, SequenceGenerationTask) and not isinstance(
+        task, MaskedLanguageModelingTask
+    ):
         for special in SPECIALS:
             vocab.add_token_to_namespace(special, namespace)
 
