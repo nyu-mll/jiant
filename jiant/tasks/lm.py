@@ -187,7 +187,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     pass
 
 
-@register_task("mlm", rel_path="WikiText103_toy/")
+@register_task("mlm", rel_path="WikiText103/")
 class MLMTask(MaskedLanguageModelingTask):
     """
     Masked language modeling task on Toronto Books dataset
@@ -298,7 +298,7 @@ class TorontoLanguageModelling(MaskedLanguageModelingTask):
                 yield tokens[i : i + seq_len]
 
 
-@register_task("sop", rel_path="WikiText103_toy")
+@register_task("sop", rel_path="WikiText103")
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction """
 
