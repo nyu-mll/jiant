@@ -3,7 +3,6 @@ import math
 import os
 from typing import Iterable, Sequence, Type
 import random
-
 # Fields for instance processing
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -241,7 +240,7 @@ class MLMTask(MaskedLanguageModelingTask):
         """
         import csv
 
-        f = open(path, "r")
+        f = open(path, "r", encoding="utf-8")
         reader = csv.reader(f)
         text = list(reader)
         moses_tokenizer = get_tokenizer("MosesTokenizer")
@@ -333,7 +332,7 @@ class SentenceOrderTask(PairClassificationTask):
         import csv
 
         moses_tokenizer = get_tokenizer("MosesTokenizer")
-        with open(path) as txt_fh:
+        with open(path, encoding="utf-8") as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 sentences = row.split(".")
