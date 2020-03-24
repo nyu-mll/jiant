@@ -245,10 +245,7 @@ class MLMTask(MaskedLanguageModelingTask):
         reader = csv.reader(f)
         text = list(reader)
         moses_tokenizer = get_tokenizer("MosesTokenizer")
-        import pdb
-
-        pdb.set_trace()
-        for i in range(10):
+        for i in range(len(text)):
             row = text[i]
             untokenized_toks = moses_tokenizer.detokenize(row)
             toks = "".join(untokenized_toks)
@@ -336,7 +333,6 @@ class SentenceOrderTask(PairClassificationTask):
         import csv
 
         moses_tokenizer = get_tokenizer("MosesTokenizer")
-        curr = 0
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -344,9 +340,6 @@ class SentenceOrderTask(PairClassificationTask):
                 if len(sentences) <= 1:
                     continue
                 else:
-                    curr += 1
-                    if curr == 10:
-                        break
                     for i in range(len(sentences) - 1):
                         if random.uniform(0, 1) > 0.5:
                             is_right_order = 1
