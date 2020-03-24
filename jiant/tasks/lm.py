@@ -179,18 +179,10 @@ class WikiText103LMTask(WikiTextLMTask):
         }
 
 
-class MaskedLanguageModelingTask(LanguageModelingTask):
-    """
-       Generic Masked Language Modeling Task
-    """
-
-    pass
-
-
 @register_task("mlm", rel_path="WikiText103/")
-class MLMTask(MaskedLanguageModelingTask):
+class MaskedLanguageModelingTask(MaskedLanguageModelingTask):
     """
-    Masked language modeling task on Toronto Books dataset
+    Masked language modeling task on Wikipedia dataset
     Attributes:
         max_seq_len: (int) maximum sequence length
         min_seq_len: (int) minimum sequence length
@@ -254,10 +246,6 @@ class MLMTask(MaskedLanguageModelingTask):
         """
 
         def _make_instance(sent_):
-            """ Forward targs adds <s> as a target for input </s>
-            and bwd targs adds </s> as a target for input <s>
-            to avoid issues with needing to strip extra tokens
-            in the input for each direction """
             sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
             input_sent = sentence_to_text_field(sent_, indexers)
             d = {
@@ -270,28 +258,3 @@ class MLMTask(MaskedLanguageModelingTask):
 
         for sent in split:
             yield _make_instance(sent)
-
-
-@register_task("mlm_toronto", rel_path="toronto/")
-class TorontoLanguageModelling(MaskedLanguageModelingTask):
-    """ Language modeling on the Toronto Books dataset
-    See base class: LanguageModelingTask
-    """
-
-    def get_data_iter(self, path):
-        """Load data file, tokenize text and concat sentences to create long term dependencies.
-        Args:
-            path: (str) data file path
-        """
-        seq_len = self.max_seq_len
-        tokens = []
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if not toks:
-                    continue
-                toks_v = toks.split()
-                toks = toks.split() + ["<EOS>"]
-                tokens += toks
-            for i in range(0, len(tokens), seq_len):
-                yield tokens[i : i + seq_len]
