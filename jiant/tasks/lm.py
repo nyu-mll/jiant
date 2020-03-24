@@ -23,7 +23,7 @@ from jiant.tasks.tasks import (
 from transformers import XLMRobertaTokenizer
 
 
-class LanguageModelingTask(SequenceGenerationTask):
+class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
     See base class: SequenceGenerationTask
     Attributes:
@@ -135,9 +135,9 @@ class LanguageModelingTask(SequenceGenerationTask):
 
 # TODO: restructure LM task hierarchy
 @register_task("bwb", rel_path="BWB/")
-class WikiTextLMTask(LanguageModelingTask):
+class WikiTextLMTask(AutoregressiveLanguageModelingTask):
     """ Language modeling on a Wikitext dataset
-    See base class: LanguageModelingTask
+    See base class: AutoregressiveLanguageModelingTask
     """
 
     def get_data_iter(self, path):
@@ -181,7 +181,7 @@ class WikiText103LMTask(WikiTextLMTask):
 
 
 @register_task("mlm", rel_path="WikiText103/")
-class MaskedLanguageModelingTask(MaskedLanguageModelingTask):
+class MaskedLanguageModelingTask(Task):
     """
     Masked language modeling task on Wikipedia dataset
     Attributes:
@@ -190,14 +190,35 @@ class MaskedLanguageModelingTask(MaskedLanguageModelingTask):
         files_by_split: (dict) files for three data split (train, val, test)
     """
 
-    def __init__(self, path, *args, **kw):
-        super().__init__(path, *args, **kw)
-        self._label_namespace = "mlm"
+    def __init__(self, path, max_seq_len, name, **kw):
+        """Init class
+        Args:
+            path: (str) path that the data files are stored
+            max_seq_len: (int) maximum length of one sequence
+            name: (str) task name
+        """
+        super().__init__(name, **kw)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self._label_namespace = self.name + "_labels"
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.max_seq_len = max_seq_len
+        self.min_seq_len = 0
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
         self.files_by_split = {
-            "train": os.path.join(path, "train.sentences.txt"),
-            "val": os.path.join(path, "valid.sentences.txt"),
-            "test": os.path.join(path, "test.sentences.txt"),
+            "train": os.path.join(path, "train.txt"),
+            "val": os.path.join(path, "valid.txt"),
+            "test": os.path.join(path, "test.txt"),
         }
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task
+        Args:
+            reset: (boolean) reset any accumulators or internal state
+        """
+        nll = self.scorer1.get_metric(reset)
+        return {"perplexity": math.exp(nll)}
 
     def get_all_labels(self):
         """

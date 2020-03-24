@@ -13,12 +13,12 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
 
 from jiant.utils.data_loaders import load_tsv
-from jiant.tasks.lm import LanguageModelingTask
+from jiant.tasks.lm import AutoregressiveLanguageModelingTask
 from jiant.tasks.registry import register_task
 from jiant.tasks.tasks import sentence_to_text_field
 
 
-class LanguageModelingParsingTask(LanguageModelingTask):
+class LanguageModelingParsingTask(AutoregressiveLanguageModelingTask):
     def count_examples(self):
         """Computes number of samples.
         Every example is made up of sentences concatenated together, capped by max_seq_len.
@@ -61,7 +61,7 @@ class LanguageModelingParsingTask(LanguageModelingTask):
 
 
 @register_task("wsj", rel_path="WSJ/")
-class WSJLanguageModelling(LanguageModelingParsingTask):
+class WSJLanguageModelling(AutoregressiveLanguageModelingTask):
     """ Language modeling on a PTB dataset
     See base class: LanguageModelingTask
     """
@@ -86,7 +86,7 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
 
 
 @register_task("toronto-lm", rel_path="toronto/")
-class TorontoLanguageModelling(LanguageModelingParsingTask):
+class TorontoLanguageModelling(AutoregressiveLanguageModelingTask):
     """ Language modeling on the Toronto Books dataset
     See base class: LanguageModelingTask
     """
@@ -111,7 +111,7 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
 
 
 @register_task("egw-lm", rel_path="egw_corpus/")
-class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
+class EnglishgigawordLanguageModeling(AutoregressiveLanguageModelingTask):
     """ Language modeling on the English Gigaword dataset
     See base class: LanguageModelingTask
     """
@@ -136,7 +136,7 @@ class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
 
 
 @register_task("mnli-lm", rel_path="MNLI/")
-class MNLILanguageModeling(LanguageModelingParsingTask):
+class MNLILanguageModeling(AutoregressiveLanguageModelingTask):
     """ Language modeling on the MNLI dataset
     See base class: LanguageModelingTask
     """

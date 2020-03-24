@@ -45,7 +45,7 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.huggingface_transformers_interface import input_module_uses_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.tasks.lm import LanguageModelingTask, MaskedLanguageModelingTask
+from jiant.tasks.lm import AutoregressiveLanguageModelingTask, MaskedLanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.seq2seq import Seq2SeqTask
@@ -159,10 +159,12 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
+    elif (
+        any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks)
+        or args.sent_enc == "bilm"
+    ):
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
-        if not any(isinstance(task, MaskedLanguageModelingTask) for task in tasks):
-            # If an autoregressive LanguageModelingTask
+        if any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks):
             assert_for_log(
                 not (
                     args.input_module == "elmo"
@@ -555,7 +557,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, MaskedLanguageModelingTask):
         module = build_mlm(model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, LanguageModelingTask):
+    elif isinstance(task, AutoregressiveLanguageModelingTask):
         assert not input_module_uses_transformers(args.input_module), (
             "our LM Task does not support transformers, if you need them, try to update",
             "corresponding parts of the code. You may find get_pretrained_lm_head and",
@@ -753,7 +755,7 @@ def build_lm(task, d_inp, args):
 
 
 def build_mlm(embedder):
-    " Build MLM components " ""
+    " Build MLM components "
     lm_head = embedder.get_pretrained_lm_head()
     return lm_head
 
@@ -867,7 +869,7 @@ class MultiTaskModel(nn.Module):
             out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, MaskedLanguageModelingTask):
             out = self._masked_lm_forward(batch, task, predict)
-        elif isinstance(task, LanguageModelingTask):
+        elif isinstance(task, AutoregressiveLanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or isinstance(
                 self.sent_encoder._phrase_layer, PRPN
             ):
