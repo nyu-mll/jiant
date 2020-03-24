@@ -55,15 +55,6 @@ class LanguageModelingTask(SequenceGenerationTask):
             "test": os.path.join(path, "test.txt"),
         }
 
-    def count_examples(self):
-        """Computes number of samples
-        Assuming every line is one example.
-        """
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in open(split_path))
-        self.example_counts = example_counts
-
     def get_metrics(self, reset=False):
         """Get metrics specific to the task
         Args:
@@ -74,7 +65,11 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
-        pass
+        self.examples_by_split = {}
+        for split in self.files_by_split:
+            self.examples_by_split[split] = list(
+                self.get_data_iter(self.files_by_split[split])
+            )
 
     def get_data_iter(self, path):
         """Loading data file and tokenizing the text
@@ -86,7 +81,9 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+                yield tokenize_and_truncate(
+                    self._tokenizer_name, toks, self.max_seq_len
+                )
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -102,23 +99,38 @@ class LanguageModelingTask(SequenceGenerationTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+            sent_ = model_preprocessing_interface.boundary_token_fn(
+                sent_
+            )  # Add <s> and </s>
             d = {
                 "input": sentence_to_text_field(sent_, indexers),
-                "targs": sentence_to_text_field(sent_[1:] + [sent_[0]], self.target_indexer),
-                "targs_b": sentence_to_text_field([sent_[-1]] + sent_[:-1], self.target_indexer),
+                "targs": sentence_to_text_field(
+                    sent_[1:] + [sent_[0]], self.target_indexer
+                ),
+                "targs_b": sentence_to_text_field(
+                    [sent_[-1]] + sent_[:-1], self.target_indexer
+                ),
             }
             return Instance(d)
 
         for sent in split:
             yield _make_instance(sent)
 
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for _ in self.examples_by_split[split])
+        self.example_counts = example_counts
+
     def get_split_text(self, split: str):
         """Get split text as iterable of records.
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.get_data_iter(self.files_by_split[split])
+        return self.examples_by_split[split]
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -127,8 +139,7 @@ class LanguageModelingTask(SequenceGenerationTask):
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
-            path = self.files_by_split[split]
-            for sent in self.get_data_iter(path):
+            for sent in self.examples_by_split[split]:
                 yield sent
 
 
@@ -187,7 +198,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
     pass
 
 
-@register_task("mlm", rel_path="WikiText103_toy/")
+@register_task("mlm", rel_path="WikiText103/")
 class MLMTask(MaskedLanguageModelingTask):
     """
     Masked language modeling task on Toronto Books dataset
@@ -199,6 +210,7 @@ class MLMTask(MaskedLanguageModelingTask):
 
     def __init__(self, path, *args, **kw):
         super().__init__(path, *args, **kw)
+        self._label_namespace = "mlm"
         self.files_by_split = {
             "train": os.path.join(path, "train.sentences.txt"),
             "val": os.path.join(path, "valid.sentences.txt"),
@@ -215,13 +227,7 @@ class MLMTask(MaskedLanguageModelingTask):
         ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
         for word in ordered_vocab:
             labels.append(word)
-        for path in self.files_by_split:
-            for sent in self.get_data_iter(self.files_by_split[path]):
-                for tok in sent:
-                    if tok not in labels:
-                        labels.append(tok)
         return labels
-
 
     def update_metrics(self, out, batch=None):
         # self.scorer1(logits,labels)
@@ -239,7 +245,10 @@ class MLMTask(MaskedLanguageModelingTask):
         reader = csv.reader(f)
         text = list(reader)
         moses_tokenizer = get_tokenizer("MosesTokenizer")
-        for i in range(len(text)):
+        import pdb
+
+        pdb.set_trace()
+        for i in range(10):
             row = text[i]
             untokenized_toks = moses_tokenizer.detokenize(row)
             toks = "".join(untokenized_toks)
@@ -259,7 +268,9 @@ class MLMTask(MaskedLanguageModelingTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+            sent_ = model_preprocessing_interface.boundary_token_fn(
+                sent_
+            )  # Add <s> and </s>
             input_sent = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": input_sent,
@@ -298,7 +309,7 @@ class TorontoLanguageModelling(MaskedLanguageModelingTask):
                 yield tokens[i : i + seq_len]
 
 
-@register_task("sop", rel_path="WikiText103_toy")
+@register_task("sop", rel_path="WikiText103")
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction """
 
@@ -325,6 +336,7 @@ class SentenceOrderTask(PairClassificationTask):
         import csv
 
         moses_tokenizer = get_tokenizer("MosesTokenizer")
+        curr = 0
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -332,6 +344,9 @@ class SentenceOrderTask(PairClassificationTask):
                 if len(sentences) <= 1:
                     continue
                 else:
+                    curr += 1
+                    if curr == 10:
+                        break
                     for i in range(len(sentences) - 1):
                         if random.uniform(0, 1) > 0.5:
                             is_right_order = 1
@@ -359,7 +374,7 @@ class SentenceOrderTask(PairClassificationTask):
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in open(split_path))
+            example_counts[split] = sum(1 for _ in self.examples_by_split[split])
         self.example_counts = example_counts
 
     def get_split_text(self, split: str):
@@ -367,7 +382,7 @@ class SentenceOrderTask(PairClassificationTask):
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.get_data_iter(self.files_by_split[split])
+        return self.examples_by_split[split]
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -376,12 +391,16 @@ class SentenceOrderTask(PairClassificationTask):
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
-            path = self.files_by_split[split]
-            for sent in self.get_data_iter(path):
+            for sent in self.examples_by_split[split]:
                 yield sent[0]
 
     def load_data(self):
-        pass
+        # Data is exposed as iterable: no preloading
+        self.examples_by_split = {}
+        for split in self.files_by_split:
+            self.examples_by_split[split] = list(
+                self.get_data_iter(self.files_by_split[split])
+            )
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -401,7 +420,9 @@ class SentenceOrderTask(PairClassificationTask):
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
                 input_sent = sentence_to_text_field(inp, indexers)
-                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+                label = LabelField(
+                    is_right_order, label_namespace="labels", skip_indexing=True
+                )
                 d = {"inputs": input_sent, "labels": label}
             else:
                 inp1 = sentence_to_text_field(
@@ -410,7 +431,9 @@ class SentenceOrderTask(PairClassificationTask):
                 inp2 = sentence_to_text_field(
                     model_preprocessing_interface.boundary_token_fn(sent_b), indexers
                 )
-                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+                label = LabelField(
+                    is_right_order, label_namespace="labels", skip_indexing=True
+                )
                 d = {"input1": inp1, "input2": inp2, "targs": label}
             return Instance(d)
 
