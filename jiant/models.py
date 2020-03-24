@@ -776,7 +776,6 @@ def build_pair_sentence_module(task, d_inp, model, params, project_before_poolin
 
     # Build the "pooler", which does pools a variable length sequence
     #   possibly with a projection layer beforehand
-    print("model: ", model)
     if params["attn"] and model.project_before_pooling:
         pooler = Pooler(
             project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"]
