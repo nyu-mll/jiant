@@ -72,7 +72,8 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
         overrides = []
         overrides.append(f"exp_name={exp_name}")
         overrides.append(f"run_name={run_name}")
-        overrides.append(f"input_module={input_module}")
+        if input_module is not None:
+            overrides.append(f"input_module={input_module}")
         overrides.append(f"pretrain_tasks=none")
         overrides.append(f"target_tasks={task_name}")
         overrides.append("do_target_task_training=1")

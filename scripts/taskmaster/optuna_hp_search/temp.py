@@ -103,6 +103,15 @@ def run_optuna_trails(input_module):
     return outputs
 
 
+def collect_optuna_trails(input_module):
+    outputs = []
+    for study_name, task in task_metadata.items():
+        outputs.append(
+            f'PROG="scripts/taskmaster/optuna_hp_search/collect_trials" ARGS="{study_name} {input_module}" sbatch ~/cpu.sbatch'
+        )
+    return outputs
+
+
 def show_current_trail_count():
     outputs = []
     for task_name in task_names:
@@ -110,7 +119,7 @@ def show_current_trail_count():
     return outputs
 
 
-outputs = run_batch_size_check("albert")
+outputs = collect_optuna_trails("")
 
 with open("auto.sh", "w") as f:
     for line in outputs:
