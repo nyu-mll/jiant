@@ -68,7 +68,7 @@ def run_batch_size_check(input_module):
     return outputs
 
 
-def run_optuna_trails():
+def run_optuna_trails(input_module):
     outputs = []
     for study_name, task in task_metadata.items():
         if task["batch_size_limit"] <= 4:
@@ -98,7 +98,7 @@ def run_optuna_trails():
             if num_trails == 0:
                 continue
             outputs.append(
-                f'PROG="scripts/taskmaster/optuna_hp_search/run_trials" ARGS="{study_name} {gpu_available} {num_trails}" sbatch ~/{sbatch}'
+                f'PROG="scripts/taskmaster/optuna_hp_search/run_trials" ARGS="{study_name} {gpu_available} {num_trails} {input_module}" sbatch ~/{sbatch}'
             )
     return outputs
 

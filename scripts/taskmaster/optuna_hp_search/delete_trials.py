@@ -2,9 +2,13 @@ import optuna
 import sys
 
 
-def delete_trails(study_name):
+def delete_trails(study_name, input_module):
     storage = "sqlite:///example.db"
-    optuna.delete_study(study_name=study_name, storage=storage)
+    if input_module is not None:
+        stored_name = f"{study_name}_{input_module}"
+    else:
+        stored_name = study_name
+    optuna.delete_study(study_name=stored_name, storage=storage)
 
 
 if __name__ == "__main__":

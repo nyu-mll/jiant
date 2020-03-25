@@ -8,11 +8,15 @@ RESULT_DIR = "/scratch/hl3236/jiant_results/"
 FAILED_RUN_DEFAULT = None
 
 
-def run_trials(study_name, gpu_available, n_trials):
+def run_trials(study_name, gpu_available, n_trials, input_module):
     storage = "sqlite:///example.db"
+    if input_module is not None:
+        stored_name = f"{study_name}_{input_module}"
+    else:
+        stored_name = study_name
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(
-        study_name=study_name,
+        study_name=stored_name,
         storage=storage,
         direction="maximize",
         sampler=sampler,
@@ -68,6 +72,7 @@ def run_trials(study_name, gpu_available, n_trials):
         overrides = []
         overrides.append(f"exp_name={exp_name}")
         overrides.append(f"run_name={run_name}")
+        overrides.append(f"input_module={input_module}")
         overrides.append(f"pretrain_tasks=none")
         overrides.append(f"target_tasks={task_name}")
         overrides.append("do_target_task_training=1")
