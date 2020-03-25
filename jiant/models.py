@@ -1219,7 +1219,7 @@ class MultiTaskModel(nn.Module):
         bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.5)).to(
             device=inputs.device, dtype=torch.uint8
         )
-        indices_random = bernoulli_maz & masked_indices & ~indices_replaced
+        indices_random = bernoulli_mask & masked_indices & ~indices_replaced
         random_words = torch.randint(
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
@@ -1231,6 +1231,7 @@ class MultiTaskModel(nn.Module):
         valid_mask = (inputs > 1).long()
         inputs = (inputs + 2) * valid_mask + 0 * pad_mask + 1 * unk_mask
         batch["input"][input_key] = inputs
+        print()
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
