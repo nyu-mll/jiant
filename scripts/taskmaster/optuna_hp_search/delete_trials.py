@@ -4,7 +4,7 @@ import sys
 
 def delete_trails(study_name, input_module):
     storage = "sqlite:///example.db"
-    if input_module is not None:
+    if input_module != "None":
         stored_name = f"{study_name}_{input_module}"
     else:
         stored_name = study_name
@@ -12,4 +12,4 @@ def delete_trails(study_name, input_module):
 
 
 if __name__ == "__main__":
-    delete_trails(sys.argv[1])
+    delete_trails(sys.argv[1], sys.argv[2])

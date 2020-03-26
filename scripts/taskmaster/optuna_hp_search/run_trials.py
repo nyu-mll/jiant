@@ -10,7 +10,7 @@ FAILED_RUN_DEFAULT = None
 
 def run_trials(study_name, gpu_available, n_trials, input_module):
     storage = "sqlite:///example.db"
-    if input_module is not None:
+    if input_module != "None":
         stored_name = f"{study_name}_{input_module}"
     else:
         stored_name = study_name
@@ -28,7 +28,7 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
     def run_one_trial(trial):
         task = task_metadata[study_name]
         task_name = task["task_name"]
-        exp_name = f"optuna_{task_name}"
+        exp_name = f"optuna_{study_name}_{input_module}"
         run_name = f"trial_{trial.number}"
 
         training_size = task["training_size"]
@@ -57,7 +57,7 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
         max_epochs = trial.suggest_categorical("epochs", max_epochs_candidates)
         lr = trial.suggest_categorical("lr", lr_candidates)
         batch_size = trial.suggest_categorical("bs", batch_size_candidate)
-        batch_size_limit = task["batch_size_limit"]
+        batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
         gpu_needed = batch_size // batch_size_limit
         if gpu_needed <= gpu_available:
             real_batch_size = batch_size
@@ -119,4 +119,4 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
 
 if __name__ == "__main__":
     # python run_trials study_name gpu_available n_trials
-    run_trials(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
+    run_trials(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])

@@ -5,12 +5,13 @@ import os
 RESULT_DIR = "/scratch/hl3236/jiant_results"
 
 
-def collect_trails(study_name, input_module=None):
+def collect_trails(study_name, input_module):
     storage = "sqlite:///example.db"
-    if input_module is not None:
+    if input_module != "None":
         stored_name = f"{study_name}_{input_module}"
     else:
         stored_name = study_name
+    print(stored_name)
     study = optuna.load_study(study_name=stored_name, storage=storage)
     df = study.trials_dataframe()
     df = df[["number", "value", "user_attrs_batch_size", "user_attrs_lr", "user_attrs_max_epochs"]]
@@ -37,4 +38,4 @@ def collect_trails(study_name, input_module=None):
 
 
 if __name__ == "__main__":
-    collect_trails(sys.argv[1])
+    collect_trails(sys.argv[1], sys.argv[2])

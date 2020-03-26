@@ -58,12 +58,10 @@ def run_batch_size_check(input_module):
 
     for batch_size in [32, 16, 8, 4, 2]:
         for task_name in task_names:
-            if task_metadata[task_name]["roberta_batch_size_limit"] < batch_size:
-                continue
             val_interval = min(5000, task_metadata[task_name]["training_size"] // batch_size)
-            override = f'"do_pretrain=1, pretrain_tasks={task_name}, target_tasks={task_name}, exp_name=bstest_{task_name}, run_name={task_name}_{batch_size}, batch_size={batch_size}, max_epochs=1, val_interval={val_interval}, delete_checkpoints_when_done=1, max_vals=1, patience=10000"'
+            override = f'"do_pretrain=1, input_module={input_module}, pretrain_tasks={task_name}, target_tasks={task_name}, exp_name=bstest_{task_name}, run_name={task_name}_{batch_size}, batch_size={batch_size}, max_epochs=1, val_interval={val_interval}, delete_checkpoints_when_done=1, max_vals=1, patience=10000"'
             outputs.append(
-                f'JIANT_CONF="jiant/config/taskmaster/clean_{input_module}.conf" JIANT_OVERRIDES={override} sbatch ~/jp40.sbatch'
+                f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES={override} sbatch ~/jp40.sbatch'
             )
     return outputs
 
@@ -71,9 +69,10 @@ def run_batch_size_check(input_module):
 def run_optuna_trails(input_module):
     outputs = []
     for study_name, task in task_metadata.items():
-        if task["batch_size_limit"] <= 4:
+        batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
+        if batch_size_limit <= 4:
             gpu_available, sbatch = 4, "4p40.sbatch"
-        elif task["batch_size_limit"] == 8:
+        elif batch_size_limit == 8:
             gpu_available, sbatch = 2, "2p40.sbatch"
         else:
             gpu_available, sbatch = 1, "p40.sbatch"
@@ -119,7 +118,7 @@ def show_current_trail_count():
     return outputs
 
 
-outputs = collect_optuna_trails("")
+outputs = run_optuna_trails("albert-xxlarge-v2")
 
 with open("auto.sh", "w") as f:
     for line in outputs:
