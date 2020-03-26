@@ -1319,8 +1319,32 @@ class MultiTaskModel(nn.Module):
         pad_mask = (inputs == 0).long()
         unk_mask = (inputs == 1).long()
         valid_mask = (inputs > 1).long()
-        inputs = (inputs + 2) * valid_mask + 0 * pad_mask + 1 * unk_mask
-        batch["input"][input_key] = inputs
+        inputs = inputs * valid_mask + 0 * pad_mask + 1 * unk_mask
+
+        
+        inputs = torch.tensor([[  6, 7212, 25994,   6, 12053,  61, 3070,  24, 21919,  162,
+     			30002,  38,   6, 17537, 2656, 3819,  20,  398, 14633, 2688,
+       			6,  13,   7,   0,   0,   0],
+    			[  6,   6, 3395,  27,  313,  39, 5583,   6,  511,  33,
+     			3390,   6, 1070,  31, 10124,  18,  175, 4216,  151,  116,
+      			18,  505,  235,   6,  13,   6],
+    			[  6,  86, 14579,  24,  18, 2609,  29,  955,  23,  25,
+      			525,  653,  423,  36,  127,  71,  48,   6,  17,   1,
+      			12,   1,   6,  17,  13,   7]], device='cuda:0')
+
+        labels = torch.tensor([[ -100, -100, -100,  18, -100, -100, -100, -100, -100, -100,
+     	-100, -100, 25352, -100, -100, -100, -100, -100, -100, -100,
+      	13, -100, -100, -100, -100, -100],
+    	[ -100,  14, -100, -100, -100, -100, -100,  203, -100, -100,
+    	 -100,  170, -100, -100, -100, -100, -100, -100, -100, -100,
+     	-100, -100, -100,  13, -100,   3],
+    	[ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100,
+     	-100, -100, -100, -100, -100, -100, -100,  168, -100, -100,
+     	-100, -100,  459, -100, -100, -100]], device='cuda:0')
+        batch["input"][input_key] = inputs - 2
+        print("new batch[input]: ", batch["input"])
+        print("new targets: ", labels)
+        import pdb; pdb.set_trace()
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
