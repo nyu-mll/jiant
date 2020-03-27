@@ -201,7 +201,7 @@ class MaskedLanguageModelingTask(Task):
         super().__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = None
-        self._label_namespace = self.name + "_labels"
+        self._label_namespace = "mlm"
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
