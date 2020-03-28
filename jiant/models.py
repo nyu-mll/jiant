@@ -1209,7 +1209,7 @@ class MultiTaskModel(nn.Module):
         )
         tokenizer = get_tokenizer(tokenizer_name)
         input_key = self.sent_encoder._text_field_embedder.tokenizer_required
-        # mask_idx = self.sent_encoder._text_field_embedder._mask_id #
+        # Masking code from https://github.com/huggingface/transformers/blob/master/examples/run_language_modeling.py
         mask_idx = self.sent_encoder._text_field_embedder._mask_id
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
@@ -1249,12 +1249,6 @@ class MultiTaskModel(nn.Module):
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
         inputs[indices_random] = random_words[indices_random]
-        # Add 2 to all non-special tokens due to correct_sent logic in Transformer-based
-        # sent_encoder
-        pad_mask = (inputs == 0).long()
-        unk_mask = (inputs == 1).long()
-        valid_mask = (inputs > 1).long()
-        inputs = inputs * valid_mask + 0 * pad_mask + 1 * unk_mask
 
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
