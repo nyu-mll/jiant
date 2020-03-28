@@ -1181,57 +1181,24 @@ class MultiTaskModel(nn.Module):
         We currently only support RoBERTa-style dynamic masking, with the exact 
         setup and parameters as RoBERTa. 
         """
-        mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
         tokenizer_name = self.sent_encoder._text_field_embedder.input_module
         vocab_size = (
             self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
         )
-        tokenizer = get_tokenizer(tokenizer_name)
         input_key = self.sent_encoder._text_field_embedder.tokenizer_required
         mask_idx = self.sent_encoder._text_field_embedder._mask_id
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
         labels = batch["targs"]
-
-        probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
-        padding_mask = labels.eq(0)
-        probability_matrix.masked_fill_(padding_mask, value=0.0)
-
-        masked_indices = torch.bernoulli(probability_matrix).to(
-            device=inputs.device, dtype=torch.uint8
+        _unk_id = sent_encoder._text_field_embedder._unk_id
+        _pad_id = sent_encoder._text_field_embedder._pad_id
+        max_pos = sent_encoder._text_field_embedder.max_pos
+        inputs, labels = task.mlm_transform(
+            inputs, labels, input_key, _unk_id, _pad_id, max_pos, mask_idx, tokenizer_name
         )
-        tokenizer_name = self.sent_encoder._text_field_embedder.tokenizer_required
-        labels, _ = self.sent_encoder._text_field_embedder.correct_sent_indexing(
-            {tokenizer_name: labels}
-        )
-        labels[~masked_indices] = -100  # We only compute loss on masked tokens
-
-        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.8)).to(
-            device=inputs.device, dtype=torch.uint8
-        )
-        indices_replaced = bernoulli_mask & masked_indices
-        inputs[indices_replaced] = mask_idx
-
-        # 10% of the time, we replace masked input tokens with random word
-        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.5)).to(
-            device=inputs.device, dtype=torch.uint8
-        )
-        indices_random = bernoulli_mask & masked_indices & ~indices_replaced
-        random_words = torch.randint(
-            len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
-        )
-        inputs[indices_random] = random_words[indices_random]
-        # Add 2 to all non-special tokens due to correct_sent logic in Transformer-based
-        # sent_encoder
-        pad_mask = (inputs == 0).long()
-        unk_mask = (inputs == 1).long()
-        valid_mask = (inputs > 1).long()
-        inputs = (inputs + 2) * valid_mask + 0 * pad_mask + 1 * unk_mask
         batch["input"][input_key] = inputs
-        print()
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)

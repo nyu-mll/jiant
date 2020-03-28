@@ -3,6 +3,7 @@ import math
 import os
 from typing import Iterable, Sequence, Type
 import random
+import torch
 
 # Fields for instance processing
 from allennlp.data import Instance
@@ -22,7 +23,7 @@ from jiant.tasks.tasks import (
     sentence_to_text_field,
 )
 from transformers import XLMRobertaTokenizer
-
+from jiant.huggingface_transformers_interface.utils import correct_sent_indexing
 
 class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
@@ -301,6 +302,8 @@ class MaskedLanguageModelingTask(Task):
         """
         return self.examples_by_split[split]
 
+    
+
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
         """
@@ -310,3 +313,42 @@ class MaskedLanguageModelingTask(Task):
                 continue
             for sent in self.examples_by_split[split]:
                 yield sent
+
+    def mlm_correct_labels(self, labels, input_key, _unk_id, _pad_id, max_pos):
+        labels, _ = correct_sent_indexing(
+            {input_key: labels}, input_key, _unk_id, _pad_id, max_pos
+        )
+        return labels
+    ### MLM-specific fuction ###
+    def mlm_transform(self, inputs, labels, input_key, _unk_id, _pad_id, max_pos, mask_idx, tokenizer_name):
+        """ RoBERTa-style dynamic masking """
+        # Code from https://github.com/huggingface/transformers/blob/master/examples/run_language_modeling.py
+        mlm_probability = 0.15
+        tokenizer = get_tokenizer(tokenizer_name)
+        probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
+        padding_mask = labels.eq(0)
+        probability_matrix.masked_fill_(padding_mask, value=0.0)
+
+        masked_indices = torch.bernoulli(probability_matrix).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        labels = self.mlm_correct_labels(labels, input_key, _unk_id, _pad_id, max_pos)
+        labels[~masked_indices] = -100  # We only compute loss on masked tokens
+
+        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.8)).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        indices_replaced = bernoulli_mask & masked_indices
+        inputs[indices_replaced] = mask_idx
+
+        # 10% of the time, we replace masked input tokens with random word
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.5)).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        indices_random = bernoulli_mask & masked_indices & ~indices_replaced
+        random_words = torch.randint(
+            len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
+        )
+        inputs[indices_random] = random_words[indices_random]
+        return inputs, labels
