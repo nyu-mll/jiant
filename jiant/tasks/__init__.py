@@ -9,6 +9,7 @@ from jiant.tasks import (
     senteval_probing,
     acceptablity_probing,
 )
+from jiant.tasks.crosslingual import xnli
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.

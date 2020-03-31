@@ -20,6 +20,7 @@ from transformers import (
     GPT2Tokenizer,
     TransfoXLTokenizer,
     XLMTokenizer,
+    XLMRobertaTokenizer,
 )
 
 
@@ -110,8 +111,10 @@ def get_tokenizer(tokenizer_name):
     elif tokenizer_name.startswith("transfo-xl-"):
         # TransformerXL is trained on data pretokenized with MosesTokenizer
         tokenizer = MosesTokenizer()
-    elif tokenizer_name.startswith("xlm-"):
+    elif tokenizer_name.startswith("xlm-mlm-") or tokenizer_name.startswith("xlm-clm-"):
         tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("xlm-roberta-"):
+        tokenizer = XLMRobertaTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name == "MosesTokenizer":
         tokenizer = MosesTokenizer()
     elif tokenizer_name == "SplitChars":

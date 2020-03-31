@@ -41,6 +41,7 @@ from transformers import (
     GPT2Tokenizer,
     TransfoXLTokenizer,
     XLMTokenizer,
+    XLMRobertaTokenizer,
 )
 
 from jiant.tasks import (
@@ -689,8 +690,10 @@ def add_transformers_vocab(vocab, tokenizer_name):
         tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("transfo-xl-"):
         tokenizer = TransfoXLTokenizer.from_pretrained(tokenizer_name)
-    elif tokenizer_name.startswith("xlm-"):
+    elif tokenizer_name.startswith("xlm-mlm-") or tokenizer_name.startswith("xlm-clm-"):
         tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("xlm-roberta-"):
+        tokenizer = XLMRobertaTokenizer.from_pretrained(tokenizer_name)
 
     if (
         tokenizer_name.startswith("openai-gpt")
@@ -773,10 +776,14 @@ class ModelPreprocessingInterface(object):
 
             boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
             lm_boundary_token_fn = TransfoXLEmbedderModule.apply_lm_boundary_tokens
-        elif args.input_module.startswith("xlm-"):
+        elif args.input_module.startswith("xlm-mlm-") or args.input_module.startswith("xlm-clm-"):
             from jiant.huggingface_transformers_interface.modules import XLMEmbedderModule
 
             boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
+        elif args.input_module.startswith("xlm-roberta-"):
+            from jiant.huggingface_transformers_interface.modules import XLMRobertaEmbedderModule
+
+            boundary_token_fn = XLMRobertaEmbedderModule.apply_boundary_tokens
         else:
             boundary_token_fn = utils.apply_standard_boundary_tokens
 

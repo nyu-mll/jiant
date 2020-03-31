@@ -283,11 +283,18 @@ def build_model(args, vocab, pretrained_embs, tasks, cuda_devices):
         log.info(f"Using Transformer-XL model ({args.input_module}).")
         embedder = TransfoXLEmbedderModule(args)
         d_emb = embedder.get_output_dim()
-    elif args.input_module.startswith("xlm-"):
+    elif args.input_module.startswith("xlm-mlm-") or args.input_module.startswith("xlm-clm-"):
         from jiant.huggingface_transformers_interface.modules import XLMEmbedderModule
 
         log.info(f"Using XLM model ({args.input_module}).")
         embedder = XLMEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+
+    elif args.input_module.startswith("xlm-roberta-"):
+        from jiant.huggingface_transformers_interface.modules import XLMRobertaEmbedderModule
+
+        log.info(f"Using XLM model ({args.input_module}).")
+        embedder = XLMRobertaEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.
