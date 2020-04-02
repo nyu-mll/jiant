@@ -55,6 +55,7 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
             "val": os.path.join(path, "valid.txt"),
             "test": os.path.join(path, "test.txt"),
         }
+        self.examples_by_split = {}
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task
@@ -66,7 +67,6 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
-        self.examples_by_split = {}
         for split in self.files_by_split:
             self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
 
@@ -181,7 +181,7 @@ class WikiText103LMTask(WikiTextLMTask):
         }
 
 
-@register_task("mlm", rel_path="WikiText103/")
+@register_task("wikipedia_corpus_mlm", rel_path="wikipedia_corpus_small/")
 class MaskedLanguageModelingTask(Task):
     """
     Masked language modeling task on Wikipedia dataset
@@ -189,6 +189,9 @@ class MaskedLanguageModelingTask(Task):
         max_seq_len: (int) maximum sequence length
         min_seq_len: (int) minimum sequence length
         files_by_split: (dict) files for three data split (train, val, test)
+    We are currently using an unpreprocessed version of the Wikipedia corpus
+    that consists of 5% of the data. Please reach out to jiant admin if you 
+    would like access to this dataset.
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
@@ -212,10 +215,10 @@ class MaskedLanguageModelingTask(Task):
             "val": os.path.join(path, "valid.txt"),
             "test": os.path.join(path, "test.txt"),
         }
+        self.examples_by_split = {}
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
-        self.examples_by_split = {}
         for split in self.files_by_split:
             self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
 
@@ -249,17 +252,12 @@ class MaskedLanguageModelingTask(Task):
         Args:
             path: (str) data file path
         """
-        import csv
-
-        f = open(path, "r", encoding="utf-8")
-        reader = csv.reader(f)
-        text = list(reader)
-        moses_tokenizer = get_tokenizer("MosesTokenizer")
-        for i in range(10):
-            row = text[i]
-            untokenized_toks = moses_tokenizer.detokenize(row)
-            toks = "".join(untokenized_toks)
-            yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+        with open(path, "r", encoding="utf-8") as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if not toks:
+                    continue
+                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
