@@ -1249,7 +1249,7 @@ class MultiTaskModel(nn.Module):
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
         inputs[indices_random] = random_words[indices_random]
-
+        batch["input"][input_key] = inputs
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
