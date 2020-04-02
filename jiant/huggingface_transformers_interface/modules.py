@@ -12,7 +12,6 @@ import transformers
 from jiant.utils.options import parse_task_list_arg
 from jiant.utils import utils
 from jiant.huggingface_transformers_interface import input_module_tokenizer_name
-from jiant.huggingface_transformers_interface.utils import correct_sent_indexing
 
 
 class HuggingfaceTransformersEmbedderModule(nn.Module):
@@ -85,6 +84,45 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
             )
             # Always have one more mixing weight, for lexical layer.
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
+
+    def correct_sent_indexing(self, sent):
+        """ Correct id difference between transformers and AllenNLP.
+        The AllenNLP indexer adds'@@UNKNOWN@@' token as index 1, and '@@PADDING@@' as index 0
+
+        args:
+            sent: batch dictionary, in which
+                sent[self.tokenizer_required]: <long> [batch_size, var_seq_len] input token IDs
+
+        returns:
+            ids: <long> [bath_size, var_seq_len] corrected token IDs
+            input_mask: <long> [bath_size, var_seq_len] mask of input sequence
+        """
+        assert (
+            self.tokenizer_required in sent
+        ), "transformers cannot find correcpondingly tokenized input"
+        ids = sent[self.tokenizer_required]
+
+        input_mask = (ids != 0).long()
+        pad_mask = (ids == 0).long()
+        # map AllenNLP @@PADDING@@ to _pad_id in specific transformer vocab
+        unk_mask = (ids == 1).long()
+        # map AllenNLP @@UNKNOWN@@ to _unk_id in specific transformer vocab
+        valid_mask = (ids > 1).long()
+        # shift ordinary indexes by 2 to match pretrained token embedding indexes
+        if self._unk_id is not None:
+            ids = (ids - 2) * valid_mask + self._pad_id * pad_mask + self._unk_id * unk_mask
+        else:
+            ids = (ids - 2) * valid_mask + self._pad_id * pad_mask
+            assert (
+                unk_mask == 0
+            ).all(), "out-of-vocabulary token found in the input, but _unk_id of transformers model is not specified"
+        if self.max_pos is not None:
+            assert (
+                ids.size()[-1] <= self.max_pos
+            ), "input length exceeds position embedding capacity, reduce max_seq_len"
+
+        sent[self.tokenizer_required] = ids
+        return ids, input_mask
 
     def prepare_output(self, lex_seq, hidden_states, input_mask):
         """
@@ -251,9 +289,7 @@ class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings.word_embeddings(ids)
@@ -311,9 +347,7 @@ class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings.word_embeddings(ids)
@@ -368,9 +402,7 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings.word_embeddings(ids)
@@ -434,9 +466,7 @@ class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.word_embedding(ids)
@@ -502,9 +532,7 @@ class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.tokens_embed(ids)
@@ -566,9 +594,7 @@ class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.wte(ids)
@@ -630,9 +656,7 @@ class TransfoXLEmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.word_emb(ids)
@@ -691,9 +715,7 @@ class XLMEmbedderModule(HuggingfaceTransformersEmbedderModule):
         return s
 
     def forward(self, sent: Dict[str, torch.LongTensor], task_name: str = "") -> torch.FloatTensor:
-        ids, input_mask = correct_sent_indexing(
-            sent, self.tokenizer_required, self._unk_id, self.pad_id, self.max_pos
-        )
+        ids, input_mask = self.correct_sent_indexing(sent)
         hidden_states, lex_seq = [], None
         if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings(ids)
