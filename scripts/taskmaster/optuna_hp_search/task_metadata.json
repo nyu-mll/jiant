@@ -82,8 +82,8 @@
     },
     "hellaswag": {
         "task_name": "hellaswag",
-        "albert_batch_size_limit": 4,
-        "roberta_batch_size_limit": 8,
+        "albert_batch_size_limit": 2,
+        "roberta_batch_size_limit": 4,
         "training_size": 39905,
         "optuna_trails": -1,
         "albert_hp": "",
@@ -235,8 +235,8 @@
     },
     "boolq": {
         "task_name": "boolq",
-        "albert_batch_size_limit": 8,
-        "roberta_batch_size_limit": 16,
+        "albert_batch_size_limit": 4,
+        "roberta_batch_size_limit": 8,
         "training_size": 9427,
         "optuna_trails": -1,
         "albert_hp": "",
