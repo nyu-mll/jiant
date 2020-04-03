@@ -55,7 +55,15 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
             "val": os.path.join(path, "valid.txt"),
             "test": os.path.join(path, "test.txt"),
         }
-        self.examples_by_split = {}
+
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for _ in open(split_path))
+        self.example_counts = example_counts
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task
@@ -67,8 +75,7 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
-        for split in self.files_by_split:
-            self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
+        pass
 
     def get_data_iter(self, path):
         """Loading data file and tokenizing the text
@@ -107,21 +114,12 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
         for sent in split:
             yield _make_instance(sent)
 
-    def count_examples(self):
-        """Computes number of samples
-        Assuming every line is one example.
-        """
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in self.examples_by_split[split])
-        self.example_counts = example_counts
-
     def get_split_text(self, split: str):
         """Get split text as iterable of records.
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.examples_by_split[split]
+        return self.get_data_iter(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -130,7 +128,8 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
-            for sent in self.examples_by_split[split]:
+            path = self.files_by_split[split]
+            for sent in self.get_data_iter(path):
                 yield sent
 
 
@@ -289,7 +288,7 @@ class MaskedLanguageModelingTask(Task):
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in self.examples_by_split[split])
+            example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
         self.example_counts = example_counts
 
     def get_split_text(self, split: str):
@@ -297,7 +296,7 @@ class MaskedLanguageModelingTask(Task):
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.examples_by_split[split]
+        return self.get_data_iter(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
