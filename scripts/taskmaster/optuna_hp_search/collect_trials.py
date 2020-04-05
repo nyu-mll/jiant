@@ -11,10 +11,10 @@ RESULT_DIR = "/scratch/hl3236/jiant_results"
 def collect_trails(study_name, input_module):
     storage = "sqlite:///example.db"
     if input_module != "default":
-        stored_name = f"{study_name}_{input_module}"
+        unique_name = f"{study_name}_{input_module}"
     else:
-        stored_name = study_name
-    print(stored_name)
+        unique_name = study_name
+    print(unique_name)
     output = pandas.DataFrame(
         {
             "task": study_name,
@@ -29,11 +29,16 @@ def collect_trails(study_name, input_module):
     )
 
     try:
-        study = optuna.load_study(study_name=stored_name, storage=storage)
+        study = optuna.load_study(study_name=unique_name, storage=storage)
     except Exception:
         return output
     df = study.trials_dataframe()
-    df = df[["number", "value", "user_attrs_batch_size", "user_attrs_lr", "user_attrs_max_epochs"]]
+    try:
+        df = df[
+            ["number", "value", "user_attrs_batch_size", "user_attrs_lr", "user_attrs_max_epochs"]
+        ]
+    except Exception:
+        return output
     df = df.rename(
         columns={
             "user_attrs_batch_size": "batch_size",
@@ -43,8 +48,10 @@ def collect_trails(study_name, input_module):
     )
     df = df.dropna()
     df = df.sort_values(["batch_size", "lr", "max_epochs"])
-    csv_file = os.path.join(RESULT_DIR, "optuna_csv", f"optuna_{study_name}_full.csv")
+    csv_file = os.path.join(RESULT_DIR, "optuna_csv", f"optuna_{unique_name}_full.csv")
     df.to_csv(csv_file, index=False)
+    if len(df) == 0:
+        return output
 
     df_grouped = df.groupby(["batch_size", "lr", "max_epochs"], as_index=False).agg(
         {"value": ["median", "mean", "min", "max", "count"]}
@@ -53,20 +60,26 @@ def collect_trails(study_name, input_module):
     df_grouped = df_grouped.sort_values(["median", "count"], ascending=False)
     df_grouped.reset_index(drop=True, inplace=True)
     print(df_grouped)
-    csv_file = os.path.join(RESULT_DIR, "optuna_csv", f"optuna_{study_name}_agg.csv")
+    csv_file = os.path.join(RESULT_DIR, "optuna_csv", f"optuna_{unique_name}_agg.csv")
     df_grouped.to_csv(csv_file, index=False)
-    if len(df_grouped) > 0:
-        output.n_samples[0] = df_grouped.count[0]
-        output.n_trails[0] = sum(df_grouped.count)
-        output.batch_size[0] = df_grouped.batch_size[0]
-        output.lr[0] = df_grouped.lr[0]
-        output.max_epochs[0] = df_grouped.max_epochs[0]
-        output.median[0] = df_grouped.median[0]
+    output = pandas.DataFrame(
+        {
+            "task": study_name,
+            "n_samples": df_grouped["count"][0],
+            "n_trails": sum(df_grouped["count"]),
+            "batch_size": df_grouped["batch_size"][0],
+            "lr": df_grouped["lr"][0],
+            "max_epochs": df_grouped["max_epochs"][0],
+            "median": df_grouped["median"][0],
+        },
+        index=[study_name],
+    )
     return output
 
 
 def collect_all_trails(input_module):
-    with open("task_metadata.json", "r") as f:
+    metadata_file = os.path.join(os.path.dirname(__file__), "task_metadata.json")
+    with open(metadata_file, "r") as f:
         task_metadata = json.loads(f.read())
 
     results = pandas.concat(

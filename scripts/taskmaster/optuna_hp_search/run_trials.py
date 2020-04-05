@@ -19,13 +19,13 @@ def run_trials(
 ):
     storage = "sqlite:///example.db"
     if input_module != "default":
-        stored_name = f"{study_name}_{input_module}"
+        unique_name = f"{study_name}_{input_module}"
     else:
-        stored_name = study_name
+        unique_name = study_name
         input_module = "roberta-large"
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(
-        study_name=stored_name,
+        study_name=unique_name,
         storage=storage,
         direction="maximize",
         sampler=sampler,
@@ -37,7 +37,7 @@ def run_trials(
     def run_one_trial(trial):
         task = task_metadata[study_name]
         task_name = task["task_name"]
-        exp_name = f"optuna_{stored_name}"
+        exp_name = f"optuna_{unique_name}"
         run_name = f"trial_{trial.number}"
 
         training_size = task["training_size"]
