@@ -1,5 +1,4 @@
 import json
-import math
 
 task_names = [
     "sst",
@@ -58,10 +57,17 @@ def run_batch_size_check(input_module):
 
     for batch_size in [32, 16, 8, 4, 2]:
         for task_name in task_names:
-            val_interval = min(5000, task_metadata[task_name]["training_size"] // batch_size)
-            override = f'"do_pretrain=1, input_module={input_module}, pretrain_tasks={task_name}, target_tasks={task_name}, exp_name=bstest_{task_name}, run_name={task_name}_{batch_size}, batch_size={batch_size}, max_epochs=1, val_interval={val_interval}, delete_checkpoints_when_done=1, max_vals=1, patience=10000"'
+            val_interval = min(10000, task_metadata[task_name]["training_size"] // batch_size)
+            override = (
+                f'"do_pretrain=1, input_module={input_module}, pretrain_tasks={task_name}, '
+                f"target_tasks={task_name}, exp_name=bstest_{task_name}, "
+                f"run_name={task_name}_{batch_size}, batch_size={batch_size}, max_epochs=1, "
+                f"val_interval={val_interval}, delete_checkpoints_when_done=1, max_vals=1, "
+                f'patience=10000"'
+            )
             outputs.append(
-                f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" JIANT_OVERRIDES={override} sbatch ~/jp40.sbatch'
+                f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" '
+                f"JIANT_OVERRIDES={override} sbatch ~/jp40.sbatch"
             )
     return outputs
 
@@ -97,7 +103,9 @@ def run_optuna_trails(input_module):
             if num_trails == 0:
                 continue
             outputs.append(
-                f'PROG="scripts/taskmaster/optuna_hp_search/run_trials" ARGS="{study_name} {gpu_available} {num_trails} {input_module}" sbatch ~/{sbatch}'
+                f'PROG="scripts/taskmaster/optuna_hp_search/run_trials" ARGS="'
+                f"--study-name {study_name} --gpu-available {gpu_available} "
+                f'--num-trails {num_trails} --input_module {input_module}" sbatch ~/{sbatch}'
             )
     return outputs
 
@@ -106,20 +114,14 @@ def collect_optuna_trails(input_module):
     outputs = []
     for study_name, task in task_metadata.items():
         outputs.append(
-            f'PROG="scripts/taskmaster/optuna_hp_search/collect_trials" ARGS="{study_name} {input_module}" sbatch ~/cpu.sbatch'
+            f'PROG="scripts/taskmaster/optuna_hp_search/collect_trials" ARGS="'
+            f'--study-name {study_name} --input_module {input_module}" sbatch ~/cpu.sbatch'
         )
-    return outputs
-
-
-def show_current_trail_count():
-    outputs = []
-    for task_name in task_names:
-        outputs.append(f"tail optuna_{task_name}/results.tsv")
     return outputs
 
 
 outputs = run_optuna_trails("albert-xxlarge-v2")
 
-with open("auto.sh", "w") as f:
+with open("submit.sh", "w") as f:
     for line in outputs:
         f.write(line + "\n")

@@ -1,19 +1,28 @@
 import optuna
-import sys
 import json
 import subprocess
 import os
+import argparse
 
 RESULT_DIR = "/scratch/hl3236/jiant_results/"
 FAILED_RUN_DEFAULT = None
 
 
-def run_trials(study_name, gpu_available, n_trials, input_module):
+def run_trials(
+    study_name,
+    gpu_available,
+    n_trials,
+    input_module,
+    max_epochs_override,
+    lr_override,
+    batch_size_override,
+):
     storage = "sqlite:///example.db"
-    if input_module != "None":
+    if input_module != "default":
         stored_name = f"{study_name}_{input_module}"
     else:
         stored_name = study_name
+        input_module = "roberta-large"
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(
         study_name=stored_name,
@@ -28,7 +37,7 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
     def run_one_trial(trial):
         task = task_metadata[study_name]
         task_name = task["task_name"]
-        exp_name = f"optuna_{study_name}_{input_module}"
+        exp_name = f"optuna_{stored_name}"
         run_name = f"trial_{trial.number}"
 
         training_size = task["training_size"]
@@ -54,9 +63,18 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
             batch_size_candidate = [16, 32]
             lr_candidates = [1e-5, 2e-5, 3e-5]
 
-        max_epochs = trial.suggest_categorical("epochs", max_epochs_candidates)
-        lr = trial.suggest_categorical("lr", lr_candidates)
-        batch_size = trial.suggest_categorical("bs", batch_size_candidate)
+        if max_epochs_override < 0:
+            max_epochs = trial.suggest_categorical("epochs", max_epochs_candidates)
+        else:
+            max_epochs = max_epochs_override
+        if lr_override < 0:
+            lr = trial.suggest_categorical("lr", lr_candidates)
+        else:
+            lr = lr_override
+        if batch_size_override < 0:
+            batch_size = trial.suggest_categorical("bs", batch_size_candidate)
+        else:
+            batch_size = batch_size_override
         batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
         gpu_needed = batch_size // batch_size_limit
         if gpu_needed <= gpu_available:
@@ -72,8 +90,7 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
         overrides = []
         overrides.append(f"exp_name={exp_name}")
         overrides.append(f"run_name={run_name}")
-        if input_module is not None:
-            overrides.append(f"input_module={input_module}")
+        overrides.append(f"input_module={input_module}")
         overrides.append(f"pretrain_tasks=none")
         overrides.append(f"target_tasks={task_name}")
         overrides.append("do_target_task_training=1")
@@ -118,5 +135,27 @@ def run_trials(study_name, gpu_available, n_trials, input_module):
 
 
 if __name__ == "__main__":
-    # python run_trials study_name gpu_available n_trials
-    run_trials(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])
+    parser = argparse.ArgumentParser(description="Run Optuna trails")
+    parser.add_argument("--study-name", type=str)
+    parser.add_argument("--gpu-available", type=int)
+    parser.add_argument("--n-trails", type=int)
+    parser.add_argument(
+        "--input-module",
+        type=str,
+        default="default",
+        choices=["default", "roberta-large", "albert-xxlarge-v2"],
+    )
+    parser.add_argument("--max-epochs", type=int, default=-1)
+    parser.add_argument("--lr", type=float, default=-1.0)
+    parser.add_argument("--batch-size", type=int, default=-1)
+
+    args = parser.parse_args()
+    run_trials(
+        args.study_name,
+        args.gpu_available,
+        args.n_trials,
+        args.input_module,
+        args.max_epochs,
+        args.lr,
+        args.batch_size,
+    )
