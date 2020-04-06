@@ -218,8 +218,7 @@ class MaskedLanguageModelingTask(Task):
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
-        for split in self.files_by_split:
-            self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
+        pass
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task
@@ -305,5 +304,5 @@ class MaskedLanguageModelingTask(Task):
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
-            for sent in self.examples_by_split[split]:
+            for sent in self.get_data_iter(self.files_by_split[split]):
                 yield sent
