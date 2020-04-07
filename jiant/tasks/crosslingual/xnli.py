@@ -42,17 +42,10 @@ class BaseXNLITask(PairClassificationTask):
 
     def load_data(self):
         """ Process the datasets located at path. """
+        self.val_data_text = self._load_jsonl(os.path.join(self.path, "xnli.dev.jsonl"))
+        self.test_data_text = self._load_jsonl(os.path.join(self.path, "xnli.test.jsonl"))
 
-        self.train_data_text = self._load_jsonl(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = self._load_jsonl(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = self._load_jsonl(os.path.join(self.path, "test.jsonl"))
-
-        self.sentences = (
-            self.train_data_text[0]
-            + self.train_data_text[1]
-            + self.val_data_text[0]
-            + self.val_data_text[1]
-        )
+        self.sentences = self.val_data_text[0] + self.val_data_text[1]
         log.info(f"\tFinished loading XNLI ({self.LANGUAGE})")
 
 
