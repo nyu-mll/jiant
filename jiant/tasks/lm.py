@@ -189,8 +189,8 @@ class MaskedLanguageModelingTask(Task):
         min_seq_len: (int) minimum sequence length
         files_by_split: (dict) files for three data split (train, val, test)
     We are currently using an unpreprocessed version of the Wikipedia corpus
-    that consists of 5% of the data. Please reach out to jiant admin if you 
-    would like access to this dataset.
+    that consists of 5% of the data. You can generate the data using code from
+    https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch/LanguageModeling/BERT/data.
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
@@ -214,7 +214,6 @@ class MaskedLanguageModelingTask(Task):
             "val": os.path.join(path, "valid.txt"),
             "test": os.path.join(path, "test.txt"),
         }
-        self.examples_by_split = {}
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
@@ -241,7 +240,6 @@ class MaskedLanguageModelingTask(Task):
         return labels
 
     def update_metrics(self, out, batch=None):
-        # self.scorer1(logits,labels)
         self.scorer1(out["loss"].mean())
         return
 

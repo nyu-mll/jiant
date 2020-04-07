@@ -1176,24 +1176,9 @@ class MultiTaskModel(nn.Module):
             pass
         return out
 
-    def _masked_lm_forward(self, batch, task, predict):
-        """
-        We currently only support RoBERTa-style dynamic masking, with the exact 
-        setup and parameters as RoBERTa. 
-        """
+    def mlm_dynamic_masking(self, inputs, labels, mask_idx, tokenizer_name):
         mlm_probability = 0.15
-        out = {}
-        sent_encoder = self.sent_encoder
-        tokenizer_name = self.sent_encoder._text_field_embedder.input_module
-        vocab_size = (
-            self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
-        )
         tokenizer = get_tokenizer(tokenizer_name)
-        input_key = self.sent_encoder._text_field_embedder.tokenizer_required
-        mask_idx = self.sent_encoder._text_field_embedder._mask_id
-        b_size, seq_len = batch["targs"].size()
-        inputs = batch["input"][input_key]
-        labels = batch["targs"]
         # Masking code from https://github.com/huggingface/transformers/blob/master/examples/run_language_modeling.py
         probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
         padding_mask = labels.eq(0)
@@ -1207,7 +1192,7 @@ class MultiTaskModel(nn.Module):
             {tokenizer_name: labels}
         )
         # We only compute loss on masked tokens
-        # nn.CrossEntropy ignores the idices with value = -100 by default.
+        # nn.CrossEntropy ignores the indices with value = -100 by default.
         # Therefore, we replace non-masked indices with -100 so that they get ignored
         # in loss computation.
         labels[~masked_indices] = -100
@@ -1228,6 +1213,23 @@ class MultiTaskModel(nn.Module):
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
         inputs[indices_random] = random_words[indices_random]
+        return inputs, labels
+
+    def _masked_lm_forward(self, batch, task, predict):
+        """
+        We currently only support RoBERTa-style dynamic masking, with the exact 
+        setup and parameters as RoBERTa. 
+        """
+        out = {}
+        tokenizer_name = self.sent_encoder._text_field_embedder.input_module
+        text_embedder = self.sent_encoder._text_field_embedder
+        vocab_size = text_embedder.model.embeddings.word_embeddings.num_embeddings
+        input_key = text_embedder.tokenizer_required
+        mask_idx = text_embedder._mask_id
+        b_size, seq_len = batch["targs"].size()
+        inputs = batch["input"][input_key]
+        labels = batch["targs"]
+        inputs, labels = self.mlm_dynamic_masking(inputs, labels, mask_idx, tokenizer_name)
         batch["input"][input_key] = inputs
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
