@@ -44,3 +44,4 @@ dependencies:
         # directly requires 1.0 to support XLNet and WWM-BERT.
         # This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
         - transformers==2.6.0
+        - tokenizers==0.5.2
