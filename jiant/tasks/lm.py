@@ -287,7 +287,7 @@ class MaskedLanguageModelingTask(Task):
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
-        self.example_counts = example_counts
+        self.example_counts = example_countschec
 
     def get_split_text(self, split: str):
         """Get split text as iterable of records.
@@ -320,13 +320,16 @@ class MaskedLanguageModelingTask(Task):
             device=inputs.device, dtype=torch.uint8
         )
         tokenizer_name = sent_encoder._text_field_embedder.tokenizer_required
-        labels, _ = sent_encoder._text_field_embedder.correct_sent_indexing(
+        labels_after_shift, _ = sent_encoder._text_field_embedder.correct_sent_indexing(
             {tokenizer_name: labels}
         )
         # We only compute loss on masked tokens
         # nn.CrossEntropy ignores the indices with value = -100 by default.
         # Therefore, we replace non-masked indices with -100 so that they get ignored
         # in loss computation.
+        import copy
+
+        labels = copy.deepcopy(labels_after_shift)
         labels[~masked_indices] = -100
 
         # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
@@ -345,4 +348,4 @@ class MaskedLanguageModelingTask(Task):
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
         inputs[indices_random] = random_words[indices_random]
-        return inputs, labels, indices_replaced, indices_random
+        return inputs, labels, indices_replaced, indices_random, masked_indices, labels_after_shift

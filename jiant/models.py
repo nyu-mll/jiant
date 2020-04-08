@@ -1190,7 +1190,7 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
         labels = batch["targs"]
-        inputs, labels, _, _ = task.mlm_dynamic_masking(
+        inputs, labels, _, _, _, _ = task.mlm_dynamic_masking(
             inputs, labels, mask_idx, tokenizer_name, self.sent_encoder
         )
         batch["input"][input_key] = inputs
