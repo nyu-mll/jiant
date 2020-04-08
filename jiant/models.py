@@ -1176,45 +1176,6 @@ class MultiTaskModel(nn.Module):
             pass
         return out
 
-    def mlm_dynamic_masking(self, inputs, labels, mask_idx, tokenizer_name):
-        mlm_probability = 0.15
-        tokenizer = get_tokenizer(tokenizer_name)
-        # Masking code from https://github.com/huggingface/transformers/blob/master/examples/run_language_modeling.py
-        probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
-        padding_mask = labels.eq(0)
-        probability_matrix.masked_fill_(padding_mask, value=0.0)
-
-        masked_indices = torch.bernoulli(probability_matrix).to(
-            device=inputs.device, dtype=torch.uint8
-        )
-        tokenizer_name = self.sent_encoder._text_field_embedder.tokenizer_required
-        labels, _ = self.sent_encoder._text_field_embedder.correct_sent_indexing(
-            {tokenizer_name: labels}
-        )
-        # We only compute loss on masked tokens
-        # nn.CrossEntropy ignores the indices with value = -100 by default.
-        # Therefore, we replace non-masked indices with -100 so that they get ignored
-        # in loss computation.
-        labels[~masked_indices] = -100
-
-        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.8)).to(
-            device=inputs.device, dtype=torch.uint8
-        )
-        indices_replaced = bernoulli_mask & masked_indices
-        inputs[indices_replaced] = mask_idx
-
-        # 10% of the time, we replace masked input tokens with random word
-        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.5)).to(
-            device=inputs.device, dtype=torch.uint8
-        )
-        indices_random = bernoulli_mask & masked_indices & ~indices_replaced
-        random_words = torch.randint(
-            len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
-        )
-        inputs[indices_random] = random_words[indices_random]
-        return inputs, labels
-
     def _masked_lm_forward(self, batch, task, predict):
         """
         We currently only support RoBERTa-style dynamic masking, with the exact 
@@ -1229,7 +1190,9 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
         labels = batch["targs"]
-        inputs, labels = self.mlm_dynamic_masking(inputs, labels, mask_idx, tokenizer_name)
+        inputs, labels, _, _ = task.mlm_dynamic_masking(
+            inputs, labels, mask_idx, tokenizer_name, self.sent_encoder
+        )
         batch["input"][input_key] = inputs
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)

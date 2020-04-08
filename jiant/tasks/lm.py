@@ -1,6 +1,7 @@
 """Task definitions for language modeling tasks."""
 import math
 import os
+import torch
 from typing import Iterable, Sequence, Type
 import random
 
@@ -304,3 +305,44 @@ class MaskedLanguageModelingTask(Task):
                 continue
             for sent in self.get_data_iter(self.files_by_split[split]):
                 yield sent
+
+    def mlm_dynamic_masking(self, inputs, labels, mask_idx, tokenizer_name, sent_encoder):
+        mlm_probability = 0.15
+        # We add 2 because we shift the inputs back by 2 in the forward function in sent encoder.
+        mask_idx += 2
+        tokenizer = get_tokenizer(tokenizer_name)
+        # Masking code from https://github.com/huggingface/transformers/blob/master/examples/run_language_modeling.py
+        probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
+        padding_mask = labels.eq(0)
+        probability_matrix.masked_fill_(padding_mask, value=0.0)
+
+        masked_indices = torch.bernoulli(probability_matrix).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        tokenizer_name = sent_encoder._text_field_embedder.tokenizer_required
+        labels, _ = sent_encoder._text_field_embedder.correct_sent_indexing(
+            {tokenizer_name: labels}
+        )
+        # We only compute loss on masked tokens
+        # nn.CrossEntropy ignores the indices with value = -100 by default.
+        # Therefore, we replace non-masked indices with -100 so that they get ignored
+        # in loss computation.
+        labels[~masked_indices] = -100
+
+        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.8)).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        indices_replaced = bernoulli_mask & masked_indices
+        inputs[indices_replaced] = mask_idx
+
+        # 10% of the time, we replace masked input tokens with random word
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.5)).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        indices_random = bernoulli_mask & masked_indices & ~indices_replaced
+        random_words = torch.randint(
+            len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
+        )
+        inputs[indices_random] = random_words[indices_random]
+        return inputs, labels, indices_replaced, indices_random
