@@ -1,0 +1,32 @@
+head 8511214.out
+head 8511215.out
+head 8511216.out
+head 8511220.out
+head 8511221.out
+head 8511222.out
+
+
+edges-nonterminal-ontonotes
+edges-pos-ontonotes
+edges-rel-semeval
+edges-coref-ontonotes
+edges-srl-ontonotes
+edges-ner-ontonotes
+
+head 8144593.out
+head 8144588.out
+head 8144462.out
+head 8327778.out
+head 8327780.out
+head 8327796.out
+head 8327804.out
+head 8327805.out
+
+
+edges-srl-ontonotes
+qamr
+sst
+record
+qasrl
+
+

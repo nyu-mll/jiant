@@ -180,7 +180,7 @@ class WikiText103LMTask(WikiTextLMTask):
         }
 
 
-@register_task("mlm", rel_path="WikiText103/")
+@register_task("mlm", rel_path="wikipedia_corpus_small")
 class MaskedLanguageModelingTask(LanguageModelingTask):
     """
     Masked language modeling task on Wikipedia dataset
@@ -194,9 +194,9 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
         super().__init__(path, *args, **kw)
         self._label_namespace = "mlm"
         self.files_by_split = {
-            "train": os.path.join(path, "train.sentences.txt"),
-            "val": os.path.join(path, "valid.sentences.txt"),
-            "test": os.path.join(path, "test.sentences.txt"),
+            "train": os.path.join(path, "train.txt"),
+            "val": os.path.join(path, "valid.txt"),
+            "test": os.path.join(path, "test.txt"),
         }
 
     def get_all_labels(self):
@@ -256,7 +256,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
             yield _make_instance(sent)
 
 
-@register_task("sop", rel_path="WikiText103")
+@register_task("sop", rel_path="wikipedia_corpus_small")
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction """
 

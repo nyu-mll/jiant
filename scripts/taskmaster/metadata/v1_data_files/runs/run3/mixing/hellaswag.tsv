@@ -1,0 +1,17 @@
+edges-ner-ontonotes_mixrun3	micro_avg: 0.000, macro_avg: 0.964, edges-ner-ontonotes_mcc: 0.962, edges-ner-ontonotes_acc: 0.951, edges-ner-ontonotes_precision: 0.970, edges-ner-ontonotes_recall: 0.959, edges-ner-ontonotes_f1: 0.964
+edges-srl-ontonotes_mixrun3	micro_avg: 0.000, macro_avg: 0.908, edges-srl-ontonotes_mcc: 0.907, edges-srl-ontonotes_acc: 0.876, edges-srl-ontonotes_precision: 0.931, edges-srl-ontonotes_recall: 0.885, edges-srl-ontonotes_f1: 0.908
+edges-coref-ontonotes_mixrun3	micro_avg: 0.000, macro_avg: 0.961, edges-coref-ontonotes_mcc: 0.922, edges-coref-ontonotes_acc: 0.960, edges-coref-ontonotes_precision: 0.961, edges-coref-ontonotes_recall: 0.961, edges-coref-ontonotes_f1: 0.961
+edges-spr1_mixrun3	micro_avg: 0.000, macro_avg: 0.847, edges-spr1_mcc: 0.779, edges-spr1_acc: 0.310, edges-spr1_precision: 0.855, edges-spr1_recall: 0.839, edges-spr1_f1: 0.847
+edges-spr2_mixrun3	micro_avg: 0.000, macro_avg: 0.835, edges-spr2_mcc: 0.739, edges-spr2_acc: 0.097, edges-spr2_precision: 0.848, edges-spr2_recall: 0.822, edges-spr2_f1: 0.835
+edges-dpr_mixrun3	micro_avg: 0.000, macro_avg: 0.692, edges-dpr_mcc: 0.380, edges-dpr_acc: 0.675, edges-dpr_precision: 0.688, edges-dpr_recall: 0.697, edges-dpr_f1: 0.692
+edges-rel-semeval_mixrun3	micro_avg: 0.000, macro_avg: 0.775, edges-rel-semeval_mcc: 0.771, edges-rel-semeval_acc: 0.672, edges-rel-semeval_precision: 0.885, edges-rel-semeval_recall: 0.689, edges-rel-semeval_f1: 0.775
+se-probing-word-content_mixrun3	micro_avg: 0.681, macro_avg: 0.681, se-probing-word-content_accuracy: 0.681
+se-probing-tree-depth_mixrun3	micro_avg: 0.374, macro_avg: 0.374, se-probing-tree-depth_accuracy: 0.374
+se-probing-top-constituents_mixrun3	micro_avg: 0.738, macro_avg: 0.738, se-probing-top-constituents_accuracy: 0.738
+se-probing-bigram-shift_mixrun3	micro_avg: 0.886, macro_avg: 0.886, se-probing-bigram-shift_accuracy: 0.886
+se-probing-past-present_mixrun3	micro_avg: 0.835, macro_avg: 0.835, se-probing-past-present_accuracy: 0.835
+se-probing-subj-number_mixrun3	micro_avg: 0.858, macro_avg: 0.858, se-probing-subj-number_accuracy: 0.858
+se-probing-obj-number_mixrun3	micro_avg: 0.806, macro_avg: 0.806, se-probing-obj-number_accuracy: 0.806
+se-probing-odd-man-out_mixrun3	micro_avg: 0.717, macro_avg: 0.717, se-probing-odd-man-out_accuracy: 0.717
+se-probing-coordination-inversion_mixrun3	micro_avg: 0.650, macro_avg: 0.650, se-probing-coordination-inversion_accuracy: 0.650
+edges-pos-ontonotes_mixrun3	micro_avg: 0.000, macro_avg: 0.981, edges-pos-ontonotes_mcc: 0.980, edges-pos-ontonotes_acc: 0.978, edges-pos-ontonotes_precision: 0.980, edges-pos-ontonotes_recall: 0.982, edges-pos-ontonotes_f1: 0.981

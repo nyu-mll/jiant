@@ -1,0 +1,25 @@
+edges-ner-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.969, edges-ner-ontonotes_mcc: 0.967, edges-ner-ontonotes_acc: 0.966, edges-ner-ontonotes_precision: 0.971, edges-ner-ontonotes_recall: 0.967, edges-ner-ontonotes_f1: 0.969
+edges-spr2_run2	micro_avg: 0.000, macro_avg: 0.835, edges-spr2_mcc: 0.740, edges-spr2_acc: 0.114, edges-spr2_precision: 0.847, edges-spr2_recall: 0.824, edges-spr2_f1: 0.835
+edges-dpr_run2	micro_avg: 0.000, macro_avg: 0.900, edges-dpr_mcc: 0.799, edges-dpr_acc: 0.900, edges-dpr_precision: 0.900, edges-dpr_recall: 0.900, edges-dpr_f1: 0.900
+edges-spr1_run2	micro_avg: 0.000, macro_avg: 0.875, edges-spr1_mcc: 0.819, edges-spr1_acc: 0.398, edges-spr1_precision: 0.872, edges-spr1_recall: 0.878, edges-spr1_f1: 0.875
+edges-rel-semeval_run2	micro_avg: 0.000, macro_avg: 0.857, edges-rel-semeval_mcc: 0.850, edges-rel-semeval_acc: 0.833, edges-rel-semeval_precision: 0.879, edges-rel-semeval_recall: 0.837, edges-rel-semeval_f1: 0.857
+se-probing-tree-depth_run2	micro_avg: 0.757, macro_avg: 0.757, se-probing-tree-depth_accuracy: 0.757
+se-probing-top-constituents_run2	micro_avg: 0.932, macro_avg: 0.932, se-probing-top-constituents_accuracy: 0.932
+se-probing-word-content_run2	micro_avg: 0.998, macro_avg: 0.998, se-probing-word-content_accuracy: 0.998
+se-probing-bigram-shift_run2	micro_avg: 0.979, macro_avg: 0.979, se-probing-bigram-shift_accuracy: 0.979
+edges-coref-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.969, edges-coref-ontonotes_mcc: 0.939, edges-coref-ontonotes_acc: 0.969, edges-coref-ontonotes_precision: 0.969, edges-coref-ontonotes_recall: 0.969, edges-coref-ontonotes_f1: 0.969
+se-probing-past-present_run2	micro_avg: 0.895, macro_avg: 0.895, se-probing-past-present_accuracy: 0.895
+acceptability-wh_run2	micro_avg: 0.983, macro_avg: 0.983, acceptability-wh_acc_f1: 0.983, acceptability-wh_accuracy: 0.983, acceptability-wh_f1: 0.983
+acceptability-conj_run2	micro_avg: 0.888, macro_avg: 0.888, acceptability-conj_acc_f1: 0.888, acceptability-conj_accuracy: 0.891, acceptability-conj_f1: 0.884
+acceptability-def_run2	micro_avg: 0.597, macro_avg: 0.597, acceptability-def_acc_f1: 0.597, acceptability-def_accuracy: 0.519, acceptability-def_f1: 0.675
+acceptability-eos_run2	micro_avg: 0.979, macro_avg: 0.979, acceptability-eos_acc_f1: 0.979, acceptability-eos_accuracy: 0.979, acceptability-eos_f1: 0.980
+se-probing-subj-number_run2	micro_avg: 0.936, macro_avg: 0.936, se-probing-subj-number_accuracy: 0.936
+edges-srl-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.938, edges-srl-ontonotes_mcc: 0.937, edges-srl-ontonotes_acc: 0.926, edges-srl-ontonotes_precision: 0.947, edges-srl-ontonotes_recall: 0.929, edges-srl-ontonotes_f1: 0.938
+se-probing-obj-number_run2	micro_avg: 0.952, macro_avg: 0.952, se-probing-obj-number_accuracy: 0.952
+se-probing-odd-man-out_run2	micro_avg: 0.764, macro_avg: 0.764, se-probing-odd-man-out_accuracy: 0.764
+cola_run2	micro_avg: 0.682, macro_avg: 0.682, cola_mcc: 0.682, cola_accuracy: 0.868
+se-probing-sentence-length_run2	micro_avg: 0.459, macro_avg: 0.459, se-probing-sentence-length_accuracy: 0.459
+edges-dep-ud-ewt_run2	micro_avg: 0.000, macro_avg: 0.959, edges-dep-ud-ewt_mcc: 0.958, edges-dep-ud-ewt_acc: 0.953, edges-dep-ud-ewt_precision: 0.964, edges-dep-ud-ewt_recall: 0.955, edges-dep-ud-ewt_f1: 0.959
+se-probing-coordination-inversion_run2	micro_avg: 0.879, macro_avg: 0.879, se-probing-coordination-inversion_accuracy: 0.879
+edges-nonterminal-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.881, edges-nonterminal-ontonotes_mcc: 0.877, edges-nonterminal-ontonotes_acc: 0.818, edges-nonterminal-ontonotes_precision: 0.880, edges-nonterminal-ontonotes_recall: 0.883, edges-nonterminal-ontonotes_f1: 0.881
+edges-pos-ontonotes_run2	micro_avg: 0.000, macro_avg: 0.982, edges-pos-ontonotes_mcc: 0.982, edges-pos-ontonotes_acc: 0.981, edges-pos-ontonotes_precision: 0.982, edges-pos-ontonotes_recall: 0.982, edges-pos-ontonotes_f1: 0.982
