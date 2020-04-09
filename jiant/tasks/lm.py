@@ -4,6 +4,7 @@ import os
 import torch
 from typing import Iterable, Sequence, Type
 import random
+import copy
 
 # Fields for instance processing
 from allennlp.data import Instance
@@ -287,7 +288,7 @@ class MaskedLanguageModelingTask(Task):
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
-        self.example_counts = example_countschec
+        self.example_counts = example_counts
 
     def get_split_text(self, split: str):
         """Get split text as iterable of records.
@@ -307,6 +308,26 @@ class MaskedLanguageModelingTask(Task):
                 yield sent
 
     def mlm_dynamic_masking(self, inputs, labels, mask_idx, tokenizer_name, sent_encoder):
+        """
+        This function does dynamic masking as per the RoBERTa paper. Please refer to https://arxiv.org/abs/1907.11692
+        for more details.
+        Parameters
+        ----------
+        inputs: torch.Tensor(type=long),
+        labels torch.Tensor(type=long),
+        mask_idx: int
+        tokenizer_name: str,
+        sent_encoder: SentenceEncoder
+
+        Returns
+        -------
+        inputs: input after dynamic masking,
+        labels: labels after masking with -100,
+        indices_replaced: (testing purposes) indices that will be replaced by mask_idx,
+        indices_random: (testing purposes) indices that will be replaced by a random word,
+        masked_indices: (testing purposes) indices that the model will have to predict,
+        labels_after_shift: (testing purposes) labels after shifting but before masking
+        """
         mlm_probability = 0.15
         # We add 2 because we shift the inputs back by 2 in the forward function in sent encoder.
         mask_idx += 2
@@ -327,8 +348,6 @@ class MaskedLanguageModelingTask(Task):
         # nn.CrossEntropy ignores the indices with value = -100 by default.
         # Therefore, we replace non-masked indices with -100 so that they get ignored
         # in loss computation.
-        import copy
-
         labels = copy.deepcopy(labels_after_shift)
         labels[~masked_indices] = -100
 
