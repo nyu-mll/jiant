@@ -191,8 +191,8 @@ class MaskedLanguageModelingTask(Task):
         min_seq_len: (int) minimum sequence length
         files_by_split: (dict) files for three data split (train, val, test)
     We are currently using an unpreprocessed version of the Wikipedia corpus
-    that consists of 5% of the data. You can generate the data using code from
-    https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch/LanguageModeling/BERT/data.
+    that consists of 5% of the data. You can generate the data by following the
+    instructions from jiant/scripts/mlm. 
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
