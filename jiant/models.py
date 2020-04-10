@@ -65,7 +65,7 @@ from jiant.tasks.tasks import (
     WiCTask,
     MRPCTask,
     QQPTask,
-    SentenceOrderTask
+    SentenceOrderTask,
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -181,7 +181,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             vocab,
             embedder,
             args.n_layers_highway,
-            phrase_layer,
+            bilm,
             skip_embs=args.skip_embs,
             dropout=args.dropout,
             sep_embs_for_skip=args.sep_embs_for_skip,
@@ -1123,12 +1123,6 @@ class MultiTaskModel(nn.Module):
             # such as word boundaries
             batch_mask = batch["mask"][:, :seq_len]
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
-            """
-            print("seq_len: ", seq_len)
-            print("targs before masking: ", targs)
-            print("keep size: ", keep_idxs.size())
-            print("targs size: ", targs.size())
-            """
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
 
