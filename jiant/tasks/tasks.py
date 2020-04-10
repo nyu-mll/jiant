@@ -4,6 +4,7 @@ import json
 import logging as log
 import os
 from typing import Any, Dict, Iterable, List, Sequence, Type
+import random 
 
 import numpy as np
 import pandas as pd
@@ -3734,7 +3735,7 @@ class WinograndeTask(MultipleChoiceTask):
         return {"accuracy": acc}
 
 
-@register_task("sop", rel_path="WikiText103")
+@register_task("sop", rel_path="wikipedia_corpus_small")
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction """
 
@@ -3758,11 +3759,14 @@ class SentenceOrderTask(PairClassificationTask):
         Args:
             path: (str) data file path
         """
-        import csv
-
         moses_tokenizer = get_tokenizer("MosesTokenizer")
-        with open(path) as txt_fh:
+        count = 0 
+        with open(path, encoding="utf-8") as txt_fh:
+                 
             for row in txt_fh:
+                count += 1
+                if count == 10:
+                    break
                 toks = row.strip()
                 sentences = row.split(".")
                 if len(sentences) <= 1:
@@ -3777,15 +3781,11 @@ class SentenceOrderTask(PairClassificationTask):
                             is_right_order = 0
                             sent_a = sentences[i + 1]
                             sent_b = sentences[i]
-                        sent_a_untokenized_toks = moses_tokenizer.detokenize(sent_a)
-                        sent_b_untokenized_toks = moses_tokenizer.detokenize(sent_b)
-                        sent_a_toks = "".join(sent_a_untokenized_toks)
-                        sent_b_toks = "".join(sent_b_untokenized_toks)
                         sent_a_processed = tokenize_and_truncate(
-                            self._tokenizer_name, sent_a_toks, self.max_seq_len // 2
+                            self._tokenizer_name, sent_a, self.max_seq_len // 2
                         )
                         sent_b_processed = tokenize_and_truncate(
-                            self._tokenizer_name, sent_b_toks, self.max_seq_len // 2
+                            self._tokenizer_name, sent_b, self.max_seq_len // 2
                         )
                         yield (sent_a_processed, sent_b_processed, is_right_order)
 
@@ -3825,8 +3825,33 @@ class SentenceOrderTask(PairClassificationTask):
                 label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
                 d = {"input1": inp1, "input2": inp2, "targs": label}
             return Instance(d)
-
         for sent in split:
             yield _make_instance(sent)
+
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
+        self.example_counts = example_counts
+
+    def get_split_text(self, split: str):
+        """Get split text as iterable of records.
+        Args:
+            split: (str) should be one of 'train', 'val', or 'test'.
+        """
+        return self.get_data_iter(self.files_by_split[split])
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """Yield sentences, used to compute vocabulary.
+        """
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
             for sent in self.get_data_iter(self.files_by_split[split]):
-                yield sent
+                yield sent[0]
+                yield sent[1]
+
