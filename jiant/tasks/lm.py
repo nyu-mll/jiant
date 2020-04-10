@@ -1,8 +1,13 @@
 """Task definitions for language modeling tasks."""
 import math
 import os
+import torch
 from typing import Iterable, Sequence, Type
 import random
+<<<<<<< HEAD
+=======
+import copy
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
 
 # Fields for instance processing
 from allennlp.data import Instance
@@ -12,6 +17,7 @@ from allennlp.data.fields import SequenceLabelField, LabelField
 
 from jiant.utils.data_loaders import tokenize_and_truncate, get_tokenizer
 from jiant.tasks.registry import register_task
+from jiant.tasks.tasks import Task
 from jiant.tasks.tasks import (
     UNK_TOK_ALLENNLP,
     UNK_TOK_ATOMIC,
@@ -23,7 +29,7 @@ from jiant.tasks.tasks import (
 from transformers import XLMRobertaTokenizer
 
 
-class LanguageModelingTask(SequenceGenerationTask):
+class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
     See base class: SequenceGenerationTask
     Attributes:
@@ -135,9 +141,9 @@ class LanguageModelingTask(SequenceGenerationTask):
 
 # TODO: restructure LM task hierarchy
 @register_task("bwb", rel_path="BWB/")
-class WikiTextLMTask(LanguageModelingTask):
+class WikiTextLMTask(AutoregressiveLanguageModelingTask):
     """ Language modeling on a Wikitext dataset
-    See base class: LanguageModelingTask
+    See base class: AutoregressiveLanguageModelingTask
     """
 
     def get_data_iter(self, path):
@@ -180,24 +186,53 @@ class WikiText103LMTask(WikiTextLMTask):
         }
 
 
-@register_task("mlm", rel_path="WikiText103/")
-class MaskedLanguageModelingTask(LanguageModelingTask):
+
+@register_task("wikipedia_corpus_mlm", rel_path="wikipedia_corpus_small/")
+class MaskedLanguageModelingTask(Task):
     """
     Masked language modeling task on Wikipedia dataset
     Attributes:
         max_seq_len: (int) maximum sequence length
         min_seq_len: (int) minimum sequence length
-        files_by_split: (dict) files for three data splits (train, val, test)
+        files_by_split: (dict) files for three data split (train, val, test)
+    We are currently using an unpreprocessed version of the Wikipedia corpus
+    that consists of 5% of the data. You can generate the data by following the
+    instructions from jiant/scripts/mlm.
     """
 
-    def __init__(self, path, *args, **kw):
-        super().__init__(path, *args, **kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        """Init class
+        Args:
+            path: (str) path that the data files are stored
+            max_seq_len: (int) maximum length of one sequence
+            name: (str) task name
+        """
+        super().__init__(name, **kw)
+        self.scorer1 = Average()
+        self.scorer2 = None
         self._label_namespace = "mlm"
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.max_seq_len = max_seq_len
+        self.min_seq_len = 0
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
         self.files_by_split = {
-            "train": os.path.join(path, "train.sentences.txt"),
-            "val": os.path.join(path, "valid.sentences.txt"),
-            "test": os.path.join(path, "test.sentences.txt"),
+            "train": os.path.join(path, "train.txt"),
+            "val": os.path.join(path, "valid.txt"),
+            "test": os.path.join(path, "test.txt"),
         }
+
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task
+        Args:
+            reset: (boolean) reset any accumulators or internal state
+        """
+        nll = self.scorer1.get_metric(reset)
+        return {"perplexity": math.exp(nll)}
 
     def get_all_labels(self):
         """
@@ -220,22 +255,17 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
         Args:
             path: (str) data file path
         """
-        import csv
-
-        f = open(path, "r", encoding="utf-8")
-        reader = csv.reader(f)
-        text = list(reader)
-        moses_tokenizer = get_tokenizer("MosesTokenizer")
-        for i in range(len(text)):
-            row = text[i]
-            untokenized_toks = moses_tokenizer.detokenize(row)
-            toks = "".join(untokenized_toks)
-            yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+        with open(path, "r", encoding="utf-8") as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if not toks:
+                    continue
+                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """Process a masked language modeling split by indexing and creating fields.
+        """Process a language modeling split by indexing and creating fields.
         Args:
             split: (list) a single list of sentences
             indexers: (Indexer object) indexer to index input words
@@ -243,6 +273,7 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
 
         def _make_instance(sent_):
             sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
+
             input_sent = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": input_sent,
@@ -255,69 +286,13 @@ class MaskedLanguageModelingTask(LanguageModelingTask):
         for sent in split:
             yield _make_instance(sent)
 
-
-@register_task("sop", rel_path="WikiText103")
-class SentenceOrderTask(PairClassificationTask):
-    """ Task class for Sentence Order Prediction """
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        """ Do stuff """
-        super(SentenceOrderTask, self).__init__(name, n_classes=2, **kw)
-        self.path = path
-        self.max_seq_len = max_seq_len
-
-        self.train_data_text = None
-        self.val_data_text = None
-        self.test_data_text = None
-        self.files_by_split = {
-            "train": os.path.join(path, "train.txt"),
-            "val": os.path.join(path, "valid.txt"),
-            "test": os.path.join(path, "test.txt"),
-        }
-
-    def get_data_iter(self, path):
-        """Loading data file and tokenizing the text
-        Args:
-            path: (str) data file path
-        """
-        import csv
-
-        moses_tokenizer = get_tokenizer("MosesTokenizer")
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                sentences = row.split(".")
-                if len(sentences) <= 1:
-                    continue
-                else:
-                    for i in range(len(sentences) - 1):
-                        if random.uniform(0, 1) > 0.5:
-                            is_right_order = 1
-                            sent_a = sentences[i]
-                            sent_b = sentences[i + 1]
-                        else:
-                            is_right_order = 0
-                            sent_a = sentences[i + 1]
-                            sent_b = sentences[i]
-                        sent_a_untokenized_toks = moses_tokenizer.detokenize(sent_a)
-                        sent_b_untokenized_toks = moses_tokenizer.detokenize(sent_b)
-                        sent_a_toks = "".join(sent_a_untokenized_toks)
-                        sent_b_toks = "".join(sent_b_untokenized_toks)
-                        sent_a_processed = tokenize_and_truncate(
-                            self._tokenizer_name, sent_a_toks, self.max_seq_len // 2
-                        )
-                        sent_b_processed = tokenize_and_truncate(
-                            self._tokenizer_name, sent_b_toks, self.max_seq_len // 2
-                        )
-                        yield (sent_a_processed, sent_b_processed, is_right_order)
-
     def count_examples(self):
         """Computes number of samples
         Assuming every line is one example.
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in self.examples_by_split[split])
+            example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
         self.example_counts = example_counts
 
     def get_split_text(self, split: str):
@@ -325,7 +300,7 @@ class SentenceOrderTask(PairClassificationTask):
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.examples_by_split[split]
+        return self.get_data_iter(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -334,45 +309,66 @@ class SentenceOrderTask(PairClassificationTask):
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
-            for sent in self.examples_by_split[split]:
-                yield sent[0]
+            for sent in self.get_data_iter(self.files_by_split[split]):
+                yield sent
 
-    def load_data(self):
-        # Data is exposed as iterable: no preloading
-        self.examples_by_split = {}
-        for split in self.files_by_split:
-            self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
-
-    def process_split(
-        self, split, indexers, model_preprocessing_interface
-    ) -> Iterable[Type[Instance]]:
-        """Process a language modeling split by indexing and creating fields.
-        Args:
-            split: (list) a single list of sentences
-            indexers: (Indexer object) indexer to index input words
+    def mlm_dynamic_masking(self, inputs, labels, mask_idx, tokenizer_name, sent_encoder):
         """
+        This function does dynamic masking as per the RoBERTa paper. Please refer to https://arxiv.org/abs/1907.11692
+        for more details.
+        Parameters
+        ----------
+        inputs: torch.Tensor(type=long),
+        labels torch.Tensor(type=long),
+        mask_idx: int
+        tokenizer_name: str,
+        sent_encoder: SentenceEncoder
+        Returns
+        -------
+        inputs: input after dynamic masking,
+        labels: labels after masking with -100,
+        indices_replaced: (testing purposes) indices that will be replaced by mask_idx,
+        indices_random: (testing purposes) indices that will be replaced by a random word,
+        masked_indices: (testing purposes) indices that the model will have to predict,
+        labels_after_shift: (testing purposes) labels after shifting but before masking
+        """
+        mlm_probability = 0.15
+        # We add 2 because we shift the inputs back by 2 in the forward function in sent encoder.
+        mask_idx += 2
+        tokenizer = get_tokenizer(tokenizer_name)
+        # Masking code from https://github.com/huggingface/transformers/blob/master/examples/run_language_modeling.py
+        probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
+        padding_mask = labels.eq(0)
+        probability_matrix.masked_fill_(padding_mask, value=0.0)
 
-        def _make_instance(sent_):
-            """ Forward targs adds <s> as a target for input </s>
-            and bwd targs adds </s> as a target for input <s>
-            to avoid issues with needing to strip extra tokens
-            in the input for each direction """
-            sent_a, sent_b, is_right_order = sent_
-            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
-                input_sent = sentence_to_text_field(inp, indexers)
-                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
-                d = {"inputs": input_sent, "labels": label}
-            else:
-                inp1 = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(sent_a), indexers
-                )
-                inp2 = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(sent_b), indexers
-                )
-                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
-                d = {"input1": inp1, "input2": inp2, "targs": label}
-            return Instance(d)
+        masked_indices = torch.bernoulli(probability_matrix).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        tokenizer_name = sent_encoder._text_field_embedder.tokenizer_required
+        labels_after_shift, _ = sent_encoder._text_field_embedder.correct_sent_indexing(
+            {tokenizer_name: labels}
+        )
+        # We only compute loss on masked tokens
+        # nn.CrossEntropy ignores the indices with value = -100 by default.
+        # Therefore, we replace non-masked indices with -100 so that they get ignored
+        # in loss computation.
+        labels = copy.deepcopy(labels_after_shift)
+        labels[~masked_indices] = -100
 
-        for sent in split:
-            yield _make_instance(sent)
+        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.8)).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        indices_replaced = bernoulli_mask & masked_indices
+        inputs[indices_replaced] = mask_idx
+
+        # 10% of the time, we replace masked input tokens with random word
+        bernoulli_mask = torch.bernoulli(torch.full(labels.shape, 0.5)).to(
+            device=inputs.device, dtype=torch.uint8
+        )
+        indices_random = bernoulli_mask & masked_indices & ~indices_replaced
+        random_words = torch.randint(
+            len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
+        )
+        inputs[indices_random] = random_words[indices_random]
+        return inputs, labels, indices_replaced, indices_random, masked_indices, labels_after_shift

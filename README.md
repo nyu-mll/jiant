@@ -19,6 +19,11 @@ For a full system overview of `jiant` version 1.3.0, see https://arxiv.org/abs/2
 
 To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)!
 
+
+## Contributing
+Guidelines for contributing to `jiant` are available [here](CONTRIBUTING.md).
+
+
 ## Official Documentation
 
 Our official documentation is here: https://jiant.info/documentation#/
@@ -34,7 +39,7 @@ will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
  To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)
 *  `$JIANT_PROJECT_PREFIX`: the where the outputs will be saved.
 *  `$JIANT_DATA_DIR`: location of the saved data. This is usually the location of the GLUE data in a simple default setup.
-*  `$WORD_EMBS_FILE`: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
+*  `$WORD_EMBS_FILE`: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://dl.fbaipublicfiles.com/fasttext/vectors-english/crawl-300d-2M.vec.zip).
 To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh).
 
 
@@ -73,18 +78,6 @@ For the [BERT NPI paper](https://arxiv.org/abs/1909.02597) follow the instructio
 
 Post an issue here on GitHub if you have any problems, and create a pull request if you make any improvements (substantial or cosmetic) to the code that you're willing to share.
 
-
-## Contributing
-
-We use the `black` coding style with a line limit of 100. After installing the requirements, simply running `pre-commit
-install` should ensure you comply with this in all your future commits. If you're adding features or fixing a bug,
-please also add the tests.
-
-For any PR, make sure to update any existing `conf` files, tutorials, and scripts to match your changes. If your PR adds or changes functionality that can be directly tested, add or update a test.
-
-For PRs that typical users will need to be aware of, include  make a matching PR to the [documentation](https://github.com/nyu-mll/jiant-site/edit/master/documentation/README.md). We will merge that documentation PR once the original PR is merged in _and pushed out in a release_. (Proposals for better ways to do this are welcome.)
-
-For PRs that change package dependencies, update both `environment.yml` (used for conda) and `setup.py` (used by pip, and in automatic CircleCI tests).
 
 ## Releases
 

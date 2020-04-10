@@ -45,7 +45,11 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.huggingface_transformers_interface import input_module_uses_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
+<<<<<<< HEAD
 from jiant.tasks.lm import LanguageModelingTask, MaskedLanguageModelingTask, SentenceOrderTask
+=======
+from jiant.tasks.lm import AutoregressiveLanguageModelingTask, MaskedLanguageModelingTask
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.seq2seq import Seq2SeqTask
@@ -159,12 +163,21 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
+<<<<<<< HEAD
     elif any(isinstance(task, LanguageModelingTask) for task in tasks):
         assert_for_log(
             args.sent_enc in ["rnn", "bilm", "none"], "Only RNNLM or sent_enc=None supported!"
         )
         if not any(isinstance(task, MaskedLanguageModelingTask) for task in tasks):
             # If an autoregressive LanguageModelingTask
+=======
+    elif (
+        any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks)
+        or args.sent_enc == "bilm"
+    ):
+        assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
+        if any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks):
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
             assert_for_log(
                 not (
                     args.input_module == "elmo"
@@ -175,6 +188,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                 "good idea, since it allows the language model to use information from the right-hand "
                 "context.",
             )
+<<<<<<< HEAD
         if args.sent_enc == "none":
             assert_for_log(
                 args.skip_embs,
@@ -187,6 +201,9 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         else:
             phrase_layer = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
             d_sent = 2 * args.d_hid
+=======
+        bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
         sent_encoder = SentenceEncoder(
             vocab,
             embedder,
@@ -570,7 +587,11 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, MaskedLanguageModelingTask):
         module = build_mlm(model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
+<<<<<<< HEAD
     elif isinstance(task, LanguageModelingTask):
+=======
+    elif isinstance(task, AutoregressiveLanguageModelingTask):
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
         assert not input_module_uses_transformers(args.input_module), (
             "our LM Task does not support transformers, if you need them, try to update",
             "corresponding parts of the code. You may find get_pretrained_lm_head and",
@@ -777,7 +798,11 @@ def build_lm(task, d_inp, args):
 
 
 def build_mlm(embedder):
+<<<<<<< HEAD
     " Build MLM components " ""
+=======
+    " Build MLM components "
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
     lm_head = embedder.get_pretrained_lm_head()
     return lm_head
 
@@ -891,7 +916,11 @@ class MultiTaskModel(nn.Module):
             out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, MaskedLanguageModelingTask):
             out = self._masked_lm_forward(batch, task, predict)
+<<<<<<< HEAD
         elif isinstance(task, LanguageModelingTask):
+=======
+        elif isinstance(task, AutoregressiveLanguageModelingTask):
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or isinstance(
                 self.sent_encoder._phrase_layer, PRPN
             ):
@@ -906,7 +935,13 @@ class MultiTaskModel(nn.Module):
             # Just get embeddings and invoke task module.
             word_embs_in_context, sent_mask = self.sent_encoder(batch["input1"], task)
             module = getattr(self, "%s_mdl" % task.name)
-            out = module.forward(batch, word_embs_in_context, sent_mask, task, predict)
+            out = module.forward(
+                batch=batch,
+                word_embs_in_context=word_embs_in_context,
+                sent_mask=sent_mask,
+                task=task,
+                predict=predict,
+            )
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, (MultiRCTask, ReCoRDTask)):
@@ -1200,6 +1235,7 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _masked_lm_forward(self, batch, task, predict):
+<<<<<<< HEAD
         mlm_probability = 0.15
         out = {}
         sent_encoder = self.sent_encoder
@@ -1249,6 +1285,24 @@ class MultiTaskModel(nn.Module):
             len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
         )
         inputs[indices_random] = random_words[indices_random]
+=======
+        """
+        We currently only support RoBERTa-style dynamic masking, with the exact 
+        setup and parameters as RoBERTa. 
+        """
+        out = {}
+        tokenizer_name = self.sent_encoder._text_field_embedder.input_module
+        text_embedder = self.sent_encoder._text_field_embedder
+        vocab_size = text_embedder.model.embeddings.word_embeddings.num_embeddings
+        input_key = text_embedder.tokenizer_required
+        mask_idx = text_embedder._mask_id
+        b_size, seq_len = batch["targs"].size()
+        inputs = batch["input"][input_key]
+        labels = batch["targs"]
+        inputs, labels, _, _, _, _ = task.mlm_dynamic_masking(
+            inputs, labels, mask_idx, tokenizer_name, self.sent_encoder
+        )
+>>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
         batch["input"][input_key] = inputs
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)

@@ -663,12 +663,6 @@ def add_task_label_vocab(vocab, task):
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
 
-    if isinstance(task, SequenceGenerationTask) and not isinstance(
-        task, MaskedLanguageModelingTask
-    ):
-        for special in SPECIALS:
-            vocab.add_token_to_namespace(special, namespace)
-
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
