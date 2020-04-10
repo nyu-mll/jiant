@@ -209,7 +209,7 @@ def run_pretrain(
                 override = (
                     f"exp_name={exp_name}, run_name={run_name}, random_seed={seed}, load_model=1, "
                     f'do_pretrain=1, pretrain_tasks=\\"{task["task_name"]},wikipedia_corpus_mlm\\", '
-                    f'weighting_method=examples_proportional_mixingK=131072, early_stopping={task["task_name"]}'
+                    f'weighting_method=examples_proportional_mixingK=16384, early_stopping={task["task_name"]}'
                     f'input_module={input_module}, max_epochs={hp["max_epochs"]}, lr={hp["lr"]}, '
                     f"batch_size={real_batch_size}, accumulation_steps={accumulation_steps}, "
                     f"val_interval={val_interval}, pretrain_data_fraction={data_fraction}"
