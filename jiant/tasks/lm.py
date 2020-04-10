@@ -192,7 +192,7 @@ class MaskedLanguageModelingTask(Task):
         files_by_split: (dict) files for three data split (train, val, test)
     We are currently using an unpreprocessed version of the Wikipedia corpus
     that consists of 5% of the data. You can generate the data by following the
-    instructions from jiant/scripts/mlm.
+    instructions from jiant/scripts/mlm. 
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
@@ -318,6 +318,7 @@ class MaskedLanguageModelingTask(Task):
         mask_idx: int
         tokenizer_name: str,
         sent_encoder: SentenceEncoder
+
         Returns
         -------
         inputs: input after dynamic masking,

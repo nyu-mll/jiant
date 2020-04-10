@@ -598,8 +598,7 @@ def main(cl_arguments):
             pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
         )
         trainer, _, opt_params, schd_params = build_trainer(
-            args, cuda_device, [], model, args.run_dir, sho
-        uld_decrease, phase="pretrain"
+            args, cuda_device, [], model, args.run_dir, should_decrease, phase="pretrain"
         )
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(
