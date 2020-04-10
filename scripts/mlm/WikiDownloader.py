@@ -17,43 +17,46 @@ import urllib.request
 import subprocess
 import sys
 
+
 class WikiDownloader:
     def __init__(self, language, save_path):
-        self.save_path = save_path + '/wikicorpus_' + language
+        self.save_path = save_path + "/wikicorpus_" + language
 
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
 
         self.language = language
         self.download_urls = {
-            'en' : 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2',
-            'zh' : 'https://dumps.wikimedia.org/zhwiki/latest/zhwiki-latest-pages-articles.xml.bz2'
+            "en": "https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2",
+            "zh": "https://dumps.wikimedia.org/zhwiki/latest/zhwiki-latest-pages-articles.xml.bz2",
         }
-        self.download_urls[language] = 'https://dumps.wikimedia.org/'+language+'wiki/latest/'+ language+'wiki-latest-pages-articles.xml.bz2'
+        self.download_urls[language] = (
+            "https://dumps.wikimedia.org/"
+            + language
+            + "wiki/latest/"
+            + language
+            + "wiki-latest-pages-articles.xml.bz2"
+        )
 
-        self.output_files = {
-            'en' : 'wikicorpus_en.xml.bz2',
-            'zh' : 'wikicorpus_zh.xml.bz2'
-        }
-        self.output_files[language] = 'wikicorpus_'+language+'.xml.bz2'
-
+        self.output_files = {"en": "wikicorpus_en.xml.bz2", "zh": "wikicorpus_zh.xml.bz2"}
+        self.output_files[language] = "wikicorpus_" + language + ".xml.bz2"
 
     def download(self):
         if self.language in self.download_urls:
             url = self.download_urls[self.language]
             filename = self.output_files[self.language]
 
-            print('Downloading:', url)
-            if os.path.isfile(self.save_path + '/' + filename):
-                print('** Download file already exists, skipping download')
+            print("Downloading:", url)
+            if os.path.isfile(self.save_path + "/" + filename):
+                print("** Download file already exists, skipping download")
             else:
                 response = urllib.request.urlopen(url)
-                with open(self.save_path + '/' + filename, "wb") as handle:
+                with open(self.save_path + "/" + filename, "wb") as handle:
                     handle.write(response.read())
 
             # Always unzipping since this is relatively fast and will overwrite
-            print('Unzipping:', self.output_files[self.language])
-            subprocess.run('bzip2 -dk ' + self.save_path + '/' + filename, shell=True, check=True)
+            print("Unzipping:", self.output_files[self.language])
+            subprocess.run("bzip2 -dk " + self.save_path + "/" + filename, shell=True, check=True)
 
         else:
-            assert False, 'WikiDownloader not implemented for this language yet.'
+            assert False, "WikiDownloader not implemented for this language yet."

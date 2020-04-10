@@ -20,27 +20,22 @@ class Downloader:
         self.dataset_name = dataset_name
         self.save_path = save_path
 
-
     def download(self):
-        if self.dataset_name == 'bookscorpus':
+        if self.dataset_name == "bookscorpus":
             self.download_bookscorpus()
 
-        elif self.dataset_name.startswith('wikicorpus'):
-            lang = self.dataset_name.split('_')[1].strip()
+        elif self.dataset_name.startswith("wikicorpus"):
+            lang = self.dataset_name.split("_")[1].strip()
             self.download_wikicorpus(lang)
 
         else:
             print(self.dataset_name)
-            assert False, 'Unknown dataset_name provided to downloader'
-
+            assert False, "Unknown dataset_name provided to downloader"
 
     def download_bookscorpus(self):
         downloader = BooksDownloader(self.save_path)
         downloader.download()
 
-
     def download_wikicorpus(self, language):
         downloader = WikiDownloader(language, self.save_path)
         downloader.download()
-
-
