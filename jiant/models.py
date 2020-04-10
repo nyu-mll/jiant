@@ -187,6 +187,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             sep_embs_for_skip=args.sep_embs_for_skip,
             cove_layer=cove_layer,
         )
+        d_sent = 2 * args.d_hid
     elif args.sent_enc == "bow":
         sent_encoder = BoWSentEncoder(vocab, embedder)
         assert_for_log(
@@ -1127,7 +1128,6 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         # batch[inputs] only has one item
-
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         # Note: we are assuming there is one beginning and one ending token, when that no longer
@@ -1144,7 +1144,6 @@ class MultiTaskModel(nn.Module):
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
-
             out["labels"] = targs
             out["logits"] = logits
         out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
