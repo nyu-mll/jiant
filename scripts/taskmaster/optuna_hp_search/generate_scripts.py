@@ -133,17 +133,27 @@ def run_additional_optuna_trails(input_module):
         batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
         gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit)
 
+        all_done = True
         for rank in range(3):
-
             num_trails = max(0, 3 - df_grouped["count"][rank])
             if num_trails == 0:
                 continue
+            all_done = False
             outputs.append(
                 f'PROG="scripts/taskmaster/optuna_hp_search/run_trials" ARGS="'
                 f"--study-name {full_task_name} --gpu-available {gpu_available} "
-                f'--max-epochs {df_grouped["max_epochs"][rank]} --lr {df_grouped["lr"][rank]} --batch-size {df_grouped["lr"][rank]} '
+                f'--max-epochs {df_grouped["max_epochs"][rank]} --lr {df_grouped["lr"][rank]} --batch-size {df_grouped["batch_size"][rank]} '
                 f'--num-trails {num_trails} --input_module {input_module}" sbatch ~/{sbatch}'
             )
+        if all_done:
+            task_metadata[full_task_name][f'{input_module.split("-")[0]}_hp'] = {
+                "max_epochs": df_grouped["max_epochs"][0],
+                "lr": df_grouped["lr"][0],
+                "batch_size": df_grouped["batch_size"][0],
+            }
+    with open("task_metadata.json", "w") as f:
+        f.write(json.dumps(task_metadata))
+
     return outputs
 
 
