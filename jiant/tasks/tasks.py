@@ -3736,7 +3736,7 @@ class WinograndeTask(MultipleChoiceTask):
 
 @register_task("wikipedia_corpus_sop", rel_path="wikipedia_corpus_small")
 class SentenceOrderTask(PairClassificationTask):
-    """ Task class for Sentence Order Prediction with wikipedia data.
+    """ Task class for Sentence Order Prediction (SOP) with wikipedia data.
         See the ALBERT paper for details on SOP: https://arxiv.org/abs/1909.11942.
         We are currently using an unpreprocessed version of the Wikipedia corpus
         that consists of 5% of the data. You can generate the data by following the
@@ -3797,17 +3797,13 @@ class SentenceOrderTask(PairClassificationTask):
     def process_split(
         self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
-        """Process a language modeling split by indexing and creating fields.
+        """Process a sentence order prediction split by indexing and creating fields.
         Args:
             split: (list) a single list of sentences
             indexers: (Indexer object) indexer to index input words
         """
 
         def _make_instance(sent_):
-            """ Forward targs adds <s> as a target for input </s>
-            and bwd targs adds </s> as a target for input <s>
-            to avoid issues with needing to strip extra tokens
-            in the input for each direction """
             sent_a, sent_b, is_right_order = sent_
             if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
                 inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
