@@ -1,10 +1,10 @@
 # Downloading Wikipedia Corpus
+
 We use the preprocessing code from https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch/LanguageModeling/BERT#getting-the-data
 and the bash scripts provided here is used to help with streamlining the data generation in the NVIDIA repository.
 
 First, git clone https://github.com/NVIDIA/DeepLearningExamples.git.
 Then, move create_wiki_data.sh and get_small_english_wiki.sh into DeepLearningExamples/PyTorch/LanguageModeling/BERT/data.
-
 
 Then, follow the instructions below:
 
