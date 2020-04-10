@@ -26,7 +26,7 @@ import subprocess
 
 def main(args):
     working_dir = args.save_dir
-    
+
     print("Working Directory:", working_dir)
     print("Action:", args.action)
     print("Dataset Name:", args.dataset)
