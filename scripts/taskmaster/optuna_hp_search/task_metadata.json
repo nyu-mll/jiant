@@ -4,7 +4,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 67349,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -13,7 +13,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 33410,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -22,7 +22,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 32,
         "training_size": 38015,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -31,7 +31,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 363846,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -40,7 +40,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 392702,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -49,7 +49,7 @@
         "albert_batch_size_limit": 16,
         "roberta_batch_size_limit": 32,
         "training_size": 23596,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -58,7 +58,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 637989,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -67,7 +67,7 @@
         "albert_batch_size_limit": 16,
         "roberta_batch_size_limit": 16,
         "training_size": 50615,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -76,7 +76,7 @@
         "albert_batch_size_limit": 2,
         "roberta_batch_size_limit": 4,
         "training_size": 25262,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -85,7 +85,7 @@
         "albert_batch_size_limit": 2,
         "roberta_batch_size_limit": 4,
         "training_size": 39905,
-        "optuna_trails": -1,
+        "role": "IT",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -94,7 +94,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 9741,
-        "optuna_trails": -1,
+        "role": "IT",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -103,7 +103,7 @@
         "albert_batch_size_limit": 4,
         "roberta_batch_size_limit": 4,
         "training_size": 1796856,
-        "optuna_trails": -1,
+        "role": "IT",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -112,7 +112,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 40398,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -121,7 +121,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 67349,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -130,7 +130,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 33410,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -139,7 +139,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 32,
         "training_size": 38015,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -148,7 +148,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 363846,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -157,7 +157,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 392702,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -166,7 +166,7 @@
         "albert_batch_size_limit": 16,
         "roberta_batch_size_limit": 32,
         "training_size": 23596,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -175,7 +175,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 8,
         "training_size": 637989,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -184,7 +184,7 @@
         "albert_batch_size_limit": 16,
         "roberta_batch_size_limit": 16,
         "training_size": 50615,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -193,7 +193,7 @@
         "albert_batch_size_limit": 2,
         "roberta_batch_size_limit": 4,
         "training_size": 25262,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -202,7 +202,7 @@
         "albert_batch_size_limit": 4,
         "roberta_batch_size_limit": 8,
         "training_size": 39905,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -211,7 +211,7 @@
         "albert_batch_size_limit": 4,
         "roberta_batch_size_limit": 4,
         "training_size": 1796856,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -220,7 +220,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 40398,
-        "optuna_trails": -1,
+        "role": "I",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -229,7 +229,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 16,
         "training_size": 2490,
-        "optuna_trails": -1,
+        "role": "T",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -238,7 +238,7 @@
         "albert_batch_size_limit": 4,
         "roberta_batch_size_limit": 8,
         "training_size": 9427,
-        "optuna_trails": -1,
+        "role": "T",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -247,7 +247,7 @@
         "albert_batch_size_limit": 8,
         "roberta_batch_size_limit": 16,
         "training_size": 250,
-        "optuna_trails": -1,
+        "role": "T",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -256,7 +256,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 400,
-        "optuna_trails": -1,
+        "role": "T",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -265,7 +265,7 @@
         "albert_batch_size_limit": 4,
         "roberta_batch_size_limit": 8,
         "training_size": 27243,
-        "optuna_trails": -1,
+        "role": "T",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -274,7 +274,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 5428,
-        "optuna_trails": -1,
+        "role": "T",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -283,7 +283,7 @@
         "albert_batch_size_limit": 16,
         "roberta_batch_size_limit": 32,
         "training_size": 554,
-        "optuna_trails": -1,
+        "role": "T",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -292,7 +292,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 49706,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -301,7 +301,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 231480,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -310,7 +310,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 41777,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -319,7 +319,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 3843,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -328,7 +328,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 2226,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -337,7 +337,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 958,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -346,7 +346,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 6851,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -355,7 +355,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 81035,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -364,7 +364,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 110513,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -373,7 +373,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 12496,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -382,7 +382,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -391,7 +391,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -400,7 +400,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -409,7 +409,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -418,7 +418,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -427,7 +427,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -436,7 +436,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -445,7 +445,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -454,7 +454,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -463,7 +463,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 99996,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -472,7 +472,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 432,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -481,7 +481,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 404,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -490,7 +490,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 332,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -499,7 +499,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 382,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -508,7 +508,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 8551,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -517,7 +517,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 49706,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -526,7 +526,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 231480,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -535,7 +535,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 41777,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -544,7 +544,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 81035,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -553,7 +553,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 110513,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -562,7 +562,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 12496,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -571,7 +571,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -580,7 +580,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -589,7 +589,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -598,7 +598,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -607,7 +607,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -616,7 +616,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -625,7 +625,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -634,7 +634,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -643,7 +643,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 100000,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -652,7 +652,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 99996,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     },
@@ -661,7 +661,7 @@
         "albert_batch_size_limit": 32,
         "roberta_batch_size_limit": 32,
         "training_size": 8551,
-        "optuna_trails": -1,
+        "role": "P",
         "albert_hp": "",
         "roberta_hp": ""
     }

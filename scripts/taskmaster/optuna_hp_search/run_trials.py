@@ -4,12 +4,15 @@ import subprocess
 import os
 import argparse
 
+from shared_settings import batch_size_to_accumulation
+
+
 RESULT_DIR = "/scratch/hl3236/jiant_results/"
 FAILED_RUN_DEFAULT = None
 
 
 def run_trials(
-    study_name,
+    full_task_name,
     gpu_available,
     n_trials,
     input_module,
@@ -19,13 +22,13 @@ def run_trials(
 ):
     storage = "sqlite:///example.db"
     if input_module != "default":
-        unique_name = f"{study_name}_{input_module}"
+        study_name = f"{full_task_name}_{input_module}"
     else:
-        unique_name = study_name
+        study_name = full_task_name
         input_module = "roberta-large"
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(
-        study_name=unique_name,
+        study_name=study_name,
         storage=storage,
         direction="maximize",
         sampler=sampler,
@@ -35,16 +38,16 @@ def run_trials(
         task_metadata = json.loads(f.read())
 
     def run_one_trial(trial):
-        task = task_metadata[study_name]
+        task = task_metadata[full_task_name]
         task_name = task["task_name"]
-        exp_name = f"optuna_{unique_name}"
+        exp_name = f"optuna_{study_name}"
         run_name = f"trial_{trial.number}"
 
         training_size = task["training_size"]
-        if study_name.endswith("-5k"):
+        if full_task_name.endswith("-5k"):
             target_train_data_fraction = 5000 / training_size
             training_size = 5000
-        elif study_name.endswith("-20k"):
+        elif full_task_name.endswith("-20k"):
             target_train_data_fraction = 20000 / training_size
             training_size = 20000
         else:
@@ -76,15 +79,9 @@ def run_trials(
         else:
             batch_size = batch_size_override
         batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
-        gpu_needed = batch_size // batch_size_limit
-        if gpu_needed <= gpu_available:
-            real_batch_size = batch_size
-            accumulation_steps = 1
-        else:
-            assert gpu_needed % gpu_available == 0
-            accumulation_steps = gpu_needed // gpu_available
-            assert batch_size % accumulation_steps == 0
-            real_batch_size = batch_size // accumulation_steps
+        real_batch_size, accumulation_steps = batch_size_to_accumulation(
+            batch_size_limit, batch_size, gpu_available
+        )
         val_interval = min(training_size // batch_size, 2500)
 
         overrides = []
@@ -151,7 +148,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     run_trials(
-        args.study_name,
+        args.full_task_name,
         args.gpu_available,
         args.n_trials,
         args.input_module,

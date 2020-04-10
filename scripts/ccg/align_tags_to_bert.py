@@ -71,7 +71,7 @@ def align_ccg(split, tokenizer_name, data_dir):
         --------------
         None, saves tag alligned files to same directory as the original file.
     """
-    tags_to_id = json.load(open(data_dir + "tags_to_id.json", "r"))
+    tags_to_id = json.load(open(os.path.join(data_dir, "tags_to_id.json"), "r"))
     ccg_text = pd.read_csv(
         os.path.join(data_dir, "ccg." + split), names=["text", "tags"], delimiter="\t"
     )

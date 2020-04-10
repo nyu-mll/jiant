@@ -2,18 +2,19 @@ import optuna
 import argparse
 
 
-def delete_trails(study_name, input_module):
+def delete_trails(full_task_name, input_module):
     storage = "sqlite:///example.db"
     if input_module != "default":
-        unique_name = f"{study_name}_{input_module}"
+        study_name = f"{full_task_name}_{input_module}"
     else:
-        unique_name = study_name
-    optuna.delete_study(study_name=unique_name, storage=storage)
+        study_name = full_task_name
+        input_module = "roberta-large"
+    optuna.delete_study(study_name=study_name, storage=storage)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Delete Optuna trails")
-    parser.add_argument("--study-name", type=str)
+    parser.add_argument("--full-task-name", type=str)
     parser.add_argument(
         "--input-module",
         type=str,
@@ -22,4 +23,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    delete_trails(args.study_name, args.input_module)
+    delete_trails(args.full_task_name, args.input_module)
