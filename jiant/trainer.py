@@ -401,7 +401,6 @@ class SamplingMultiTaskTrainer:
             epochs = scaling_method.strip("max_epoch_").split("_")
             assert len(epochs) == num_tasks, "Loss Scaling Error: epoch number not match."
             scaling_weights = np.array(list(map(int, epochs)))
-
         # normalized by max weight
         if "max" in scaling_method:
             scaling_weights = scaling_weights / np.max(scaling_weights)
@@ -436,6 +435,9 @@ class SamplingMultiTaskTrainer:
             sample_weights = 1 / task_n_train_examples
         elif weighting_method == "inverse_log_example":
             sample_weights = 1 / np.log(task_n_train_examples)
+        elif "examples_proportional_mixing" in weighting_method:
+            max_K = int(weighting_method.split("K=")[1])
+            sample_weights = [min(num_examples, max_K) for num_examples in task_n_train_examples]
         elif weighting_method == "inverse_log_batch":
             sample_weights = 1 / np.log(task_n_train_batches)
         elif "power_" in weighting_method:

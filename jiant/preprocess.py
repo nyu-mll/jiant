@@ -54,6 +54,7 @@ from jiant.tasks import (
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask, Task
+from jiant.tasks.lm import MaskedLanguageModelingTask
 from jiant.utils import config, serialize, utils, options
 from jiant.utils.options import parse_task_list_arg
 
@@ -261,6 +262,7 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     for task in tasks:  # add custom label namespaces
         # TODO: surface more docs for add_task_label_vocab:
         add_task_label_vocab(vocab, task)
+
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
@@ -660,10 +662,6 @@ def add_task_label_vocab(vocab, task):
     if namespace is None:
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
-
-    if isinstance(task, SequenceGenerationTask):
-        for special in SPECIALS:
-            vocab.add_token_to_namespace(special, namespace)
 
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
