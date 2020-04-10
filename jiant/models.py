@@ -160,21 +160,12 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
-<<<<<<< HEAD
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks):
-        assert_for_log(
-            args.sent_enc in ["rnn", "bilm", "none"], "Only RNNLM or sent_enc=None supported!"
-        )
-        if not any(isinstance(task, MaskedLanguageModelingTask) for task in tasks):
-            # If an autoregressive LanguageModelingTask
-=======
     elif (
         any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks)
         or args.sent_enc == "bilm"
     ):
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
         if any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks):
->>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
             assert_for_log(
                 not (
                     args.input_module == "elmo"
@@ -185,22 +176,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                 "good idea, since it allows the language model to use information from the right-hand "
                 "context.",
             )
-<<<<<<< HEAD
-        if args.sent_enc == "none":
-            assert_for_log(
-                args.skip_embs,
-                "skip_embs is false and sent_enc is none, "
-                "which means that your token representations are zero-dimensional. "
-                "Consider setting skip_embs.",
-            )
-            phrase_layer = NullPhraseLayer(rnn_params["input_size"])
-            d_sent = 0
-        else:
-            phrase_layer = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
-            d_sent = 2 * args.d_hid
-=======
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
->>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
         sent_encoder = SentenceEncoder(
             vocab,
             embedder,
@@ -584,11 +560,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, MaskedLanguageModelingTask):
         module = build_mlm(model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
-<<<<<<< HEAD
-    elif isinstance(task, LanguageModelingTask):
-=======
     elif isinstance(task, AutoregressiveLanguageModelingTask):
->>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
         assert not input_module_uses_transformers(args.input_module), (
             "our LM Task does not support transformers, if you need them, try to update",
             "corresponding parts of the code. You may find get_pretrained_lm_head and",
@@ -795,11 +767,7 @@ def build_lm(task, d_inp, args):
 
 
 def build_mlm(embedder):
-<<<<<<< HEAD
-    " Build MLM components " ""
-=======
     " Build MLM components "
->>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
     lm_head = embedder.get_pretrained_lm_head()
     return lm_head
 
