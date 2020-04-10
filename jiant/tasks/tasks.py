@@ -115,7 +115,7 @@ def process_single_pair_task_split(
                 model_preprocessing_interface.model_flags["uses_mirrored_pair"]
                 and is_symmetrical_pair
             ):
-                inp_m = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                inp_m = model_preprocessing_interface.boundary_token_fn(input2, input1)
                 d["inputs_m"] = sentence_to_text_field(inp_m, indexers)
         else:
             d["input1"] = sentence_to_text_field(
@@ -3732,3 +3732,101 @@ class WinograndeTask(MultipleChoiceTask):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
+
+
+@register_task("sop", rel_path="WikiText103")
+class SentenceOrderTask(PairClassificationTask):
+    """ Task class for Sentence Order Prediction """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        """ Do stuff """
+        super(SentenceOrderTask, self).__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+        self.files_by_split = {
+            "train": os.path.join(path, "train.txt"),
+            "val": os.path.join(path, "valid.txt"),
+            "test": os.path.join(path, "test.txt"),
+        }
+
+    def get_data_iter(self, path):
+        """Loading data file and tokenizing the text
+        Args:
+            path: (str) data file path
+        """
+        import csv
+
+        moses_tokenizer = get_tokenizer("MosesTokenizer")
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                sentences = row.split(".")
+                if len(sentences) <= 1:
+                    continue
+                else:
+                    for i in range(len(sentences) - 1):
+                        if random.uniform(0, 1) > 0.5:
+                            is_right_order = 1
+                            sent_a = sentences[i]
+                            sent_b = sentences[i + 1]
+                        else:
+                            is_right_order = 0
+                            sent_a = sentences[i + 1]
+                            sent_b = sentences[i]
+                        sent_a_untokenized_toks = moses_tokenizer.detokenize(sent_a)
+                        sent_b_untokenized_toks = moses_tokenizer.detokenize(sent_b)
+                        sent_a_toks = "".join(sent_a_untokenized_toks)
+                        sent_b_toks = "".join(sent_b_untokenized_toks)
+                        sent_a_processed = tokenize_and_truncate(
+                            self._tokenizer_name, sent_a_toks, self.max_seq_len // 2
+                        )
+                        sent_b_processed = tokenize_and_truncate(
+                            self._tokenizer_name, sent_b_toks, self.max_seq_len // 2
+                        )
+                        yield (sent_a_processed, sent_b_processed, is_right_order)
+
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        self.examples_by_split = {}
+        for split in self.files_by_split:
+            self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """Process a language modeling split by indexing and creating fields.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
+
+        def _make_instance(sent_):
+            """ Forward targs adds <s> as a target for input </s>
+            and bwd targs adds </s> as a target for input <s>
+            to avoid issues with needing to strip extra tokens
+            in the input for each direction """
+            sent_a, sent_b, is_right_order = sent_
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
+                input_sent = sentence_to_text_field(inp, indexers)
+                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+                d = {"inputs": input_sent, "labels": label}
+            else:
+                inp1 = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(sent_a), indexers
+                )
+                inp2 = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(sent_b), indexers
+                )
+                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+                d = {"input1": inp1, "input2": inp2, "targs": label}
+            return Instance(d)
+
+        for sent in split:
+            yield _make_instance(sent)
+            for sent in self.get_data_iter(self.files_by_split[split]):
+                yield sent
