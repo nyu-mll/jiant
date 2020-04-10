@@ -690,9 +690,28 @@ def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool,
     return module
 
 
-def build_sop(task, d_inp, model, params, args):
+def build_sop(task, d_inp, model, params):
+    """
+    Build and load the pretrained head for the sentence order prediction task.
+    Parameters
+    ----------
+    task: Task,
+    d_inp: int,
+    model: MultiTaskModel,
+    params: Params
+
+    Returns
+    -------
+    module: Pooler object, which is loaded with pretrained weights from ALBERT SOP
+    pretraining. 
+
+    """
+    # By default, we do not project before pooling. Since the projection weights is what is
+    # exposed in huggingface for the pretrained weights, we set projection to true.
     project_before_pooling = True
     module = build_pair_sentence_module(task, d_inp, model, params, project_before_pooling)
+    # The huggingface implementation exposes the pretrained projection layer for the SOP task, which
+    # we use. See: https://github.com/huggingface/transformers/issues/2671 for more details.
     module.pooler.project = model.sent_encoder._text_field_embedder.model.pooler
     return module
 
