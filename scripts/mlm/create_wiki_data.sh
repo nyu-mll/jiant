@@ -14,7 +14,7 @@
 # limitations under the License.
 
 lang=$1 #the language, 'en' for English wikipedia
-save_dir=$2 
+export BERT_PREP_WORKING_DIR=$2
 
 # clone wikiextractor if it doesn't exist
 if [ ! -d "wikiextractor" ]; then
@@ -23,19 +23,19 @@ fi
 
 echo "Downloading $lang wikpedia in directory $save_dir"
 # Download
-python3 bertPrep.py --action download --dataset wikicorpus_$lang --save_dir $save_dir
+python3 bertPrep.py --action download --dataset wikicorpus_$lang
 
 
 # Properly format the text files
-python3 bertPrep.py --action text_formatting --dataset wikicorpus_$lang --save_dir $save_dir
+python3 bertPrep.py --action text_formatting --dataset wikicorpus_$lang
 
 
 # Shard the text files (group wiki+books then shard)
-python3 bertPrep.py --action sharding --dataset wikicorpus_$lang --save_dir $save_dir
+python3 bertPrep.py --action sharding --dataset wikicorpus_$lang
 
 
 # Combine sharded files into one
-save_dir=$save_dir/sharded_training_shards_256_test_shards_256_fraction_0.2/wikicorpus_$lang
+save_dir=$BERT_PREP_WORKING_DIR/sharded_training_shards_256_test_shards_256_fraction_0.2/wikicorpus_$lang
 cat $save_dir/*training*.txt > $save_dir/train_$lang.txt
 cat $save_dir/*test*.txt > $save_dir/test_$lang.txt
 rm -rf $save_dir/wiki*training*.txt
@@ -46,3 +46,4 @@ sed -i 's/<[^>]*>//g' $save_dir/train_$lang.txt
 sed -i 's/<[^>]*>//g' $save_dir/test_$lang.txt
 
 echo "Your corpus is saved in $save_dir"
+
