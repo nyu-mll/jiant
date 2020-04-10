@@ -3796,7 +3796,7 @@ class SentenceOrderTask(PairClassificationTask):
             self.examples_by_split[split] = list(self.get_data_iter(self.files_by_split[split]))
 
     def process_split(
-            self, split, indexers, model_preprocessing_interface
+        self, split, indexers, model_preprocessing_interface
     ) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
         Args:
@@ -3830,4 +3830,3 @@ class SentenceOrderTask(PairClassificationTask):
             yield _make_instance(sent)
             for sent in self.get_data_iter(self.files_by_split[split]):
                 yield sent
-

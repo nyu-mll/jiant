@@ -4,10 +4,7 @@ import os
 import torch
 from typing import Iterable, Sequence, Type
 import random
-<<<<<<< HEAD
-=======
 import copy
->>>>>>> de3c44a6c2aad2bdfc5bc3047e063fd03c6c4c12
 
 # Fields for instance processing
 from allennlp.data import Instance
@@ -184,7 +181,6 @@ class WikiText103LMTask(WikiTextLMTask):
             "val": os.path.join(path, "valid.sentences.txt"),
             "test": os.path.join(path, "test.sentences.txt"),
         }
-
 
 
 @register_task("wikipedia_corpus_mlm", rel_path="wikipedia_corpus_small/")

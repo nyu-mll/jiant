@@ -72,7 +72,6 @@ def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
         "max_epochs",
         "dec_val_scale",
         "accumulation_steps",
-        "mlm_weight",
     ]
     for attr in train_opts:
         params[attr] = _get_attr(attr)
@@ -92,7 +91,6 @@ def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
         else args.pretrain_data_fraction,
     )
     params["cuda"] = cuda_device
-    params["mlm_weight"] = args.mlm_weight
     return Params(params)
 
 
@@ -159,7 +157,6 @@ def build_trainer(
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
             "accumulation_steps": params["accumulation_steps"],
-            "mlm_weight": params["mlm_weight"],
         }
     )
     assert (
@@ -190,7 +187,6 @@ class SamplingMultiTaskTrainer:
         dec_val_scale=100,
         training_data_fraction=1.0,
         accumulation_steps=1,
-        mlm_weight=1,
     ):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -251,7 +247,6 @@ class SamplingMultiTaskTrainer:
         self._scheduler = None
         self._optimizer = None
         self._accumulation_steps = accumulation_steps
-        self.mlm_weight = mlm_weight
 
         self._log_interval = 10  # seconds
 
@@ -1292,7 +1287,6 @@ class SamplingMultiTaskTrainer:
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
         accumulation_steps = params.pop("accumulation_steps", 1.0)
-        mlm_weight = params.pop("mlm_weight", 1.0)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(
@@ -1312,5 +1306,4 @@ class SamplingMultiTaskTrainer:
             dec_val_scale=dec_val_scale,
             training_data_fraction=training_data_fraction,
             accumulation_steps=accumulation_steps,
-            mlm_weight=mlm_weight,
         )
