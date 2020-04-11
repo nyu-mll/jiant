@@ -17,7 +17,6 @@ function run_exp() {
     CONFIG_FILE=$1
     OVERRIDES=$2
     RANDOM_SEED=${4:-1234}
-
     if [[ $3 == 0 ]]; then
         OVERRIDES+=", lr=2e-5, dropout=0.2"
     elif [[ $3 == 1 ]]; then
@@ -38,18 +37,21 @@ function run_exp() {
         OVERRIDES+=", lr=1e-3, dropout=0.2"
     elif [[ $3 == 9 ]]; then
         OVERRIDES+=", lr=1e-3, dropout=0.1"
+    elif [[ $3 == 10 ]]; then
+        OVERRIDES+=", lr=1e-4, dropout=0.2"
+    elif [[ $3 == 11 ]]; then
+        OVERRIDES+=", lr=1e-4, dropout=0.1"
     fi
 
     # Add random seed
     OVERRIDES+=", random_seed=${RANDOM_SEED}"
-
-    # Construct args
-    declare -a args
-    args+=( --config_file "${CONFIG_FILE}" )
-    args+=( -o "${OVERRIDES}" )
-
-    # Run
-    python main.py "${args[@]}"
+    OVERRIDES+=", early_stopping_method=ccg"
+    #OVERRIDES+=", batch_size=2, accumulation_steps=2"
+    OVERRIDES+=", cuda=\"0,1\""
+    #CONFIG_FILE=$1 OVERRIDES=$OVERRIDES sbatch template_sbatch.sbatch
+    echo "${CONFIG_FILE}"
+    echo "${OVERRIDES}"
+    sbatch sb_hellaswag.sh "${CONFIG_FILE}" "${OVERRIDES}" 
 }
 
 declare -A TASK_TYPE_MAP
@@ -115,6 +117,7 @@ declare -A INTERM_BSIZE=(
   ["hellaswag"]=4
   ["commonsenseqa"]=4
   ["ccg"]=4
+  ["mlm"]=2
   # === Target
   ["rte-superglue"]=4
   ["boolq"]=4
@@ -337,6 +340,48 @@ function hyperparameter_sweep() {
 
 }
 
+function hyperparameter_mlm_sweep_roberta() {
+    # Do hyerparameter tuning search for the parameters
+    # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
+    #OVERRIDES="exp_name=roberta-large"
+    #OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, batch_size=$2, reload_vocab=1, input_module=roberta-large,pretrain_tasks=\"$1,mlm\", weighting_method=\"examples-proportional-mixingK=1048576\""
+    for i in 3 6 7 #0 1 2 3 4 5 6 7
+    do
+        OVERRIDES="exp_name=roberta-large-mlm, pretrain_tasks=\"$1,wikipedia_corpus_mlm\", target_tasks=\"\",reload_tasks=1, reload_indexing=0, reload_vocab=0, run_name=$1_mlm_roberta$i, weighting_method=\"uniform\", input_module=roberta-large,batch_size=$2, do_target_task_training=0, transfer_paradigm=finetune"
+        EXP_OVERRIDES="${OVERRIDES}, run_name=$1_mlm_roberta$i"
+        TASK_TYPE="regular"
+        if [[ ${TASK_TYPE} == "edge" ]]; then
+            BASE_CONFIG_FILE="base_edgeprobe"
+        elif [[ ${TASK_TYPE} == "regular" ]]; then
+            BASE_CONFIG_FILE="base_roberta"
+        fi
+        run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${EXP_OVERRIDES}" $i $3
+    done
+
+}
+
+function hyperparameter_mlm_sweep_albert() {
+    # Do hyerparameter tuning search for the parameters
+    # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
+    #OVERRIDES="exp_name=roberta-large"
+    #OVERRIDES+=", target_tasks=\"\", do_pretrain=1, do_target_task_training=0, batch_size=$2, reload_vocab=1, input_module=roberta-large,pretrain_tasks=\"$1,mlm\", weighting_method=\"examples-proportional-mixingK=1048576\""
+    for i in 0 1 2 3 4 5 6 7 
+    do
+        OVERRIDES="my-experiment-large-albert-ccg-wikiraw, pretrain_tasks=\"$1,sop,wikipedia_corpus_mlm\", target_tasks=\"\",reload_tasks=1, reload_indexing=0, reload_vocab=0, run_name=$1_mlm_sop_finetune_albert$i, weighting_method=\"examples-proportional-mixingK=10000\", input_module=albert-xxlarge-v2,batch_size=$2, do_target_task_training=0, transfer_paradigm=finetune, d_proj=4096"
+        #OVERRIDES="exp_name=my-experiment-mlm-test-roberta, pretrain_tasks=\"$1,wikipedia_corpus_mlm\", target_tasks=\"\",reload_tasks=1, reload_indexing=0, reload_vocab=0, run_name=$1_mlm_finetune_roberta$i, weighting_method=\"examples_proportional_mixingK=104857\", input_module=roberta-large,batch_size=$2, do_target_task_training=0, transfer_paradigm=finetune, d_proj=4096"
+        EXP_OVERRIDES="${OVERRIDES}, run_name=$1_mlm_sop_finetune_k10k_albert$i"
+        TASK_TYPE="regular"
+        if [[ ${TASK_TYPE} == "edge" ]]; then
+            BASE_CONFIG_FILE="base_edgeprobe"
+        elif [[ ${TASK_TYPE} == "regular" ]]; then
+            BASE_CONFIG_FILE="base_roberta"
+        fi
+        run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${EXP_OVERRIDES}" $i $3
+    done
+
+}
+
+
 function hyperparameter_sweep_mix() {
     # Do hyerparameter tuning search for the parameters
     # Usage: hyperparameter_sweep <task> <batch_size> <random_seed>
@@ -363,7 +408,7 @@ function hyperparameter_sweep_mix() {
 function first_intermediate_exp() {
     # Initial intermediate task pretraining.
     # Usage: first_intermediate_task <intermediate_task_name> <config_number> <batch_size> <random_seed> <run_number>
-    OVERRIDES="exp_name=roberta-large, run_name=$1_$5, batch_size=$3, reload_vocab=1"
+    OVERRIDES="exp_name=roberta-large, run_name=$1_$5_$2, batch_size=$3, reload_vocab=1"
     OVERRIDES+=", target_tasks=$1, do_pretrain=1, do_target_task_training=0, input_module=roberta-large,pretrain_tasks=$1"
     OVERRIDES+=", do_full_eval=1"
     run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${2} ${4}
@@ -415,7 +460,6 @@ function run_intermediate_to_probing() {
     fi
     run_exp "jiant/config/taskmaster/${BASE_CONFIG_FILE}.conf" "${OVERRIDES}" ${4} ${6}
 }
-
 function run_intermediate_to_mixing() {
     # Using a pretrained intermediate task, use frozen encoder with mixing on an probing task.  ("Mixing" sheet)
     # Usage: run_intermediate_to_mixing <intermediate_task> <probing task> <directory_to_project_dir> <config_number> <batch_size> <random_seed> <run>
@@ -434,7 +478,7 @@ function run_intermediate_to_mixing() {
 
 function ez_first_intermediate_exp() {
     # Usage: ez_first_intermediate_exp <1:run_num> <2:intermediate_task>
-    first_intermediate_exp ${2} ${INTERM_HPARAM[${2}]} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
+    first_intermediate_exp ${2} ${3} ${INTERM_BSIZE[${2}]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
 function ez_first_intermediate_exp_limited_size() {
@@ -442,7 +486,6 @@ function ez_first_intermediate_exp_limited_size() {
     # <intermediate_task_name> should use _size to seperate real task name and size, e.g. ccgS1
     IFS="S" read -ra ADDR <<< "${2}"
     TASK_NAME=${ADDR[0]}
-    echo $TASK_NAME
     first_intermediate_exp_limited_size ${2} ${INTERM_HPARAM[$TASK_NAME]} ${INTERM_BSIZE[$TASK_NAME]} ${SEED_DICT[run${1}_intermediate]} ${1}
 }
 
@@ -461,7 +504,35 @@ function ez_run_intermediate_to_probing() {
     run_intermediate_to_probing ${2} ${3} ${4} ${PROBING_HPARAM[${3}]} ${PROBING_BSIZE[${3}]} ${SEED_DICT[run${1}_probing]} ${1}
 }
 
+
+function ez_run_mlm_finetune() {
+    declare -a arr=("record" "winograd-coreference") #"rte-superglue" "boolq" "commitbank" "copa" "multirc" "wic" "commonsenseqa" "cosmosqa")
+ declare -A TARGET_BSIZE=(
+      ["rte-superglue"]=4
+      ["boolq"]=4
+      ["commitbank"]=4
+      ["copa"]=32
+      ["multirc"]=4
+      ["record"]=4
+      ["wic"]=32
+      ["winograd-coreference"]=32
+      ["commonsenseqa"]=4
+      ["cosmosqa"]=4
+    )
+    for task in "${arr[@]}"
+    do
+        OVERRIDES="exp_name=$1, run_name=mlm_finetune_$task"
+        OVERRIDES+=", target_tasks=$task, load_model=1, load_target_train_checkpoint=/misc/vlgscratch4/BowmanGroup/pmh330/jiant-outputs/datasize_control_v2/roberta-large-mlm/ccgconfig1/model_state_pretrain_val_88.best.th, pretrain_tasks=\"\""
+        OVERRIDES+=", input_module=roberta-large, batch_size=${TARGET_BSIZE[$task]}, reload_vocab=1, weighting_method=\"examples-proportional-mixingK=1048576\""
+        OVERRIDES+=", do_pretrain=0, do_target_task_training=1"
+        run_exp "jiant/config/taskmaster/base_roberta.conf" "${OVERRIDES}" ${TARGET_HPARAM[$task]}  ${2}
+    done
+}
 function ez_run_intermediate_to_mixing() {
     # Usage: ez_run_intermediate_to_mixing <1:run_num> <2:intermediate_task> <3:mixing_task> <4:directory_to_project_dir>
     run_intermediate_to_mixing ${2} ${3} ${4} ${MIXING_HPARAM[${3}]} ${MIXING_BSIZE[${3}]} ${SEED_DICT[run${1}_mixing]} ${1}
 }
+
+#ez_run_mlm_finetune ccg 111001
+#hyperparameter_mlm_sweep ccg 6 111001 
+hyperparameter_mlm_sweep_roberta ccg 6 111001

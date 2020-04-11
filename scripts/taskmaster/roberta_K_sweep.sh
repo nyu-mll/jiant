@@ -91,6 +91,25 @@ function hyperparameter_mlm_K_sweep_interm_train() {
 }
 
 
+function hyperparameter_mlm_K_sweep_interm_only_train() {
+    # Do hyerparameter tuning search for the parameters
+    # Usage: hyperparameter_sweep <task> <random_seed>
+    for K in 1048576 131072 16384 # 2^20, 2^17, and 2^14. 
+    do
+        OVERRIDES=" run_name=\"$1_new_$2_noK\", exp_name=roberta-large-K-no-mlm, pretrain_tasks=\"$1\", target_tasks=\"\",reload_tasks=0, reload_indexing=0, reload_vocab=0, input_module=roberta-large, do_target_task_training=0, transfer_paradigm=finetune, early_stopping_method=$1, do_pretrain=1"
+        EXP_OVERRIDES="${OVERRIDES}, run_name=\"$1_new_$2_noK\", pretrain_data_fraction=${INTERM_DATA_FRACTION[$1]}, lr=${INTERM_LR[$1]}, batch_size=${INTERM_BSIZE[$1]}, max_epochs=${INTERM_MEPOCH[$1]}"
+        TASK_TYPE="regular"
+        if [[ ${TASK_TYPE} == "edge" ]]; then
+            BASE_CONFIG_FILE="base_edgeprobe"
+        elif [[ ${TASK_TYPE} == "regular" ]]; then
+            BASE_CONFIG_FILE="base_albert"
+        fi
+        run_exp "jiant/config/taskmaster/clean_roberta.conf" "${EXP_OVERRIDES}" $2
+    done
+}
+
+
+
 function run_p1_specific() {
   # Do hyerparameter tuning search for the parameters
   # Usage: hyperparameter_sweep <task> <random_seed>
@@ -105,8 +124,9 @@ function run_p1_specific() {
    run_exp "jiant/config/taskmaster/clean_roberta.conf" "${EXP_OVERRIDES}" $2
 }
 
+hyperparameter_mlm_K_sweep_interm_only_train commonsenseqa 5238211
 #run_p1_specific qqp 5238211 16384
-run_p1_specific qqp 5238211 131072
+#run_p1_specific qqp 5238211 131072
 #hyperparameter_mlm_K_sweep_interm_train commonsenseqa 111001  
 #hyperparameter_mlm_K_sweep_interm_train commonsenseqa 5238211
 #hyperparameter_mlm_K_sweep_interm_train commonsenseqa  921
