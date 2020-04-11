@@ -4,6 +4,7 @@ import json
 import logging as log
 import os
 from typing import Any, Dict, Iterable, List, Sequence, Type
+import random
 
 import numpy as np
 import pandas as pd
@@ -115,7 +116,7 @@ def process_single_pair_task_split(
                 model_preprocessing_interface.model_flags["uses_mirrored_pair"]
                 and is_symmetrical_pair
             ):
-                inp_m = model_preprocessing_interface.boundary_token_fn(input1, input2)
+                inp_m = model_preprocessing_interface.boundary_token_fn(input2, input1)
                 d["inputs_m"] = sentence_to_text_field(inp_m, indexers)
         else:
             d["input1"] = sentence_to_text_field(
@@ -2424,7 +2425,6 @@ class CCGTaggingTask(TaggingTask):
 
     def update_metrics(self, out, batch):
         logits, labels = out["logits"], out["labels"]
-        assert len(self.get_scorers()) > 0, "Please specify a score metric"
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
@@ -3732,3 +3732,125 @@ class WinograndeTask(MultipleChoiceTask):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
+
+
+@register_task("wikipedia_corpus_sop", rel_path="wikipedia_corpus_small")
+class SentenceOrderTask(Task):
+    """ Task class for Sentence Order Prediction (SOP) with Wikipedia data (more specifically,
+        the dump from Wikimedia). See the ALBERT paper for details on SOP: https://arxiv.org/abs/1909.11942.
+        We are currently using an unpreprocessed version of the Wikipedia corpus
+        that consists of 5% of the data. You can generate the data by following the
+        instructions from jiant/scripts/mlm.
+    """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(SentenceOrderTask, self).__init__(name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.n_classes = 2
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+        self.files_by_split = {
+            "train": os.path.join(path, "train.txt"),
+            "val": os.path.join(path, "valid.txt"),
+            "test": os.path.join(path, "test.txt"),
+        }
+        self.val_metric_decreases = False
+        self.val_metric = "%s_accuracy" % self.name
+        self.acc_scorer = BooleanAccuracy()
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.acc_scorer.get_metric(reset)
+        return {"accuracy": acc}
+
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        _, preds = logits.max(dim=1)
+        self.acc_scorer(preds, labels)
+
+    def get_data_iter(self, path):
+        """Loading data file and tokenizing the text
+        Args:
+            path: (str) data file path
+        """
+        f = open(path, "r")
+        text = [line.strip() for line in f]
+        for i in range(len(text) - 1):
+            if random.uniform(0, 1) > 0.5:
+                is_right_order = 1
+                sent_a = text[i]
+                sent_b = text[i + 1]
+            else:
+                is_right_order = 0
+                sent_a = text[i + 1]
+                sent_b = text[i]
+            sent_a_processed = tokenize_and_truncate(
+                self._tokenizer_name, sent_a, self.max_seq_len // 2
+            )
+            sent_b_processed = tokenize_and_truncate(
+                self._tokenizer_name, sent_b, self.max_seq_len // 2
+            )
+            yield (sent_a_processed, sent_b_processed, is_right_order)
+
+    def load_data(self):
+        pass
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """Process a sentence order prediction split by indexing and creating fields.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
+
+        def _make_instance(sent_):
+            sent_a, sent_b, is_right_order = sent_
+            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
+                inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
+                input_sent = sentence_to_text_field(inp, indexers)
+                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+                d = {"inputs": input_sent, "labels": label}
+            else:
+                inp1 = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(sent_a), indexers
+                )
+                inp2 = sentence_to_text_field(
+                    model_preprocessing_interface.boundary_token_fn(sent_b), indexers
+                )
+                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+                d = {"input1": inp1, "input2": inp2, "targs": label}
+            return Instance(d)
+
+        for sent in split:
+            yield _make_instance(sent)
+
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
+        self.example_counts = example_counts
+
+    def get_split_text(self, split: str):
+        """Get split text as iterable of records.
+        Args:
+            split: (str) should be one of 'train', 'val', or 'test'.
+        """
+        return self.get_data_iter(self.files_by_split[split])
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """Yield sentences, used to compute vocabulary.
+        """
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for sent in self.get_data_iter(self.files_by_split[split]):
+                yield sent[0]
+                yield sent[1]

@@ -307,7 +307,7 @@ class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.cls
         lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -420,7 +420,7 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.predictions
         lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -729,4 +729,4 @@ class XLMEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.pred_layer
         lm_head.proj.weight = self.model.embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head

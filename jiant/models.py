@@ -31,6 +31,7 @@ from jiant.modules.simple_modules import (
     PairClassifier,
     NullPhraseLayer,
     TokenMultiProjectionEncoder,
+    SOPClassifier,
 )
 from jiant.modules.attn_pair_encoder import AttnPairEncoder
 from jiant.modules.sentence_encoder import SentenceEncoder
@@ -45,7 +46,7 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.huggingface_transformers_interface import input_module_uses_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.tasks.lm import LanguageModelingTask, MaskedLanguageModelingTask, SentenceOrderTask
+from jiant.tasks.lm import AutoregressiveLanguageModelingTask, MaskedLanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.seq2seq import Seq2SeqTask
@@ -65,6 +66,7 @@ from jiant.tasks.tasks import (
     WiCTask,
     MRPCTask,
     QQPTask,
+    SentenceOrderTask,
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -159,12 +161,12 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks):
-        assert_for_log(
-            args.sent_enc in ["rnn", "bilm", "none"], "Only RNNLM or sent_enc=None supported!"
-        )
-        if not any(isinstance(task, MaskedLanguageModelingTask) for task in tasks):
-            # If an autoregressive LanguageModelingTask
+    elif (
+        any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks)
+        or args.sent_enc == "bilm"
+    ):
+        assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
+        if any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks):
             assert_for_log(
                 not (
                     args.input_module == "elmo"
@@ -175,28 +177,18 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                 "good idea, since it allows the language model to use information from the right-hand "
                 "context.",
             )
-        if args.sent_enc == "none":
-            assert_for_log(
-                args.skip_embs,
-                "skip_embs is false and sent_enc is none, "
-                "which means that your token representations are zero-dimensional. "
-                "Consider setting skip_embs.",
-            )
-            phrase_layer = NullPhraseLayer(rnn_params["input_size"])
-            d_sent = 0
-        else:
-            phrase_layer = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
-            d_sent = 2 * args.d_hid
+        bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
             vocab,
             embedder,
             args.n_layers_highway,
-            phrase_layer,
+            bilm,
             skip_embs=args.skip_embs,
             dropout=args.dropout,
             sep_embs_for_skip=args.sep_embs_for_skip,
             cove_layer=cove_layer,
         )
+        d_sent = 2 * args.d_hid
     elif args.sent_enc == "bow":
         sent_encoder = BoWSentEncoder(vocab, embedder)
         assert_for_log(
@@ -570,7 +562,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, MaskedLanguageModelingTask):
         module = build_mlm(model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, LanguageModelingTask):
+    elif isinstance(task, AutoregressiveLanguageModelingTask):
         assert not input_module_uses_transformers(args.input_module), (
             "our LM Task does not support transformers, if you need them, try to update",
             "corresponding parts of the code. You may find get_pretrained_lm_head and",
@@ -701,13 +693,30 @@ def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool,
 
 
 def build_sop(task, d_inp, model, params, args):
-    project_before_pooling = True
-    module = build_pair_sentence_module(task, d_inp, model, params, project_before_pooling)
+    """
+    Build and load the pretrained head for the sentence order prediction task.
+    Right now, there is only support for ALBERT.
+    Parameters
+    ----------
+    task: Task,
+    d_inp: int,
+    model: MultiTaskModel,
+    params: Params
+
+    Returns
+    -------
+    module: Pooler object, which is loaded with pretrained weights from ALBERT SOP
+    pretraining. 
+
+    """
+    module = SOPClassifier(d_inp, task.n_classes, params)
+    # The huggingface implementation exposes the pretrained projection layer for the SOP task, which
+    # we use. See: https://github.com/huggingface/transformers/issues/2671 for more details.
     module.pooler.project = model.sent_encoder._text_field_embedder.model.pooler
     return module
 
 
-def build_pair_sentence_module(task, d_inp, model, params, project_before_pooling=None):
+def build_pair_sentence_module(task, d_inp, model, params):
     """ Build a pair classifier, shared if necessary """
 
     def build_pair_attn(d_in, d_hid_attn):
@@ -732,8 +741,6 @@ def build_pair_sentence_module(task, d_inp, model, params, project_before_poolin
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
-        if project_before_pooling is not None:
-            model.project_before_pooling = project_before_pooling
         pooler = Pooler(
             project=model.project_before_pooling,
             d_inp=d_inp,
@@ -777,7 +784,7 @@ def build_lm(task, d_inp, args):
 
 
 def build_mlm(embedder):
-    " Build MLM components " ""
+    " Build MLM components "
     lm_head = embedder.get_pretrained_lm_head()
     return lm_head
 
@@ -891,7 +898,7 @@ class MultiTaskModel(nn.Module):
             out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, MaskedLanguageModelingTask):
             out = self._masked_lm_forward(batch, task, predict)
-        elif isinstance(task, LanguageModelingTask):
+        elif isinstance(task, AutoregressiveLanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or isinstance(
                 self.sent_encoder._phrase_layer, PRPN
             ):
@@ -906,7 +913,13 @@ class MultiTaskModel(nn.Module):
             # Just get embeddings and invoke task module.
             word_embs_in_context, sent_mask = self.sent_encoder(batch["input1"], task)
             module = getattr(self, "%s_mdl" % task.name)
-            out = module.forward(batch, word_embs_in_context, sent_mask, task, predict)
+            out = module.forward(
+                batch=batch,
+                word_embs_in_context=word_embs_in_context,
+                sent_mask=sent_mask,
+                task=task,
+                predict=predict,
+            )
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, (MultiRCTask, ReCoRDTask)):
@@ -915,6 +928,8 @@ class MultiTaskModel(nn.Module):
             out = self._span_forward(batch, task, predict)
         elif isinstance(task, SpanPredictionTask):
             out = self._span_prediction_forward(batch, task, predict)
+        elif isinstance(task, SentenceOrderTask):
+            out = self._sop_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -1024,6 +1039,21 @@ class MultiTaskModel(nn.Module):
             out["preds"] = {"span_start": pred_span_start, "span_end": pred_span_end}
         return out
 
+    def _sop_forward(self, batch, task, predict):
+        out = {}
+        word_embs_in_context, sent_mask = self.sent_encoder(batch["inputs"], task)
+        classifier = self._get_classifier(task)
+        logits = classifier.forward(word_embs_in_context, sent_mask)
+        out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch, self._cuda_device)
+        if "labels" in batch:  # means we should compute loss
+            labels = batch["labels"]
+            out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
+            out["labels"] = labels
+        if predict:
+            _, out["preds"] = logits.max(dim=1)
+        return out
+
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
         classifier = self._get_classifier(task)
@@ -1112,7 +1142,6 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         # batch[inputs] only has one item
-
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         # Note: we are assuming there is one beginning and one ending token, when that no longer
@@ -1127,15 +1156,8 @@ class MultiTaskModel(nn.Module):
             # such as word boundaries
             batch_mask = batch["mask"][:, :seq_len]
             keep_idxs = torch.nonzero(batch_mask.contiguous().view(-1).data).squeeze()
-            """
-            print("seq_len: ", seq_len)
-            print("targs before masking: ", targs)
-            print("keep size: ", keep_idxs.size())
-            print("targs size: ", targs.size())
-            """
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
-
             out["labels"] = targs
             out["logits"] = logits
         out["loss"] = format_output(F.cross_entropy(logits, targs), self._cuda_device)
@@ -1200,56 +1222,23 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _masked_lm_forward(self, batch, task, predict):
-        mlm_probability = 0.15
+        """
+        We currently only support RoBERTa-style dynamic masking, with the exact 
+        setup and parameters as RoBERTa. 
+        """
         out = {}
-        sent_encoder = self.sent_encoder
         tokenizer_name = self.sent_encoder._text_field_embedder.input_module
-        vocab_size = (
-            self.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings
-        )
-        tokenizer = get_tokenizer(tokenizer_name)
-        input_key = self.sent_encoder._text_field_embedder.tokenizer_required
-        # Masking code from https://github.com/huggingface/transformers/blob/master/examples/run_language_modeling.py
-        mask_idx = self.sent_encoder._text_field_embedder._mask_id
+        text_embedder = self.sent_encoder._text_field_embedder
+        vocab_size = text_embedder.model.embeddings.word_embeddings.num_embeddings
+        input_key = text_embedder.tokenizer_required
+        mask_idx = text_embedder._mask_id
         b_size, seq_len = batch["targs"].size()
         inputs = batch["input"][input_key]
         labels = batch["targs"]
-
-        probability_matrix = torch.full(labels.shape, mlm_probability, device=inputs.device)
-        padding_mask = labels.eq(0)
-        probability_matrix.masked_fill_(padding_mask, value=0.0)
-
-        masked_indices = torch.bernoulli(probability_matrix).to(
-            device=inputs.device, dtype=torch.uint8
+        inputs, labels, _, _, _, _ = task.mlm_dynamic_masking(
+            inputs, labels, mask_idx, tokenizer_name, self.sent_encoder
         )
-        tokenizer_name = self.sent_encoder._text_field_embedder.tokenizer_required
-        labels, _ = self.sent_encoder._text_field_embedder.correct_sent_indexing(
-            {tokenizer_name: labels}
-        )
-        labels[~masked_indices] = -100  # We only compute loss on masked tokens
-
-        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        indices_replaced = (
-            torch.bernoulli(torch.full(labels.shape, 0.8)).to(
-                device=inputs.device, dtype=torch.uint8
-            )
-            & masked_indices
-        )
-        inputs[indices_replaced] = mask_idx
-
-        # 10% of the time, we replace masked input tokens with random word
-        indices_random = (
-            torch.bernoulli(torch.full(labels.shape, 0.5)).to(
-                device=inputs.device, dtype=torch.uint8
-            )
-            & masked_indices
-            & ~indices_replaced
-        )
-        random_words = torch.randint(
-            len(tokenizer), labels.shape, dtype=torch.long, device=inputs.device
-        )
-        inputs[indices_random] = random_words[indices_random]
-
+        batch["input"][input_key] = inputs
         sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
         module = getattr(self, "%s_mdl" % task.name)
         logits = module.forward(sent_embs)
