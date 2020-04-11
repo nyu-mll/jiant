@@ -3744,10 +3744,10 @@ class SentenceOrderTask(Task):
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(SentenceOrderTask, self).__init__(name, n_classes=2, **kw)
+        super(SentenceOrderTask, self).__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
-
+        self.n_classes = 2
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
@@ -3756,6 +3756,20 @@ class SentenceOrderTask(Task):
             "val": os.path.join(path, "valid.txt"),
             "test": os.path.join(path, "test.txt"),
         }
+        self.val_metric_decreases = False
+        self.val_metric = "%s_accuracy" % self.name
+        self.acc_scorer = BooleanAccuracy()
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.acc_scorer.get_metric(reset)
+        return {"accuracy": acc}
+
+    def update_metrics(self, out, batch):
+        logits = out["logits"]
+        labels = out["labels"]
+        _, preds = logits.max(dim=1)
+        self.acc_scorer(preds, labels)
 
     def get_data_iter(self, path):
         """Loading data file and tokenizing the text
@@ -3763,7 +3777,6 @@ class SentenceOrderTask(Task):
             path: (str) data file path
         """
         with open(path, encoding="utf-8") as txt_fh:
-
             for row in txt_fh:
                 toks = row.strip()
                 sentences = row.split(".")

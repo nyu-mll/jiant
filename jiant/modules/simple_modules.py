@@ -94,14 +94,15 @@ class Classifier(nn.Module):
         )
 
 
-class SOPClassifier:
+class SOPClassifier(nn.Module):
     def __init__(self, d_inp, n_classes, params):
-        self.linear = nn.Linear(d_inp, d_inp)
+        super(SOPClassifier, self).__init__()
         self.activation = nn.Tanh()
+        self.pooler = Pooler(d_inp=d_inp, d_proj=d_inp, pool_type=params["pool_type"])
         self.classifier = Classifier.from_params(d_inp, n_classes, params)
 
-    def forward(self, seq_emb):
-        seq_emb = self.activation(self.linear(seq_emb))
+    def forward(self, seq_emb, mask):
+        seq_emb = self.activation(self.pooler(seq_emb, mask))
         logits = self.classifier(seq_emb)
         return logits
 

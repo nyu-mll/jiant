@@ -692,7 +692,7 @@ def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool,
     return module
 
 
-def build_sop(task, d_inp, model, params):
+def build_sop(task, d_inp, model, params, args):
     """
     Build and load the pretrained head for the sentence order prediction task.
     Parameters
@@ -713,7 +713,7 @@ def build_sop(task, d_inp, model, params):
     module = SOPClassifier(d_inp, task.n_classes, params)
     # The huggingface implementation exposes the pretrained projection layer for the SOP task, which
     # we use. See: https://github.com/huggingface/transformers/issues/2671 for more details.
-    module.linear = model.sent_encoder._text_field_embedder.model.pooler
+    module.pooler.project = model.sent_encoder._text_field_embedder.model.pooler
     return module
 
 
@@ -929,6 +929,8 @@ class MultiTaskModel(nn.Module):
             out = self._span_forward(batch, task, predict)
         elif isinstance(task, SpanPredictionTask):
             out = self._span_prediction_forward(batch, task, predict)
+        elif isinstance(task, SentenceOrderTask):
+            out = self._sop_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -1036,6 +1038,21 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             out["preds"] = {"span_start": pred_span_start, "span_end": pred_span_end}
+        return out
+
+    def _sop_forward(self, batch, task, predict):
+        out = {}
+        word_embs_in_context, sent_mask = self.sent_encoder(batch["inputs"], task)
+        classifier = self._get_classifier(task)
+        logits = classifier.forward(word_embs_in_context, sent_mask)
+        out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch, self._cuda_device)
+        if "labels" in batch:  # means we should compute loss
+            labels = batch["labels"]
+            out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
+            out["labels"] = labels
+        if predict:
+            _, out["preds"] = logits.max(dim=1)
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):
