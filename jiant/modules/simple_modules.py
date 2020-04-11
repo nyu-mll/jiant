@@ -94,6 +94,18 @@ class Classifier(nn.Module):
         )
 
 
+class SOPClassifier:
+    def __init__(self, d_inp, n_classes, params):
+        self.linear = nn.Linear(d_inp, d_inp)
+        self.activation = nn.Tanh()
+        self.classifier = Classifier.from_params(d_inp, n_classes, params)
+
+    def forward(self, seq_emb):
+        seq_emb = self.activation(self.linear(seq_emb))
+        logits = self.classifier(seq_emb)
+        return logits
+
+
 class SingleClassifier(nn.Module):
     """ Thin wrapper around a set of modules. For single-sentence classification. """
 

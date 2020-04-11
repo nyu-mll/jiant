@@ -3735,7 +3735,7 @@ class WinograndeTask(MultipleChoiceTask):
 
 
 @register_task("wikipedia_corpus_sop", rel_path="wikipedia_corpus_small")
-class SentenceOrderTask(PairClassificationTask):
+class SentenceOrderTask(Task):
     """ Task class for Sentence Order Prediction (SOP) with wikipedia data.
         See the ALBERT paper for details on SOP: https://arxiv.org/abs/1909.11942.
         We are currently using an unpreprocessed version of the Wikipedia corpus
@@ -3762,13 +3762,9 @@ class SentenceOrderTask(PairClassificationTask):
         Args:
             path: (str) data file path
         """
-        count = 0
         with open(path, encoding="utf-8") as txt_fh:
 
             for row in txt_fh:
-                count += 1
-                if count == 10:
-                    break
                 toks = row.strip()
                 sentences = row.split(".")
                 if len(sentences) <= 1:
