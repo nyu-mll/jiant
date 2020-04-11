@@ -21,11 +21,11 @@ def run_trials(
     batch_size_override,
 ):
     storage = "sqlite:///example.db"
-    if input_module != "default":
-        study_name = f"{full_task_name}_{input_module}"
-    else:
+    study_name = f"{full_task_name}_{input_module}"
+    # temporary code to cope with an early code design
+    if input_module == "roberta-large":
         study_name = full_task_name
-        input_module = "roberta-large"
+    # temporary code to cope with an early code design
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(
         study_name=study_name,
@@ -132,10 +132,10 @@ def run_trials(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run Optuna trails")
+    parser = argparse.ArgumentParser(description="Run Optuna trials")
     parser.add_argument("--study-name", type=str)
     parser.add_argument("--gpu-available", type=int)
-    parser.add_argument("--n-trails", type=int)
+    parser.add_argument("--n-trials", type=int)
     parser.add_argument(
         "--input-module",
         type=str,
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     run_trials(
-        args.full_task_name,
+        args.study_name,
         args.gpu_available,
         args.n_trials,
         args.input_module,
