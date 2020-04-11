@@ -3736,8 +3736,8 @@ class WinograndeTask(MultipleChoiceTask):
 
 @register_task("wikipedia_corpus_sop", rel_path="wikipedia_corpus_small")
 class SentenceOrderTask(Task):
-    """ Task class for Sentence Order Prediction (SOP) with wikipedia data.
-        See the ALBERT paper for details on SOP: https://arxiv.org/abs/1909.11942.
+    """ Task class for Sentence Order Prediction (SOP) with Wikipedia data (more specifically,
+        the dump from Wikimedia). See the ALBERT paper for details on SOP: https://arxiv.org/abs/1909.11942.
         We are currently using an unpreprocessed version of the Wikipedia corpus
         that consists of 5% of the data. You can generate the data by following the
         instructions from jiant/scripts/mlm.
