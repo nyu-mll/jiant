@@ -3776,29 +3776,27 @@ class SentenceOrderTask(Task):
         Args:
             path: (str) data file path
         """
-        with open(path, encoding="utf-8") as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                sentences = row.split(".")
-                if len(sentences) <= 1:
-                    continue
-                else:
-                    for i in range(len(sentences) - 1):
-                        if random.uniform(0, 1) > 0.5:
-                            is_right_order = 1
-                            sent_a = sentences[i]
-                            sent_b = sentences[i + 1]
-                        else:
-                            is_right_order = 0
-                            sent_a = sentences[i + 1]
-                            sent_b = sentences[i]
-                        sent_a_processed = tokenize_and_truncate(
-                            self._tokenizer_name, sent_a, self.max_seq_len // 2
-                        )
-                        sent_b_processed = tokenize_and_truncate(
-                            self._tokenizer_name, sent_b, self.max_seq_len // 2
-                        )
-                        yield (sent_a_processed, sent_b_processed, is_right_order)
+        import csv
+
+        f = open(path, "r")
+        reader = csv.reader(f)
+        text = list(reader)
+        for i in range(len(text) - 1):
+            if random.uniform(0, 1) > 0.5:
+                is_right_order = 1
+                sent_a = text[i]
+                sent_b = text[i + 1]
+            else:
+                is_right_order = 0
+                sent_a = text[i + 1]
+                sent_b = text[i]
+            sent_a_processed = tokenize_and_truncate(
+                self._tokenizer_name, sent_a, self.max_seq_len // 2
+            )
+            sent_b_processed = tokenize_and_truncate(
+                self._tokenizer_name, sent_b, self.max_seq_len // 2
+            )
+            yield (sent_a_processed, sent_b_processed, is_right_order)
 
     def load_data(self):
         pass

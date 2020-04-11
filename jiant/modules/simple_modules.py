@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from jiant.utils.utils import assert_for_log
 
 
 class NullPhraseLayer(nn.Module):
@@ -95,10 +96,19 @@ class Classifier(nn.Module):
 
 
 class SOPClassifier(nn.Module):
+    """
+    Task head for sentence order prediction task, which consists of a linear layer
+    followed by Tanh activation layer, followed by another linear layer.
+    """
+
     def __init__(self, d_inp, n_classes, params):
         super(SOPClassifier, self).__init__()
         self.activation = nn.Tanh()
         self.pooler = Pooler(d_inp=d_inp, d_proj=d_inp, pool_type=params["pool_type"])
+        assert_for_log(
+            params["cls_type"] == "log_reg",
+            "Please set classifier=log_reg in your config to use" "SOP prediction task",
+        )
         self.classifier = Classifier.from_params(d_inp, n_classes, params)
 
     def forward(self, seq_emb, mask):
