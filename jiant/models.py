@@ -31,6 +31,7 @@ from jiant.modules.simple_modules import (
     PairClassifier,
     NullPhraseLayer,
     TokenMultiProjectionEncoder,
+    SOPClassifier,
 )
 from jiant.modules.attn_pair_encoder import AttnPairEncoder
 from jiant.modules.sentence_encoder import SentenceEncoder
@@ -709,15 +710,14 @@ def build_sop(task, d_inp, model, params):
     """
     # By default, we do not project before pooling. Since the projection weights is what is
     # exposed in huggingface for the pretrained weights, we set projection to true.
-    project_before_pooling = True
-    module = build_pair_sentence_module(task, d_inp, model, params, project_before_pooling)
+    module = SOPClassifier(d_inp, task.n_classes, params)
     # The huggingface implementation exposes the pretrained projection layer for the SOP task, which
     # we use. See: https://github.com/huggingface/transformers/issues/2671 for more details.
-    module.pooler.project = model.sent_encoder._text_field_embedder.model.pooler
+    module.linear = model.sent_encoder._text_field_embedder.model.pooler
     return module
 
 
-def build_pair_sentence_module(task, d_inp, model, params, project_before_pooling=None):
+def build_pair_sentence_module(task, d_inp, model, params):
     """ Build a pair classifier, shared if necessary """
 
     def build_pair_attn(d_in, d_hid_attn):
@@ -742,8 +742,6 @@ def build_pair_sentence_module(task, d_inp, model, params, project_before_poolin
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
-        if project_before_pooling is not None:
-            model.project_before_pooling = project_before_pooling
         pooler = Pooler(
             project=model.project_before_pooling,
             d_inp=d_inp,
