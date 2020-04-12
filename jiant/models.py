@@ -705,7 +705,7 @@ def build_sop(task, d_inp, model, params, args):
 
     Returns
     -------
-    module: Pooler object, which is loaded with pretrained weights from ALBERT SOP
+    module: SOPCLassifier, which is loaded with pretrained weights from ALBERT SOP
     pretraining. 
 
     """
