@@ -184,7 +184,7 @@ class WikiText103LMTask(WikiTextLMTask):
         }
 
 
-@register_task("wikipedia_corpus_mlm", rel_path="wikipedia_corpus_small_toy/")
+@register_task("wikipedia_corpus_mlm", rel_path="wikipedia_corpus_small/")
 class MaskedLanguageModelingTask(Task):
     """
     Masked language modeling task on Wikipedia dataset
@@ -250,7 +250,9 @@ class MaskedLanguageModelingTask(Task):
     def get_data_iter(self, path):
         """
         Loading data file and tokenizing the text. We treat the Wikipedia corpus as a
-        long sequence, and we take each slice of 510 tokens as an example.
+        long sequence, and we take each slice of 510 tokens as an example. The dataset
+        consists of a sentence per row in the file. This function concatenate all of the sentences,
+        before going through the sequence and yielding each chunk of 512 tokens.
         Args:
             path: (str) data file path
         """
