@@ -249,7 +249,7 @@ class MaskedLanguageModelingTask(Task):
         """
         Loading data file and tokenizing the text. We treat the Wikipedia corpus as a
         long sequence, and we take each slice of 510 tokens as an example. The dataset
-        consists of a sentence per row in the file. This function concatenate all of the sentences,
+        consists of a sentence per row in the file. This function concatenates all of the sentences,
         before going through the sequence and yielding each chunk of 510 tokens.
         Args:
             path: (str) data file path
