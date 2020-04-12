@@ -3735,19 +3735,15 @@ class WinograndeTask(MultipleChoiceTask):
 
 
 @register_task("wikipedia_corpus_sop", rel_path="wikipedia_corpus_small")
-class SentenceOrderTask(Task):
+class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction (SOP). See the ALBERT paper for details on SOP:
         https://arxiv.org/abs/1909.11942.
         We are currently using an unpreprocessed version of the Wikipedia corpus
         (more specifically, the Wikidump data) that consists of 5% of the data. You can generate
         the data by following the instructions from jiant/scripts/mlm.
-        There are several key things to note about our SOP ALBERT implementation.
-            1. We do not load the pretrained weights for the SOP head beacuse they are
-            unavailable in Huggingface. We only use the pretrained weights of the linear layer
-            from ALBERT that creates the pooled output used in SOP.
-            2. jiant supports a multitask version of the ALBERT pretraining regime, which requires
-            at each training step for each piece of text running that text through MLM and SOP head
-            at the same time.
+        One thing to note about our SOP ALBERT implementationn is that we do not load the pretrained
+        weights for the SOP head beacuse they are unavailable in Huggingface. We only use the
+        pretrained weights of the linear layer from ALBERT that creates the pooled output used in SOP.
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
@@ -3769,10 +3765,13 @@ class SentenceOrderTask(Task):
         this function and all functions that call this function because
         the step of reading in the data for SOP is different than other
         PairClassificationTasks.
+
         Args:
             path: (str) data file path
         """
         f = open(path, "r")
+        #  The dataset comes with one sentence per line, thus we split by
+        #  line here.
         text = [line.strip() for line in f]
         for i in range(len(text) - 1):
             if random.uniform(0, 1) > 0.5:
@@ -3794,6 +3793,29 @@ class SentenceOrderTask(Task):
     def load_data(self):
         pass
 
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """Process a sentence order prediction split by indexing and creating fields.
+        We override the PairClassificationTask process_split because our data split
+        is different from the typical PairClassificationTask due to the more memory-efficient
+        generator way of loading data we employ for SOP due to the dataset size.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
+
+        def _make_instance(sent_):
+            sent_a, sent_b, is_right_order = sent_
+            inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
+            input_sent = sentence_to_text_field(inp, indexers)
+            label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+            d = {"inputs": input_sent, "labels": label}
+            return Instance(d)
+
+        for sent in split:
+            yield _make_instance(sent)
+
     def get_split_text(self, split: str):
         """Get split text as iterable of records.
         Args:
@@ -3811,3 +3833,12 @@ class SentenceOrderTask(Task):
             for sent in self.get_data_iter(self.files_by_split[split]):
                 yield sent[0]
                 yield sent[1]
+
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
+        self.example_counts = example_counts

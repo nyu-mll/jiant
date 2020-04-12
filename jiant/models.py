@@ -706,6 +706,10 @@ def build_sop(task, d_inp, model, params):
     pretraining. 
 
     """
+    input_module = model.sent_encoder.self._text_field_embedder.input_module
+    assert (
+        "albert" in input_module
+    ), "SOP is only supported for ALBERT, please set input_module to an ALBERT model"
     module = SOPClassifier(d_inp, task.n_classes, params)
     # The huggingface implementation exposes the pretrained projection layer for the SOP task, which
     # we use. See: https://github.com/huggingface/transformers/issues/2671 for more details.
