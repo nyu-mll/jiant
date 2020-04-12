@@ -106,7 +106,7 @@ class SOPClassifier(nn.Module):
         self.activation = nn.Tanh()
         self.pooler = Pooler(d_inp=d_inp, d_proj=d_inp, pool_type=params["pool_type"])
         assert params["cls_type"] == "log_reg", (
-            "THe ALBERT implementation of the SOP "
+            "The ALBERT implementation of the SOP "
             "task takes the final layer from the pooled"
             "output. Please set cls_type = log_reg."
         )
