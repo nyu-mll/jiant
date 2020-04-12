@@ -84,6 +84,8 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
         Args:
             path: (str) data file path
         """
+        seq_len = self.max_seq_len
+        tokens = []
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -182,7 +184,7 @@ class WikiText103LMTask(WikiTextLMTask):
         }
 
 
-@register_task("wikipedia_corpus_mlm", rel_path="wikipedia_corpus_small/")
+@register_task("wikipedia_corpus_mlm", rel_path="wikipedia_corpus_small_toy/")
 class MaskedLanguageModelingTask(Task):
     """
     Masked language modeling task on Wikipedia dataset
@@ -250,12 +252,22 @@ class MaskedLanguageModelingTask(Task):
         Args:
             path: (str) data file path
         """
+        seq_len = self.max_seq_len - 1 
+        tokens = []
         with open(path, "r", encoding="utf-8") as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+                toks_v = ['<s>'] + tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len) + ['</s>']
+                tokens += toks_v
+            for i in range(0, len(tokens), seq_len):
+                tok_example = tokens[i : i + seq_len]
+                if tok_example[-1] != '</s>':
+                    yield tok_example + ['</s>']
+                else:
+                    yield tok_example
+
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -267,8 +279,6 @@ class MaskedLanguageModelingTask(Task):
         """
 
         def _make_instance(sent_):
-            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
-
             input_sent = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": input_sent,
