@@ -84,8 +84,6 @@ class AutoregressiveLanguageModelingTask(SequenceGenerationTask):
         Args:
             path: (str) data file path
         """
-        seq_len = self.max_seq_len
-        tokens = []
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
