@@ -559,9 +559,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, MaskedLanguageModelingTask):
         module = build_mlm(model.sent_encoder._text_field_embedder)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, SentenceOrderTask):
-        module = build_sop(task, d_sent, model, task_params, args)
-        setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, AutoregressiveLanguageModelingTask):
         assert not input_module_uses_transformers(args.input_module), (
             "our LM Task does not support transformers, if you need them, try to update",
@@ -692,7 +689,7 @@ def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool,
     return module
 
 
-def build_sop(task, d_inp, model, params, args):
+def build_sop(task, d_inp, model, params):
     """
     Build and load the pretrained head for the sentence order prediction task.
     Right now, there is only support for ALBERT.
@@ -774,6 +771,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
         d_out = d_out + d_inp if isinstance(task, WiCTask) else d_out
         classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
+    if isinstance(task, SentenceOrderTask):
+        module = build_sop(task, d_inp, model, params)
     return module
 
 
@@ -1038,21 +1037,6 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             out["preds"] = {"span_start": pred_span_start, "span_end": pred_span_end}
-        return out
-
-    def _sop_forward(self, batch, task, predict):
-        out = {}
-        word_embs_in_context, sent_mask = self.sent_encoder(batch["inputs"], task)
-        classifier = self._get_classifier(task)
-        logits = classifier.forward(word_embs_in_context, sent_mask)
-        out["logits"] = logits
-        out["n_exs"] = get_batch_size(batch, self._cuda_device)
-        if "labels" in batch:  # means we should compute loss
-            labels = batch["labels"]
-            out["loss"] = format_output(F.cross_entropy(logits, labels), self._cuda_device)
-            out["labels"] = labels
-        if predict:
-            _, out["preds"] = logits.max(dim=1)
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):

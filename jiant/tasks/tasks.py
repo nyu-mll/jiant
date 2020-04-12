@@ -3751,10 +3751,9 @@ class SentenceOrderTask(Task):
     """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(SentenceOrderTask, self).__init__(name, **kw)
+        super(SentenceOrderTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
-        self.n_classes = 2
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
@@ -3763,23 +3762,13 @@ class SentenceOrderTask(Task):
             "val": os.path.join(path, "valid.txt"),
             "test": os.path.join(path, "test.txt"),
         }
-        self.val_metric_decreases = False
-        self.val_metric = "%s_accuracy" % self.name
-        self.acc_scorer = BooleanAccuracy()
-
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-        acc = self.acc_scorer.get_metric(reset)
-        return {"accuracy": acc}
-
-    def update_metrics(self, out, batch):
-        logits = out["logits"]
-        labels = out["labels"]
-        _, preds = logits.max(dim=1)
-        self.acc_scorer(preds, labels)
+        self._label_namespace = self.name + "_labels"
 
     def get_data_iter(self, path):
-        """Loading data file and tokenizing the text
+        """Loading data file and tokenizing the text. We override the
+        this function and all functions that call this function because
+        the step of reading in the data for SOP is different than other
+        PairClassificationTasks.
         Args:
             path: (str) data file path
         """
@@ -3804,45 +3793,6 @@ class SentenceOrderTask(Task):
 
     def load_data(self):
         pass
-
-    def process_split(
-        self, split, indexers, model_preprocessing_interface
-    ) -> Iterable[Type[Instance]]:
-        """Process a sentence order prediction split by indexing and creating fields.
-        Args:
-            split: (list) a single list of sentences
-            indexers: (Indexer object) indexer to index input words
-        """
-
-        def _make_instance(sent_):
-            sent_a, sent_b, is_right_order = sent_
-            if model_preprocessing_interface.model_flags["uses_pair_embedding"]:
-                inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
-                input_sent = sentence_to_text_field(inp, indexers)
-                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
-                d = {"inputs": input_sent, "labels": label}
-            else:
-                inp1 = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(sent_a), indexers
-                )
-                inp2 = sentence_to_text_field(
-                    model_preprocessing_interface.boundary_token_fn(sent_b), indexers
-                )
-                label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
-                d = {"input1": inp1, "input2": inp2, "targs": label}
-            return Instance(d)
-
-        for sent in split:
-            yield _make_instance(sent)
-
-    def count_examples(self):
-        """Computes number of samples
-        Assuming every line is one example.
-        """
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
-        self.example_counts = example_counts
 
     def get_split_text(self, split: str):
         """Get split text as iterable of records.

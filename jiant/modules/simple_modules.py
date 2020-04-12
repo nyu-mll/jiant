@@ -105,7 +105,11 @@ class SOPClassifier(nn.Module):
         super(SOPClassifier, self).__init__()
         self.activation = nn.Tanh()
         self.pooler = Pooler(d_inp=d_inp, d_proj=d_inp, pool_type=params["pool_type"])
-        assert params["cls_type"] == "log_reg"
+        assert params["cls_type"] == "log_reg", (
+            "THe ALBERT implementation of the SOP "
+            "task takes the final layer from the pooled"
+            "output. Please set cls_type = log_reg."
+        )
         self.classifier = Classifier.from_params(d_inp, n_classes, params)
 
     def forward(self, seq_emb, mask):
