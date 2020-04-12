@@ -3736,11 +3736,18 @@ class WinograndeTask(MultipleChoiceTask):
 
 @register_task("wikipedia_corpus_sop", rel_path="wikipedia_corpus_small")
 class SentenceOrderTask(Task):
-    """ Task class for Sentence Order Prediction (SOP) with Wikipedia data (more specifically,
-        the dump from Wikimedia). See the ALBERT paper for details on SOP: https://arxiv.org/abs/1909.11942.
+    """ Task class for Sentence Order Prediction (SOP). See the ALBERT paper for details on SOP:
+        https://arxiv.org/abs/1909.11942.
         We are currently using an unpreprocessed version of the Wikipedia corpus
-        that consists of 5% of the data. You can generate the data by following the
-        instructions from jiant/scripts/mlm.
+        (more specifically, the Wikidump data) that consists of 5% of the data. You can generate
+        the data by following the instructions from jiant/scripts/mlm.
+        There are several key things to note about our SOP ALBERT implementation.
+            1. We do not load the pretrained weights for the SOP head beacuse they are
+            unavailable in Huggingface. We only use the pretrained weights of the linear layer
+            from ALBERT that creates the pooled output used in SOP.
+            2. jiant supports a multitask version of the ALBERT pretraining regime, which requires
+            at each training step for each piece of text running that text through MLM and SOP head
+            at the same time.
     """
 
     def __init__(self, path, max_seq_len, name, **kw):

@@ -543,9 +543,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
             params=task_params,
         )
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, SentenceOrderTask):
-        module = build_sop(task, d_sent, model, task_params, args)
-        setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -561,6 +558,9 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_mdl" % task.name, hid2voc)
     elif isinstance(task, MaskedLanguageModelingTask):
         module = build_mlm(model.sent_encoder._text_field_embedder)
+        setattr(model, "%s_mdl" % task.name, module)
+    elif isinstance(task, SentenceOrderTask):
+        module = build_sop(task, d_sent, model, task_params, args)
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, AutoregressiveLanguageModelingTask):
         assert not input_module_uses_transformers(args.input_module), (
@@ -957,6 +957,7 @@ class MultiTaskModel(nn.Module):
         logits = classifier(word_embs_in_context, sent_mask)
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch, self._cuda_device)
+
         if "labels" in batch:  # means we should compute loss
             if batch["labels"].dim() == 0:
                 labels = batch["labels"].unsqueeze(0)
