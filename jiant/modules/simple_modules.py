@@ -96,7 +96,7 @@ class Classifier(nn.Module):
 
 class SOPClassifier(nn.Module):
     """
-    Task head for sentence order prediction task. We approximate the pooled output from ALBERT
+    Task head for sentence order prediction task. We implement the pooled output from ALBERT
     via a linear layer followed by Tanh activation layer, which is then fed into the
     classification linear layer.
     """
