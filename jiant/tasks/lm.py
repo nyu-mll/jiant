@@ -261,6 +261,7 @@ class MaskedLanguageModelingTask(Task):
                 toks = row.strip()
                 if not toks:
                     continue
+                toks = tokenize_and_truncate(self._tokenizer_name, toks, -1)
                 total_tokens += toks
             for i in range(0, len(total_tokens), seq_len):
                 tok_example = total_tokens[i : i + seq_len]
