@@ -3790,6 +3790,10 @@ class SentenceOrderTask(PairClassificationTask):
             tokenizer = get_tokenizer(tokenizer_name)
             return tokenizer.tokenize(sent)
 
+        def is_end_document(seg):
+            tokenized_eod = _tokenize(self._tokenizer_name, "END OF ARTICLE")
+            return set(tokenized_eod).issubset(set(seg))
+
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
@@ -3799,13 +3803,13 @@ class SentenceOrderTask(PairClassificationTask):
         while len(current_chunk) > 0:
             segment = next(f)
             segment = _tokenize(self._tokenizer_name, segment)
-            if "END OF ARTICLE" in segment or current_length >= target_seq_length:
+            if is_end_document(segment) or current_length >= target_seq_length:
                 for_next_chunk = []
                 if current_length > target_seq_length:
                     # Since the most current sentence added to the chunk exceeds the target
                     # length, we save it for the next chunk (next example).
                     for_next_chunk.append(current_chunk.pop())
-                if "END OF ARTICLE" not in segment:
+                if not is_end_document(segment):
                     for_next_chunk.append(segment)
                 target_seq_length = self.get_target_seq_length()
                 if len(current_chunk) >= 2:
@@ -3815,7 +3819,6 @@ class SentenceOrderTask(PairClassificationTask):
                     tokens_a = []
                     for j in range(a_end):
                         tokens_a.extend(current_chunk[j])
-
                     tokens_b = []
                     for j in range(a_end, len(current_chunk)):
                         tokens_b.extend(current_chunk[j])
@@ -3826,7 +3829,7 @@ class SentenceOrderTask(PairClassificationTask):
                         yield (tokens_b, tokens_a, in_order)
                 # if len(current_chunk) >=2, we will yield and reinitialize
                 # if len(current_chunk) ==1, we will not yeild, and reinitialize
-                if len(for_next_chunk) > 0 and "END OF ARTICLE" not in segment:
+                if len(for_next_chunk) > 0 and not is_end_document(segment):
                     # Make sure we only sample articles for each example that
                     # belong to the same document.
                     current_chunk = for_next_chunk
@@ -3836,7 +3839,7 @@ class SentenceOrderTask(PairClassificationTask):
                     try:  # Might run into StopIterationError
                         current_chunk = [_tokenize(self._tokenizer_name, next(f))]
                         current_length = len(current_chunk[0])
-                    except StopIterationError:
+                    except:
                         print("Done loading data for SOP")
                         current_chunk = []
                         current_length = 0
