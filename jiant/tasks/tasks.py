@@ -3789,7 +3789,7 @@ class SentenceOrderTask(PairClassificationTask):
         """
         def _tokenize(tokenizer_name, sent):
             tokenizer = get_tokenizer(tokenizer_name)
-            return tokenizer.tokenize(sent)[:]
+            return tokenizer.tokenize(sent)
             
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
