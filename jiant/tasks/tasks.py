@@ -3789,6 +3789,7 @@ class SentenceOrderTask(PairClassificationTask):
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
+        f = list(f) # to compute current_chunk == 1, we need to keep this in memory
         current_chunk = [tokenize_and_truncate(self._tokenizer_name, next(f), -1)]
         current_length = 0
         target_seq_length = self.get_target_seq_length()
@@ -3808,11 +3809,11 @@ class SentenceOrderTask(PairClassificationTask):
                 if len(current_chunk) >= 2:
                     # Make sure we have at least 2 sentences to distribute between the two
                     # segments.
-                    a_end = 1
                     a_end = random.randint(1, len(current_chunk) - 1)
                     tokens_a = []
                     for j in range(a_end):
                         tokens_a.extend(current_chunk[j])
+
                     tokens_b = []
                     for j in range(a_end, len(current_chunk)):
                         tokens_b.extend(current_chunk[j])
@@ -3821,16 +3822,18 @@ class SentenceOrderTask(PairClassificationTask):
                         yield (tokens_a, tokens_b, in_order)
                     else:
                         yield (tokens_b, tokens_a, in_order)
-                    if len(for_next_chunk) > 0:
-                        current_chunk = for_next_chunk
-                    else:
-                        # We find the next sentence for the next example.
-                        try:  # Might run into StopIterationError
-                            current_chunk = [next(f)]
-                        except StopIterationError:
-                            print("Done loading data for SOP")
-                            current_chunk = []
-                            pass
+                # if len(current_chunk) >=2, we will yield and reinitialize
+                # if len(current_chunk) ==1, we will not yeild, and reinitialize
+                if len(for_next_chunk) > 0:
+                    current_chunk = for_next_chunk
+                else:
+                    # We find the next sentence for the next example.
+                    try:  # Might run into StopIterationError
+                        current_chunk = [next(f)]
+                    except StopIterationError:
+                        print("Done loading data for SOP")
+                        current_chunk = []
+                        pass
             else:
                 current_chunk.append(segment)
                 current_length += len(segment)
