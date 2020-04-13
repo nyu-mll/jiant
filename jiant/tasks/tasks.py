@@ -3741,7 +3741,7 @@ class SentenceOrderTask(PairClassificationTask):
         We are currently using an unpreprocessed version of the Wikipedia corpus
         (more specifically, the Wikidump data) that consists of 5% of the data. You can generate
         the data by following the instructions from jiant/scripts/mlm.
-        One thing to note about our SOP ALBERT implementationn is that we do not load the pretrained
+        One thing to note about our SOP ALBERT implementation is that we do not load the pretrained
         weights for the SOP head beacuse they are unavailable in Huggingface. We only use the
         pretrained weights of the linear layer from ALBERT that creates the pooled output used in SOP.
     """
@@ -3798,38 +3798,36 @@ class SentenceOrderTask(PairClassificationTask):
             segment = tokenize_and_truncate(self._tokenizer_name, segment, -1)
             if "END OF ARTICLE" in segment or current_length >= target_seq_length:
                 for_next_chunk = []
-                if "END OF ARTICLE" not in segment:
-                    for_next_chunk.append(segment)
                 if current_length > target_seq_length:
                     # Since the most current sentence added to the chunk exceeds the target
                     # length, we save it for the next chunk (next example).
-                    for_next_chunk.append(current_chunk[-1])
-                    current_chunk.pop(-1)
+                    for_next_chunk.append(current_chunk.pop())
+                if "END OF ARTICLE" not in segment:
+                    for_next_chunk.append(segment)
                 target_seq_length = self.get_target_seq_length()
                 if len(current_chunk) >= 2:
                     # Make sure we have at least 2 sentences to distribute between the two
                     # segments.
                     a_end = 1
-                    if len(current_chunk) > 2:
-                        a_end = random.randint(1, len(current_chunk) - 1)
+                    a_end = random.randint(1, len(current_chunk) - 1)
                     tokens_a = []
                     for j in range(a_end):
                         tokens_a.extend(current_chunk[j])
                     tokens_b = []
                     for j in range(a_end, len(current_chunk)):
                         tokens_b.extend(current_chunk[j])
-                    if random.random() < 0.5:
-                        in_order = 0
-                        tokens_a, tokens_b = tokens_b, tokens_a
-                    yield (tokens_a, tokens_b, in_order)
-                    in_order = 1
+                    in_order = random.random() < 0.5
+                    if in_order:
+                        yield (tokens_a, tokens_b, in_order)
+                    else:
+                        yield (tokens_b, tokens_a, in_order)
                     if len(for_next_chunk) > 0:
                         current_chunk = for_next_chunk
                     else:
                         # We find the next sentence for the next example.
                         try:  # Might run into StopIterationError
                             current_chunk = [next(f)]
-                        except:
+                        except StopIterationError:
                             print("Done loading data for SOP")
                             current_chunk = []
                             pass
@@ -3852,16 +3850,16 @@ class SentenceOrderTask(PairClassificationTask):
             indexers: (Indexer object) indexer to index input words
         """
 
-        def _make_instance(sent_):
-            sent_a, sent_b, is_right_order = sent_
+        def _make_instance(sent_pairs_):
+            sent_a, sent_b, is_right_order = sent_pairs_
             inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
             input_sent = sentence_to_text_field(inp, indexers)
             label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
             d = {"inputs": input_sent, "labels": label}
             return Instance(d)
 
-        for sent in split:
-            yield _make_instance(sent)
+        for sent_pairs in split:
+            yield _make_instance(sent_pairs)
 
     def get_split_text(self, split: str):
         """Get split text as iterable of records.
@@ -3878,8 +3876,8 @@ class SentenceOrderTask(PairClassificationTask):
             if split.startswith("test"):
                 continue
             for sent in self.get_data_iter(self.files_by_split[split]):
+                # only counting sent[0] is enough for computing vocab
                 yield sent[0]
-                yield sent[1]
 
     def count_examples(self):
         """Computes number of samples
