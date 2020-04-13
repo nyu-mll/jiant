@@ -3,6 +3,7 @@ import tempfile
 import os
 from jiant.tasks.registry import REGISTRY
 
+
 class TestSOP(unittest.TestCase):
     def setUp(self):
         cls, _, kw = REGISTRY["wikipedia_corpus_sop"]
@@ -34,7 +35,5 @@ class TestSOP(unittest.TestCase):
             # This should be same number since seg_A and seg_B are from same document.
             assert example[0][0] == example[1][0]
             # Make sure END OF ARTICLE is not included as an example.
-            assert "=" not in "".join(
-                example[0] + example[1]
-            )
+            assert "=" not in "".join(example[0] + example[1])
             assert len(example[0]) + len(example[1]) <= self.max_seq_len - 3
