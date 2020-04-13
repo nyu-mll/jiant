@@ -3762,7 +3762,7 @@ class SentenceOrderTask(PairClassificationTask):
 
     def get_target_seq_length(self):
         target_is_max = random.random() > 0.1
-        max_seq_len = self.max_seq_len - 2
+        max_seq_len = self.max_seq_len - 3 # exclude [CLS], [SEP], and [SEP]
         if target_is_max:
             target_seq_length = max_seq_len
         else:
