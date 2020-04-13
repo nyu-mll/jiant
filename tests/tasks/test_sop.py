@@ -1,15 +1,7 @@
 import unittest
 import tempfile
 import os
-import random
-import copy
-import numpy as np
-from unittest import mock
 from jiant.tasks.registry import REGISTRY
-from jiant.modules.sentence_encoder import SentenceEncoder
-from jiant.huggingface_transformers_interface.modules import HuggingfaceTransformersEmbedderModule
-from jiant.modules.simple_modules import NullPhraseLayer
-
 
 class TestSOP(unittest.TestCase):
     def setUp(self):
@@ -39,8 +31,10 @@ class TestSOP(unittest.TestCase):
     def test_sop_preprocessing(self):
         train_examples = list(self.SOPTask.get_data_iter(self.train_path))
         for example in train_examples:
-            assert example[0][0] == example[1][0]  # should be same number.
+            # This should be same number since seg_A and seg_B are from same document.
+            assert example[0][0] == example[1][0]
+            # Make sure END OF ARTICLE is not included as an example.
             assert "=" not in "".join(
                 example[0] + example[1]
-            )  # Make sure END OF ARTICLE is not included as an example.
+            )
             assert len(example[0]) + len(example[1]) <= self.max_seq_len - 3
