@@ -3762,10 +3762,11 @@ class SentenceOrderTask(PairClassificationTask):
 
     def get_target_seq_length(self):
         target_is_max = random.random() > 0.1
+        max_seq_len = self.max_seq_len - 2
         if target_is_max:
-            target_seq_length = self.max_seq_len
+            target_seq_length = max_seq_len
         else:
-            target_seq_length = random.randint(2, self.max_seq_len)
+            target_seq_length = random.randint(2, max_seq_len)
         return target_seq_length
 
     def get_data_iter(self, path):
