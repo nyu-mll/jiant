@@ -3734,7 +3734,7 @@ class WinograndeTask(MultipleChoiceTask):
         return {"accuracy": acc}
 
 
-@register_task("wikipedia_corpus_sop", rel_path="wikipedia_corpus_small")
+@register_task("wikipedia_corpus_sop", rel_path="wikipedia_sop_small")
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction (SOP). See the ALBERT paper for details on SOP:
         https://arxiv.org/abs/1909.11942.
@@ -3762,7 +3762,7 @@ class SentenceOrderTask(PairClassificationTask):
 
     def get_target_seq_length(self):
         target_is_max = random.random() > 0.1
-        max_seq_len = self.max_seq_len - 3 # exclude [CLS], [SEP], and [SEP]
+        max_seq_len = self.max_seq_len - 3  # exclude [CLS], [SEP], and [SEP]
         if target_is_max:
             target_seq_length = max_seq_len
         else:
@@ -3776,21 +3776,20 @@ class SentenceOrderTask(PairClassificationTask):
         PairClassificationTasks.
 
         ALBERT does SOP classification by, for each document:
-            For each example:
-                -90% of the time, getting sentences of max_seq_length number of tokens, and
-                10% of the time, getting sentences of a random number of tokens between 2 and max_seq_length.
-                -Given the sampled sentences, randomly sample N such that the first N sentences in the 
+            For each example, we first fetch target_seq_length number of sentences from the dcoument:
+                -90% of the time, this target_seq_length is equal to max_seq_length,  and
+                10% of the time, it is set to a random number of tokens between 2 and max_seq_length.
+                -Given the sampled sentences, randomly sample N such that the first N sentences in the
                 sampled go to the first segment, and the rest go to the second. 
-                -50% of the time, the first and second segments are switched. 
-            There is also some logic here to make sure that we always split by the sentence instead of 
-            in the middle of a sentence.
+                -50% of the time, the first and second segments are switched.
         Args:
             path: (str) data file path
         """
+
         def _tokenize(tokenizer_name, sent):
             tokenizer = get_tokenizer(tokenizer_name)
             return tokenizer.tokenize(sent)
-            
+
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
@@ -3827,7 +3826,9 @@ class SentenceOrderTask(PairClassificationTask):
                         yield (tokens_b, tokens_a, in_order)
                 # if len(current_chunk) >=2, we will yield and reinitialize
                 # if len(current_chunk) ==1, we will not yeild, and reinitialize
-                if len(for_next_chunk) > 0:
+                if len(for_next_chunk) > 0 and "END OF ARTICLE" not in segment:
+                    # Make sure we only sample articles for each example that
+                    # belong to the same document.
                     current_chunk = for_next_chunk
                     current_length = len(for_next_chunk[0])
                 else:
