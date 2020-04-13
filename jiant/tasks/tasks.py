@@ -3789,7 +3789,6 @@ class SentenceOrderTask(PairClassificationTask):
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
-        f = list(f) # to compute current_chunk == 1, we need to keep this in memory
         current_chunk = [tokenize_and_truncate(self._tokenizer_name, next(f), -1)]
         current_length = 0
         target_seq_length = self.get_target_seq_length()
