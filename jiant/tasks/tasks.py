@@ -3760,35 +3760,82 @@ class SentenceOrderTask(PairClassificationTask):
         }
         self._label_namespace = self.name + "_labels"
 
+    def get_target_seq_length(self):
+        target_is_max = random.random() > 0.1
+        if target_is_max:
+            target_seq_length = self.max_seq_len
+        else:
+            target_seq_length = random.randint(2, self.max_seq_len)
+        return target_seq_length
+
     def get_data_iter(self, path):
         """Loading data file and tokenizing the text. We override the
         this function and all functions that call this function because
         the step of reading in the data for SOP is different than other
         PairClassificationTasks.
 
+        ALBERT does SOP classification by, for each document:
+            For each example:
+                -90% of the time, getting sentences of max_seq_length number of tokens, and
+                10% of the time, getting sentences of a random number of tokens between 2 and max_seq_length.
+                -Given the sampled sentences, randomly sample N such that the first N sentences in the 
+                sampled go to the first segment, and the rest go to the second. 
+                -50% of the time, the first and second segments are switched. 
+            There is also some logic here to make sure that we always split by the sentence instead of 
+            in the middle of a sentence.
         Args:
             path: (str) data file path
         """
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
-        text = [line.strip() for line in f]
-        for i in range(len(text) - 1):
-            if random.uniform(0, 1) > 0.5:
-                is_right_order = 1
-                sent_a = text[i]
-                sent_b = text[i + 1]
+        current_chunk = [tokenize_and_truncate(self._tokenizer_name, next(f), -1)]
+        current_length = 0
+        target_seq_length = self.get_target_seq_length()
+        in_order = 1
+        while len(current_chunk) > 0:
+            segment = next(f)
+            segment = tokenize_and_truncate(self._tokenizer_name, segment, -1)
+            if "END OF ARTICLE" in segment or current_length >= target_seq_length:
+                for_next_chunk = []
+                if "END OF ARTICLE" not in segment:
+                    for_next_chunk.append(segment)
+                if current_length > target_seq_length:
+                    # Since the most current sentence added to the chunk exceeds the target
+                    # length, we save it for the next chunk (next example).
+                    for_next_chunk.append(current_chunk[-1])
+                    current_chunk.pop(-1)
+                target_seq_length = self.get_target_seq_length()
+                if len(current_chunk) >= 2:
+                    # Make sure we have at least 2 sentences to distribute between the two
+                    # segments.
+                    a_end = 1
+                    if len(current_chunk) > 2:
+                        a_end = random.randint(1, len(current_chunk) - 1)
+                    tokens_a = []
+                    for j in range(a_end):
+                        tokens_a.extend(current_chunk[j])
+                    tokens_b = []
+                    for j in range(a_end, len(current_chunk)):
+                        tokens_b.extend(current_chunk[j])
+                    if random.random() < 0.5:
+                        in_order = 0
+                        tokens_a, tokens_b = tokens_b, tokens_a
+                    yield (tokens_a, tokens_b, in_order)
+                    in_order = 1
+                    if len(for_next_chunk) > 0:
+                        current_chunk = for_next_chunk
+                    else:
+                        # We find the next sentence for the next example.
+                        try:  # Might run into StopIterationError
+                            current_chunk = [next(f)]
+                        except:
+                            print("Done loading data for SOP")
+                            current_chunk = []
+                            pass
             else:
-                is_right_order = 0
-                sent_a = text[i + 1]
-                sent_b = text[i]
-            sent_a_processed = tokenize_and_truncate(
-                self._tokenizer_name, sent_a, self.max_seq_len // 2
-            )
-            sent_b_processed = tokenize_and_truncate(
-                self._tokenizer_name, sent_b, self.max_seq_len // 2
-            )
-            yield (sent_a_processed, sent_b_processed, is_right_order)
+                current_chunk.append(segment)
+                current_length += len(segment)
 
     def load_data(self):
         pass
