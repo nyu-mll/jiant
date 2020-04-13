@@ -706,7 +706,7 @@ def build_sop(task, d_inp, model, params):
     pretraining. 
 
     """
-    input_module = model.sent_encoder.self._text_field_embedder.input_module
+    input_module = model.sent_encoder._text_field_embedder.input_module
     assert (
         "albert" in input_module
     ), "SOP is only supported for ALBERT, please set input_module to an ALBERT model"
