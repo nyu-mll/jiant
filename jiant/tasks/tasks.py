@@ -3829,7 +3829,7 @@ class SentenceOrderTask(PairClassificationTask):
                 # if len(current_chunk) ==1, we will not yeild, and reinitialize
                 if len(for_next_chunk) > 0:
                     current_chunk = for_next_chunk
-                    current_length
+                    current_length = len(for_next_chunk[0])
                 else:
                     # We find the next sentence for the next example.
                     try:  # Might run into StopIterationError
