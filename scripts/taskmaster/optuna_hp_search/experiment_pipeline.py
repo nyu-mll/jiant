@@ -53,5 +53,5 @@ write_script_file("finalize_hp_search_albert.sh", run_additional_optuna_trials("
 
 # # step 4
 # # finetune target & probing & finite size probing
-# write_script_file("pretrain_roberta.sh", run_target_train("roberta-large"))
-# write_script_file("pretrain_albert.sh", run_target_train("albert-xxlarge-v2"))
+# write_script_file("pretrain_roberta.sh", run_target_train("roberta-large"), roberta_checkpoints)
+# write_script_file("pretrain_albert.sh", run_target_train("albert-xxlarge-v2"), albert_checkpoints)

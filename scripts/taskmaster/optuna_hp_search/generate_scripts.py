@@ -49,7 +49,7 @@ def run_exp_init(input_module):
 
 def run_batch_size_check(input_module):
     outputs = []
-    for batch_size in [32, 16, 8, 4, 2]:
+    for batch_size in [32, 16, 8, 4, 2, 1]:
         task_names = list(set([task["task_name"] for task in task_metadata.values()]))
         for task_name in task_names:
             val_interval = task_metadata[task_name]["training_size"] // batch_size
@@ -69,7 +69,7 @@ def run_batch_size_check(input_module):
 
 def update_batch_size_check(input_module):
     task_batch_size_limit = {}
-    for batch_size in [32, 16, 8, 4, 2]:
+    for batch_size in [32, 16, 8, 4, 2, 1]:
         task_names = list(set([task["task_name"] for task in task_metadata.values()]))
         for task_name in task_names:
             exp_name = f"batch_size_{input_module}"
@@ -155,7 +155,7 @@ def run_additional_optuna_trials(input_module):
                 outputs.append(
                     f'PROG="scripts/taskmaster/optuna_hp_search/run_trials" ARGS="'
                     f"--study-name {full_task_name} --gpu-available {gpu_available} "
-                    f'--max-epochs {(df_grouped["max_epochs"][rank])} --lr {df_grouped["lr"][rank]} --batch-size {df_grouped["batch_size"][rank]} '
+                    f'--max-epochs {int(df_grouped["max_epochs"][rank])} --lr {float(df_grouped["lr"][rank])} --batch-size {int(df_grouped["batch_size"][rank])} '
                     f'--n-trials {num_trials} --input-module {input_module}" sbatch ~/{sbatch}'
                 )
         else:
