@@ -3787,16 +3787,20 @@ class SentenceOrderTask(PairClassificationTask):
         Args:
             path: (str) data file path
         """
+        def _tokenize(tokenizer_name, sent):
+            tokenizer = get_tokenizer(tokenizer_name)
+            return tokenizer.tokenize(sent)[:]
+            
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
-        current_chunk = [tokenize_and_truncate(self._tokenizer_name, next(f), -1)]
+        current_chunk = [_tokenize(self._tokenizer_name, next(f))]
         current_length = 0
         target_seq_length = self.get_target_seq_length()
         in_order = 1
         while len(current_chunk) > 0:
             segment = next(f)
-            segment = tokenize_and_truncate(self._tokenizer_name, segment, -1)
+            segment = _tokenize(self._tokenizer_name, segment)
             if "END OF ARTICLE" in segment or current_length >= target_seq_length:
                 for_next_chunk = []
                 if current_length > target_seq_length:
