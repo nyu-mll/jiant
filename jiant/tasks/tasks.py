@@ -3795,9 +3795,8 @@ class SentenceOrderTask(PairClassificationTask):
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
         current_chunk = [_tokenize(self._tokenizer_name, next(f))]
-        current_length = 0
+        current_length = len(current_chunk[0])
         target_seq_length = self.get_target_seq_length()
-        in_order = 1
         while len(current_chunk) > 0:
             segment = next(f)
             segment = _tokenize(self._tokenizer_name, segment)
@@ -3830,13 +3829,16 @@ class SentenceOrderTask(PairClassificationTask):
                 # if len(current_chunk) ==1, we will not yeild, and reinitialize
                 if len(for_next_chunk) > 0:
                     current_chunk = for_next_chunk
+                    current_length
                 else:
                     # We find the next sentence for the next example.
                     try:  # Might run into StopIterationError
-                        current_chunk = [next(f)]
+                        current_chunk = [_tokenize(self._tokenizer_name, next(f))]
+                        current_length = len(current_chunk[0])
                     except StopIterationError:
                         print("Done loading data for SOP")
                         current_chunk = []
+                        current_length = 0
                         pass
             else:
                 current_chunk.append(segment)
