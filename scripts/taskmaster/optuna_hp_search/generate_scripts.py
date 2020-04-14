@@ -42,7 +42,7 @@ def run_exp_init(input_module):
         override = f'exp_name={exp_name}, run_name=preprocess, target_tasks=\\"{target_tasks}\\"'
         outputs.append(
             f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" '
-            f"JIANT_OVERRIDES={override} sbatch ~/jp40.sbatch"
+            f'JIANT_OVERRIDES="{override}" sbatch ~/jp40.sbatch'
         )
     return outputs
 
@@ -62,7 +62,7 @@ def run_batch_size_check(input_module):
             )
             outputs.append(
                 f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" '
-                f"JIANT_OVERRIDES={override} sbatch ~/jp40.sbatch"
+                f'JIANT_OVERRIDES="{override}" sbatch ~/jp40.sbatch'
             )
     return outputs
 
@@ -218,7 +218,7 @@ def run_pretrain(
                 )
                 outputs.append(
                     f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" '
-                    f"JIANT_OVERRIDES={override} sbatch ~/{sbatch}.sbatch"
+                    f'JIANT_OVERRIDES="{override}" sbatch ~/{sbatch}.sbatch'
                 )
                 checkponts[run_name][exp_name] = os.path.join(
                     RESULT_DIR, exp_name, run_name, "model_*.best.th"
@@ -247,7 +247,7 @@ def run_pretrain(
                 )
                 outputs.append(
                     f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" '
-                    f"JIANT_OVERRIDES={override} sbatch ~/{sbatch}.sbatch"
+                    f'JIANT_OVERRIDES="{override}" sbatch ~/{sbatch}.sbatch'
                 )
                 checkponts[run_name][exp_name] = os.path.join(
                     RESULT_DIR, exp_name, run_name, "model_*.best.th"
@@ -308,7 +308,7 @@ def run_target_train(
                 )
                 outputs.append(
                     f'JIANT_CONF="jiant/config/taskmaster/clean_roberta.conf" '
-                    f"JIANT_OVERRIDES={override} sbatch ~/{sbatch}.sbatch"
+                    f'JIANT_OVERRIDES="{override}" sbatch ~/{sbatch}.sbatch'
                 )
 
     return outputs
