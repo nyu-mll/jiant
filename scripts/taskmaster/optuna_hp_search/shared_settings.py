@@ -1,10 +1,10 @@
-def batch_size_limit_to_gpus(batch_size_limit):
+def batch_size_limit_to_gpus(batch_size_limit, jiant):
     if batch_size_limit <= 4:
-        gpu_available, sbatch = 4, "4p40.sbatch"
+        gpu_available, sbatch = 4, ("4jp40.sbatch" if jiant else "4p40.sbatch")
     elif batch_size_limit == 8:
-        gpu_available, sbatch = 2, "2p40.sbatch"
+        gpu_available, sbatch = 2, ("2jp40.sbatch" if jiant else "2p40.sbatch")
     else:
-        gpu_available, sbatch = 1, "p40.sbatch"
+        gpu_available, sbatch = 1, ("jp40.sbatch" if jiant else "p40.sbatch")
     return gpu_available, sbatch
 
 

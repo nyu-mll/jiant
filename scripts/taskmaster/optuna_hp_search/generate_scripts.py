@@ -15,17 +15,17 @@ with open(metadata_file, "r") as f:
 
 def preprocess_tasks(input_module):
     outputs = [
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/spr1/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/spr2/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/dpr/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/dep_ewt/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/const/pos/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/const/nonterminal/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/srl/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/ner/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/coref/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=probing/retokenize_edge_data ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/semeval/*.json")}" sbatch ~/cpu.sbatch',
-        f'PROG=scripts/ccg/align_tags_to_bert  ARGS="-t {input_module} -d {os.path.join(DATA_DIR, "ccg")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/spr1/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/spr2/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/dpr/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/dep_ewt/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/const/pos/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/const/nonterminal/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/srl/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/ner/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/ontonotes/coref/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="probing/retokenize_edge_data" ARGS="-t {input_module} {os.path.join(DATA_DIR, "edges/semeval/*.json")}" sbatch ~/cpu.sbatch',
+        f'PROG="scripts/ccg/align_tags_to_bert" ARGS="-t {input_module} -d {os.path.join(DATA_DIR, "ccg")}" sbatch ~/cpu.sbatch',
     ]
     return outputs
 
@@ -99,7 +99,7 @@ def run_main_optuna_trials(input_module):
         print(input_module, full_task_name)
         df_grouped = collect_trials(full_task_name, input_module)[1]
         batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
-        gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit)
+        gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit, jiant=False)
 
         if full_task_name.endswith("20k"):
             training_size = 20000
@@ -145,7 +145,7 @@ def run_additional_optuna_trials(input_module):
             print(f"{full_task_name} has not finished main optuna run.")
             continue
         batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
-        gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit)
+        gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit, jiant=False)
 
         if df_grouped["count"][0] < 3:
             for rank in range(3):
@@ -182,7 +182,7 @@ def run_pretrain(
 
     for full_task_name, task in task_metadata.items():
         batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
-        gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit)
+        gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit, jiant=True)
         hp = task[f'{input_module.split("-")[0]}_hp']
         real_batch_size, accumulation_steps = batch_size_to_accumulation(
             batch_size_limit, hp["batch_size"], gpu_available
@@ -272,7 +272,7 @@ def run_target_train(
     for full_task_name, task in task_metadata.items():
         for pretrain_run_name in pretrain_checkponts:
             batch_size_limit = task[f'{input_module.split("-")[0]}_batch_size_limit']
-            gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit)
+            gpu_available, sbatch = batch_size_limit_to_gpus(batch_size_limit, jiant=True)
             hp = task[f'{input_module.split("-")[0]}_hp']
             real_batch_size, accumulation_steps = batch_size_to_accumulation(
                 batch_size_limit, hp["batch_size"], gpu_available
