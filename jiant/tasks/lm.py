@@ -248,19 +248,21 @@ class MaskedLanguageModelingTask(Task):
     def get_data_iter(self, path):
         """
         Loading data file and tokenizing the text. We treat the Wikipedia corpus as a
-        long sequence, and we take each slice of 510 tokens as an example. The dataset
+        long sequence, and we take each slice of max_seq_len - 2 tokens as an example. The dataset
         consists of a sentence per row in the file. This function concatenates all of the sentences,
-        before going through the sequence and yielding each chunk of 510 tokens.
+        before going through the sequence and yielding each chunk of max_seq_len - 2 tokens.
         Args:
             path: (str) data file path
         """
         seq_len = self.max_seq_len - 2
         total_tokens = []
+        tokenizer = get_tokenizer(self._tokenizer_name)
         with open(path, "r", encoding="utf-8") as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
+                toks = tokenizer.tokenize(toks)
                 total_tokens += toks
             for i in range(0, len(total_tokens), seq_len):
                 tok_example = total_tokens[i : i + seq_len]
