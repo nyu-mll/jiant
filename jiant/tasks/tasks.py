@@ -3833,7 +3833,7 @@ class SentenceOrderTask(PairClassificationTask):
                     # Make sure we only sample articles for each example that
                     # belong to the same document.
                     current_chunk = for_next_chunk
-                    current_length = len(for_next_chunk[0])
+                    current_length = sum([len(chunk) for chunk in for_next_chunk])
                 else:
                     # We find the next sentence for the next example.
                     try:  # Might run into StopIterationError
