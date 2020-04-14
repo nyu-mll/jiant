@@ -405,7 +405,11 @@ def get_aligner_fn(tokenizer_name: Text):
         return functools.partial(
             align_sentencepiece, sentencepiece_tokenizer=sentencepiece_tokenizer
         )
-    elif tokenizer_name.startswith("roberta-") or tokenizer_name.startswith("gpt2"):
+    elif (
+        tokenizer_name.startswith("roberta-")
+        or tokenizer_name.startswith("gpt2")
+        or tokenizer_name.startswith("xlm-roberta-")
+    ):
         bytebpe_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(align_bytebpe, bytebpe_tokenizer=bytebpe_tokenizer)
     else:
