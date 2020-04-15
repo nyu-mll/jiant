@@ -3740,7 +3740,7 @@ class SentenceOrderTask(PairClassificationTask):
         https://arxiv.org/abs/1909.11942.
         We are currently using an unpreprocessed version of the Wikipedia corpus
         (more specifically, the Wikidump data) that consists of 5% of the data. You can generate
-        the data by following the instructions from jiant/scripts/mlm.
+        the data by following the instructions from jiant/scripts/sop.
         One thing to note about our SOP ALBERT implementation is that we do not load the pretrained
         weights for the SOP head beacuse they are unavailable in Huggingface. We only use the
         pretrained weights of the linear layer from ALBERT that creates the pooled output used in SOP.
