@@ -3,6 +3,7 @@
 # per line as a base64-encoded pickle.
 
 import _pickle as pkl
+import os
 import base64
 from zlib import crc32
 
@@ -72,14 +73,26 @@ def read_records(filename, repeatable=False, fraction=None):
       iterable, possible repeatable, yielding deserialized Python objects
     """
 
+    if fraction < 1:
+        frac_filename = f"{filename}__fraction_{fraction}"
+        if not os.path.exists(frac_filename):
+            with open(filename, "rb") as fd:
+                examples = []
+                for line in fd:
+                    blob = base64.b64decode(line)
+                    if fraction and fraction < 1:
+                        hash_float = bytes_to_float(blob)
+                        if hash_float > fraction:
+                            continue
+                    example = pkl.loads(blob)
+                    examples.append(example)
+            write_records(examples, frac_filename)
+            filename = frac_filename
+
     def _iter_fn():
         with open(filename, "rb") as fd:
             for line in fd:
                 blob = base64.b64decode(line)
-                if fraction and fraction < 1:
-                    hash_float = bytes_to_float(blob)
-                    if hash_float > fraction:
-                        continue
                 example = pkl.loads(blob)
                 yield example
 
