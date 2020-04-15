@@ -8,6 +8,10 @@ Then, move create_wiki_data.sh and get_small_english_wiki.sh into DeepLearningEx
 
 Then, follow the instructions below:
 
+NVIDIA script download the latest Wikipedia dump. We use the Wikipedia dump 2020-03-01.
+To download the Wikipedia dump 2020-03-01, replace line 29 of `DeepLearningExamples/PyTorch/LanguageModeling/BERT/data/WikiDownloader.py`:
+`'en' : 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2',` with `'en' : `https://dumps.wikimedia.org/enwiki/20200301/enwiki-20200301-pages-articles.xml.bz2`.  
+
 The data creation for SOP is almost the same as MLM, except you need to edit the following.
 In `DeepLearningExamples/PyTorch/LanguageModeling/BERT/data/TextSharding.py`, replace line 55:
 `self.articles[global_article_count] = line.rstrip()` with `self.articles[global_article_count] = line.rstrip() + "\n ========THIS IS THE END OF ARTICLE.========"`.

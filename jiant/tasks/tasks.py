@@ -3738,8 +3738,8 @@ class WinograndeTask(MultipleChoiceTask):
 class SentenceOrderTask(PairClassificationTask):
     """ Task class for Sentence Order Prediction (SOP). See the ALBERT paper for details on SOP:
         https://arxiv.org/abs/1909.11942.
-        We are currently using an unpreprocessed version of the Wikipedia corpus
-        (more specifically, the Wikidump data) that consists of 5% of the data. You can generate
+        We are currently using an preprocessed version of the Wikipedia corpus
+        (more specifically, the Wikidump version 2020-03-01 data) that consists of 5% of the data. You can generate
         the data by following the instructions from jiant/scripts/sop.
         One thing to note about our SOP ALBERT implementation is that we do not load the pretrained
         weights for the SOP head beacuse they are unavailable in Huggingface. We only use the
