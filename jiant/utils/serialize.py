@@ -97,3 +97,33 @@ def read_records(filename, repeatable=False, fraction=None):
                 yield example
 
     return RepeatableIterator(_iter_fn) if repeatable else _iter_fn()
+
+
+# temporary backup code, remove before merging
+def old_read_records(filename, repeatable=False, fraction=None):
+    """Streaming read records from file.
+
+    Args:
+      filename: path to file of b64-encoded pickles, one per line
+      repeatable: if true, returns a RepeatableIterator that can read the file
+        multiple times.
+      fraction: if set to a float between 0 and 1, load only the specified percentage
+        of examples. Hashing is used to ensure that the same examples are loaded each
+        epoch.
+
+    Returns:
+      iterable, possible repeatable, yielding deserialized Python objects
+    """
+
+    def _iter_fn():
+        with open(filename, "rb") as fd:
+            for line in fd:
+                blob = base64.b64decode(line)
+                if fraction and fraction < 1:
+                    hash_float = bytes_to_float(blob)
+                    if hash_float > fraction:
+                        continue
+                example = pkl.loads(blob)
+                yield example
+
+    return RepeatableIterator(_iter_fn) if repeatable else _iter_fn()
