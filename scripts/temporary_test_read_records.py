@@ -40,11 +40,20 @@ for limited_size_task, task_name, frac in frac_tasks:
         "preproc",
         f"{task_name}__train_data",
     )
+    print(f"{limited_size_task} start")
     if os.path.exists(filename):
         data_old = serialize.old_read_records(filename, repeatable=False, fraction=frac)
         data_new = serialize.read_records(filename, repeatable=False, fraction=frac)
+        flag = True
         for instance_old, instance_new in zip(data_old, data_new):
-            assert instance_old.as_tensor_dict() == instance_new.as_tensor_dict()
-        print(f"{limited_size_task} checked")
+            if instance_old.as_tensor_dict().items() != instance_new.as_tensor_dict().items():
+                print(f"{limited_size_task} mismatch")
+                print("old")
+                print(instance_old)
+                print("new")
+                print(instance_new)
+                flag = False
+        if flag:
+            print(f"{limited_size_task} checked")
     else:
         print(f"{limited_size_task} data not available")
