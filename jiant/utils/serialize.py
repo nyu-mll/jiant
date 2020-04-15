@@ -87,7 +87,7 @@ def read_records(filename, repeatable=False, fraction=None):
                     example = pkl.loads(blob)
                     examples.append(example)
             write_records(examples, frac_filename)
-            filename = frac_filename
+        filename = frac_filename
 
     def _iter_fn():
         with open(filename, "rb") as fd:

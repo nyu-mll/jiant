@@ -1,5 +1,6 @@
 from jiant.utils import serialize
 import os
+import torch
 
 frac_tasks = [
     ("edges-ner-ontonotes-5k", "edges-ner-ontonotes", 0.10059147788999316),
@@ -44,16 +45,13 @@ for limited_size_task, task_name, frac in frac_tasks:
     if os.path.exists(filename):
         data_old = serialize.old_read_records(filename, repeatable=False, fraction=frac)
         data_new = serialize.read_records(filename, repeatable=False, fraction=frac)
-        flag = True
         for instance_old, instance_new in zip(data_old, data_new):
-            if instance_old.as_tensor_dict().items() != instance_new.as_tensor_dict().items():
-                print(f"{limited_size_task} mismatch")
-                print("old")
-                print(instance_old)
-                print("new")
-                print(instance_new)
-                flag = False
-        if flag:
-            print(f"{limited_size_task} checked")
+            td_old, td_new = instance_old.as_tensor_dict(), instance_new.as_tensor_dict()
+            for key in td_old:
+                assert repr(td_old[key]) == repr(td_new[key]), (
+                    f"{limited_size_task}, {key} mismatch \n"
+                    f"old: {repr(td_old[key])}m \nnew: {repr(td_new[key])}"
+                )
+        print(f"{limited_size_task} checked")
     else:
         print(f"{limited_size_task} data not available")
