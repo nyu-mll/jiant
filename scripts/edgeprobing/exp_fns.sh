@@ -25,7 +25,7 @@ function run_exp() {
     OVERRIDES=$2
     declare -a args
     args+=( --config_file "${CONFIG_FILE}" )
-    args+=( -o "${OVERRIDES}" --remote_log )
+    args+=( -o "${OVERRIDES}" )
     if [ ! -z $NOTIFY_EMAIL ]; then
         args+=( --notify "$NOTIFY_EMAIL" )
     fi
