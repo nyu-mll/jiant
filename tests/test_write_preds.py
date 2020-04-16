@@ -90,127 +90,130 @@ class TestWritePreds(unittest.TestCase):
             ]
         )
         indexers = {"bert_cased": SingleIdTokenIndexer("bert-xe-cased")}
-        self.wic.val_data = [
-            Instance(
-                {
-                    "sent1_str": MetadataField("Room and board."),
-                    "sent2_str": MetadataField("He nailed boards"),
-                    "idx": LabelField(0, skip_indexing=True),
-                    "idx2": NumericField(2),
-                    "idx1": NumericField(3),
-                    "inputs": self.sentence_to_text_field(
-                        [
-                            "[CLS]",
-                            "Room",
-                            "and",
-                            "Board",
-                            ".",
-                            "[SEP]",
-                            "He",
-                            "nailed",
-                            "boards",
-                            "[SEP]",
-                        ],
-                        indexers,
-                    ),
-                    "labels": LabelField(0, skip_indexing=1),
-                }
-            ),
-            Instance(
-                {
-                    "sent1_str": MetadataField("C ##ir ##culate a rumor ."),
-                    "sent2_str": MetadataField("This letter is being circulated"),
-                    "idx": LabelField(1, skip_indexing=True),
-                    "idx2": NumericField(2),
-                    "idx1": NumericField(3),
-                    "inputs": self.sentence_to_text_field(
-                        [
-                            "[CLS]",
-                            "C",
-                            "##ir",
-                            "##culate",
-                            "a",
-                            "rumor",
-                            "[SEP]",
-                            "This",
-                            "##let",
-                            "##ter",
-                            "is",
-                            "being",
-                            "c",
-                            "##ir",
-                            "##culated",
-                            "[SEP]",
-                        ],
-                        indexers,
-                    ),
-                    "labels": LabelField(0, skip_indexing=1),
-                }
-            ),
-            Instance(
-                {
-                    "sent1_str": MetadataField("Hook a fish'"),
-                    "sent2_str": MetadataField("He hooked a snake accidentally"),
-                    "idx": LabelField(2, skip_indexing=True),
-                    "idx2": NumericField(2),
-                    "idx1": NumericField(3),
-                    "inputs": self.sentence_to_text_field(
-                        [
-                            "[CLS]",
-                            "Hook",
-                            "a",
-                            "fish",
-                            "[SEP]",
-                            "He",
-                            "hooked",
-                            "a",
-                            "snake",
-                            "accidentally",
-                            "[SEP]",
-                        ],
-                        indexers,
-                    ),
-                    "labels": LabelField(1, skip_indexing=1),
-                }
-            ),
-            Instance(
-                {
-                    "sent1_str": MetadataField("For recreation he wrote poetry."),
-                    "sent2_str": MetadataField("Drug abuse is often regarded as recreation ."),
-                    "idx": LabelField(3, skip_indexing=True),
-                    "idx2": NumericField(2),
-                    "idx1": NumericField(3),
-                    "inputs": self.sentence_to_text_field(
-                        [
-                            "[CLS]",
-                            "For",
-                            "re",
-                            "##creation",
-                            "he",
-                            "wrote",
-                            "poetry",
-                            "[SEP]",
-                            "Drug",
-                            "abuse",
-                            "is",
-                            "often",
-                            "re",
-                            "##garded",
-                            "as",
-                            "re",
-                            "##creation",
-                            "[SEP]",
-                        ],
-                        indexers,
-                    ),
-                    "labels": LabelField(1, skip_indexing=1),
-                }
-            ),
-        ]
+        self.wic.set_instance_generator(
+            "val",
+            [
+                Instance(
+                    {
+                        "sent1_str": MetadataField("Room and board."),
+                        "sent2_str": MetadataField("He nailed boards"),
+                        "idx": LabelField(0, skip_indexing=True),
+                        "idx2": NumericField(2),
+                        "idx1": NumericField(3),
+                        "inputs": self.sentence_to_text_field(
+                            [
+                                "[CLS]",
+                                "Room",
+                                "and",
+                                "Board",
+                                ".",
+                                "[SEP]",
+                                "He",
+                                "nailed",
+                                "boards",
+                                "[SEP]",
+                            ],
+                            indexers,
+                        ),
+                        "labels": LabelField(0, skip_indexing=1),
+                    }
+                ),
+                Instance(
+                    {
+                        "sent1_str": MetadataField("C ##ir ##culate a rumor ."),
+                        "sent2_str": MetadataField("This letter is being circulated"),
+                        "idx": LabelField(1, skip_indexing=True),
+                        "idx2": NumericField(2),
+                        "idx1": NumericField(3),
+                        "inputs": self.sentence_to_text_field(
+                            [
+                                "[CLS]",
+                                "C",
+                                "##ir",
+                                "##culate",
+                                "a",
+                                "rumor",
+                                "[SEP]",
+                                "This",
+                                "##let",
+                                "##ter",
+                                "is",
+                                "being",
+                                "c",
+                                "##ir",
+                                "##culated",
+                                "[SEP]",
+                            ],
+                            indexers,
+                        ),
+                        "labels": LabelField(0, skip_indexing=1),
+                    }
+                ),
+                Instance(
+                    {
+                        "sent1_str": MetadataField("Hook a fish'"),
+                        "sent2_str": MetadataField("He hooked a snake accidentally"),
+                        "idx": LabelField(2, skip_indexing=True),
+                        "idx2": NumericField(2),
+                        "idx1": NumericField(3),
+                        "inputs": self.sentence_to_text_field(
+                            [
+                                "[CLS]",
+                                "Hook",
+                                "a",
+                                "fish",
+                                "[SEP]",
+                                "He",
+                                "hooked",
+                                "a",
+                                "snake",
+                                "accidentally",
+                                "[SEP]",
+                            ],
+                            indexers,
+                        ),
+                        "labels": LabelField(1, skip_indexing=1),
+                    }
+                ),
+                Instance(
+                    {
+                        "sent1_str": MetadataField("For recreation he wrote poetry."),
+                        "sent2_str": MetadataField("Drug abuse is often regarded as recreation ."),
+                        "idx": LabelField(3, skip_indexing=True),
+                        "idx2": NumericField(2),
+                        "idx1": NumericField(3),
+                        "inputs": self.sentence_to_text_field(
+                            [
+                                "[CLS]",
+                                "For",
+                                "re",
+                                "##creation",
+                                "he",
+                                "wrote",
+                                "poetry",
+                                "[SEP]",
+                                "Drug",
+                                "abuse",
+                                "is",
+                                "often",
+                                "re",
+                                "##garded",
+                                "as",
+                                "re",
+                                "##creation",
+                                "[SEP]",
+                            ],
+                            indexers,
+                        ),
+                        "labels": LabelField(1, skip_indexing=1),
+                    }
+                ),
+            ],
+        )
         self.val_preds = {"sts-b": stsb_val_preds, "wic": wic_val_preds}
-        self.vocab = vocabulary.Vocabulary.from_instances(self.wic.val_data)
+        self.vocab = vocabulary.Vocabulary.from_instances(self.wic.get_instance_generator("val"))
         self.vocab.add_token_to_namespace("True", "wic_tags")
-        for data in self.wic.val_data:
+        for data in self.wic.get_instance_generator("val"):
             data.index_fields(self.vocab)
         self.glue_tasks = [self.stsb, self.wic]
         self.args = mock.Mock()
