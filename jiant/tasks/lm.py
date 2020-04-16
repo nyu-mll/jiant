@@ -255,7 +255,7 @@ class MaskedLanguageModelingTask(Task):
             path: (str) data file path
         """
         seq_len = self.max_seq_len - 2
-        total_tokens = []
+        token_buffer = []
         tokenizer = get_tokenizer(self._tokenizer_name)
         with open(path, "r", encoding="utf-8") as txt_fh:
             for row in txt_fh:
@@ -263,10 +263,13 @@ class MaskedLanguageModelingTask(Task):
                 if not toks:
                     continue
                 toks = tokenizer.tokenize(toks)
-                total_tokens += toks
-            for i in range(0, len(total_tokens), seq_len):
-                tok_example = total_tokens[i : i + seq_len]
-                yield tok_example
+                token_buffer += toks
+                while len(token_buffer) > seq_len:
+                    token_sequence = token_buffer[:seq_len]
+                    token_buffer = token_buffer[seq_len:]
+                    yield token_sequence
+            if token_buffer:
+                yield token_buffer
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
