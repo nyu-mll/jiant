@@ -246,16 +246,30 @@ class MaskedLanguageModelingTask(Task):
         return
 
     def get_data_iter(self, path):
-        """Loading data file and tokenizing the text
+        """
+        Loading data file and tokenizing the text. We treat the Wikipedia corpus as a
+        long sequence, and we take each slice of max_seq_len - 2 tokens as an example. The dataset
+        consists of a sentence per row in the file. This function concatenates all of the sentences,
+        before going through the sequence and yielding each chunk of max_seq_len - 2 tokens.
         Args:
             path: (str) data file path
         """
+        seq_len = self.max_seq_len - 2
+        token_buffer = []
+        tokenizer = get_tokenizer(self._tokenizer_name)
         with open(path, "r", encoding="utf-8") as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
+                toks = tokenizer.tokenize(toks)
+                token_buffer += toks
+                while len(token_buffer) > seq_len:
+                    token_sequence = token_buffer[:seq_len]
+                    token_buffer = token_buffer[seq_len:]
+                    yield token_sequence
+            if token_buffer:
+                yield token_buffer
 
     def process_split(
         self, split, indexers, model_preprocessing_interface
@@ -267,8 +281,7 @@ class MaskedLanguageModelingTask(Task):
         """
 
         def _make_instance(sent_):
-            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)  # Add <s> and </s>
-
+            sent_ = model_preprocessing_interface.boundary_token_fn(sent_)
             input_sent = sentence_to_text_field(sent_, indexers)
             d = {
                 "input": input_sent,
