@@ -15,6 +15,7 @@ import copy
 import io
 import logging as log
 import os
+import glob
 import sys
 from collections import defaultdict
 from typing import List, Dict, Union, Any
@@ -398,9 +399,10 @@ def build_tasks(
             )
             if force_reindex or not cache_found:
                 # Re-index from scratch.
-                record_file = _get_serialized_record_path(task.name, split, preproc_dir)
-                if os.path.exists(record_file) and os.path.islink(record_file):
-                    os.remove(record_file)
+                record_files = "%s*" % (_get_serialized_record_path(task.name, split, preproc_dir))
+                for record_file in glob.glob(record_files):
+                    if os.path.exists(record_file) and os.path.islink(record_file):
+                        os.remove(record_file)
 
                 _index_split(
                     task, split, indexers, vocab, record_file, model_preprocessing_interface
