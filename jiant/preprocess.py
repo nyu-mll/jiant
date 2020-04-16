@@ -74,7 +74,7 @@ def _get_serialized_record_path(task_name, split, preproc_dir):
     return serialized_record_path
 
 
-def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
+def _get_instance_generator(task_name, split, preproc_dir, fraction=1.0):
     """Get a lazy generator for the given task and split.
 
     Args:
