@@ -401,9 +401,9 @@ def build_tasks(
                 # Re-index from scratch.
                 record_file = _get_serialized_record_path(task.name, split, preproc_dir)
                 all_record_files = "%s*" % record_file
-                for record_file in glob.glob(all_record_files):
-                    if os.path.exists(record_file) and os.path.islink(record_file):
-                        os.remove(record_file)
+                for one_record_file in glob.glob(all_record_files):
+                    if os.path.exists(one_record_file) and os.path.islink(one_record_file):
+                        os.remove(one_record_file)
 
                 _index_split(
                     task, split, indexers, vocab, record_file, model_preprocessing_interface
