@@ -399,8 +399,9 @@ def build_tasks(
             )
             if force_reindex or not cache_found:
                 # Re-index from scratch.
-                record_files = "%s*" % (_get_serialized_record_path(task.name, split, preproc_dir))
-                for record_file in glob.glob(record_files):
+                record_file = _get_serialized_record_path(task.name, split, preproc_dir)
+                all_record_files = "%s*" % record_file
+                for record_file in glob.glob(all_record_files):
                     if os.path.exists(record_file) and os.path.islink(record_file):
                         os.remove(record_file)
 
