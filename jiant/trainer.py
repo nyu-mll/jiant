@@ -338,11 +338,10 @@ class SamplingMultiTaskTrainer:
             task_info["tr_generator"] = iterator(task.train_data, num_epochs=None)
 
             n_training_examples = task.n_train_examples
-            if phase == "pretrain":
-                # Warning: This won't be precise when training_data_fraction is set, since each
-                #  example is included or excluded independently using a hashing function.
-                # Fortunately, it doesn't need to be.
-                n_training_examples *= self._training_data_fraction
+            # Warning: This won't be precise when training_data_fraction is set, since each
+            #  example is included or excluded deterministically using a hashing function.
+            # See read_records function in serialize.py for details.
+            n_training_examples *= self._training_data_fraction
             task_info["n_tr_batches"] = math.ceil(n_training_examples / batch_size)
             task_info["n_tr_steps"] = math.ceil(
                 task_info["n_tr_batches"] / self._accumulation_steps
