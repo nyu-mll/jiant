@@ -400,16 +400,16 @@ def get_aligner_fn(tokenizer_name: Text):
     elif tokenizer_name.startswith("openai-gpt") or tokenizer_name.startswith("xlm-mlm-en-"):
         bpe_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(align_bpe, bpe_tokenizer=bpe_tokenizer)
-    elif tokenizer_name.startswith("xlnet-") or tokenizer_name.startswith("albert-"):
+    elif (
+        tokenizer_name.startswith("xlnet-")
+        or tokenizer_name.startswith("albert-")
+        or tokenizer_name.startswith("xlm-roberta-")
+    ):
         sentencepiece_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(
             align_sentencepiece, sentencepiece_tokenizer=sentencepiece_tokenizer
         )
-    elif (
-        tokenizer_name.startswith("roberta-")
-        or tokenizer_name.startswith("gpt2")
-        or tokenizer_name.startswith("xlm-roberta-")
-    ):
+    elif tokenizer_name.startswith("roberta-") or tokenizer_name.startswith("gpt2"):
         bytebpe_tokenizer = get_tokenizer(tokenizer_name)
         return functools.partial(align_bytebpe, bytebpe_tokenizer=bytebpe_tokenizer)
     else:
