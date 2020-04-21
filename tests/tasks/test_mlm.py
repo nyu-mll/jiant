@@ -75,8 +75,8 @@ class TestMLM(unittest.TestCase):
         # in that the masked indices are approx 0.15 of the input, and indices_replace and indices_random
         # are subsets of the masked_indices and mutually exclusive.
         masked_ratio = []
-        for i in range(10):
-            length = random.randint(1, 510)
+        for i in range(40):
+            length = 10000
             orig_inputs = torch.LongTensor(
                 [[4] + [random.randint(0, 10000) for x in range(length)] + [5]]
             )
@@ -97,4 +97,4 @@ class TestMLM(unittest.TestCase):
             assert set(indices_replaced_random).issubset(set(masked_indices))
             # Make sure that the masking approximately masks ~15% of the input.
             masked_ratio.append(float(len(masked_indices)) / float(len(orig_inputs[0])))
-        assert np.mean(masked_ratio) >= 0.14 and np.mean(masked_ratio) <= 0.16
+        assert np.mean(masked_ratio) >= 0.13 and np.mean(masked_ratio) <= 0.17
