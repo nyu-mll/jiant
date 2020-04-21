@@ -75,6 +75,7 @@ class TestMLM(unittest.TestCase):
         # in that the masked indices are approx 0.15 of the input, and indices_replace and indices_random
         # are subsets of the masked_indices and mutually exclusive.
         masked_ratio = []
+        torch.manual_seed(10)
         for i in range(40):
             length = 10000
             orig_inputs = torch.LongTensor(
