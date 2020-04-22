@@ -3776,12 +3776,14 @@ class SentenceOrderTask(PairClassificationTask):
         PairClassificationTasks.
 
         ALBERT does SOP classification by, for each document:
-            For each example, we first fetch target_seq_length number of sentences from the dcoument:
+            For each example, we first fetch as many sentences as possible that cumulatively have
+            target_seq_length number of tokens from the document:
                 -90% of the time, this target_seq_length is equal to max_seq_length,  and
                 10% of the time, it is set to a random number of tokens between 2 and max_seq_length.
                 -Given the sampled sentences, randomly sample N such that the first N sentences in the
                 sampled go to the first segment, and the rest go to the second. 
                 -50% of the time, the first and second segments are switched.
+
         Args:
             path: (str) data file path
         """
@@ -3794,6 +3796,8 @@ class SentenceOrderTask(PairClassificationTask):
             tokenized_eod = _tokenize(self._tokenizer_name, "END OF ARTICLE")
             return set(tokenized_eod).issubset(set(seg))
 
+        # The code below is adapted from the original ALBERT code. See:
+        # https://github.com/google-research/albert/blob/master/create_pretraining_data.py#L267.
         f = open(path, "r")
         #  The dataset comes with one sentence per line, thus we split by
         #  line here.
