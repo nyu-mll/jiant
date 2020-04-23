@@ -3742,7 +3742,7 @@ class SentenceOrderTask(PairClassificationTask):
         (more specifically, the Wikidump version 2020-03-01 data) that consists of 5% of the data. You can generate
         the data by following the instructions from jiant/scripts/sop.
         One thing to note about our SOP ALBERT implementation is that we do not load the pretrained
-        weights for the SOP head beacuse they are unavailable in Huggingface. We only use the
+        weights for the SOP head because they are unavailable in Huggingface. We only use the
         pretrained weights of the linear layer from ALBERT that creates the pooled output used in SOP.
     """
 
