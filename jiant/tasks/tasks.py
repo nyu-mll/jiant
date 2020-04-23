@@ -21,7 +21,7 @@ from allennlp.data.fields import (
     SpanField,
     TextField,
 )
-from allennlp.data.token_indexersimport SingleIdTokenIndexer
+from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy, CategoricalAccuracy, F1Measure
 from sklearn.metrics import mean_squared_error
 
