@@ -321,7 +321,6 @@ class SamplingMultiTaskTrainer:
             ):
                 os.mkdir(os.path.join(self._serialization_dir, task.name))
 
-            # Adding task-specific smart iterator to speed up training
             instance = [
                 i
                 for i in itertools.islice(
