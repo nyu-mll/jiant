@@ -3,7 +3,7 @@ import itertools
 import json
 import logging as log
 import os
-from typing import Any, Dict, Iterable, List, Sequence, Type
+from typing import Any, Dict, Iterable, List, Sequence, Type, Union, Generator
 
 import numpy as np
 import pandas as pd
@@ -35,6 +35,7 @@ from jiant.utils.data_loaders import (
     tokenize_and_truncate,
     load_pair_nli_jsonl,
 )
+from jiant.utils.serialize import RepeatableIterator
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.utils.retokenize import get_aligner_fn
 from jiant.tasks.registry import register_task  # global task registry
@@ -228,6 +229,7 @@ class Task(object):
         self.sentences = None
         self.example_counts = None
         self.contributes_to_aggregate_score = True
+        self._instance_iterables = {}
 
     def load_data(self):
         """ Load data from path and create splits. """
@@ -292,6 +294,41 @@ class Task(object):
         Function that does task-specific processing of predictions.
         """
         return preds
+
+    def set_instance_iterable(
+        self, split_name: str, instance_iterable: Iterable, phase: str = None
+    ):
+        """Takes a data instance iterable and stores it in a private field of this Task instance
+
+        Parameters
+        ----------
+        split_name : string
+        instance_iterable : Iterable
+        phase : str
+
+        """
+        self._instance_iterables[(split_name, phase)] = instance_iterable
+
+    def get_instance_iterable(
+        self, split_name: str, phase: str = None
+    ) -> Union[RepeatableIterator, Generator]:
+        """Returns an instance iterable for the specified split name and phase.
+
+        Parameters
+        ----------
+        split_name : string
+        phase : string
+
+        Returns
+        -------
+        Union[RepeatableIterator, Generator]
+
+        """
+        if not self._instance_iterables:
+            raise ValueError("set_instance_iterable must be called before get_instance_iterable")
+        if split_name == "train" and phase is None:
+            raise ValueError("phase must be specified to get relevant training data")
+        return self._instance_iterables[(split_name, phase)]
 
 
 class ClassificationTask(Task):
