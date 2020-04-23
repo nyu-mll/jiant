@@ -229,7 +229,7 @@ class Task(object):
         self.sentences = None
         self.example_counts = None
         self.contributes_to_aggregate_score = True
-        self._instance_generators = {}
+        self._instance_iterables = {}
 
     def load_data(self):
         """ Load data from path and create splits. """
@@ -295,24 +295,24 @@ class Task(object):
         """
         return preds
 
-    def set_instance_generator(
-        self, split_name: str, instance_generator: Iterable, phase: str = None
+    def set_instance_iterable(
+        self, split_name: str, instance_iterable: Iterable, phase: str = None
     ):
-        """Takes a data instance generator and stores it in a private field of this Task instance
+        """Takes a data instance iterable and stores it in a private field of this Task instance
 
         Parameters
         ----------
         split_name : string
-        instance_generator : Iterable
+        instance_iterable : Iterable
         phase : str
 
         """
-        self._instance_generators[(split_name, phase)] = instance_generator
+        self._instance_iterables[(split_name, phase)] = instance_iterable
 
-    def get_instance_generator(
+    def get_instance_iterable(
         self, split_name: str, phase: str = None
     ) -> Union[RepeatableIterator, Generator]:
-        """Returns an instance generator for the specified dataset and phase.
+        """Returns an instance iterable for the specified split name and phase.
 
         Parameters
         ----------
@@ -324,11 +324,11 @@ class Task(object):
         Union[RepeatableIterator, Generator]
 
         """
-        if not self._instance_generators:
-            raise ValueError("set_instance_generator must be called before get_instance_generator")
+        if not self._instance_iterables:
+            raise ValueError("set_instance_iterable must be called before get_instance_iterable")
         if split_name == "train" and phase is None:
             raise ValueError("phase must be specified to get relevant training data")
-        return self._instance_generators[(split_name, phase)]
+        return self._instance_iterables[(split_name, phase)]
 
 
 class ClassificationTask(Task):

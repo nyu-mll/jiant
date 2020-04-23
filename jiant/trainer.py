@@ -324,7 +324,7 @@ class SamplingMultiTaskTrainer:
             instance = [
                 i
                 for i in itertools.islice(
-                    task.get_instance_generator(split_name="train", phase=phase), 1
+                    task.get_instance_iterable(split_name="train", phase=phase), 1
                 )
             ][0]
             pad_dict = instance.get_padding_lengths()
@@ -340,7 +340,7 @@ class SamplingMultiTaskTrainer:
             )
             task_info["iterator"] = iterator
             task_info["tr_generator"] = iterator(
-                task.get_instance_generator(split_name="train", phase=phase), num_epochs=None
+                task.get_instance_iterable(split_name="train", phase=phase), num_epochs=None
             )
 
             n_training_examples = task.n_train_examples
@@ -840,7 +840,7 @@ class SamplingMultiTaskTrainer:
         else:
             max_data_points = task.n_val_examples
         val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
-            task.get_instance_generator(split_name="val"), num_epochs=1, shuffle=False
+            task.get_instance_iterable(split_name="val"), num_epochs=1, shuffle=False
         )
         n_val_batches = math.ceil(max_data_points / batch_size)
         all_val_metrics["%s_loss" % task.name] = 0.0

@@ -23,43 +23,27 @@ class TestTasks(unittest.TestCase):
                 **kw,
             )
 
-    def test_tasks_get_train_instance_generators_without_phase(self):
+    def test_tasks_get_train_instance_iterable_without_phase(self):
         task = Task(name="dummy_name", tokenizer_name="dummy_tokenizer_name")
-        train_iterable_instance_generator = [1, 2, 3]
-        task.set_instance_generator("train", train_iterable_instance_generator, "target_train")
-        self.assertRaises(ValueError, task.get_instance_generator, "train")
+        train_iterable = [1, 2, 3]
+        task.set_instance_iterable("train", train_iterable, "target_train")
+        self.assertRaises(ValueError, task.get_instance_iterable, "train")
 
-    def test_tasks_set_and_get_instance_generators(self):
+    def test_tasks_set_and_get_instance_iterables(self):
         task = Task(name="dummy_name", tokenizer_name="dummy_tokenizer_name")
-        val_iterable_instance_generator = [1, 2, 3]
-        test_iterable_instance_generator = [4, 5, 6]
-        train_pretrain_iterable_instance_generator = [7, 8]
-        train_target_train_iterable_instance_generator = [9]
-        task.set_instance_generator("val", val_iterable_instance_generator)
-        task.set_instance_generator("test", test_iterable_instance_generator)
-        task.set_instance_generator("train", train_pretrain_iterable_instance_generator, "pretrain")
-        task.set_instance_generator(
-            "train", train_target_train_iterable_instance_generator, "target_train"
-        )
-        retreived_val_iterable_instance_generator = task.get_instance_generator("val")
-        retreived_test_iterable_instance_generator = task.get_instance_generator("test")
-        retreived_train_pretrain_iterable_instance_generator = task.get_instance_generator(
-            "train", "pretrain"
-        )
-        retreived_train_target_iterable_instance_generator = task.get_instance_generator(
-            "train", "target_train"
-        )
-        self.assertListEqual(
-            val_iterable_instance_generator, retreived_val_iterable_instance_generator
-        )
-        self.assertListEqual(
-            test_iterable_instance_generator, retreived_test_iterable_instance_generator
-        )
-        self.assertListEqual(
-            train_pretrain_iterable_instance_generator,
-            retreived_train_pretrain_iterable_instance_generator,
-        )
-        self.assertListEqual(
-            train_target_train_iterable_instance_generator,
-            retreived_train_target_iterable_instance_generator,
-        )
+        val_iterable = [1, 2, 3]
+        test_iterable = [4, 5, 6]
+        train_pretrain_iterable = [7, 8]
+        train_target_train_iterable = [9]
+        task.set_instance_iterable("val", val_iterable)
+        task.set_instance_iterable("test", test_iterable)
+        task.set_instance_iterable("train", train_pretrain_iterable, "pretrain")
+        task.set_instance_iterable("train", train_target_train_iterable, "target_train")
+        retreived_val_iterable = task.get_instance_iterable("val")
+        retreived_test_iterable = task.get_instance_iterable("test")
+        retreived_train_pretrain_iterable = task.get_instance_iterable("train", "pretrain")
+        retreived_train_target_iterable = task.get_instance_iterable("train", "target_train")
+        self.assertListEqual(val_iterable, retreived_val_iterable)
+        self.assertListEqual(test_iterable, retreived_test_iterable)
+        self.assertListEqual(train_pretrain_iterable, retreived_train_pretrain_iterable)
+        self.assertListEqual(train_target_train_iterable, retreived_train_target_iterable)

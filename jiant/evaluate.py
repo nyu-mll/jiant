@@ -95,7 +95,7 @@ def evaluate(
         n_task_examples = 0
         task_preds = []  # accumulate DataFrames
         assert split in ["train", "val", "test"]
-        generator = iterator(task.get_instance_generator(split), num_epochs=1, shuffle=False)
+        generator = iterator(task.get_instance_iterable(split), num_epochs=1, shuffle=False)
         for batch_idx, batch in enumerate(generator):
             with torch.no_grad():
                 if isinstance(cuda_device, int):

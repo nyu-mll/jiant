@@ -90,7 +90,7 @@ class TestWritePreds(unittest.TestCase):
             ]
         )
         indexers = {"bert_cased": SingleIdTokenIndexer("bert-xe-cased")}
-        self.wic.set_instance_generator(
+        self.wic.set_instance_iterable(
             "val",
             [
                 Instance(
@@ -211,9 +211,9 @@ class TestWritePreds(unittest.TestCase):
             ],
         )
         self.val_preds = {"sts-b": stsb_val_preds, "wic": wic_val_preds}
-        self.vocab = vocabulary.Vocabulary.from_instances(self.wic.get_instance_generator("val"))
+        self.vocab = vocabulary.Vocabulary.from_instances(self.wic.get_instance_iterable("val"))
         self.vocab.add_token_to_namespace("True", "wic_tags")
-        for data in self.wic.get_instance_generator("val"):
+        for data in self.wic.get_instance_iterable("val"):
             data.index_fields(self.vocab)
         self.glue_tasks = [self.stsb, self.wic]
         self.args = mock.Mock()
