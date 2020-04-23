@@ -296,27 +296,27 @@ class Task(object):
         return preds
 
     def set_instance_generator(
-        self, dataset_name: str, instance_generator: Iterable, phase: str = None
+        self, split_name: str, instance_generator: Iterable, phase: str = None
     ):
         """Takes a data instance generator and stores it in a private field of this Task instance
 
         Parameters
         ----------
-        dataset_name : string
+        split_name : string
         instance_generator : Iterable
         phase : str
 
         """
-        self._instance_generators[(dataset_name, phase)] = instance_generator
+        self._instance_generators[(split_name, phase)] = instance_generator
 
     def get_instance_generator(
-        self, dataset_name: str, phase: str = None
+        self, split_name: str, phase: str = None
     ) -> Union[RepeatableIterator, Generator]:
         """Returns an instance generator for the specified dataset and phase.
 
         Parameters
         ----------
-        dataset_name : string
+        split_name : string
         phase : string
 
         Returns
@@ -326,9 +326,9 @@ class Task(object):
         """
         if not self._instance_generators:
             raise ValueError("set_instance_generator must be called before get_instance_generator")
-        if dataset_name == "train" and phase is None:
+        if split_name == "train" and phase is None:
             raise ValueError("phase must be specified to get relevant training data")
-        return self._instance_generators[(dataset_name, phase)]
+        return self._instance_generators[(split_name, phase)]
 
 
 class ClassificationTask(Task):

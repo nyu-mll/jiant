@@ -417,11 +417,11 @@ def build_tasks(
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
         task.set_instance_generator(
-            dataset_name="val",
+            split_name="val",
             instance_generator=_get_instance_generator(task.name, "val", preproc_dir),
         )
         task.set_instance_generator(
-            dataset_name="test",
+            split_name="test",
             instance_generator=_get_instance_generator(task.name, "test", preproc_dir),
         )
         # When using pretrain_data_fraction, we need modified iterators for use
@@ -429,7 +429,7 @@ def build_tasks(
         if task.name in pretrain_task_names:
             log.info("\tCreating trimmed pretraining-only version of " + task.name + " train.")
             task.set_instance_generator(
-                dataset_name="train",
+                split_name="train",
                 instance_generator=_get_instance_generator(
                     task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
                 ),
@@ -441,7 +441,7 @@ def build_tasks(
         if task.name in target_task_names:
             log.info("\tCreating trimmed target-only version of " + task.name + " train.")
             task.set_instance_generator(
-                dataset_name="train",
+                split_name="train",
                 instance_generator=_get_instance_generator(
                     task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
                 ),
