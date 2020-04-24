@@ -4,6 +4,7 @@ import json
 import logging as log
 import os
 from typing import Any, Dict, Iterable, List, Sequence, Type, Union, Generator
+import random
 
 import numpy as np
 import pandas as pd
@@ -3768,3 +3769,175 @@ class WinograndeTask(MultipleChoiceTask):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
+
+
+@register_task("wikipedia_corpus_sop", rel_path="wikipedia_sop_small")
+class SentenceOrderTask(PairClassificationTask):
+    """ Task class for Sentence Order Prediction (SOP). See the ALBERT paper for details on SOP:
+        https://arxiv.org/abs/1909.11942.
+        We are currently using an preprocessed version of the Wikipedia corpus
+        (more specifically, the Wikidump version 2020-03-01 data) that consists of 5% of the data. You can generate
+        the data by following the instructions from jiant/scripts/sop.
+        One thing to note about our SOP ALBERT implementation is that we do not load the pretrained
+        weights for the SOP head because they are unavailable in Huggingface. We only use the
+        pretrained weights of the linear layer from ALBERT that creates the pooled output used in SOP.
+    """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(SentenceOrderTask, self).__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+        self.files_by_split = {
+            "train": os.path.join(path, "train.txt"),
+            "val": os.path.join(path, "valid.txt"),
+            "test": os.path.join(path, "test.txt"),
+        }
+        self._label_namespace = self.name + "_labels"
+
+    def get_target_seq_length(self):
+        target_is_max = random.random() > 0.1
+        max_seq_len = self.max_seq_len - 3  # exclude [CLS], [SEP], and [SEP]
+        if target_is_max:
+            target_seq_length = max_seq_len
+        else:
+            target_seq_length = random.randint(2, max_seq_len)
+        return target_seq_length
+
+    def get_data_iter(self, path):
+        """Loading data file and tokenizing the text. We override the
+        this function and all functions that call this function because
+        the step of reading in the data for SOP is different than other
+        PairClassificationTasks.
+
+        ALBERT does SOP classification by, for each document:
+            For each example, we first fetch as many sentences as possible that cumulatively have
+            target_seq_length number of tokens from the document:
+                -90% of the time, this target_seq_length is equal to max_seq_length,  and
+                10% of the time, it is set to a random number of tokens between 2 and max_seq_length.
+                -Given the sampled sentences, randomly sample N such that the first N sentences in the
+                sampled go to the first segment, and the rest go to the second. 
+                -50% of the time, the first and second segments are switched.
+
+        Args:
+            path: (str) data file path
+        """
+
+        def _tokenize(tokenizer_name, sent):
+            tokenizer = get_tokenizer(tokenizer_name)
+            return tokenizer.tokenize(sent)
+
+        def is_end_document(seg):
+            tokenized_eod = _tokenize(self._tokenizer_name, "END OF ARTICLE")
+            return set(tokenized_eod).issubset(set(seg))
+
+        # The code below is adapted from the original ALBERT code. See:
+        # https://github.com/google-research/albert/blob/master/create_pretraining_data.py#L267.
+        f = open(path, "r")
+        #  The dataset comes with one sentence per line, thus we split by
+        #  line here.
+        current_chunk = [_tokenize(self._tokenizer_name, next(f))]
+        current_length = len(current_chunk[0])
+        target_seq_length = self.get_target_seq_length()
+        while len(current_chunk) > 0:
+            segment = next(f)
+            segment = _tokenize(self._tokenizer_name, segment)
+            if is_end_document(segment) or current_length >= target_seq_length:
+                for_next_chunk = []
+                if current_length > target_seq_length:
+                    # Since the most current sentence added to the chunk exceeds the target
+                    # length, we save it for the next chunk (next example).
+                    for_next_chunk.append(current_chunk.pop())
+                if not is_end_document(segment):
+                    for_next_chunk.append(segment)
+                target_seq_length = self.get_target_seq_length()
+                if len(current_chunk) >= 2:
+                    # Make sure we have at least 2 sentences to distribute between the two
+                    # segments.
+                    a_end = random.randint(1, len(current_chunk) - 1)
+                    tokens_a = []
+                    for j in range(a_end):
+                        tokens_a.extend(current_chunk[j])
+                    tokens_b = []
+                    for j in range(a_end, len(current_chunk)):
+                        tokens_b.extend(current_chunk[j])
+                    in_order = random.random() < 0.5
+                    if in_order:
+                        yield (tokens_a, tokens_b, in_order)
+                    else:
+                        yield (tokens_b, tokens_a, in_order)
+                # if len(current_chunk) >=2, we will yield and reinitialize
+                # if len(current_chunk) ==1, we will not yeild, and reinitialize
+                if len(for_next_chunk) > 0 and not is_end_document(segment):
+                    # Make sure we only sample articles for each example that
+                    # belong to the same document.
+                    current_chunk = for_next_chunk
+                    current_length = sum([len(chunk) for chunk in for_next_chunk])
+                else:
+                    # We find the next sentence for the next example.
+                    try:  # Might run into StopIterationError
+                        current_chunk = [_tokenize(self._tokenizer_name, next(f))]
+                        current_length = len(current_chunk[0])
+                    except:
+                        print("Done loading data for SOP")
+                        current_chunk = []
+                        current_length = 0
+                        pass
+            else:
+                current_chunk.append(segment)
+                current_length += len(segment)
+
+    def load_data(self):
+        pass
+
+    def process_split(
+        self, split, indexers, model_preprocessing_interface
+    ) -> Iterable[Type[Instance]]:
+        """Process a sentence order prediction split by indexing and creating fields.
+        We override the PairClassificationTask process_split because our data split
+        is different from the typical PairClassificationTask due to the more memory-efficient
+        generator way of loading data we employ for SOP due to the dataset size.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
+
+        def _make_instance(sent_pairs_):
+            sent_a, sent_b, is_right_order = sent_pairs_
+            inp = model_preprocessing_interface.boundary_token_fn(sent_a, sent_b)
+            input_sent = sentence_to_text_field(inp, indexers)
+            label = LabelField(is_right_order, label_namespace="labels", skip_indexing=True)
+            d = {"inputs": input_sent, "labels": label}
+            return Instance(d)
+
+        for sent_pairs in split:
+            yield _make_instance(sent_pairs)
+
+    def get_split_text(self, split: str):
+        """Get split text as iterable of records.
+        Args:
+            split: (str) should be one of 'train', 'val', or 'test'.
+        """
+        return self.get_data_iter(self.files_by_split[split])
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """Yield sentences, used to compute vocabulary.
+        """
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for sent in self.get_data_iter(self.files_by_split[split]):
+                # only counting sent[0] is enough for computing vocab
+                yield sent[0]
+
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for _ in self.get_data_iter(split_path))
+        self.example_counts = example_counts

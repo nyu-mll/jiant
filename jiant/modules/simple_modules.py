@@ -94,6 +94,30 @@ class Classifier(nn.Module):
         )
 
 
+class SOPClassifier(nn.Module):
+    """
+    Task head for sentence order prediction task. We implement the pooled output from ALBERT
+    via a linear layer followed by Tanh activation layer, which is then fed into the
+    classification linear layer.
+    """
+
+    def __init__(self, d_inp, n_classes, params):
+        super(SOPClassifier, self).__init__()
+        self.activation = nn.Tanh()
+        self.pooler = Pooler(d_inp=d_inp, d_proj=d_inp, pool_type=params["pool_type"])
+        assert params["cls_type"] == "log_reg", (
+            "The ALBERT implementation of the SOP "
+            "task takes the final layer from the pooled"
+            "output. Please set cls_type = log_reg."
+        )
+        self.classifier = Classifier.from_params(d_inp, n_classes, params)
+
+    def forward(self, seq_emb, mask):
+        seq_emb = self.activation(self.pooler(seq_emb, mask))
+        logits = self.classifier(seq_emb)
+        return logits
+
+
 class SingleClassifier(nn.Module):
     """ Thin wrapper around a set of modules. For single-sentence classification. """
 

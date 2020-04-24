@@ -31,6 +31,7 @@ from jiant.modules.simple_modules import (
     PairClassifier,
     NullPhraseLayer,
     TokenMultiProjectionEncoder,
+    SOPClassifier,
 )
 from jiant.modules.attn_pair_encoder import AttnPairEncoder
 from jiant.modules.sentence_encoder import SentenceEncoder
@@ -65,6 +66,7 @@ from jiant.tasks.tasks import (
     WiCTask,
     MRPCTask,
     QQPTask,
+    SentenceOrderTask,
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -687,6 +689,34 @@ def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool,
     return module
 
 
+def build_sop(task, d_inp, model, params):
+    """
+    Build and load the pretrained head for the sentence order prediction task.
+    Right now, there is only support for ALBERT.
+    Parameters
+    ----------
+    task: Task,
+    d_inp: int,
+    model: MultiTaskModel,
+    params: Params
+
+    Returns
+    -------
+    module: SOPCLassifier, which is loaded with pretrained weights from ALBERT SOP
+    pretraining. 
+
+    """
+    input_module = model.sent_encoder._text_field_embedder.input_module
+    assert (
+        "albert" in input_module
+    ), "SOP is only supported for ALBERT, please set input_module to an ALBERT model"
+    module = SOPClassifier(d_inp, task.n_classes, params)
+    # The huggingface implementation exposes the pretrained projection layer for the SOP task, which
+    # we use. See: https://github.com/huggingface/transformers/issues/2671 for more details.
+    module.pooler.project = model.sent_encoder._text_field_embedder.model.pooler
+    return module
+
+
 def build_pair_sentence_module(task, d_inp, model, params):
     """ Build a pair classifier, shared if necessary """
 
@@ -745,6 +775,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
         d_out = d_out + d_inp if isinstance(task, WiCTask) else d_out
         classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
+    if isinstance(task, SentenceOrderTask):
+        module = build_sop(task, d_inp, model, params)
     return module
 
 
@@ -899,6 +931,8 @@ class MultiTaskModel(nn.Module):
             out = self._span_forward(batch, task, predict)
         elif isinstance(task, SpanPredictionTask):
             out = self._span_prediction_forward(batch, task, predict)
+        elif isinstance(task, SentenceOrderTask):
+            out = self._sop_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
