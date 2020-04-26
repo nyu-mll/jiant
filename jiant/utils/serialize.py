@@ -76,16 +76,18 @@ def read_records(filename, repeatable=False, fraction=1.0):
     if fraction < 1.0:
         frac_filename = f"{filename}__fraction_{fraction}"
         if not os.path.exists(frac_filename):
-            with open(filename, "rb") as fd:
-                examples = []
-                for line in fd:
-                    blob = base64.b64decode(line)
-                    hash_float = bytes_to_float(blob)
-                    if hash_float > fraction:
-                        continue
-                    example = pkl.loads(blob)
-                    examples.append(example)
-            write_records(examples, frac_filename)
+
+            def _frac_iter_fn():
+                with open(filename, "rb") as fd:
+                    for line in fd:
+                        blob = base64.b64decode(line)
+                        hash_float = bytes_to_float(blob)
+                        if hash_float > fraction:
+                            continue
+                        example = pkl.loads(blob)
+                    yield example
+
+            write_records(_frac_iter_fn(), frac_filename)
         filename = frac_filename
 
     def _iter_fn():
