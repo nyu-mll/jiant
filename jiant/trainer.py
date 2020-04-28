@@ -509,13 +509,13 @@ class SamplingMultiTaskTrainer:
             optimizer_params["t_total"] = val_limit * self._val_interval
 
         # temporarily increase the log level to avoid some verbose INFO-level logging from AllenNLP
-        log_level = log.getLogger().level
-        log.getLogger().setLevel(log.WARNING)
+        allen_params_log_level = log.getLogger("allennlp.common.params").level
+        log.getLogger("allennlp.common.params").setLevel(log.WARNING)
         self._optimizer = Optimizer.from_params(train_params, optimizer_params)
         self._scheduler = LearningRateScheduler.from_params(
             self._optimizer, copy.deepcopy(scheduler_params)
         )
-        log.getLogger().setLevel(log_level)
+        log.getLogger("allennlp.common.params").setLevel(allen_params_log_level)
 
         # define these here b/c they might get overridden on load
         n_step, should_stop = 0, False
