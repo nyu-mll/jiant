@@ -419,22 +419,36 @@ def build_tasks(
     target_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        task.set_instance_iterable(
+            split_name="val",
+            instance_iterable=_get_instance_generator(task.name, "val", preproc_dir),
+        )
+        task.set_instance_iterable(
+            split_name="test",
+            instance_iterable=_get_instance_generator(task.name, "test", preproc_dir),
+        )
         # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if task.name in pretrain_task_names:
             log.info("\tCreating trimmed pretraining-only version of " + task.name + " train.")
-            task.train_data = _get_instance_generator(
-                task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
+            task.set_instance_iterable(
+                split_name="train",
+                instance_iterable=_get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
+                ),
+                phase="pretrain",
             )
             pretrain_tasks.append(task)
         # When using target_train_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
         if task.name in target_task_names:
             log.info("\tCreating trimmed target-only version of " + task.name + " train.")
-            task.train_data = _get_instance_generator(
-                task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
+            task.set_instance_iterable(
+                split_name="train",
+                instance_iterable=_get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
+                ),
+                phase="target_train",
             )
             target_tasks.append(task)
 
