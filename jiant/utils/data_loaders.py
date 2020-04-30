@@ -139,7 +139,7 @@ def load_tsv(
     rows = pd.read_csv(
         data_file,
         sep=delimiter,
-        error_bad_lines=False,
+        error_bad_lines=True,
         header=None,
         skiprows=skip_rows,
         quoting=quote_level,
