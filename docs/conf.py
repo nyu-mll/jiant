@@ -46,7 +46,7 @@ extensions = [
     "sphinx.ext.napoleon",
 ]
 
-autodoc_mock_imports = ["_tkinter"]
+autodoc_mock_imports = ["_jsonnet"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
