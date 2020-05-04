@@ -22,4 +22,4 @@ Templates for bug reports and feature requests are provided [here](https://githu
 The `jiant` project's contributing guidelines can be found [here](CONTRIBUTING.md).
 
 ### License
-`jiant` is released under the [MIT License](LICENSE.md).
+`jiant` is released under the [MIT License](https://github.com/pyeres/jiant/blob/master/LICENSE).
