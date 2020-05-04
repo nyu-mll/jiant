@@ -1,0 +1,56 @@
+version: 2.1
+
+orbs:
+  codecov: codecov/codecov@1.0.5
+
+jobs:
+  test:
+    docker:
+      - image: python:3.7
+    steps:
+      - checkout
+      - restore_cache:
+          key: -v3-{{ checksum "requirements-dev.txt" }}
+      - run:
+          name: Install dependencies
+          command: |
+              python3 -m venv venv
+              source venv/bin/activate
+              pip install -r requirements-dev.txt
+      - save_cache:
+          key: -v3-{{ checksum "requirements-dev.txt" }}
+          paths:
+              - "venv"
+      - run:
+          name: black formatting check
+          command: |
+              source venv/bin/activate
+              black jiant/
+      - run:
+          name: flake8
+          command: |
+              source venv/bin/activate
+              flake8 --docstring-convention google jiant/
+      - run:
+          name: mypy
+          command: |
+              source venv/bin/activate
+              mypy jiant/
+      - run:
+          name: Unit Tests
+          command: |
+              source venv/bin/activate
+              pytest
+      - run:
+          name: Coverage Report
+          command: |
+              source venv/bin/activate
+              pytest --cov-report=xml --cov=jiant tests/
+      - codecov/upload:
+         file: coverage.xml
+    
+workflows:
+  build:
+    jobs:
+      - test:
+         context: codecov

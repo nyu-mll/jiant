@@ -1,0 +1,9 @@
+-r requirements.txt
+sphinx==1.8.1
+pytest==3.10.0
+pytest-cov==2.8.1
+pre-commit==2.3.0
+flake8==3.7.9
+flake8-docstrings==1.5.0
+black==19.10b0
+mypy==0.770
