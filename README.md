@@ -1,4 +1,4 @@
-# jiant2
+# jiant
 
 `jiant` is a software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks. 
 
