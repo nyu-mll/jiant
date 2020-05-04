@@ -1,0 +1,9 @@
+{
+  "run_name": "BERT_BASE",
+  "model": "BERT",
+  "tasks": ["mrpc"],
+  "params": {
+    "lr": 0.0003,
+    "val_interval": 100
+  }
+}

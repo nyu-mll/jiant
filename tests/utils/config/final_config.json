@@ -1,0 +1,9 @@
+{
+  "run_name": "BERT_BASE",
+  "model": "BERT",
+  "tasks": ["sst", "mrpc"],
+  "params": {
+    "val_interval": 100
+  },
+  "add_on_setting": "added_last"
+}

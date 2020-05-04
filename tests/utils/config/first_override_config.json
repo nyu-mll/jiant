@@ -1,0 +1,8 @@
+{
+  "run_name": "BERT_BASE",
+  "model": "BERT",
+  "tasks": ["sst", "mrpc"],
+  "params": {
+    "lr": null
+  }
+}
