@@ -27,4 +27,4 @@ def test_test_expected_to_fail():
 
 
 def test_can_import_and_access_module_level_variable1():
-    assert example_google.module_level_variable1 == 12345
+    assert example_google.module_level_variable2 == 98765
