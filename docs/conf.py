@@ -22,8 +22,8 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "jiant"
-copyright = "2020, New York Universtiy"
-author = "New York Universtiy"
+copyright = "2020, New York University"
+author = "New York University"
 
 # The short X.Y version
 version = "2.0"
@@ -159,7 +159,7 @@ html_css_files = [
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "jiant2doc"
+htmlhelp_basename = "jiantdoc"
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -183,7 +183,7 @@ latex_elements: Dict[str, str] = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "jiant2.tex", "jiant2 Documentation", "Phil", "manual"),
+    (master_doc, "jiant.tex", "jiant Documentation", "jiant team", "manual"),
 ]
 
 
@@ -191,7 +191,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "jiant2", "jiant2 Documentation", [author], 1)]
+man_pages = [(master_doc, "jiant", "jiant Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -202,10 +202,10 @@ man_pages = [(master_doc, "jiant2", "jiant2 Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "jiant2",
-        "jiant2 Documentation",
+        "jiant",
+        "jiant Documentation",
         author,
-        "jiant2",
+        "jiant",
         "One line description of project.",
         "Miscellaneous",
     ),
