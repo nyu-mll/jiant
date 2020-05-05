@@ -1,5 +1,5 @@
 # jiant
-[![Generic badge](https://img.shields.io/badge/version-2.0.a0-blue.svg)](https://shields.io/)
+[![Generic badge](https://img.shields.io/badge/version-2.0.dev0-blue.svg)](https://shields.io/)
 [![codecov](https://codecov.io/gh/pyeres/jiant/branch/master/graph/badge.svg?token=N5MSA2P2RO)](https://codecov.io/gh/pyeres/jiant)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
@@ -16,7 +16,7 @@ pip install -r requirements.txt
 Examples to help you get started can be found here [INSERT LINK].
 
 ### Documentation
-Documentation for `jiant` v2.0.a0 can be found [here](https://jiant-jiant.readthedocs-hosted.com/_/sharing/1rwldrolf0s931s2dz5x260owr).
+Documentation for `jiant` v2.0.dev0 can be found [here](https://jiant-jiant.readthedocs-hosted.com/_/sharing/1rwldrolf0s931s2dz5x260owr).
 
 ### Issues
 Templates for bug reports and feature requests are provided [here](https://github.com/pyeres/jiant2/issues/new/choose).
