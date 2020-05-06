@@ -55,14 +55,28 @@ jobs:
       - image: python:3.7
     steps:
       - checkout
+      - restore_cache:
+          key: -v3-{{ checksum "docs/requirements.txt" }}
       - run:
           name: Install dependencies
           command: |
+              python3 -m venv venv
+              source venv/bin/activate
               pip install -r requirements-dev.txt
+      - save_cache:
+          key: -v3-{{ checksum "docs/requirements.txt" }}
+          paths:
+              - "venv"
+      - run:
+          name: Install dependencies
+          command: |
+              source venv/bin/activate
               pip install -r docs/requirements.txt
       - run:
           name: Build docs
-          command: cd docs/ && make html
+          command: |
+              source venv/bin/activate
+              cd docs/ && make html
       - persist_to_workspace:
           root: docs/_build
           paths: html
