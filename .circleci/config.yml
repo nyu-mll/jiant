@@ -48,9 +48,27 @@ jobs:
               pytest --cov-report=xml --cov=jiant tests/
       - codecov/upload:
          file: coverage.xml
-    
+
+  docs-build:
+    docker:
+      - image: python:3.7
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+              pip install -r requirements-dev.txt
+              pip install -r docs/requirements.txt
+      - run:
+          name: Build docs
+          command: cd docs/ && make html
+      - persist_to_workspace:
+          root: docs/_build
+          paths: html
+
 workflows:
   build:
     jobs:
       - test:
          context: jiant_context
+      - docs-build
