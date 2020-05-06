@@ -48,7 +48,8 @@ jobs:
               pytest --cov-report=xml --cov=jiant tests/
       - codecov/upload:
          file: coverage.xml
-
+  # doc-build and docs-deploy job templates from:
+  # https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
   docs-build:
     docker:
       - image: python:3.7
@@ -65,6 +66,28 @@ jobs:
       - persist_to_workspace:
           root: docs/_build
           paths: html
+  docs-deploy:
+    docker:
+      - image: node:8.10.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: docs/_build
+      - run:
+          name: Disable jekyll builds
+          command: touch docs/_build/html/.nojekyll
+      - run:
+          name: Install and configure dependencies
+          command: |
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "ci-build@nyu.edu"
+            git config user.name "ci-build"
+      - add_ssh_keys:
+          fingerprints:
+            - "f9:68:3d:0f:2f:1b:41:24:30:8c:d4:b8:89:77:58:2d"
+      - run:
+          name: Deploy docs to gh-pages branch
+          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
 
 workflows:
   build:
@@ -72,3 +95,10 @@ workflows:
       - test:
          context: jiant_context
       - docs-build
+      - docs-deploy:
+          requires:
+            - test
+            - docs-build
+          filters:
+            branches:
+              only: master
