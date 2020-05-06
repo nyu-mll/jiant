@@ -2,7 +2,7 @@
 import json
 import os
 
-from jiant.utils import config
+from jiant.utils import config_handlers
 
 
 def test_json_merge_patch():
@@ -28,7 +28,7 @@ def test_json_merge_patch():
         "tags": [ "example" ]
     }
     """
-    merged = config.json_merge_patch(target, patch)
+    merged = config_handlers.json_merge_patch(target, patch)
     expected = """
     {
         "title": "Hello!",
@@ -52,7 +52,9 @@ def test_merging_multiple_json_configs():
         override_config_1 = f.read()
     with open(os.path.join(os.path.dirname(__file__), "./config/second_override_config.json")) as f:
         override_config_2 = f.read()
-    merged_config = config.merge_jsons_in_order([base_config, override_config_1, override_config_2])
+    merged_config = config_handlers.merge_jsons_in_order(
+        [base_config, override_config_1, override_config_2]
+    )
     with open(os.path.join(os.path.dirname(__file__), "./config/final_config.json")) as f:
         expected_config = f.read()
     sorted_merged_config = json.dumps(json.loads(merged_config), sort_keys=True)
