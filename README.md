@@ -16,7 +16,7 @@ pip install -r requirements.txt
 Examples to help you get started can be found here [INSERT LINK].
 
 ### Documentation
-Documentation for `jiant` v2.0.dev0 can be found [here](https://nyu-mll-jiant.readthedocs-hosted.com/).
+Documentation for `jiant` v2.0.dev0 can be found [here](https://pyeres.github.io/jiant/).
 
 ### Issues
 Templates for bug reports and feature requests are provided [here](https://github.com/pyeres/jiant2/issues/new/choose).
