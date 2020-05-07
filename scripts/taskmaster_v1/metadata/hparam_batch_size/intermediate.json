@@ -1,0 +1,57 @@
+[
+  {
+    "task_name": "sst",
+    "hparam_set": 7,
+    "batch_size": 64
+  },
+  {
+    "task_name": "socialiqa",
+    "hparam_set": 0,
+    "batch_size": 4
+  },
+  {
+    "task_name": "qqp",
+    "hparam_set": 5,
+    "batch_size": 8
+  },
+  {
+    "task_name": "mnli",
+    "hparam_set": 6,
+    "batch_size": 4
+  },
+  {
+    "task_name": "scitail",
+    "hparam_set": 4,
+    "batch_size": 4
+  },
+  {
+    "task_name": "qasrl",
+    "hparam_set": 7,
+    "batch_size": 4
+  },
+  {
+    "task_name": "qamr",
+    "hparam_set": 3,
+    "batch_size": 4
+  },
+  {
+    "task_name": "squad",
+    "hparam_set": 5,
+    "batch_size": 4
+  },
+  {
+    "task_name": "cosmosqa",
+    "hparam_set": 6,
+    "batch_size": 4
+  },
+  {
+    "task_name": "hellaswag",
+    "hparam_set": 6,
+    "batch_size": 4
+  },
+  {
+    "task_name": "commonsenseqa",
+    "hparam_set": 6,
+    "batch_size": 4
+  }
+]
