@@ -106,8 +106,7 @@ jobs:
 workflows:
   build:
     jobs:
-      - test:
-         context: jiant_context
+      - test
       - docs-build
       - docs-deploy:
           requires:
