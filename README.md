@@ -16,13 +16,13 @@ pip install -r requirements.txt
 Examples to help you get started can be found here [INSERT LINK].
 
 ### Documentation
-Documentation for `jiant` v2.0.dev0 can be found [here](https://pyeres.github.io/jiant/).
+Documentation for `jiant` v2.0.dev0 can be found [here](https://jiant-dev.github.io/jiant/).
 
 ### Issues
-Templates for bug reports and feature requests are provided [here](https://github.com/pyeres/jiant2/issues/new/choose).
+Templates for bug reports and feature requests are provided [here](https://github.com/jiant-dev/jiant/issues/new/choose).
 
 ### Contributing
 The `jiant` project's contributing guidelines can be found [here](CONTRIBUTING.md).
 
 ### License
-`jiant` is released under the [MIT License](https://github.com/pyeres/jiant/blob/master/LICENSE).
+`jiant` is released under the [MIT License](https://github.com/jiant-dev/jiant/blob/master/LICENSE).
