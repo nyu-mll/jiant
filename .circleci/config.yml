@@ -25,7 +25,7 @@ jobs:
           name: black formatting check
           command: |
               source venv/bin/activate
-              black jiant/
+              black --check jiant/
       - run:
           name: flake8
           command: |
