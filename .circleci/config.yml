@@ -32,11 +32,6 @@ jobs:
               source venv/bin/activate
               flake8 --docstring-convention google jiant/
       - run:
-          name: mypy
-          command: |
-              source venv/bin/activate
-              mypy jiant/
-      - run:
           name: Unit Tests
           command: |
               source venv/bin/activate
