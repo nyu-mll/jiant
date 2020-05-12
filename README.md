@@ -1,6 +1,6 @@
 # jiant
 [![Generic badge](https://img.shields.io/badge/version-2.0.dev0-blue.svg)](https://shields.io/)
-[![codecov](https://codecov.io/gh/pyeres/jiant/branch/master/graph/badge.svg?token=N5MSA2P2RO)](https://codecov.io/gh/pyeres/jiant)
+[![codecov](https://codecov.io/gh/jiant-dev/jiant/branch/master/graph/badge.svg)](https://codecov.io/gh/jiant-dev/jiant)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 `jiant` is a software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks. 
