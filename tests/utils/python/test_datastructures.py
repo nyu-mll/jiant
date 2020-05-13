@@ -1,3 +1,4 @@
+import json
 import pytest
 from dataclasses import dataclass
 
@@ -55,13 +56,33 @@ def test_chain_idx_get():
     assert py_datastructures.chain_idx_get(ls, [1, 1], default=1234) == 1234
 
 
+def test_combine_dicts_with_disjoint_key_sets():
+    combined_dict = py_datastructures.combine_dicts([{"d1_k1": "d1_v1"}, {"d2_k1": "d2_v1"}])
+    expected_dict = {"d1_k1": "d1_v1", "d2_k1": "d2_v1"}
+    combined_sorted: str = json.dumps(combined_dict, sort_keys=True)
+    expected_sorted: str = json.dumps(expected_dict, sort_keys=True)
+    assert combined_sorted == expected_sorted
+
+
+def test_combine_dicts_with_overlapping_key_sets():
+    with pytest.raises(RuntimeError):
+        py_datastructures.combine_dicts([{"k1": "v1"}, {"k1": "v1"}])
+
+
 def test_partition_list():
-    assert py_datastructures.partition_list(list(range(10)), 5) == \
-        [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
-    assert py_datastructures.partition_list(list(range(10)), 3) == \
-        [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9]]
-    assert py_datastructures.partition_list(list(range(10)), 1) == \
-        [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
+    assert py_datastructures.partition_list(list(range(10)), 5) == [
+        [0, 1],
+        [2, 3],
+        [4, 5],
+        [6, 7],
+        [8, 9],
+    ]
+    assert py_datastructures.partition_list(list(range(10)), 3) == [
+        [0, 1, 2, 3],
+        [4, 5, 6, 7],
+        [8, 9],
+    ]
+    assert py_datastructures.partition_list(list(range(10)), 1) == [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
 
 
 def test_extended_dataclass_mixin():
@@ -70,5 +91,4 @@ def test_extended_dataclass_mixin():
         int1: int
         str1: str
 
-    assert MyClass.get_fields() == \
-       ["int1", "str1"]
+    assert MyClass.get_fields() == ["int1", "str1"]
