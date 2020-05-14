@@ -45,7 +45,7 @@ def full_chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfigur
         examples=examples, feat_spec=feat_spec, tokenizer=tokenizer, phase=phase, verbose=True,
     )
     if args.smart_truncate:
-        dataset, length = preprocessing.experimental_smart_truncate(
+        dataset, length = preprocessing.smart_truncate(
             dataset=dataset, max_seq_length=args.max_seq_length, verbose=True,
         )
         os.makedirs(os.path.join(args.output_dir, phase), exist_ok=True)
@@ -74,7 +74,7 @@ def iter_chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfigur
         recorder_callback=max_valid_length_recorder,
     )
     if args.smart_truncate:
-        preprocessing.experimental_smart_truncate_cache(
+        preprocessing.smart_truncate_cache(
             cache=shared_caching.ChunkedFilesDataCache(os.path.join(args.output_dir, phase)),
             max_seq_length=args.max_seq_length,
             max_valid_length=max_valid_length_recorder.max_valid_length,

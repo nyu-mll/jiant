@@ -21,9 +21,7 @@ class MaxValidLengthRecorder:
         self.max_valid_length = max(self.max_valid_length, valid_length)
 
 
-def experimental_smart_truncate(
-    dataset: torch_utils.ListDataset, max_seq_length: int, verbose: bool = False
-):
+def smart_truncate(dataset: torch_utils.ListDataset, max_seq_length: int, verbose: bool = False):
     if "input_mask" not in dataset.data[0]["data_row"].get_fields():
         raise RuntimeError("Smart truncate not supported")
     valid_length_ls = []
@@ -39,7 +37,7 @@ def experimental_smart_truncate(
     new_datum_ls = []
     for datum in maybe_tqdm(dataset.data, desc="Smart truncate data", verbose=verbose):
         new_datum_ls.append(
-            experimental_smart_truncate_datum(
+            smart_truncate_datum(
                 datum=datum, max_seq_length=max_seq_length, max_valid_length=max_valid_length,
             )
         )
@@ -47,7 +45,7 @@ def experimental_smart_truncate(
     return new_dataset, max_valid_length
 
 
-def experimental_smart_truncate_cache(
+def smart_truncate_cache(
     cache: shared_caching.ChunkedFilesDataCache,
     max_seq_length: int,
     max_valid_length: int,
@@ -58,15 +56,15 @@ def experimental_smart_truncate_cache(
         new_chunk = []
         for datum in maybe_tqdm(chunk, desc="Smart truncate chunk-datum", verbose=verbose):
             new_chunk.append(
-                experimental_smart_truncate_datum(
+                smart_truncate_datum(
                     datum=datum, max_seq_length=max_seq_length, max_valid_length=max_valid_length,
                 )
             )
         torch.save(new_chunk, cache.get_chunk_path(chunk_i))
 
 
-def experimental_smart_truncate_datum(datum, max_seq_length, max_valid_length):
-    row_dict = datum["data_row"].asdict()
+def smart_truncate_datum(datum, max_seq_length, max_valid_length):
+    row_dict = datum["data_row"].to_dict()
     new_row_dict = row_dict.copy()
     for k, v in row_dict.items():
         if not isinstance(v, np.ndarray):

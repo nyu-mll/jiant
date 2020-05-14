@@ -215,7 +215,7 @@ def write_metrics(results, output_path, verbose=True):
     if "loss" in results:
         results_to_write["loss"] = results["loss"]
     if "metrics" in results:
-        results_to_write["metrics"] = results["metrics"].asdict()
+        results_to_write["metrics"] = results["metrics"].to_dict()
     assert results_to_write
     metrics_str = json.dumps(results_to_write, indent=2)
     if verbose:

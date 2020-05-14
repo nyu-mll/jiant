@@ -136,7 +136,7 @@ class Task:
             metadata = [x["metadata"] for x in batch]
             collated_data_rows = {
                 key: flat_collate_fn([getattr(d, key) for d in data_rows])
-                for key in data_rows[0].asdict()
+                for key in data_rows[0].to_dict()
             }
             collated_metadata = metadata_collate_fn(metadata)
             combined = combine_dicts([collated_data_rows, collated_metadata])

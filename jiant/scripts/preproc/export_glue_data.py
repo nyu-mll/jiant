@@ -9,9 +9,9 @@ import jiant.utils.zconf as zconf
 GLUE_CONVERSION = {
     "cola": {
         "data": {
-            "train": {"cols": {"sentence": 3, "label": 1}},
-            "val": {"cols": {"sentence": 3, "label": 1}, "meta": {"filename": "dev"}},
-            "test": {"cols": {"text_a": 1}, "meta": {"skiprows": 1}},
+            "train": {"cols": {"text": 3, "label": 1}},
+            "val": {"cols": {"text": 3, "label": 1}, "meta": {"filename": "dev"}},
+            "test": {"cols": {"text": 1}, "meta": {"skiprows": 1}},
         },
         "dir_name": "CoLA",
     },
