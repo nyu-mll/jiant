@@ -11,6 +11,22 @@ from jiant.utils.python.datastructures import ExtendedDataClassMixin, combine_di
 
 @dataclass
 class FeaturizationSpec:
+    """Tokenization-related metadata.
+
+    Attributes:
+        max_seq_length (int): The maximum total input sequence length after tokenization.
+        cls_token_at_end (bool): True if class token is located at end, False if at beginning.
+        pad_on_left (bool): True if padding is applied to left side, False if on the right side.
+        cls_token_segment_id (int): int used to represent class token segment.
+        pad_token_segment_id (int): int used to represent padding segments.
+        pad_token_id (int): int used to represent the pad token in the tokenized representation.
+        pad_token_mask_id (int): int used as a mask representing padding.
+        sequence_a_segment_id (int): int used to represent sequence a segment.
+        sequence_b_segment_id (int): int used to represent sequence b segment.
+        sep_token_extra (bool): True for extra separators (e.g., "</s></s>"), false otherwise.
+
+    """
+
     max_seq_length: int
     cls_token_at_end: bool
     pad_on_left: bool

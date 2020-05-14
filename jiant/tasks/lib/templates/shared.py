@@ -67,6 +67,21 @@ def double_sentence_featurize(
     feat_spec: FeaturizationSpec,
     data_row_class,
 ):
+    """Featurize an example for a two-input/two-sentence task, and return the example as a DataRow.
+
+    Args:
+        guid (str): human-readable identifier for interpretability and debugging.
+        input_tokens_a (List[str]): sequence of tokens in segment a.
+        input_tokens_b (List[str]): sequence of tokens in segment b.
+        label_id (int): int representing the label for the task.
+        tokenizer:
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+        data_row_class (DataRow): DataRow class used in the task.
+
+    Returns:
+        DataRow representing an example.
+
+    """
     unpadded_inputs = construct_double_input_tokens_and_segment_ids(
         input_tokens_a=input_tokens_a,
         input_tokens_b=input_tokens_b,
@@ -108,7 +123,18 @@ def construct_single_input_tokens_and_segment_ids(
 def construct_double_input_tokens_and_segment_ids(
     input_tokens_a: List[str], input_tokens_b: List[str], tokenizer, feat_spec: FeaturizationSpec
 ):
+    """Create token and segment id sequences, apply truncation, add separator and class tokens.
 
+    Args:
+        input_tokens_a (List[str]): sequence of tokens in segment a.
+        input_tokens_b (List[str]): sequence of tokens in segment b.
+        tokenizer:
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+
+    Returns:
+        UnpaddedInputs: unpadded inputs with truncation applied and special tokens appended.
+
+    """
     if feat_spec.sep_token_extra:
         maybe_extra_sep = [tokenizer.sep_token]
         maybe_extra_sep_segment_id = [feat_spec.sequence_a_segment_id]
@@ -151,6 +177,20 @@ def add_cls_token(
     tokenizer,
     feat_spec: FeaturizationSpec,
 ):
+    """Add class token to unpadded inputs.
+
+    Applies class token to end (or start) of unpadded inputs depending on FeaturizationSpec.
+
+    Args:
+        unpadded_tokens (List[str]): sequence of unpadded token strings.
+        unpadded_segment_ids (List[str]): sequence of unpadded segment ids.
+        tokenizer:
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+
+    Returns:
+        UnpaddedInputs: unpadded inputs with class token appended.
+
+    """
     if feat_spec.cls_token_at_end:
         return UnpaddedInputs(
             unpadded_tokens=unpadded_tokens + [tokenizer.cls_token],
@@ -174,6 +214,21 @@ def create_generic_data_row_from_tokens_and_segments(
     feat_spec: FeaturizationSpec,
     data_row_class,
 ):
+    """Creates an InputSet and wraps the InputSet into a DataRow class.
+
+    Args:
+        guid (str): human-readable identifier (for interpretability and debugging).
+        unpadded_tokens (List[str]): sequence of unpadded token strings.
+        unpadded_segment_ids (List[int]): sequence of unpadded segment ids.
+        label_id (int): int representing the label for the task.
+        tokenizer:
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+        data_row_class (DataRow): data row class to wrap and return the inputs.
+
+    Returns:
+        DataRow: data row class containing model inputs.
+
+    """
     input_set = create_input_set_from_tokens_and_segments(
         unpadded_tokens=unpadded_tokens,
         unpadded_segment_ids=unpadded_segment_ids,
@@ -196,6 +251,20 @@ def create_input_set_from_tokens_and_segments(
     tokenizer,
     feat_spec: FeaturizationSpec,
 ):
+    """Create padded inputs for model.
+
+    Converts tokens to ids, makes input set (input ids, input mask, and segment ids), adds padding.
+
+    Args:
+        unpadded_tokens (List[str]): unpadded list of token strings.
+        unpadded_segment_ids (List[int]): unpadded list of segment ids.
+        tokenizer:
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+
+    Returns:
+        Padded input set.
+
+    """
     assert len(unpadded_tokens) == len(unpadded_segment_ids)
     input_ids = tokenizer.convert_tokens_to_ids(unpadded_tokens)
     input_mask = [1] * len(input_ids)
@@ -214,6 +283,18 @@ def pad_features_with_feat_spec(
     unpadded_segment_ids: List[int],
     feat_spec: FeaturizationSpec,
 ):
+    """Apply padding to feature set according to settings from FeaturizationSpec.
+
+    Args:
+        input_ids (List[int]): sequence unpadded input ids.
+        input_mask (List[int]): unpadded input mask sequence.
+        unpadded_segment_ids (List[int]): sequence of unpadded segment ids.
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+
+    Returns:
+        InputSet: input set containing padded input ids, input mask, and segment ids.
+
+    """
     return InputSet(
         input_ids=pad_single_with_feat_spec(
             ls=input_ids, feat_spec=feat_spec, pad_idx=feat_spec.pad_token_id,
@@ -230,6 +311,18 @@ def pad_features_with_feat_spec(
 def pad_single_with_feat_spec(
     ls: List[int], feat_spec: FeaturizationSpec, pad_idx: int, check=True
 ):
+    """Apply padding to sequence according to settings from FeaturizationSpec.
+
+    Args:
+        ls (List[int]): sequence to pad.
+        feat_spec (FeaturizationSpec): metadata containing max sequence length and padding settings.
+        pad_idx (int): element to use for padding.
+        check (bool): True if padded length should be checked as under the max sequence length.
+
+    Returns:
+        Sequence with padding applied.
+
+    """
     return pad_to_max_seq_length(
         ls=ls,
         max_seq_length=feat_spec.max_seq_length,
@@ -240,5 +333,14 @@ def pad_single_with_feat_spec(
 
 
 def labels_to_bimap(labels):
+    """Creates mappings from label to id, and from id to label. See details in docs for BiMap.
+
+    Args:
+        labels: sequence of label to map to ids.
+
+    Returns:
+        Tuple[Dict, Dict]: mappings from labels to ids, and ids to labels.
+
+    """
     label2id, id2label = BiMap(a=labels, b=list(range(len(labels)))).get_maps()
     return label2id, id2label

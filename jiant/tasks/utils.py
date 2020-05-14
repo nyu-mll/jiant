@@ -24,6 +24,19 @@ def truncate_sequences(tokens_ls, max_length, truncate_end=True):
 
 
 def pad_to_max_seq_length(ls, max_seq_length, pad_idx=0, pad_right=True, check=True):
+    """Apply padding to an input sequence.
+
+    Args:
+        ls: sequence to pad.
+        max_seq_length: max length up to which to apply padding.
+        pad_idx: element to use for padding.
+        pad_right: True if padding is applied to right side of sequence, False to pad on left side.
+        check: True if result length should be checked as under the max sequence length.
+
+    Returns:
+        Sequence with specified padding applied.
+
+    """
     padding = [pad_idx] * (max_seq_length - len(ls))
     if pad_right:
         result = ls + padding
