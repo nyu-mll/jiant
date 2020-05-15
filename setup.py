@@ -59,6 +59,7 @@ setuptools.setup(
         "torch==1.0.*",
         "numpy==1.14.5",
         "pandas==0.23.0",
+        "scikit-learn<0.23",  # pinned for compatability w/ allennlp==0.8.4, see jiant issue 1088.
         "allennlp==0.8.4",
         "jsondiff",
         "nltk==3.4.5",
