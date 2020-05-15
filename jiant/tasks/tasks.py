@@ -1132,7 +1132,11 @@ class SNLITask(PairClassificationTask):
         def _load_jsonl(data_file):
             data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             sent1s, sent2s, trgs, idxs = [], [], [], []
-            for example in data:
+            for idx, example in enumerate(data):
+                if example["gold_label"] not in targ_map:
+                    # some examples don't have annotator agreement so no gold label
+                    continue
+
                 sent1s.append(
                     tokenize_and_truncate(
                         self._tokenizer_name, example["sentence1"], self.max_seq_len
@@ -1145,11 +1149,11 @@ class SNLITask(PairClassificationTask):
                 )
                 trg = targ_map[example["gold_label"]]
                 trgs.append(trg)
-                idxs.append(example["idx"])
+                idxs.append(idx)
             return [sent1s, sent2s, trgs, idxs]
 
         self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = _load_jsonl(os.path.join(self.path, "val.jsonl"))
+        self.val_data_text = _load_jsonl(os.path.join(self.path, "dev.jsonl"))
         self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
 
         self.sentences = (
