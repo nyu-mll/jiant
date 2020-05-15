@@ -47,12 +47,30 @@ class Chunker:
 
 
 def convert_to_chunks(data, chunk_size: int):
+    """Divide data into chunks.
+
+    Args:
+        data (List): data to divide into chunks.
+        chunk_size (int): number of data elements to store per chunk.
+
+    Returns:
+        List of data chunks.
+    """
     chunker = Chunker.from_chunk_size(len(data), chunk_size=chunk_size)
     chunked_data = chunker.get_chunks(data)
     return chunked_data
 
 
 def chunk_and_save(data: list, chunk_size: int, data_args: dict, output_dir: str):
+    """Divide data into chunks and save it to disk, also saves metadata describing chunking to disk.
+
+    Args:
+        data (List): List of DataRows and metadata.
+        chunk_size (int): number of data elements to store per chunk.
+        data_args (Dict): RunConfiguration represented as a dictionary.
+        output_dir: phase-specific dir in the output dir specified in the RunConfiguration.
+
+    """
     os.makedirs(output_dir, exist_ok=True)
     chunked_data = convert_to_chunks(data=data, chunk_size=chunk_size)
     for i, chunk in enumerate(chunked_data):

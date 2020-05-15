@@ -36,6 +36,17 @@ def get_task_class(task_name: str):
 
 
 def create_task_from_config(config: dict, base_path: Optional[str] = None, verbose: bool = False):
+    """Create task instance from task config.
+
+    Args:
+        config (Dict): task config map.
+        base_path (str): if the path is not absolute, path is assumed to be relative to base_path.
+        verbose (bool): True if task config should be printed during task creation.
+
+    Returns:
+        Task instance.
+
+    """
     task_class = get_task_class(config["task"])
     for k in config["paths"].keys():
         path = config["paths"][k]
@@ -53,6 +64,16 @@ def create_task_from_config(config: dict, base_path: Optional[str] = None, verbo
 
 
 def create_task_from_config_path(config_path: str, verbose: bool = False):
+    """Creates task instance from task config filepath.
+
+    Args:
+        config_path (str): config filepath.
+        verbose (bool): True if task config should be printed during task creation.
+
+    Returns:
+        Task instance.
+
+    """
     return create_task_from_config(
         read_json(config_path), base_path=os.path.split(config_path)[0], verbose=verbose,
     )

@@ -22,11 +22,23 @@ class MaxValidLengthRecorder:
 
 
 def smart_truncate(dataset: torch_utils.ListDataset, max_seq_length: int, verbose: bool = False):
+    """Truncate data to the length of the longest example in the dataset.
+
+    Args:
+        dataset (torch_utils.ListDataset): ListDataset to truncate if possible.
+        max_seq_length (int): The maximum total input sequence length.
+        verbose (bool): If True, display progress bar tracking truncation progress.
+
+    Returns:
+        Tuple[torch_utils.ListDataset, int]: truncated dataset, and length of the longest sequence.
+
+    """
     if "input_mask" not in dataset.data[0]["data_row"].get_fields():
         raise RuntimeError("Smart truncate not supported")
     valid_length_ls = []
     range_idx = np.arange(max_seq_length)
     for datum in dataset.data:
+        # TODO: document why reshape and max happen here (for cola this isn't necessary).
         indexer = datum["data_row"].input_mask.reshape(-1, max_seq_length).max(-2)
         valid_length_ls.append(range_idx[indexer.astype(bool)].max() + 1)
     max_valid_length = max(valid_length_ls)
@@ -89,6 +101,19 @@ def smart_truncate_datum(datum, max_seq_length, max_valid_length):
 def convert_examples_to_dataset(
     examples: list, tokenizer, feat_spec: FeaturizationSpec, phase: str, verbose=False
 ):
+    """Create ListDataset containing DataRows and metadata.
+
+    Args:
+        examples (list[Example]): list of task Examples.
+        tokenizer: TODO
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+        phase (str): string identifying the data subset (e.g., train, val or test).
+        verbose: If True, display progress bar.
+
+    Returns:
+        ListDataset containing DataRows and metadata.
+
+    """
     data_rows = tokenize_and_featurize(
         examples=examples, tokenizer=tokenizer, feat_spec=feat_spec, phase=phase, verbose=verbose,
     )
@@ -119,6 +144,19 @@ def iter_chunk_convert_examples_to_dataset(
 def tokenize_and_featurize(
     examples: list, tokenizer, feat_spec: FeaturizationSpec, phase, verbose=False
 ):
+    """Create list of DataRows containing tokenized and featurized examples.
+
+    Args:
+        examples (list[Example]): list of task Examples.
+        tokenizer: TODO
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+        phase (str): string identifying the data subset (e.g., train, val or test).
+        verbose: If True, display progress bar.
+
+    Returns:
+        List DataRows containing tokenized and featurized examples.
+
+    """
     # TODO: In future, will potentially yield multiple featurized examples
     #  per example (e.g. SQuAD)
     # We'll need the 'phase' argument for then
@@ -132,6 +170,19 @@ def tokenize_and_featurize(
 def iter_chunk_tokenize_and_featurize(
     examples: list, tokenizer, feat_spec: FeaturizationSpec, phase, verbose=False
 ):
+    """Generator of DataRows containing tokenized and featurized examples.
+
+    Args:
+        examples (list[Example]): list of task Examples.
+        tokenizer: TODO
+        feat_spec (FeaturizationSpec): Tokenization-related metadata.
+        phase (str): string identifying the data subset (e.g., train, val or test).
+        verbose: If True, display progress bar.
+
+    Yields:
+        DataRow containing tokenized and featurized examples.
+
+    """
     for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose):
         # TODO: In future, will potentially yield multiple featurized examples
         #  per example (e.g. SQuAD)
