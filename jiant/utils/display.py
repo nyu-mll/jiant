@@ -1,12 +1,9 @@
 import json
-import tqdm as _tqdm
+from tqdm import auto as tqdm_lib
 
 
 def tqdm(iterable=None, desc=None, total=None, initial=0):
-    if is_notebook():
-        return _tqdm.tqdm_notebook(iterable=iterable, desc=desc, total=total, initial=initial,)
-    else:
-        return _tqdm.tqdm(iterable=iterable, desc=desc, total=total, initial=initial,)
+    return tqdm_lib.tqdm(iterable=iterable, desc=desc, total=total, initial=initial,)
 
 
 def trange(*args, desc=None, total=None):
