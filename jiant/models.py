@@ -1190,12 +1190,6 @@ class MultiTaskModel(nn.Module):
             out["preds"] = logits.argmax(dim=-1)
         return out
 
-    def get_state_dict_for_saving(self) -> nn.Module:
-        if isinstance(self, nn.DataParallel):
-            return self.module.state_dict()
-        else:
-            return self.state_dict()
-
     def _lm_only_lr_forward(self, batch, task):
         """Only left to right pass for LM model - non-bidirectional models.
            Used for language modeling training only in one direction.

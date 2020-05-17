@@ -326,6 +326,14 @@ def select_task_specific_args(exp_args, diff_args):
 
 
 def get_state_dict_for_loading(model, model_state) -> nn.Module:
+    """ Function for making sure state dict keys are named appropriately for 
+        multi-GPU and single-GPU use cases
+
+    Parameters
+    ----------
+    model: The model object to populate with loaded parameters.
+    model_state: collections.OrderdDict of model state
+    """
     final_model_state = collections.OrderedDict()
 
     def get_key(name):
