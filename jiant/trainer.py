@@ -1107,7 +1107,7 @@ class SamplingMultiTaskTrainer:
             "model_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
         )
 
-        model_state = self._model.state_dict()
+        model_state = self._model.get_state_dict_for_saving()
 
         # Skip non-trainable params, like the main ELMo params.
         for name, param in self._model.named_parameters():
