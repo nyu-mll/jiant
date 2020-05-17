@@ -39,6 +39,7 @@ class HuggingfaceTransformersEmbedderModule(nn.Module):
         self._sep_id = None
         self._pad_id = None
         self._unk_id = None
+        self._mask_id = None
 
         # If set, treat these special tokens as part of input segments other than A/B.
         self._SEG_ID_CLS = None
@@ -270,6 +271,7 @@ class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("[UNK]")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("[MASK]")
 
         self.parameter_setup(args)
 
@@ -305,7 +307,7 @@ class BertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.cls
         lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -327,6 +329,7 @@ class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("<s>")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("<mask>")
 
         self.parameter_setup(args)
 
@@ -358,8 +361,8 @@ class RobertaEmbedderModule(HuggingfaceTransformersEmbedderModule):
             self.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
-        lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
+        return lm_head
 
 
 class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -381,6 +384,7 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("[CLS]")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("[MASK]")
 
         self.parameter_setup(args)
 
@@ -416,7 +420,7 @@ class AlbertEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.predictions
         lm_head.decoder.weight = self.model.embeddings.word_embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -437,6 +441,7 @@ class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
         self._cls_id = self.tokenizer.convert_tokens_to_ids("<cls>")
         self._pad_id = self.tokenizer.convert_tokens_to_ids("<pad>")
         self._unk_id = self.tokenizer.convert_tokens_to_ids("<unk>")
+        self._mask_id = self.tokenizer.convert_tokens_to_ids("<mask>")
 
         self.parameter_setup(args)
 
@@ -478,7 +483,7 @@ class XLNetEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_loss
         lm_head.weight = self.model.word_embedding.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -541,7 +546,7 @@ class OpenAIGPTEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_head
         lm_head.weight = self.model.tokens_embed.weight[: lm_head.weight.size()[0]]
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -603,7 +608,7 @@ class GPT2EmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.lm_head
         lm_head.weight = self.model.wte.weight[: lm_head.weight.size()[0]]
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class TransfoXLEmbedderModule(HuggingfaceTransformersEmbedderModule):
@@ -724,4 +729,4 @@ class XLMEmbedderModule(HuggingfaceTransformersEmbedderModule):
         )
         lm_head = model_with_lm_head.pred_layer
         lm_head.proj.weight = self.model.embeddings.weight
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
