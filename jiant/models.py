@@ -31,6 +31,7 @@ from jiant.modules.simple_modules import (
     PairClassifier,
     NullPhraseLayer,
     TokenMultiProjectionEncoder,
+    SOPClassifier,
 )
 from jiant.modules.attn_pair_encoder import AttnPairEncoder
 from jiant.modules.sentence_encoder import SentenceEncoder
@@ -45,7 +46,7 @@ from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
 from jiant.huggingface_transformers_interface import input_module_uses_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.tasks.lm import LanguageModelingTask
+from jiant.tasks.lm import AutoregressiveLanguageModelingTask, MaskedLanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.seq2seq import Seq2SeqTask
@@ -65,6 +66,7 @@ from jiant.tasks.tasks import (
     WiCTask,
     MRPCTask,
     QQPTask,
+    SentenceOrderTask,
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -76,6 +78,7 @@ from jiant.utils.utils import (
     format_output,
     uses_cuda,
 )
+from jiant.utils.data_loaders import get_tokenizer
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -158,18 +161,22 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         )
         d_sent = args.d_word
         log.info("Using PRPN sentence encoder!")
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
+    elif (
+        any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks)
+        or args.sent_enc == "bilm"
+    ):
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
-        assert_for_log(
-            not (
-                args.input_module == "elmo"
-                or args.input_module.startswith("bert")
-                or args.input_module.startswith("xlnet")
-            ),
-            f"Using input_module = {args.input_module} for language modeling is probably not a "
-            "good idea, since it allows the language model to use information from the right-hand "
-            "context.",
-        )
+        if any(isinstance(task, AutoregressiveLanguageModelingTask) for task in tasks):
+            assert_for_log(
+                not (
+                    args.input_module == "elmo"
+                    or args.input_module.startswith("bert")
+                    or args.input_module.startswith("xlnet")
+                ),
+                f"Using input_module = {args.input_module} for language modeling is probably not a "
+                "good idea, since it allows the language model to use information from the right-hand "
+                "context.",
+            )
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
             vocab,
@@ -549,7 +556,10 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
         setattr(model, "%s_mdl" % task.name, hid2voc)
-    elif isinstance(task, LanguageModelingTask):
+    elif isinstance(task, MaskedLanguageModelingTask):
+        module = build_mlm(model.sent_encoder._text_field_embedder)
+        setattr(model, "%s_mdl" % task.name, module)
+    elif isinstance(task, AutoregressiveLanguageModelingTask):
         assert not input_module_uses_transformers(args.input_module), (
             "our LM Task does not support transformers, if you need them, try to update",
             "corresponding parts of the code. You may find get_pretrained_lm_head and",
@@ -679,6 +689,34 @@ def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool,
     return module
 
 
+def build_sop(task, d_inp, model, params):
+    """
+    Build and load the pretrained head for the sentence order prediction task.
+    Right now, there is only support for ALBERT.
+    Parameters
+    ----------
+    task: Task,
+    d_inp: int,
+    model: MultiTaskModel,
+    params: Params
+
+    Returns
+    -------
+    module: SOPCLassifier, which is loaded with pretrained weights from ALBERT SOP
+    pretraining. 
+
+    """
+    input_module = model.sent_encoder._text_field_embedder.input_module
+    assert (
+        "albert" in input_module
+    ), "SOP is only supported for ALBERT, please set input_module to an ALBERT model"
+    module = SOPClassifier(d_inp, task.n_classes, params)
+    # The huggingface implementation exposes the pretrained projection layer for the SOP task, which
+    # we use. See: https://github.com/huggingface/transformers/issues/2671 for more details.
+    module.pooler.project = model.sent_encoder._text_field_embedder.model.pooler
+    return module
+
+
 def build_pair_sentence_module(task, d_inp, model, params):
     """ Build a pair classifier, shared if necessary """
 
@@ -737,6 +775,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
         d_out = d_out + d_inp if isinstance(task, WiCTask) else d_out
         classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
+    if isinstance(task, SentenceOrderTask):
+        module = build_sop(task, d_inp, model, params)
     return module
 
 
@@ -744,6 +784,12 @@ def build_lm(task, d_inp, args):
     """ Build LM components (just map hidden states to vocab logits) """
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
+
+
+def build_mlm(embedder):
+    " Build MLM components "
+    lm_head = embedder.get_pretrained_lm_head()
+    return lm_head
 
 
 def build_span_classifier(task, d_sent, task_params):
@@ -853,7 +899,9 @@ class MultiTaskModel(nn.Module):
             task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)
         ):
             out = self._pair_sentence_forward(batch, task, predict)
-        elif isinstance(task, LanguageModelingTask):
+        elif isinstance(task, MaskedLanguageModelingTask):
+            out = self._masked_lm_forward(batch, task, predict)
+        elif isinstance(task, AutoregressiveLanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or isinstance(
                 self.sent_encoder._phrase_layer, PRPN
             ):
@@ -883,6 +931,8 @@ class MultiTaskModel(nn.Module):
             out = self._span_forward(batch, task, predict)
         elif isinstance(task, SpanPredictionTask):
             out = self._span_prediction_forward(batch, task, predict)
+        elif isinstance(task, SentenceOrderTask):
+            out = self._sop_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -1158,6 +1208,32 @@ class MultiTaskModel(nn.Module):
         task.scorer1(out["loss"].item())
         if predict:
             pass
+        return out
+
+    def _masked_lm_forward(self, batch, task, predict):
+        """
+        We currently only support RoBERTa-style dynamic masking, with the exact 
+        setup and parameters as RoBERTa. 
+        """
+        out = {}
+        tokenizer_name = self.sent_encoder._text_field_embedder.input_module
+        text_embedder = self.sent_encoder._text_field_embedder
+        vocab_size = text_embedder.model.embeddings.word_embeddings.num_embeddings
+        input_key = text_embedder.tokenizer_required
+        mask_idx = text_embedder._mask_id
+        b_size, seq_len = batch["targs"].size()
+        inputs = batch["input"][input_key]
+        labels = batch["targs"]
+        inputs, labels, _, _, _, _ = task.mlm_dynamic_masking(
+            inputs, labels, mask_idx, tokenizer_name, self.sent_encoder
+        )
+        batch["input"][input_key] = inputs
+        sent_embs, sent_mask = self.sent_encoder(batch["input"], task)
+        module = getattr(self, "%s_mdl" % task.name)
+        logits = module.forward(sent_embs)
+        out["logits"] = logits
+        out["loss"] = F.cross_entropy(logits.view(-1, vocab_size), labels.view(-1))
+        out["n_exs"] = format_output(b_size, self._cuda_device)
         return out
 
     def _mc_forward(self, batch, task, predict):

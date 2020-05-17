@@ -322,8 +322,12 @@ class SamplingMultiTaskTrainer:
             ):
                 os.mkdir(os.path.join(self._serialization_dir, task.name))
 
-            # Adding task-specific smart iterator to speed up training
-            instance = [i for i in itertools.islice(task.train_data, 1)][0]
+            instance = [
+                i
+                for i in itertools.islice(
+                    task.get_instance_iterable(split_name="train", phase=phase), 1
+                )
+            ][0]
             pad_dict = instance.get_padding_lengths()
             sorting_keys = []
             for field in pad_dict:
@@ -336,14 +340,15 @@ class SamplingMultiTaskTrainer:
                 biggest_batch_first=True,
             )
             task_info["iterator"] = iterator
-            task_info["tr_generator"] = iterator(task.train_data, num_epochs=None)
+            task_info["tr_generator"] = iterator(
+                task.get_instance_iterable(split_name="train", phase=phase), num_epochs=None
+            )
 
             n_training_examples = task.n_train_examples
-            if phase == "pretrain":
-                # Warning: This won't be precise when training_data_fraction is set, since each
-                #  example is included or excluded independently using a hashing function.
-                # Fortunately, it doesn't need to be.
-                n_training_examples *= self._training_data_fraction
+            # Warning: This won't be precise when training_data_fraction is set, since each
+            #  example is included or excluded deterministically using a hashing function.
+            # See read_records function in serialize.py for details.
+            n_training_examples *= self._training_data_fraction
             task_info["n_tr_batches"] = math.ceil(n_training_examples / batch_size)
             task_info["n_tr_steps"] = math.ceil(
                 task_info["n_tr_batches"] / self._accumulation_steps
@@ -402,7 +407,6 @@ class SamplingMultiTaskTrainer:
             epochs = scaling_method.strip("max_epoch_").split("_")
             assert len(epochs) == num_tasks, "Loss Scaling Error: epoch number not match."
             scaling_weights = np.array(list(map(int, epochs)))
-
         # normalized by max weight
         if "max" in scaling_method:
             scaling_weights = scaling_weights / np.max(scaling_weights)
@@ -437,6 +441,9 @@ class SamplingMultiTaskTrainer:
             sample_weights = 1 / task_n_train_examples
         elif weighting_method == "inverse_log_example":
             sample_weights = 1 / np.log(task_n_train_examples)
+        elif "examples_proportional_mixing" in weighting_method:
+            max_K = int(weighting_method.split("K=")[1])
+            sample_weights = [min(num_examples, max_K) for num_examples in task_n_train_examples]
         elif weighting_method == "inverse_log_batch":
             sample_weights = 1 / np.log(task_n_train_batches)
         elif "power_" in weighting_method:
@@ -501,10 +508,15 @@ class SamplingMultiTaskTrainer:
             else:
                 val_limit = self._max_vals
             optimizer_params["t_total"] = val_limit * self._val_interval
+
+        # temporarily increase the log level to avoid some verbose INFO-level logging from AllenNLP
+        allen_params_log_level = log.getLogger("allennlp.common.params").level
+        log.getLogger("allennlp.common.params").setLevel(log.WARNING)
         self._optimizer = Optimizer.from_params(train_params, optimizer_params)
         self._scheduler = LearningRateScheduler.from_params(
             self._optimizer, copy.deepcopy(scheduler_params)
         )
+        log.getLogger("allennlp.common.params").setLevel(allen_params_log_level)
 
         # define these here b/c they might get overridden on load
         n_step, should_stop = 0, False
@@ -833,7 +845,7 @@ class SamplingMultiTaskTrainer:
         else:
             max_data_points = task.n_val_examples
         val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
-            task.val_data, num_epochs=1, shuffle=False
+            task.get_instance_iterable(split_name="val"), num_epochs=1, shuffle=False
         )
         n_val_batches = math.ceil(max_data_points / batch_size)
         all_val_metrics["%s_loss" % task.name] = 0.0

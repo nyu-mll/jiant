@@ -54,6 +54,7 @@ from jiant.tasks import (
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.tasks.tasks import SequenceGenerationTask, Task
+from jiant.tasks.lm import MaskedLanguageModelingTask
 from jiant.utils import config, serialize, utils, options
 from jiant.utils.options import parse_task_list_arg
 
@@ -261,6 +262,7 @@ def _build_vocab(args: config.Params, tasks: List[Task], vocab_path: str):
     for task in tasks:  # add custom label namespaces
         # TODO: surface more docs for add_task_label_vocab:
         add_task_label_vocab(vocab, task)
+
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
@@ -414,22 +416,36 @@ def build_tasks(
     target_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        task.set_instance_iterable(
+            split_name="val",
+            instance_iterable=_get_instance_generator(task.name, "val", preproc_dir),
+        )
+        task.set_instance_iterable(
+            split_name="test",
+            instance_iterable=_get_instance_generator(task.name, "test", preproc_dir),
+        )
         # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if task.name in pretrain_task_names:
             log.info("\tCreating trimmed pretraining-only version of " + task.name + " train.")
-            task.train_data = _get_instance_generator(
-                task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
+            task.set_instance_iterable(
+                split_name="train",
+                instance_iterable=_get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
+                ),
+                phase="pretrain",
             )
             pretrain_tasks.append(task)
         # When using target_train_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
         if task.name in target_task_names:
             log.info("\tCreating trimmed target-only version of " + task.name + " train.")
-            task.train_data = _get_instance_generator(
-                task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
+            task.set_instance_iterable(
+                split_name="train",
+                instance_iterable=_get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
+                ),
+                phase="target_train",
             )
             target_tasks.append(task)
 
@@ -660,10 +676,6 @@ def add_task_label_vocab(vocab, task):
     if namespace is None:
         return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
-
-    if isinstance(task, SequenceGenerationTask):
-        for special in SPECIALS:
-            vocab.add_token_to_namespace(special, namespace)
 
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
