@@ -506,7 +506,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         to_train: List of tuples of (name, weight) of trainable parameters
 
     """
-    load_model_state(model, ckpt_path, cuda_devices, skip_task_models=[task.name], strict=strict)
+    load_model_state(model, ckpt_path, skip_task_models=[task.name], strict=strict)
     if args.transfer_paradigm == "finetune":
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
@@ -607,11 +607,11 @@ def main(cl_arguments):
             # including and following that task.
             last_task_index = [task.name for task in target_tasks_to_train].index(task_to_restore)
             target_tasks_to_train = target_tasks_to_train[last_task_index:]
+
         for task in target_tasks_to_train:
             # Skip tasks that should not be trained on.
             if task.eval_only_task:
                 continue
-
             params_to_train = load_model_for_target_train_run(
                 args, pre_target_train_path, model, strict, task, cuda_device
             )
@@ -649,7 +649,7 @@ def main(cl_arguments):
             task_to_use = task_params(task.name).get("use_classifier", task.name)
             ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
-            load_model_state(model, ckpt_path, cuda_device, skip_task_models=[], strict=strict)
+            load_model_state(model, ckpt_path, skip_task_models=[], strict=strict)
             evaluate_and_write(args, model, [task], splits_to_write, cuda_device)
 
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:

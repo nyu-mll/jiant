@@ -33,6 +33,7 @@ from jiant.utils.utils import (
     get_output_attribute,
     get_model_attribute,
     uses_cuda,
+    load_model_state,
 )  # pylint: disable=import-error
 from allennlp.nn.util import move_to_device
 
@@ -1106,8 +1107,7 @@ class SamplingMultiTaskTrainer:
             task_dir_name,
             "model_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
         )
-
-        model_state = self._model.get_state_dict_for_saving()
+        model_state = self._model.state_dict()
 
         # Skip non-trainable params, like the main ELMo params.
         for name, param in self._model.named_parameters():
@@ -1205,15 +1205,7 @@ class SamplingMultiTaskTrainer:
             self._serialization_dir, task_directory, "_".join(["metric", suffix])
         )
 
-        model_state = torch.load(model_path)
-
-        for name, param in self._model.named_parameters():
-            if param.requires_grad and name not in model_state:
-                log.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                log.error("Parameter missing from checkpoint: " + name)
-                log.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-        self._model.load_state_dict(model_state, strict=False)
+        load_model_state(self._model, model_path)
         task_states = torch.load(task_state_path)
         for task_name, task_state in task_states.items():
             if task_name == "global":

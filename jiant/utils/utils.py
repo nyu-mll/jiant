@@ -10,7 +10,9 @@ from typing import Iterable, Sequence, Union
 import glob
 import torch
 import jsondiff
+import collections
 
+import torch.nn as nn
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
 from sacremoses import MosesDetokenizer
@@ -323,14 +325,32 @@ def select_task_specific_args(exp_args, diff_args):
     return diff_args
 
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
+def get_state_dict_for_loading(model, model_state) -> nn.Module:
+    final_model_state = collections.OrderedDict()
+
+    def get_key(name):
+        key = name
+        if isinstance(model, nn.DataParallel):
+            if "module" not in key:
+                key = "module.%s" % key
+        else:
+            if "module" in key:
+                key = key.replace("module.", "")
+        return key
+
+    for name, weights in model_state.items():
+        key = get_key(name)
+        final_model_state[key] = model_state[name]
+    return final_model_state
+
+
+def load_model_state(model, state_path, skip_task_models=[], strict=True):
     """ Helper function to load a model state
 
     Parameters
     ----------
     model: The model object to populate with loaded parameters.
     state_path: The path to a model_state checkpoint.
-    gpu_id: The GPU to use. -1 for no GPU.
     skip_task_models: If set, skip task-specific parameters for these tasks.
         This does not necessarily skip loading ELMo scalar weights, but I (Sam) sincerely
         doubt that this matters.
@@ -338,7 +358,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
         there is a risk of leaving some parameters in their randomly initialized state.
     """
     model_state = torch.load(state_path)
-
+    model_state = get_state_dict_for_loading(model, model_state)
     assert_for_log(
         not (skip_task_models and strict),
         "Can't skip task models while also strictly loading task models. Something is wrong.",
