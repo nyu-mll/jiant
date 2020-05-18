@@ -349,7 +349,7 @@ def get_state_dict_for_loading(model, model_state) -> nn.Module:
 
     for name, weights in model_state.items():
         key = get_key(name)
-        final_model_state[key] = weight
+        final_model_state[key] = weights
     return final_model_state
 
 
