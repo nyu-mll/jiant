@@ -342,13 +342,14 @@ def get_state_dict_for_loading(model, model_state) -> nn.Module:
             if "module" not in key:
                 key = "module.%s" % key
         else:
-            if "module" in key:
-                key = key.replace("module.", "")
+            if key.startswith("module."):
+                # Drop the first 7 characters, which is the prefix "module."
+                key = key[7:]
         return key
 
     for name, weights in model_state.items():
         key = get_key(name)
-        final_model_state[key] = model_state[name]
+        final_model_state[key] = weight
     return final_model_state
 
 
