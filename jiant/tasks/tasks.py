@@ -1129,36 +1129,33 @@ class SNLITask(PairClassificationTask):
         """ Process the dataset located at path.  """
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
 
-        self.train_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "train.tsv"),
-            max_seq_len=self.max_seq_len,
-            label_fn=targ_map.__getitem__,
-            s1_idx=7,
-            s2_idx=8,
-            label_idx=10,
-            skip_rows=1,
-        )
-        self.val_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "dev.tsv"),
-            max_seq_len=self.max_seq_len,
-            label_fn=targ_map.__getitem__,
-            s1_idx=7,
-            s2_idx=8,
-            label_idx=10,
-            skip_rows=1,
-        )
-        self.test_data_text = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "test.tsv"),
-            max_seq_len=self.max_seq_len,
-            s1_idx=7,
-            s2_idx=8,
-            has_labels=False,
-            return_indices=True,
-            skip_rows=1,
-        )
+        def _load_jsonl(data_file):
+            data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
+            sent1s, sent2s, trgs, idxs = [], [], [], []
+            for idx, example in enumerate(data):
+                if example["gold_label"] not in targ_map:
+                    # some examples don't have annotator agreement so no gold label
+                    continue
+
+                sent1s.append(
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["sentence1"], self.max_seq_len
+                    )
+                )
+                sent2s.append(
+                    tokenize_and_truncate(
+                        self._tokenizer_name, example["sentence2"], self.max_seq_len
+                    )
+                )
+                trg = targ_map[example["gold_label"]]
+                trgs.append(trg)
+                idxs.append(idx)
+            return [sent1s, sent2s, trgs, idxs]
+
+        self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = _load_jsonl(os.path.join(self.path, "dev.jsonl"))
+        self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
+
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
@@ -3818,7 +3815,7 @@ class SentenceOrderTask(PairClassificationTask):
                 -90% of the time, this target_seq_length is equal to max_seq_length,  and
                 10% of the time, it is set to a random number of tokens between 2 and max_seq_length.
                 -Given the sampled sentences, randomly sample N such that the first N sentences in the
-                sampled go to the first segment, and the rest go to the second. 
+                sampled go to the first segment, and the rest go to the second.
                 -50% of the time, the first and second segments are switched.
 
         Args:
