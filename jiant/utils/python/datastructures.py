@@ -1,6 +1,6 @@
 import math
 import itertools
-from dataclasses import asdict, replace
+from dataclasses import replace
 from typing import Mapping, Any, Sequence, Iterable, Iterator, Union, Tuple, Dict
 
 
@@ -174,8 +174,7 @@ class ExtendedDataClassMixin:
         return cls.__annotations__
 
     def to_dict(self):
-        # noinspection PyDataclass
-        return asdict(self)
+        return {k: getattr(self, k) for k in self.get_fields()}
 
     @classmethod
     def from_dict(cls, kwargs):
