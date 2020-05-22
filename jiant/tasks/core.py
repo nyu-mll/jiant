@@ -99,7 +99,7 @@ class BatchTuple(NamedTuple):
     metadata: dict
 
     def to(self, device):
-        return BatchTuple(batch=self.batch.to(device), metadata=self.metadata,)
+        return BatchTuple(batch=self.batch.to(device), metadata=self.metadata)
 
 
 def metadata_collate_fn(metadata: list):

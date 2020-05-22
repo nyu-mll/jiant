@@ -102,11 +102,11 @@ def read_parser(parser, class_with_attributes: Any, skip_non_class_attributes=No
 
 # == Class Methods
 def run_cli(cls, args=None, prog=None, description=None):
-    parser = argparse.ArgumentParser(prog=prog, description=description,)
+    parser = argparse.ArgumentParser(prog=prog, description=description)
     update_parser(
         parser=parser, class_with_attributes=cls,
     )
-    result = read_parser(parser=parser, class_with_attributes=cls, args=args,)
+    result = read_parser(parser=parser, class_with_attributes=cls, args=args)
     assert isinstance(result, cls)
     return result
 
@@ -148,7 +148,7 @@ def _inst_copy(self):
 class RunConfig:
     @classmethod
     def run_cli(cls, prog=None, description=None):
-        parser = argparse.ArgumentParser(prog=prog, description=description,)
+        parser = argparse.ArgumentParser(prog=prog, description=description)
         return cls.run_from_parser(parser=parser)
 
     @classmethod
@@ -156,7 +156,7 @@ class RunConfig:
         update_parser(
             parser=parser, class_with_attributes=cls,
         )
-        result = read_parser(parser=parser, class_with_attributes=cls,)
+        result = read_parser(parser=parser, class_with_attributes=cls)
         assert isinstance(result, cls)
         return result
 
@@ -169,8 +169,8 @@ class RunConfig:
     def run_cli_json_prepend(cls, cl_args=None, prog=None, description=None):
         # Prototype
         # Assumptions: no positional?
-        parser = argparse.ArgumentParser(prog=prog, description=description,)
-        result = cls.run_from_parser_json_prepend(parser=parser, cl_args=cl_args,)
+        parser = argparse.ArgumentParser(prog=prog, description=description)
+        result = cls.run_from_parser_json_prepend(parser=parser, cl_args=cl_args)
         return result
 
     @classmethod
@@ -231,7 +231,7 @@ class RunConfig:
 
     @classmethod
     def default_run_cli(cls, cl_args=None, prog=None, description=None):
-        return cls.run_cli_json_prepend(cl_args=cl_args, prog=prog, description=description,)
+        return cls.run_cli_json_prepend(cl_args=cl_args, prog=prog, description=description)
 
     @classmethod
     def _is_store_true_arg(cls, attr_):

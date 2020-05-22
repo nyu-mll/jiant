@@ -12,7 +12,7 @@ def trange(*args, desc=None, total=None):
 
 def maybe_tqdm(iterable=None, desc=None, total=None, initial=0, verbose=True):
     if verbose:
-        return tqdm(iterable=iterable, desc=desc, total=total, initial=initial,)
+        return tqdm(iterable=iterable, desc=desc, total=total, initial=initial)
     else:
         return iterable
 

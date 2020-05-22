@@ -157,7 +157,7 @@ def preprocess_all_glue_data(input_base_path, output_base_path):
     for task_name in tqdm.tqdm(GLUE_CONVERSION):
         task_data_path = os.path.join(output_base_path, "data", task_name)
         os.makedirs(task_data_path, exist_ok=True)
-        task_all_examples = get_full_examples(task_name=task_name, input_base_path=input_base_path,)
+        task_all_examples = get_full_examples(task_name=task_name, input_base_path=input_base_path)
         config = {"task": task_name, "paths": {}, "name": task_name}
         for phase, phase_data in task_all_examples.items():
             phase_data_path = os.path.join(task_data_path, f"{phase}.jsonl")

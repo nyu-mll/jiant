@@ -21,3 +21,4 @@ ignore =
 exclude = 
     examples/**
     tests/**
+    jiant/ext/allennlp.py #  excluded to avoid modifying code copied from AllenNLP.

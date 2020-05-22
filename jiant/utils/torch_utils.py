@@ -4,7 +4,7 @@ import os
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa PyPep8Naming
 
 from torch.utils.data import Dataset, DataLoader
 

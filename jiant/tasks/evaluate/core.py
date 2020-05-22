@@ -89,7 +89,7 @@ class BaseLogitsEvaluationScheme(BaseEvaluationScheme):
         self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
-        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels,)
+        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels)
 
     def compute_metrics_from_preds_and_labels(self, preds, labels):
         raise NotImplementedError()
@@ -105,7 +105,7 @@ class SimpleAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
     def compute_metrics_from_preds_and_labels(cls, preds, labels):
         # noinspection PyUnresolvedReferences
         acc = float((preds == labels).mean())
-        return Metrics(major=acc, minor={"acc": acc},)
+        return Metrics(major=acc, minor={"acc": acc})
 
 
 class AccAndF1EvaluationScheme(BaseLogitsEvaluationScheme):
@@ -124,7 +124,7 @@ class AccAndF1EvaluationScheme(BaseLogitsEvaluationScheme):
             "f1": f1,
             "acc_and_f1": (acc + f1) / 2,
         }
-        return Metrics(major=minor["acc_and_f1"], minor=minor,)
+        return Metrics(major=minor["acc_and_f1"], minor=minor)
 
 
 class MCCEvaluationScheme(BaseLogitsEvaluationScheme):
@@ -135,7 +135,7 @@ class MCCEvaluationScheme(BaseLogitsEvaluationScheme):
     @classmethod
     def compute_metrics_from_preds_and_labels(cls, preds, labels):
         mcc = matthews_corrcoef(labels, preds)
-        return Metrics(major=mcc, minor={"mcc": mcc},)
+        return Metrics(major=mcc, minor={"mcc": mcc})
 
 
 class PearsonAndSpearmanEvaluationScheme(BaseLogitsEvaluationScheme):
@@ -155,7 +155,7 @@ class PearsonAndSpearmanEvaluationScheme(BaseLogitsEvaluationScheme):
             "spearmanr": spearman_corr,
             "corr": (pearson_corr + spearman_corr) / 2,
         }
-        return Metrics(major=minor["corr"], minor=minor,)
+        return Metrics(major=minor["corr"], minor=minor)
 
 
 def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
@@ -174,7 +174,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return SimpleAccuracyEvaluationScheme()
     elif isinstance(task, tasks.ColaTask):
         return MCCEvaluationScheme()
-    elif isinstance(task, (tasks.MrpcTask, tasks.QqpTask,)):
+    elif isinstance(task, (tasks.MrpcTask, tasks.QqpTask)):
         return AccAndF1EvaluationScheme()
     elif isinstance(task, tasks.StsbTask):
         return PearsonAndSpearmanEvaluationScheme()

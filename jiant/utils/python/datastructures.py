@@ -1,10 +1,10 @@
 import math
 import itertools
 from dataclasses import replace
-from typing import Mapping, Any, Sequence, Iterable, Iterator, Union, Tuple, Dict
+from typing import Mapping, Any, Sequence, Iterable, Iterator, Union, Tuple, Dict, Set
 
 
-def take_one(ls: Union[Sequence, Mapping]) -> Any:
+def take_one(ls: Union[Sequence, Mapping, Set]) -> Any:
     """Extract element from a collection containing just one element.
 
     Args:
@@ -90,6 +90,7 @@ def combine_dicts(dict_ls: Sequence[dict], strict=True, dict_class=dict):
         Dictionary containing the entries from the input dicts.
 
     """
+    # noinspection PyCallingNonCallable
     new_dict = dict_class()
     for i, dictionary in enumerate(dict_ls):
         for k, v in dictionary.items():
