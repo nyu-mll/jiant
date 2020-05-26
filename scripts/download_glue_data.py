@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """ Script for downloading all GLUE data.
 
 Example usage:

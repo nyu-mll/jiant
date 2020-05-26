@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """ Script for downloading all SuperGLUE data.
 
 For licence information, see the original dataset information links
