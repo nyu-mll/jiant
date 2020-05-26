@@ -7,9 +7,8 @@
 
 ### Installation
 ```
-git clone https://github.com/nyu-mll/jiant.git
-cd jiant
-pip install -r requirements.txt
+git clone https://github.com/jiant-dev/jiant.git
+pip install -r jiant/requirements-dev.txt
 ```
 
 ### Getting started
