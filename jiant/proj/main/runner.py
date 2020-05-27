@@ -58,6 +58,10 @@ class JiantRunner:
 
         self.model = self.jiant_model
 
+    def run_train(self):
+        for _ in self.run_train_context():
+            pass
+
     def run_train_context(self, verbose=True):
         train_dataloader_dict = self.get_train_dataloader_dict()
         train_state = TrainState.from_task_name_list(
