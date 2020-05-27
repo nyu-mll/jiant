@@ -55,5 +55,5 @@ def wrap_jiant_forward(
         )
     )
     if is_multi_gpu:
-        model_output.loss = model_output.loss.sum()
+        model_output.loss = model_output.loss.mean()
     return model_output
