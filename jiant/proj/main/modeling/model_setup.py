@@ -262,6 +262,23 @@ def create_taskmodel(
 
 
 def get_encoder(model_arch, ancestor_model):
+    """From model architecture, get the encoder (encoder = embedding layer + self-attention layer).
+
+    This function will return the "The bare Bert Model transformer outputting raw hidden-states
+    without any specific head on top", when provided with ModelArchitectures and BertForPreTraining
+    model. See Hugging Face's BertForPreTraining and BertModel documentation for more info.
+
+    Args:
+        model_arch: Model architecture.
+        ancestor_model: Model with pretraining heads attached.
+
+    Raises:
+        KeyError if ModelArchitectures
+
+    Returns:
+        Bare pretrained model outputting raw hidden-states without a specific head on top.
+
+    """
     if model_arch == ModelArchitectures.BERT:
         return ancestor_model.bert
     elif model_arch == ModelArchitectures.ROBERTA:
@@ -340,6 +357,19 @@ MODEL_PREFIX = {
 
 
 def get_ancestor_model(transformers_class_spec, model_config_path):
+    """Load the model config from a file, configure the model, and return the model.
+
+    This function returns the model class with all the pretrained weights. E.g., for BERT this is
+    BertForPreTraining which includes masked language modeling and next sentence prediction heads.
+
+    Args:
+        transformers_class_spec (TransformersClassSpec): has refs to model, tokenizer, and config.
+        model_config_path (str): Path to the JSON file containing the configuration parameters.
+
+    Returns:
+        Configured model.
+
+    """
     config = transformers_class_spec.config_class.from_json_file(model_config_path)
     model = transformers_class_spec.model_class(config)
     return model

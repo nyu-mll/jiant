@@ -14,7 +14,16 @@ class ModelArchitectures(Enum):
     XLM_ROBERTA = 5
 
     @classmethod
-    def from_model_type(cls, model_type):
+    def from_model_type(cls, model_type: str):
+        """Get the model architecture for the provided shortcut name.
+
+        Args:
+            model_type (str): model shortcut name.
+
+        Returns:
+            Model architecture associated with the provided shortcut name.
+
+        """
         if model_type.startswith("bert-"):
             return cls.BERT
         elif model_type.startswith("xlm-") and not model_type.startswith("xlm-roberta"):
@@ -199,4 +208,13 @@ TOKENIZER_CLASS_DICT = {
 
 
 def resolve_tokenizer_class(model_type):
+    """Get tokenizer class for a given model architecture.
+
+    Args:
+        model_type (str): model shortcut name.
+
+    Returns:
+        Tokenizer associated with the given model.
+
+    """
     return TOKENIZER_CLASS_DICT[ModelArchitectures.from_model_type(model_type)]

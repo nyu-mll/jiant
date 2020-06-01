@@ -224,6 +224,16 @@ class EncoderOutput:
 
 
 def get_output_from_encoder_and_batch(encoder, batch) -> EncoderOutput:
+    """Pass batch to encoder, return encoder model output.
+
+    Args:
+        encoder: bare model outputting raw hidden-states without any specific head.
+        batch: Batch object (containing token indices, token type ids, and attention mask).
+
+    Returns:
+        EncoderOutput containing pooled and unpooled model outputs as well as any other outputs.
+
+    """
     return get_output_from_encoder(
         encoder=encoder,
         input_ids=batch.input_ids,
@@ -233,6 +243,21 @@ def get_output_from_encoder_and_batch(encoder, batch) -> EncoderOutput:
 
 
 def get_output_from_encoder(encoder, input_ids, segment_ids, input_mask) -> EncoderOutput:
+    """Pass inputs to encoder, return encoder output.
+
+    Args:
+        encoder: bare model outputting raw hidden-states without any specific head.
+        input_ids: token indices (see huggingface.co/transformers/glossary.html#input-ids).
+        segment_ids: token type ids (see huggingface.co/transformers/glossary.html#token-type-ids).
+        input_mask: attention mask (see huggingface.co/transformers/glossary.html#attention-mask).
+
+    Raises:
+        RuntimeError if encoder output contains less than 2 elements.
+
+    Returns:
+        EncoderOutput containing pooled and unpooled model outputs as well as any other outputs.
+
+    """
     output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
     if len(output) == 2:
         return EncoderOutput(pooled=output[1], unpooled=output[0],)

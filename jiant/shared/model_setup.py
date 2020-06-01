@@ -6,6 +6,16 @@ from jiant.shared.model_resolution import ModelArchitectures, resolve_tokenizer_
 
 
 def get_tokenizer(model_type, tokenizer_path):
+    """Instantiate a tokenizer for a given model type.
+
+    Args:
+        model_type (str): model shortcut name.
+        tokenizer_path (str): path to tokenizer directory.
+
+    Returns:
+        Tokenizer for the given model type.
+
+    """
     model_arch = ModelArchitectures.from_model_type(model_type)
     tokenizer_class = resolve_tokenizer_class(model_type)
     if model_arch in [ModelArchitectures.BERT]:
