@@ -11,7 +11,7 @@ import get_results_row as get_results_row
 import grab_analysis_data as grab_analysis_data
 import calculate_correlations as calculate_correlations
 
-name_dict = {
+NAME_DICT = {
     "rte_TRG": "RTE",
     "boolq_TRG": "BoolQ",
     "commitbank_TRG": "CB",
@@ -60,7 +60,7 @@ name_dict = {
     "sst": "SST-2",
     "avg_targ": "Avg. Target",
 }
-targ_name_list = [
+TARG_NAME_LIST = [
     "commitbank_TRG",
     "copa_TRG",
     "winograd-coreference_TRG",
@@ -72,7 +72,7 @@ targ_name_list = [
     "cosmosqa_TRG",
     "record_TRG",
 ]
-prob_name_list = [
+PROB_NAME_LIST = [
     "edges-pos-ontonotes_PRB",
     "edges-ner-ontonotes_PRB",
     "edges-srl-ontonotes_PRB",
@@ -99,24 +99,7 @@ prob_name_list = [
     "acceptability-conj_PRB",
     "acceptability-eos_PRB",
 ]
-prob_name_list_v2 = [
-    "edges-pos-ontonotes_PRB",
-    "edges-ner-ontonotes_PRB",
-    "edges-srl-ontonotes_PRB",
-    "edges-coref-ontonotes_PRB",
-    "edges-nonterminal-ontonotes_PRB",
-    "edges-spr1_PRB",
-    "edges-spr2_PRB",
-    "edges-dpr_PRB",
-    "edges-rel-semeval_PRB",
-    "edges-dep-ud-ewt_PRB",
-    "cola_PRB",
-    "acceptability-wh_PRB",
-    "acceptability-def_PRB",
-    "acceptability-conj_PRB",
-    "acceptability-eos_PRB",
-]
-int_task_names = [
+INT_TASK_NAMES = [
     "qamr",
     "commonsenseqa",
     "scitail",
@@ -190,12 +173,12 @@ def load_baseline_srs(base_results_path, columns):
 
 def plot_correls_full(correl_df, output_path):
     plot_df = (
-        correl_df.loc[targ_name_list + prob_name_list]
-        .loc[:, targ_name_list + prob_name_list]
+        correl_df.loc[TARG_NAME_LIST + PROB_NAME_LIST]
+        .loc[:, TARG_NAME_LIST + PROB_NAME_LIST]
         .copy()
     )
-    plot_df.index = plot_df.index.map(name_dict.get)
-    plot_df.columns = plot_df.columns.map(name_dict.get)
+    plot_df.index = plot_df.index.map(NAME_DICT.get)
+    plot_df.columns = plot_df.columns.map(NAME_DICT.get)
     labels = plot_df.applymap(fmt_num)
 
     plt.figure(figsize=(16, 16))
@@ -234,13 +217,13 @@ def plot_correls_full(correl_df, output_path):
 
 def plot_correls_significant(correl_df, p_value, output_path):
     correl_sig = correl_df.copy()
-    plot_df = correl_sig.loc[targ_name_list].loc[:, targ_name_list + prob_name_list]
-    plot_df.index = plot_df.index.map(name_dict.get)
-    plot_df.columns = plot_df.columns.map(name_dict.get)
+    plot_df = correl_sig.loc[TARG_NAME_LIST].loc[:, TARG_NAME_LIST + PROB_NAME_LIST]
+    plot_df.index = plot_df.index.map(NAME_DICT.get)
+    plot_df.columns = plot_df.columns.map(NAME_DICT.get)
     plot_df2 = plot_df.copy()
     plot_df[
         ~holm_bonferoni(
-            p_value.loc[targ_name_list].loc[:, targ_name_list + prob_name_list], alpha=0.05
+            p_value.loc[TARG_NAME_LIST].loc[:, TARG_NAME_LIST + PROB_NAME_LIST], alpha=0.05
         )
     ] = np.NaN
     labels = plot_df.applymap(fmt_num)
@@ -298,9 +281,9 @@ def plot_transfer(results_df, base_results_path, output_path):
     baseline_srs = load_baseline_srs(base_results_path, columns=averaged.columns)
     diff = (averaged - baseline_srs).copy()
     diff["avg_targ"] = diff.filter(like="TRG").mean(1)
-    plot_df = diff.loc[int_task_names].loc[:, targ_name_list + ["avg_targ"] + prob_name_list].copy()
-    plot_df.index = plot_df.index.map(name_dict.get)
-    plot_df.columns = plot_df.columns.map(name_dict.get)
+    plot_df = diff.loc[INT_TASK_NAMES].loc[:, TARG_NAME_LIST + ["avg_targ"] + PROB_NAME_LIST].copy()
+    plot_df.index = plot_df.index.map(NAME_DICT.get)
+    plot_df.columns = plot_df.columns.map(NAME_DICT.get)
     plot_df = plot_df.T
 
     fig = plt.figure(figsize=(14, 10))
@@ -331,7 +314,7 @@ def plot_transfer(results_df, base_results_path, output_path):
     baseline_plus_avg_dict = baseline_srs.to_dict()
     baseline_plus_avg_dict["avg_targ"] = baseline_srs.filter(like="TRG").mean()
     baseline_plus_avg = pd.Series(baseline_plus_avg_dict).loc[
-        targ_name_list + ["avg_targ"] + prob_name_list
+        TARG_NAME_LIST + ["avg_targ"] + PROB_NAME_LIST
     ]
 
     sns.heatmap(
