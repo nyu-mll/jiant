@@ -18,15 +18,15 @@ from jiant.utils.python.io import read_jsonl
 @dataclass
 class Example(BaseExample):
     guid: str
-    input_premise: str
-    input_hypothesis: str
+    premise: str
+    hypothesis: str
     label: str
 
     def tokenize(self, tokenizer):
         return TokenizedExample(
             guid=self.guid,
-            input_premise=tokenizer.tokenize(self.input_premise),
-            input_hypothesis=tokenizer.tokenize(self.input_hypothesis),
+            premise=tokenizer.tokenize(self.premise),
+            hypothesis=tokenizer.tokenize(self.hypothesis),
             label_id=MnliTask.LABEL_TO_ID[self.label],
         )
 
@@ -34,15 +34,15 @@ class Example(BaseExample):
 @dataclass
 class TokenizedExample(BaseTokenizedExample):
     guid: str
-    input_premise: List
-    input_hypothesis: List
+    premise: List
+    hypothesis: List
     label_id: int
 
     def featurize(self, tokenizer, feat_spec):
         return double_sentence_featurize(
             guid=self.guid,
-            input_tokens_a=self.input_premise,
-            input_tokens_b=self.input_hypothesis,
+            input_tokens_a=self.premise,
+            input_tokens_b=self.hypothesis,
             label_id=self.label_id,
             tokenizer=tokenizer,
             feat_spec=feat_spec,
@@ -96,8 +96,8 @@ class MnliTask(Task):
             examples.append(
                 Example(
                     guid="%s-%s" % (set_type, i),
-                    input_premise=line["premise"],
-                    input_hypothesis=line["hypothesis"],
+                    premise=line["premise"],
+                    hypothesis=line["hypothesis"],
                     label=line["label"] if set_type != "test" else cls.LABELS[-1],
                 )
             )
