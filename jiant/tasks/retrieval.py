@@ -1,31 +1,70 @@
 import os
 from typing import Optional
 
+from jiant.tasks.lib.abductive_nli import AbductiveNliTask
+from jiant.tasks.lib.adversarial_nli import AdversarialNliTask
+from jiant.tasks.lib.boolq import BoolQTask
+from jiant.tasks.lib.ccg import CCGTask
 from jiant.tasks.lib.cola import ColaTask
+from jiant.tasks.lib.commitmentbank import CommitmentBankTask
+from jiant.tasks.lib.commonsenseqa import CommonsenseQATask
+from jiant.tasks.lib.copa import CopaTask
+from jiant.tasks.lib.cosmosqa import CosmosQATask
+from jiant.tasks.lib.hellaswag import HellaSwagTask
+from jiant.tasks.lib.mlm_crosslingual_wiki import MLMCrosslingualWikiTask
+from jiant.tasks.lib.mlm_wikitext_103 import MLMWikitext103Task
 from jiant.tasks.lib.mnli import MnliTask
 from jiant.tasks.lib.mrpc import MrpcTask
+from jiant.tasks.lib.multirc import MultiRCTask
 from jiant.tasks.lib.qqp import QqpTask
 from jiant.tasks.lib.qnli import QnliTask
+from jiant.tasks.lib.record import ReCoRDTask
 from jiant.tasks.lib.rte import RteTask
+from jiant.tasks.lib.scitail import SciTailTask
 from jiant.tasks.lib.snli import SnliTask
+from jiant.tasks.lib.socialiqa import SocialIQATask
+from jiant.tasks.lib.squad import SquadTask
 from jiant.tasks.lib.sst import SstTask
 from jiant.tasks.lib.stsb import StsbTask
+from jiant.tasks.lib.swag import SWAGTask
+from jiant.tasks.lib.wic import WiCTask
 from jiant.tasks.lib.wnli import WnliTask
+from jiant.tasks.lib.wsc import WSCTask
 from jiant.tasks.core import Task
 from jiant.utils.python.io import read_json
 
 
 TASK_DICT = {
+    "abductive_nli": AbductiveNliTask,
+    "adversarial_nli": AdversarialNliTask,
+    "boolq": BoolQTask,
+    "cb": CommitmentBankTask,
+    "ccg": CCGTask,
     "cola": ColaTask,
+    "commonsenseqa": CommonsenseQATask,
+    "copa": CopaTask,
+    "cosmosqa": CosmosQATask,
+    "hellaswag": HellaSwagTask,
+    "mlm_wikitext103": MLMWikitext103Task,
+    "mlm_crosslingual_wiki": MLMCrosslingualWikiTask,
+    "mlm": MLMWikitext103Task,
     "mnli": MnliTask,
+    "mrc": MultiRCTask,
     "mrpc": MrpcTask,
     "qnli": QnliTask,
     "qqp": QqpTask,
+    "record": ReCoRDTask,
     "rte": RteTask,
+    "scitail": SciTailTask,
     "snli": SnliTask,
+    "socialiqa": SocialIQATask,
+    "squad": SquadTask,
     "sst": SstTask,
     "stsb": StsbTask,
+    "swag": SWAGTask,
+    "wic": WiCTask,
     "wnli": WnliTask,
+    "wsc": WSCTask,
 }
 
 

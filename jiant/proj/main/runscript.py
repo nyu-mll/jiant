@@ -25,7 +25,7 @@ class RunConfiguration(zconf.RunConfig):
     model_path = zconf.attr(type=str, required=True)
     model_config_path = zconf.attr(default=None, type=str)
     model_tokenizer_path = zconf.attr(default=None, type=str)
-    model_load_mode = zconf.attr(default="from_ptt", type=str)
+    model_load_mode = zconf.attr(default="from_transformers", type=str)
 
     # === Running Setup === #
     do_train = zconf.attr(action="store_true")

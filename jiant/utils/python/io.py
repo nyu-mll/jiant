@@ -45,6 +45,12 @@ def read_file_lines(path, mode="r", encoding="utf-8", strip_lines=False, **kwarg
         return lines
 
 
+def read_json_lines(path, mode="r", encoding="utf-8", **kwargs):
+    with open(path, mode=mode, encoding=encoding, **kwargs) as f:
+        for line in f.readlines():
+            yield json.loads(line)
+
+
 def to_jsonl(data):
     return json.dumps(data).replace("\n", "")
 

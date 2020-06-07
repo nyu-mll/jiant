@@ -56,11 +56,11 @@ def delegate_load_from_path(jiant_model: primary.JiantModel, weights_path: str, 
 
 
 def delegate_load(jiant_model, weights_dict: dict, load_mode: str):
-    if load_mode == "from_ptt":
+    if load_mode == "from_transformers":
         return load_encoder_from_transformers_weights(
             encoder=jiant_model.encoder, weights_dict=weights_dict,
         )
-    elif load_mode == "from_ptt_with_mlm":
+    elif load_mode == "from_transformers_with_mlm":
         remainder = load_encoder_from_transformers_weights(
             encoder=jiant_model.encoder, weights_dict=weights_dict, return_remainder=True,
         )

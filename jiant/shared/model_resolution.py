@@ -218,3 +218,10 @@ def resolve_tokenizer_class(model_type):
 
     """
     return TOKENIZER_CLASS_DICT[ModelArchitectures.from_model_type(model_type)]
+
+
+def resolve_is_lower_case(tokenizer):
+    if isinstance(tokenizer, (transformers.BertTokenizer, transformers.AlbertTokenizer)):
+        return tokenizer.basic_tokenizer.do_lower_case
+    else:
+        return False

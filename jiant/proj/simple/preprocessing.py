@@ -4,6 +4,7 @@ import torch
 import jiant.shared.caching as shared_caching
 import jiant.utils.torch_utils as torch_utils
 from jiant.tasks.core import FeaturizationSpec
+import jiant.tasks.lib.templates.squad_style.core as squad_style
 from jiant.utils.display import maybe_tqdm, maybe_trange
 
 
@@ -157,13 +158,24 @@ def tokenize_and_featurize(
         List DataRows containing tokenized and featurized examples.
 
     """
-    # TODO: In future, will potentially yield multiple featurized examples
-    #  per example (e.g. SQuAD)
-    # We'll need the 'phase' argument for then
-    data_rows = [
-        example.tokenize(tokenizer).featurize(tokenizer, feat_spec)
-        for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose)
-    ]
+    # TODO: Better solution
+    if isinstance(examples[0], squad_style.Example):
+        data_rows = []
+        for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose):
+            # TODO more arguments?
+            data_rows += example.to_feature_list(
+                tokenizer=tokenizer,
+                feat_spec=feat_spec,
+                max_seq_length=feat_spec.max_seq_length,
+                doc_stride=128,
+                max_query_length=64,
+                set_type=phase,
+            )
+    else:
+        data_rows = [
+            example.tokenize(tokenizer).featurize(tokenizer, feat_spec)
+            for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose)
+        ]
     return data_rows
 
 
@@ -184,7 +196,15 @@ def iter_chunk_tokenize_and_featurize(
 
     """
     for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose):
-        # TODO: In future, will potentially yield multiple featurized examples
-        #  per example (e.g. SQuAD)
-        # We'll need the 'phase' argument for then
-        yield example.tokenize(tokenizer).featurize(tokenizer, feat_spec)
+        # TODO: Better solution
+        if isinstance(example, squad_style.Example):
+            # TODO more arguments?
+            yield from example.to_feature_list(
+                tokenizer=tokenizer,
+                max_seq_length=feat_spec.max_seq_length,
+                doc_stride=128,
+                max_query_length=64,
+                set_type=phase,
+            )
+        else:
+            yield example.tokenize(tokenizer).featurize(tokenizer, feat_spec)

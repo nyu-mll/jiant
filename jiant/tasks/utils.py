@@ -1,5 +1,35 @@
 import numpy as np
 
+from typing import NamedTuple
+
+
+class InclusiveSpan(NamedTuple):
+    start: int
+    end: int
+
+    def to_slice(self):
+        return slice(self.start, self.end + 1)
+
+    def to_inclusive(self):
+        return self
+
+    def to_exclusive(self):
+        return ExclusiveSpan(start=self.start, end=self.end + 1)
+
+
+class ExclusiveSpan(NamedTuple):
+    start: int
+    end: int
+
+    def to_slice(self):
+        return slice(self.start, self.end)
+
+    def to_inclusive(self):
+        return ExclusiveSpan(start=self.start, end=self.end - 1)
+
+    def to_exclusive(self):
+        return self
+
 
 def truncate_sequences(tokens_ls, max_length, truncate_end=True):
     if len(tokens_ls) == 0:
