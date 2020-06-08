@@ -1,9 +1,7 @@
 import collections
 import json
-import os
 import re
 import string
-import torch
 
 from dataclasses import dataclass
 import numpy as np
@@ -621,22 +619,3 @@ def write_metrics(results, output_path, verbose=True):
         print(metrics_str)
     with open(output_path, "w") as f:
         f.write(metrics_str)
-
-
-def write_preds(logits, output_path):
-    df = pd.DataFrame(logits)
-    df.to_csv(output_path, header=False, index=False)
-
-
-def write_val_results(results, output_dir, verbose=True, do_write_preds=True):
-    os.makedirs(output_dir, exist_ok=True)
-    if do_write_preds:
-        if len(results["logits"].shape) == 2:
-            write_preds(
-                logits=results["logits"], output_path=os.path.join(output_dir, "val_preds.csv"),
-            )
-        else:
-            torch.save(results["logits"], os.path.join(output_dir, "val_preds.p"))
-    write_metrics(
-        results=results, output_path=os.path.join(output_dir, "val_metrics.json"), verbose=verbose,
-    )

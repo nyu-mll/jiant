@@ -18,7 +18,7 @@ def write_val_results(val_results_dict, metrics_aggregator, output_dir, verbose=
         if "loss" in task_results:
             task_results_to_write["loss"] = task_results["loss"]
         if "metrics" in task_results:
-            task_results_to_write["metrics"] = task_results["metrics"].asdict()
+            task_results_to_write["metrics"] = task_results["metrics"].to_dict()
         full_results_to_write[task_name] = task_results_to_write
 
     metrics_str = json.dumps(full_results_to_write, indent=2)
