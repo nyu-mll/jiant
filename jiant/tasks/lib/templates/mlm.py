@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 from jiant.utils.python.datastructures import ReusableGenerator
 
@@ -49,9 +49,6 @@ class TokenizedExample(BaseTokenizedExample):
             input_mask=np.array(input_set.input_mask),
             segment_ids=np.array(input_set.segment_ids),
             # Masking will be performed on the fly in train
-            # TODO: Seed if this is better off left to augmentation?
-            # masked_input_ids=None,
-            # masked_input_labels=None,
             tokens=unpadded_inputs.unpadded_tokens,
         )
 
@@ -62,8 +59,6 @@ class DataRow(BaseDataRow):
     input_ids: np.ndarray
     input_mask: np.ndarray
     segment_ids: np.ndarray
-    # masked_input_ids: Optional[np.ndarray]
-    # masked_input_labels: Optional[np.ndarray]
     tokens: list
 
 
@@ -73,8 +68,6 @@ class Batch(BatchMixin):
     input_mask: torch.LongTensor
     segment_ids: torch.LongTensor
     # Only if preset
-    # masked_input_ids: Optional[np.ndarray]
-    # masked_input_labels: Optional[np.ndarray]
     tokens: list
 
     def get_masked(self, mlm_probability, tokenizer, do_mask):
@@ -148,7 +141,9 @@ class MLMTask(Task):
             return list(generator)
 
 
-def mlm_mask_tokens(inputs: torch.LongTensor, tokenizer, mlm_probability):
+def mlm_mask_tokens(
+    inputs: torch.LongTensor, tokenizer, mlm_probability
+) -> Tuple[torch.LongTensor, torch.LongTensor]:
     """From HuggingFace"""
     device = inputs.device
     inputs = inputs.cpu().clone()
@@ -161,6 +156,7 @@ def mlm_mask_tokens(inputs: torch.LongTensor, tokenizer, mlm_probability):
         for val in labels.tolist()
     ]
     probability_matrix.masked_fill_(torch.tensor(special_tokens_mask, dtype=torch.bool), value=0.0)
+    # noinspection PyProtectedMember
     if tokenizer._pad_token is not None:
         padding_mask = labels.eq(tokenizer.pad_token_id)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
@@ -179,4 +175,6 @@ def mlm_mask_tokens(inputs: torch.LongTensor, tokenizer, mlm_probability):
     inputs[indices_random] = random_words[indices_random]
 
     # The rest of the time (10% of the time) we keep the masked input tokens unchanged
+
+    # noinspection PyTypeChecker
     return inputs.to(device), labels.to(device)

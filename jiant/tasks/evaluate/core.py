@@ -292,7 +292,7 @@ class ReCordEvaluationScheme(BaseEvaluationScheme):
         return cls.get_labels_from_examples(examples=examples)
 
     def get_preds_from_accumulator(self, task, accumulator):
-        # TODO: Revisit ReCord scoring
+        # TODO: Revisit ReCord scoring  (Issue #51)
         raise NotImplementedError("Currently need labels ('examples') to compute preds. Refactor.")
 
     def compute_metrics_from_accumulator(
@@ -514,7 +514,7 @@ class MLMEvaluationScheme(BaseEvaluationScheme):
 
 
 def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
-    # Todo: move logic to task?
+    # TODO: move logic to task?  (Issue #52)
     if isinstance(
         task,
         (

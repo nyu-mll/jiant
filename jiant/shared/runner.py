@@ -31,7 +31,7 @@ def complex_backpropagate(
 def get_train_dataloader_from_cache(
     train_cache: caching.ChunkedFilesDataCache, task, train_batch_size: int
 ):
-    # Todo: Gin-style config
+    # TODO: Expose buffer_size parameter  (Issue #50)
     dataset = train_cache.get_iterable_dataset(buffer_size=10000, shuffle=True)
     train_dataloader = torch_utils.DataLoaderWithLength(
         dataset=dataset, batch_size=train_batch_size, collate_fn=task.collate_fn,

@@ -58,11 +58,12 @@ def argparse_attr(
 
 
 def update_parser(parser, class_with_attributes: Any):
+    # TODO: Write more checks/tests for the parser creation in general  (Issue #57)
     for attribute in class_with_attributes.__attrs_attrs__:
         if "argparse_kwargs" in attribute.metadata:
             argparse_kwargs = attribute.metadata["argparse_kwargs"]
             opt_string_ls = attribute.metadata["opt_string_ls"]
-            is_positional = "nargs" in argparse_kwargs  # TODO: get better criteria
+            is_positional = "nargs" in argparse_kwargs
             if not is_positional:
                 if attribute.default is attr.NOTHING:
                     argparse_kwargs = argparse_kwargs.copy()

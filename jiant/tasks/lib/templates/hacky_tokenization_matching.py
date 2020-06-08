@@ -1,4 +1,4 @@
-"""TODO: Remove when Tokenizers gets better"""
+"""TODO: Remove when Tokenizers gets better  (Issue #43)"""
 import transformers
 from jiant.tasks.utils import ExclusiveSpan
 
@@ -83,8 +83,7 @@ def roberta_flat_strip(tokens, return_indices=False):
 
 
 def xlm_roberta_flat_strip(tokens, return_indices=False):
-    # Sentence piece?
-    # Todo: refactor
+    # TODO: Refactor to use general SentencePiece function  (Issue #53)
     return albert_flat_strip(tokens=tokens, return_indices=return_indices)
 
 
