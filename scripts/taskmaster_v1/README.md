@@ -12,7 +12,7 @@ To first run experiments on the intermediate tasks, run `./run_phase1.sh`.
 
 Then, to do the intermediate to target tasks, we provide a `ez_run_intermediate_to_target_task` command defined in `transfer_analysis.sh`, which takes in the run_name, intermediate_task name, target_task name, and the path to the project
 directory. As an example, to train on the BoolQ task with RoBERTa pretrained on the CosmosQA intermediate task
-(with checkpoints saved in `/path/to/roberta-large/cosmosqa_run921`) on run 111011, we would call `ez_run_intermediate_to_target_task 111011 cosmosqa boolq /path/to/roberta-large/cosmosqa_run921`.
+(with checkpoints saved in `/path/to/roberta-large/cosmosqa_run921`) on seed 921, we would call `ez_run_intermediate_to_target_task 921 cosmosqa boolq /path/to/roberta-large/cosmosqa_run921`.
 
 Similarly, we provide a function to train on the probing tasks with `ez_run_intermediate_to_probing`, which takes in the run_name, intermediate_task name, probing_task name, and the path to the project.
 
@@ -30,7 +30,7 @@ Move the contents of `results.tsv` for each intermediate task to a directory wit
 
 ```
 Target task runs:
-    /path/to/runs/run${RUN_I}/stilts/${INT_TASK}/results.tsv
+    /path/to/runs/run${RUN_I}/stilts/$f{INT_TASK}/results.tsv
 
 Probing task runs:
     /path/to/runs/run${RUN_I}/probing/${INT_TASK}/results.tsv
