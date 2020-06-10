@@ -23,6 +23,19 @@ def setup_jiant_model(
     task_dict: Dict[str, Task],
     taskmodels_config: container_setup.TaskmodelsConfig,
 ):
+    """Sets up tokenizer, encoder, and task models, and instantiates and returns a JiantModel.
+
+    Args:
+        model_type (str): model shortcut name.
+        model_config_path (str): Path to the JSON file containing the configuration parameters.
+        tokenizer_path (str): path to tokenizer directory.
+        task_dict (Dict[str, tasks.Task]): map from task name to task instance.
+        taskmodels_config: maps mapping from tasks to models, and specifying task-model configs.
+
+    Returns:
+        JiantModel nn.Module.
+
+    """
     model_arch = ModelArchitectures.from_model_type(model_type)
     transformers_class_spec = TRANSFORMERS_CLASS_SPEC_DICT[model_arch]
     tokenizer = model_setup.get_tokenizer(model_type=model_type, tokenizer_path=tokenizer_path)
@@ -51,11 +64,33 @@ def setup_jiant_model(
 
 
 def delegate_load_from_path(jiant_model: primary.JiantModel, weights_path: str, load_mode: str):
+    """Load weights dict from file and load weights according to specified loading mode.
+
+    Args:
+        jiant_model (JiantModel): jiant model (encoder and task models are core components).
+        weights_path (str): filepath to weights object saved with torch.save().
+        load_mode (str): TODO
+
+    Returns:
+        TODO: return behavior is not consistent between load_mode options, clarify as needed here.
+
+    """
     weights_dict = torch.load(weights_path)
     return delegate_load(jiant_model=jiant_model, weights_dict=weights_dict, load_mode=load_mode)
 
 
 def delegate_load(jiant_model, weights_dict: dict, load_mode: str):
+    """Load weights dict into JiantModel according to specified loading mode.
+
+    Args:
+        jiant_model (JiantModel): jiant model (encoder and task models are core components).
+        weights_dict (Dict): model weights.
+        load_mode: TODO
+
+    Returns:
+        TODO: return behavior is not consistent between load_mode options, clarify as needed here.
+
+    """
     if load_mode == "from_transformers":
         return load_encoder_from_transformers_weights(
             encoder=jiant_model.encoder, weights_dict=weights_dict,
@@ -92,6 +127,19 @@ def delegate_load(jiant_model, weights_dict: dict, load_mode: str):
 def load_encoder_from_transformers_weights(
     encoder: nn.Module, weights_dict: dict, return_remainder=False
 ):
+    """Find encoder weights in weights dict, load them into encoder, return any remaining weights.
+
+    TODO: clarify how we know the encoder weights will be prefixed by transformer name.
+
+    Args:
+        encoder (PreTrainedModel): Transformer w/o heads (embedding layer + self-attention layer).
+        weights_dict (Dict): model weights.
+        return_remainder (bool): If True, return any leftover weights.
+
+    Returns:
+        Dict containing any leftover weights.
+
+    """
     remainder_weights_dict = {}
     load_weights_dict = {}
     model_arch = get_model_arch_from_encoder(encoder=encoder)
@@ -144,6 +192,18 @@ def load_lm_heads_from_transformers_weights(jiant_model, weights_dict):
 def load_partial_heads(
     jiant_model, weights_dict, allow_missing_head_weights=False, allow_missing_head_model=False
 ):
+    """Loads model weights and returns lists of missing head weights or missing heads (if any).
+
+    Args:
+        jiant_model (JiantModel): jiant model (encoder and task models are core components).
+        weights_dict (Dict): model weights.
+        allow_missing_head_weights (bool): If False, throw exception if there are missing keys.
+        allow_missing_head_model (bool): If False, throw exception if there are unexpected keys.
+
+    Returns:
+        Dict[str, List] containing lists of missing head weights or missing heads if any.
+
+    """
     mismatch = jiant_model.load_state_dict(weights_dict, strict=False)
     result = {}
     if mismatch.missing_keys:
@@ -164,6 +224,21 @@ def load_partial_heads(
 def create_taskmodel(
     task, model_arch, encoder, taskmodel_kwargs: Optional[Dict] = None
 ) -> taskmodels.Taskmodel:
+    """Creates, initializes and returns the task model for a given task type and encoder.
+
+    Args:
+        task (Task): Task object associated with the taskmodel being created.
+        model_arch (ModelArchitectures.Any): Model architecture (e.g., ModelArchitectures.BERT).
+        encoder (PreTrainedModel): Transformer w/o heads (embedding layer + self-attention layer).
+        taskmodel_kwargs (Optional[Dict]): map containing any kwargs needed for taskmodel setup.
+
+    Raises:
+        KeyError if task does not have valid TASK_TYPE.
+
+    Returns:
+        Taskmodel (e.g., ClassificationModel) appropriate for the task type and encoder.
+
+    """
     if task.TASK_TYPE == TaskTypes.CLASSIFICATION:
         assert taskmodel_kwargs is None
         classification_head = heads.ClassificationHead(
@@ -336,6 +411,15 @@ def get_model_arch_from_encoder(encoder: nn.Module) -> ModelArchitectures:
 
 
 def get_taskmodel_and_task_names(task_to_taskmodel_map: Dict[str, str]) -> Dict[str, List[str]]:
+    """Get mapping from task model name to the list of task names associated with that task model.
+
+    Args:
+        task_to_taskmodel_map (Dict[str, str]): map from task name to task model name.
+
+    Returns:
+        Dict[str, List[str]] map of task model names to lists of task names using that task model.
+
+    """
     taskmodel_and_task_names = {}
     for task_name, taskmodel_name in task_to_taskmodel_map.items():
         if taskmodel_name not in taskmodel_and_task_names:

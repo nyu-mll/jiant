@@ -186,6 +186,23 @@ def parallelize_dist(model, local_rank):
 
 
 def raw_special_model_setup(model, optimizer, fp16, fp16_opt_level, n_gpu, local_rank):
+    """Perform setup for special modes (e.g., FP16, DataParallel, and/or DistributedDataParallel.
+
+    Args:
+        model (nn.Module): torch model object.
+        optimizer: TODO
+        fp16 (bool): True to enable FP16 mode.
+        fp16_opt_level (str): Apex AMP optimization level default mode identifier.
+        n_gpu: number of GPUs.
+        local_rank (int): Which GPU the script should use in DistributedDataParallel mode.
+
+    Notes:
+        Initialization steps performed in init_cuda_from_args() set n_gpu = 1 when local_rank != -1.
+
+    Returns:
+        Model and optimizer with the specified special configuration.
+
+    """
     if fp16:
         model, optimizer = fp16ize(model=model, optimizer=optimizer, fp16_opt_level=fp16_opt_level)
     if n_gpu > 1:

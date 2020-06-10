@@ -89,6 +89,21 @@ class TemperatureMultiTaskSampler(BaseMultiTaskSampler):
 def create_task_sampler(
     sampler_config: dict, task_dict: dict, task_to_num_examples_dict: dict, rng=None
 ) -> BaseMultiTaskSampler:
+    """Perform basic config validation, then instantiate and return the specified multitask sampler.
+
+    Args:
+        sampler_config (Dict): map containing sample config options.
+        task_dict (Dict[str, Task]): map from task name to task instance.
+        task_to_num_examples_dict (Dict[str, int]): map task names to counts of training examples.
+        rng (Union[int, np.random.RandomState, None]): random state to seed sampler.
+
+    Raises:
+        KeyError if invalid sampler type argument is provided in the sampler config.
+
+    Returns:
+        Subclass of BaseMultiTaskSampler.
+
+    """
     sampler_type = sampler_config["sampler_type"]
     if sampler_type == "UniformMultiTaskSampler":
         assert len(sampler_config) == 1
@@ -143,6 +158,15 @@ class WeightedMetricAggregator(BaseMetricAggregator):
 
 
 def create_metric_aggregator(metric_aggregator_config: Dict) -> BaseMetricAggregator:
+    """Perform basic config validation, then instantiate and return the specified metric aggregator.
+
+    Args:
+        metric_aggregator_config (Dict): map containing metric aggregation options.
+
+    Returns:
+        Subclass of BaseMetricAggregator.
+
+    """
     metric_aggregator_type = metric_aggregator_config["metric_aggregator_type"]
     if metric_aggregator_type == "EqualMetricAggregator":
         assert len(metric_aggregator_config) == 1

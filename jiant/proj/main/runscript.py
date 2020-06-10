@@ -67,6 +67,19 @@ def setup_runner(
     quick_init_out,
     verbose: bool = True,
 ) -> jiant_runner.JiantRunner:
+    """Setup jiant model, optimizer, and runner, and return runner.
+
+    Args:
+        args (RunConfiguration): configuration carrying command line args specifying run params.
+        jiant_task_container (container_setup.JiantTaskContainer): task and sampler configs.
+        quick_init_out (QuickInitContainer): device (GPU/CPU) and logging configuration.
+        verbose: If True, enables printing configuration info (to standard out).
+
+    Returns:
+        jiant_runner.JiantRunner
+
+    """
+    # TODO document why the distributed.only_first_process() context manager is being used here.
     with distributed.only_first_process(local_rank=args.local_rank):
         # load the model
         jiant_model = jiant_model_setup.setup_jiant_model(

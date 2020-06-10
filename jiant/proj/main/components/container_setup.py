@@ -59,6 +59,16 @@ class JiantTaskContainer:
 
 
 def create_task_dict(task_config_dict: dict, verbose: bool = True) -> Dict[str, tasks.Task]:
+    """Make map of task name to task instances from map of task name to task config file paths.
+
+    Args:
+        task_config_dict (Dict): map from task name to task config filepath.
+        verbose (bool): True to print task config info.
+
+    Returns:
+        Dict mapping from task name to task instance.
+
+    """
     task_dict = {
         task_name: tasks.create_task_from_config_path(config_path=task_config_path, verbose=False)
         for task_name, task_config_path in task_config_dict.items()
@@ -72,6 +82,19 @@ def create_task_dict(task_config_dict: dict, verbose: bool = True) -> Dict[str, 
 
 
 def create_task_cache_dict(task_cache_config_dict: Dict) -> Dict:
+    """Takes a map of task cache configs, and returns map of instantiated task data cache objects.
+
+    Notes:
+        This function assumes that data is divided and stored according to phase where phase takes
+        a value of train, val, val_labels, or test.
+
+    Args:
+        task_cache_config_dict (Dict[str, Dict[str, str]]): maps of task names to cache file dirs.
+
+    Returns:
+        Dict[str, Dict[str, ChunkedFilesDataCache]] mappings from task name to task cache objects.
+
+    """
     task_cache_dict = {}
     for task_name, task_cache_config in task_cache_config_dict.items():
         single_task_cache_dict = {}
@@ -85,6 +108,20 @@ def create_task_cache_dict(task_cache_config_dict: Dict) -> Dict:
 
 
 def get_num_train_examples(task_cache_dict: Dict, train_task_list=None) -> Dict[str, int]:
+    """Count training examples for tasks.
+
+    Args:
+        task_cache_dict: nested maps from task name to phases, and from phase to task cache object.
+        train_task_list (List): list of task names for which to count training examples.
+
+    Notes:
+        If get_num_train_examples() is called without providing train_task_list, training examples
+        for all tasks in task_cache_dict are counted by get_num_train_examples().
+
+    Returns:
+        Dict[str, int] mapping task names to the count of training examples for that task.
+
+    """
     num_train_examples_dict = {}
     if train_task_list is None:
         train_task_list = list(task_cache_dict)
@@ -98,6 +135,18 @@ def get_num_train_examples(task_cache_dict: Dict, train_task_list=None) -> Dict[
 
 
 def create_task_specific_configs(task_specific_configs_dict) -> Dict[str, TaskSpecificConfig]:
+    """Takes task-specific configs, returns them as TaskSpecificConfig(s).
+
+    Args:
+        task_specific_configs_dict: map task name to map of task-specific config name to value.
+
+    Raises:
+        TypeError if task-specific config is not either a dict or a TaskSpecificConfig object.
+
+    Returns:
+        Dict[str, TaskSpecificConfig] map of task name to task-specific configs.
+
+    """
     task_specific_configs = {}
     for k, v in task_specific_configs_dict.items():
         if isinstance(v, dict):
@@ -121,6 +170,23 @@ def create_jiant_task_container(
     task_run_config: Dict,
     verbose: bool = True,
 ) -> JiantTaskContainer:
+    """Read and interpret config files, initialize configuration objects, return JiantTaskContainer.
+
+    Args:
+        task_config_path_dict (Dict[str, str]): map of task names to task config files.
+        task_cache_config_dict (Dict[str, str]): map of task names to cache file dirs.
+        sampler_config (Dict): map containing sample config options, e.g., uniform task sampling.
+        global_train_config (Dict): map of training configs shared by all tasks (e.g., max_steps).
+        task_specific_configs_dict (Dict): map of maps mapping task names to task-specific options.
+        metric_aggregator_config (Dict): map containing task metric aggregation options.
+        taskmodels_config: maps mapping from tasks to models, and specifying task-model configs.
+        task_run_config: config determining which tasks are used in which phase (e.g., train).
+        verbose: True to print task info.
+
+    Returns:
+        JiantTaskContainer carrying components configured and set up pre-runner.
+
+    """
     task_dict = create_task_dict(task_config_dict=task_config_path_dict, verbose=verbose)
     task_cache_dict = create_task_cache_dict(task_cache_config_dict=task_cache_config_dict)
     global_train_config = GlobalTrainConfig.from_dict(global_train_config)
@@ -135,6 +201,7 @@ def create_jiant_task_container(
     )
     task_sampler = jiant_task_sampler.create_task_sampler(
         sampler_config=sampler_config,
+        # task sampler samples only from the training tasks
         task_dict={
             task_name: task_dict[task_name] for task_name in task_run_config.train_task_list
         },
