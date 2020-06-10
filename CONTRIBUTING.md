@@ -13,8 +13,7 @@ Thanks for considering contributing to `jiant`! :+1:
 1. Requirements applied by the automated build system:
    1. black formatting check
    2. flake8 check for style and documentation
-   3. mypy type-checking
-   4. pytest unit tests
+   3. pytest unit tests
 2. Requirements for successful code reviews:
    1. Code changes must be paired with effective tests.
    2. PRs adding or modifying code must make appropriate changes to related documentation (using [google style](https://google.github.io/styleguide/pyguide.html)).
