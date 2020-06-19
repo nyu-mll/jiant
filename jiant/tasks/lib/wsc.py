@@ -18,7 +18,7 @@ from jiant.tasks.lib.templates.shared import (
 )
 from jiant.tasks.utils import truncate_sequences, ExclusiveSpan
 from jiant.utils.python.io import read_json_lines
-import jiant.tasks.lib.templates.hacky_tokenization_matching as tokenization_utils
+from jiant.tasks.lib.templates import hacky_tokenization_matching as tokenization_utils
 
 
 @dataclass

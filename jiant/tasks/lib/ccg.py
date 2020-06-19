@@ -17,7 +17,7 @@ from jiant.tasks.lib.templates.shared import (
     construct_single_input_tokens_and_segment_ids,
     pad_single_with_feat_spec,
 )
-import jiant.tasks.lib.templates.hacky_tokenization_matching as tokenization_utils
+from jiant.tasks.lib.templates import hacky_tokenization_matching as tokenization_utils
 from jiant.utils.python.io import read_json
 
 

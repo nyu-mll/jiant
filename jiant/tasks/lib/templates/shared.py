@@ -1,4 +1,3 @@
-from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass
 from typing import List, NamedTuple
@@ -12,7 +11,7 @@ class Span(NamedTuple):
     start: int
     end: int  # Use exclusive end, for consistency
 
-    def add(self, i: int) -> Span:
+    def add(self, i: int):
         return Span(start=self.start + i, end=self.end + i)
 
     def to_slice(self):

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from jiant.utils.python.datastructures import ReusableGenerator
-import jiant.tasks.lib.templates.mlm as mlm_template
+from jiant.tasks.lib.templates import mlm as mlm_template
 
 
 @dataclass

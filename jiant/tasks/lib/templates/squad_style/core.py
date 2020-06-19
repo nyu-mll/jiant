@@ -7,7 +7,7 @@ from typing import Union, List, Dict
 
 from transformers.tokenization_bert import whitespace_tokenize
 
-import jiant.tasks.lib.templates.squad_style.utils as squad_utils
+from jiant.tasks.lib.templates.squad_style import utils as squad_utils
 from jiant.shared.constants import PHASE
 from jiant.tasks.core import (
     BaseExample,
