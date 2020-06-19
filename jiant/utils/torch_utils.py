@@ -65,7 +65,11 @@ class IdentityModule(nn.Module):
 
 def set_requires_grad(named_parameters, requires_grad):
     for name, param in named_parameters:
-        param.requires_grad = requires_grad
+        set_requires_grad_single(param, requires_grad)
+
+
+def set_requires_grad_single(param, requires_grad):
+    param.requires_grad = requires_grad
 
 
 def get_only_requires_grad(parameters, requires_grad=True):
