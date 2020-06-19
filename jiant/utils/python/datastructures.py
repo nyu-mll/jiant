@@ -151,6 +151,59 @@ def has_same_keys(dict1: dict, dict2: dict) -> bool:
     return dict1.keys() == dict2.keys()
 
 
+def check_keys(dict1: dict, key_list, mode="equal") -> bool:
+    dict1_key_set = set(dict1.keys())
+    key_set = set(key_list)
+    assert len(key_set) == len(key_list), "Provided `key_list` is not unique"
+    if mode == "equal":
+        return dict1_key_set == key_set
+    elif mode == "subset":
+        return dict1_key_set <= key_set
+    elif mode == "strict_subset":
+        return dict1_key_set < key_set
+    elif mode == "superset":
+        return dict1_key_set >= key_set
+    elif mode == "strict_superset":
+        return dict1_key_set > key_set
+    else:
+        raise KeyError(mode)
+
+
+def get_unique_list_in_order(list_of_lists: Sequence[Sequence]):
+    """Gets unique items from a list of lists, in the order of the appearance
+
+    Args:
+        list_of_lists: list of lists
+
+    Returns: list of unique items in order of appearance
+
+    """
+    output = []
+    seen = set()
+    for ls in list_of_lists:
+        for elem in ls:
+            if elem not in seen:
+                output.append(elem)
+                seen.add(elem)
+    return output
+
+
+def reorder_keys(dict1: dict, key_list: list) -> dict:
+    """Returns a dictionary with keys in a given order
+
+    Args:
+        dict1: a dictionary
+        key_list: desired key list order
+
+    Returns:
+        reordered dictionary
+
+    """
+    dict_class = dict1.__class__
+    assert check_keys(dict1, key_list)
+    return dict_class([(k, dict1[k]) for k in key_list])
+
+
 def get_all_same(ls):
     assert len(set(ls)) == 1
     return ls[0]

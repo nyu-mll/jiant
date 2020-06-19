@@ -1,6 +1,6 @@
 import os
 
-import jiant.proj.simple.preprocessing as preprocessing
+import jiant.proj.main.preprocessing as preprocessing
 import jiant.shared.caching as shared_caching
 import jiant.shared.model_resolution as model_resolution
 import jiant.shared.model_setup as model_setup
@@ -126,7 +126,10 @@ def main(args: RunConfiguration):
     tokenizer = model_setup.get_tokenizer(
         model_type=args.model_type, tokenizer_path=args.model_tokenizer_path,
     )
-    phases = args.phases.split(",")
+    if isinstance(args.phases, str):
+        phases = args.phases.split(",")
+    else:
+        phases = args.phases
     assert set(phases) <= {PHASE.TRAIN, PHASE.VAL, PHASE.TEST}
 
     paths_dict = {}

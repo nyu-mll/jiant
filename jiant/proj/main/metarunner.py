@@ -147,13 +147,14 @@ class JiantMetarunner(AbstractMetarunner):
         ):
             return True
 
-        if self.num_evals_since_improvement >= self.no_improvements_for_n_evals:
-            self.log_writer.write_entry(
-                "early_stopping",
-                {"message": "early_stopped", "train_state": self.train_state.to_dict()},
-            )
-            self.log_writer.flush()
-            return True
+        if self.no_improvements_for_n_evals != 0:
+            if self.num_evals_since_improvement >= self.no_improvements_for_n_evals:
+                self.log_writer.write_entry(
+                    "early_stopping",
+                    {"message": "early_stopped", "train_state": self.train_state.to_dict()},
+                )
+                self.log_writer.flush()
+                return True
 
         return False
 

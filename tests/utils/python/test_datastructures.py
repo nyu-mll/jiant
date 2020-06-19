@@ -92,3 +92,62 @@ def test_extended_dataclass_mixin():
         str1: str
 
     assert MyClass.get_fields() == ["int1", "str1"]
+
+
+def test_check_keys():
+    def create_dict_with_keys(keys):
+        return {k: None for k in keys}
+
+    # equal
+    d1 = create_dict_with_keys([1, 2, 3])
+    assert py_datastructures.check_keys(d1, [1, 2, 3])
+    assert not py_datastructures.check_keys(d1, [1, 2, 3, 4])
+    assert not py_datastructures.check_keys(d1, [1])
+    assert not py_datastructures.check_keys(d1, [])
+
+    # subset
+    d1 = create_dict_with_keys([1, 2, 3])
+    assert py_datastructures.check_keys(d1, [1, 2, 3], mode="subset")
+    assert py_datastructures.check_keys(d1, [1, 2, 3, 4], mode="subset")
+    assert not py_datastructures.check_keys(d1, [1, 2, 4], mode="subset")
+    assert not py_datastructures.check_keys(d1, [1, 2], mode="subset")
+
+    # superset
+    d1 = create_dict_with_keys([1, 2, 3])
+    assert py_datastructures.check_keys(d1, [1, 2, 3], mode="superset")
+    assert not py_datastructures.check_keys(d1, [1, 2, 3, 4], mode="superset")
+    assert not py_datastructures.check_keys(d1, [1, 2, 4], mode="superset")
+    assert py_datastructures.check_keys(d1, [1, 2], mode="superset")
+
+    # strict_subset
+    d1 = create_dict_with_keys([1, 2, 3])
+    assert not py_datastructures.check_keys(d1, [1, 2, 3], mode="strict_subset")
+    assert py_datastructures.check_keys(d1, [1, 2, 3, 4], mode="strict_subset")
+    assert not py_datastructures.check_keys(d1, [1, 2, 4], mode="strict_subset")
+    assert not py_datastructures.check_keys(d1, [1, 2], mode="strict_subset")
+
+    # strict_superset
+    d1 = create_dict_with_keys([1, 2, 3])
+    assert not py_datastructures.check_keys(d1, [1, 2, 3], mode="strict_superset")
+    assert not py_datastructures.check_keys(d1, [1, 2, 3, 4], mode="strict_superset")
+    assert not py_datastructures.check_keys(d1, [1, 2, 4], mode="strict_superset")
+    assert py_datastructures.check_keys(d1, [1, 2], mode="strict_superset")
+
+    with pytest.raises(AssertionError):
+        py_datastructures.check_keys(d1, [1, 1])
+
+
+def test_get_unique_list_in_order():
+    assert py_datastructures.get_unique_list_in_order([[1, 2], [3], [4]]) == [1, 2, 3, 4]
+    assert py_datastructures.get_unique_list_in_order([[1, 2, 3], [3], [4]]) == [1, 2, 3, 4]
+    assert py_datastructures.get_unique_list_in_order([[1, 2, 3], [4], [3]]) == [1, 2, 3, 4]
+
+
+def test_reorder_keys():
+    dict1 = {"a": 1, "b": 1, "c": 1}
+    assert list(py_datastructures.reorder_keys(dict1, key_list=["a", "b", "c"]).keys()) \
+        == ["a", "b", "c"]
+    assert list(py_datastructures.reorder_keys(dict1, key_list=["c", "a", "b"]).keys()) \
+        == ["c", "a", "b"]
+    with pytest.raises(AssertionError):
+        py_datastructures.reorder_keys(dict1, key_list=["d", "b", "d"])
