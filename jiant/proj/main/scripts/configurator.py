@@ -7,51 +7,28 @@ import jiant.utils.python.io as py_io
 
 
 class Registry:
-    func_dict = {}
+    configurator_dict = {}
 
     @classmethod
-    def register(cls, f):
-        cls.func_dict[f.__name__] = f
-        return f
+    def register(cls, configurator_class):
+        cls.configurator_dict[configurator_class.__name__] = configurator_class
+        return configurator_class
+
+    @classmethod
+    def get_configurator(cls, configurator_name):
+        if configurator_name not in cls.configurator_dict:
+            raise KeyError(
+                f"Configurator {configurator_name} not found in "
+                f"available configurators: {list(cls.configurator_dict)}"
+            )
+        return cls.configurator_dict[configurator_name]
 
 
-def write_configs(config_dict, base_path, check_paths=True):
-    os.makedirs(base_path, exist_ok=True)
-    config_keys = [
-        "task_config_path_dict",
-        "task_cache_config_dict",
-        "sampler_config",
-        "global_train_config",
-        "task_specific_configs_dict",
-        "metric_aggregator_config",
-        "taskmodels_config",
-        "task_run_config",
-    ]
-    for path in config_dict["task_config_path_dict"].values():
-        if check_paths:
-            assert os.path.exists(path)
-    for path_dict in config_dict["task_cache_config_dict"].values():
-        for path in path_dict.values():
-            if check_paths:
-                assert os.path.exists(path)
-    for config_key in config_keys:
-        py_io.write_json(
-            config_dict[config_key], os.path.join(base_path, f"{config_key}.json"),
-        )
-    py_io.write_json(config_dict, os.path.join(base_path, "full.json"))
-    py_io.write_json(
-        {
-            f"{config_key}_path": os.path.join(base_path, f"{config_key}.json")
-            for config_key in config_keys
-        },
-        path=os.path.join(base_path, "zz_full.json"),
-    )
-
-
-def write_configs_from_full(full_config_path):
-    write_configs(
-        config_dict=py_io.read_json(full_config_path), base_path=os.path.split(full_config_path)[0],
-    )
+def replace_none(elem, default):
+    if elem is None:
+        return elem
+    else:
+        return default
 
 
 def get_num_examples_from_cache(cache_path):
@@ -67,206 +44,247 @@ def cap_examples(num_examples, cap):
 
 
 @Registry.register
-def single_task_config(
-    task_config_path,
-    train_batch_size=None,
-    task_cache_base_path=None,
-    epochs=None,
-    max_steps=None,
-    task_cache_train_path=None,
-    task_cache_val_path=None,
-    task_cache_val_labels_path=None,
-    eval_batch_multiplier=2,
-    eval_batch_size=None,
-    gradient_accumulation_steps=1,
-    eval_subset_num=500,
-    num_gpus=1,
-    warmup_steps_proportion=0.1,
-    phases=("train", "val"),
-):
-    task_config = py_io.read_json(os.path.expandvars(task_config_path))
-    task_name = task_config["name"]
-
-    do_train = "train" in phases
-    do_val = "val" in phases
-
-    cache_path_dict = {}
-    if do_train:
-        if task_cache_train_path is None:
-            task_cache_train_path = os.path.join(task_cache_base_path, "train")
-        cache_path_dict["train"] = os.path.expandvars(task_cache_train_path)
-
-    if do_val:
-        if task_cache_val_path is None:
-            task_cache_val_path = os.path.join(task_cache_base_path, "val")
-        if task_cache_val_labels_path is None:
-            task_cache_val_labels_path = os.path.join(task_cache_base_path, "val_labels")
-        cache_path_dict["val"] = os.path.expandvars(task_cache_val_path)
-        cache_path_dict["val_labels"] = os.path.expandvars(task_cache_val_labels_path)
-
-    if do_train:
-        assert (epochs is None) != (max_steps is None)
-        assert train_batch_size is not None
-        effective_batch_size = train_batch_size * gradient_accumulation_steps * num_gpus
-        num_training_examples = get_num_examples_from_cache(
-            cache_path=os.path.expandvars(task_cache_train_path),
-        )
-        max_steps = num_training_examples * epochs // effective_batch_size
-    else:
-        max_steps = 0
-        train_batch_size = 0
-
-    if do_val:
-        if eval_batch_size is None:
-            assert train_batch_size is not None
-            eval_batch_size = train_batch_size * eval_batch_multiplier
-
-    config_dict = {
-        "task_config_path_dict": {task_name: os.path.expandvars(task_config_path)},
-        "task_cache_config_dict": {task_name: cache_path_dict},
-        "sampler_config": {"sampler_type": "UniformMultiTaskSampler"},
-        "global_train_config": {
-            "max_steps": max_steps,
-            "warmup_steps": int(max_steps * warmup_steps_proportion),
-        },
-        "task_specific_configs_dict": {
-            task_name: {
-                "train_batch_size": train_batch_size,
-                "eval_batch_size": eval_batch_size,
-                "gradient_accumulation_steps": gradient_accumulation_steps,
-                "eval_subset_num": eval_subset_num,
-            },
-        },
-        "taskmodels_config": {"task_to_taskmodel_map": {task_name: task_name}},
-        "task_run_config": {
-            "train_task_list": [task_name] if do_train else [],
-            "train_val_task_list": [task_name] if do_train else [],
-            "val_task_list": [task_name] if do_val else [],
-            "test_task_list": [],
-        },
-        "metric_aggregator_config": {"metric_aggregator_type": "EqualMetricAggregator"},
-    }
-    return config_dict
-
-
-@Registry.register
-def simple_multi_task_config(
-    task_meta_config_dict,
-    task_cache_dict,
-    task_name_list=None,
-    epochs=None,
-    max_steps=None,
-    num_gpus=1,
-    train_examples_cap=None,
-    warmup_steps_proportion=0.1,
-):
-    if isinstance(task_meta_config_dict, str):
-        task_meta_config_dict = py_io.read_json(os.path.expandvars(task_meta_config_dict))
-    if isinstance(task_cache_dict, str):
-        task_cache_dict = py_io.read_json(os.path.expandvars(task_cache_dict))
-    if task_name_list is None:
-        task_name_list = sorted(list(task_meta_config_dict))
-
-    assert (epochs is None) != (max_steps is None)
-
-    # Proportional
-    num_examples_dict = {}
-    capped_num_examples_dict = {}
-    max_steps_not_given = max_steps is None
-    print(max_steps_not_given)
-    if max_steps_not_given:
-        assert isinstance(epochs, (int, float))
-        max_steps = 0
-    for task_name in task_name_list:
-        effective_batch_size = (
-            task_meta_config_dict[task_name]["train_batch_size"]
-            * task_meta_config_dict[task_name]["gradient_accumulation_steps"]
-            * num_gpus
-        )
-        num_examples = get_num_examples_from_cache(
-            cache_path=os.path.expandvars(task_cache_dict[task_name]["train"]),
-        )
-        capped_num_examples = cap_examples(num_examples=num_examples, cap=train_examples_cap)
-        num_examples_dict[task_name] = num_examples
-        capped_num_examples_dict[task_name] = capped_num_examples
-        if max_steps_not_given:
-            max_steps += num_examples * epochs // effective_batch_size
-
-    if train_examples_cap is None:
-        sampler_config = {
-            "sampler_type": "ProportionalMultiTaskSampler",
-        }
-    else:
-        sampler_config = {
-            "sampler_type": "SpecifiedProbMultiTaskSampler",
-            "task_to_unweighted_probs": capped_num_examples_dict,
-        }
-
-    config_dict = {
-        "task_config_path_dict": {
-            task_name: os.path.expandvars(task_meta_config_dict[task_name]["config_path"])
-            for task_name in task_name_list
-        },
-        "task_cache_config_dict": {
-            task_name: {
-                "train": os.path.expandvars(task_cache_dict[task_name]["train"]),
-                "val": os.path.expandvars(task_cache_dict[task_name]["val"]),
-                "val_labels": os.path.expandvars(task_cache_dict[task_name]["val_labels"]),
-            }
-            for task_name in task_name_list
-        },
-        "sampler_config": sampler_config,
-        "global_train_config": {
-            "max_steps": max_steps,
-            "warmup_steps": int(max_steps * warmup_steps_proportion),
-        },
-        "task_specific_configs_dict": {
-            task_name: {
-                "train_batch_size": task_meta_config_dict[task_name]["train_batch_size"],
-                "eval_batch_size": task_meta_config_dict[task_name]["eval_batch_size"],
-                "gradient_accumulation_steps": task_meta_config_dict[task_name][
-                    "gradient_accumulation_steps"
-                ],
-                "eval_subset_num": task_meta_config_dict[task_name]["eval_subset_num"],
-            }
-            for task_name in task_name_list
-        },
-        "taskmodels_config": {
-            "task_to_taskmodel_map": {
-                task_name: task_meta_config_dict[task_name]["task_to_taskmodel_map"]
-                for task_name in task_name_list
-            },
-            "taskmodel_config_map": {task_name: None for task_name in task_name_list},
-        },
-        "task_run_config": {
-            "train_task_list": task_name_list,
-            "train_val_task_list": task_name_list,
-            "val_task_list": task_name_list,
-            "test_task_list": task_name_list,
-        },
-        "metric_aggregator_config": {"metric_aggregator_type": "EqualMetricAggregator"},
-    }
-    return config_dict
-
-
 @zconf.run_config
-class JsonRunConfiguration(zconf.RunConfig):
-    # === Required parameters === #
-    func = zconf.attr(type=str, required=True)
-    path = zconf.attr(type=str, required=True)
-    output_base_path = zconf.attr(type=str, required=True)
+class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
+    """Multi-task Configurator designed for SimpleAPI
+    (Task config) Need one of:
+        task_config_base_path
+        task_config_path_dict
+
+    (Eval batch size) Need one of:
+        eval_batch_multiplier
+        eval_batch_size
+
+    (Task cache) Need one of:
+        task_cache_base_path
+        task_cache_config_dict
+
+    (Computing max steps) Need one of:
+        epochs
+        max_steps
+
+    (Task name list) Specify at least one of:
+        train_task_name_list
+        train_val_task_name_list
+        val_task_name_list
+        test_task_name_list
+
+    Required:
+        train_batch_size
+
+    Optional:
+        gradient_accumulation_steps
+        eval_subset_num
+        num_gpus
+        train_examples_cap
+        warmup_steps_proportion
+    """
+
+    task_config_base_path = zconf.attr(type=str, default=None)
+    task_config_path_dict = zconf.attr(type=str, default=None)
+    task_cache_base_path = zconf.attr(type=str, default=None)
+    task_cache_config_dict = zconf.attr(type=str, default=None)
+    train_task_name_list = zconf.attr(type=str, default=None)
+    train_val_task_name_list = zconf.attr(type=str, default=None)
+    val_task_name_list = zconf.attr(type=str, default=None)
+    test_task_name_list = zconf.attr(type=str, default=None)
+    train_batch_size = zconf.attr(type=int, required=True)
+    eval_batch_multiplier = zconf.attr(type=int, default=None)
+    eval_batch_size = zconf.attr(type=int, default=None)
+    gradient_accumulation_steps = zconf.attr(type=int, default=1)
+    eval_subset_num = zconf.attr(type=int, default=500)
+    epochs = zconf.attr(type=int, default=None)
+    max_steps = zconf.attr(type=int, default=None)
+    num_gpus = zconf.attr(type=int, default=None)
+    train_examples_cap = zconf.attr(type=int, default=None)
+    warmup_steps_proportion = zconf.attr(type=float, default=0.1)
+
+    @classmethod
+    def parse_task_name_list(cls, task_name_list_arg):
+        if task_name_list_arg is None:
+            return []
+        elif isinstance(task_name_list_arg, str):
+            return task_name_list_arg.split(",")
+        elif isinstance(task_name_list_arg, list):
+            return task_name_list_arg
+        else:
+            raise TypeError(type(task_name_list_arg))
+
+    def create_config(self):
+        # === Gather task names === #
+        # Get the full list of tasks across all phases
+        task_name_list_dict = {
+            "train": self.parse_task_name_list(self.train_task_name_list),
+            "val": self.parse_task_name_list(self.val_task_name_list),
+            "test": self.parse_task_name_list(self.test_task_name_list),
+        }
+        if self.train_val_task_name_list is None:
+            task_name_list_dict["train_val"] = task_name_list_dict["train"]
+        else:
+            task_name_list_dict["train_val"] = self.parse_task_name_list(
+                self.train_val_task_name_list
+            )
+        full_task_name_list = [
+            task_name
+            for task_name_list in task_name_list_dict.values()
+            for task_name in task_name_list
+        ]
+
+        # === Gather task configs === #
+        # Build task_config_path_dict, either via
+        #   1. task_config_base_path: where all caches are contained within a given folder
+        #   2. task_config_dict: explicitly provided dictionary to cache paths, potentially in JSON
+        # Use dictionary directly, or load from JSON
+        if self.task_config_base_path is not None:
+            assert self.task_config_path_dict is None
+            task_config_path_dict = {
+                task_name: os.path.join(self.task_config_base_path, f"{task_name}_config.json")
+                for task_name in full_task_name_list
+            }
+        else:
+            if isinstance(self.task_config_path_dict, str):
+                task_config_path_dict = py_io.read_json(
+                    os.path.expandvars(self.task_config_path_dict)
+                )
+            else:
+                task_config_path_dict = self.task_config_path_dict
+
+        # === Gather cache === #
+        # Build task_cache_base_path, either via
+        #   1. task_cache_base_path: where all caches are contained within a given folder
+        #   2. task_cache_config_dict: explicitly provided dictionary to cache paths,
+        #                              potentially in JSON
+        if self.task_cache_base_path is not None:
+            assert self.task_cache_config_dict is None
+            task_cache_config_dict = {}
+            for task_name in full_task_name_list:
+                task_cache_config_dict[task_name] = {}
+                if task_name in task_name_list_dict["train"]:
+                    task_cache_config_dict[task_name]["train"] = os.path.join(
+                        self.task_cache_base_path, task_name, "train",
+                    )
+                if (
+                    task_name in task_name_list_dict["train_val"]
+                    or task_name in task_name_list_dict["val"]
+                ):
+                    task_cache_config_dict[task_name]["val"] = os.path.join(
+                        self.task_cache_base_path, task_name, "val",
+                    )
+                    task_cache_config_dict[task_name]["val_labels"] = os.path.join(
+                        self.task_cache_base_path, task_name, "val_labels",
+                    )
+                if task_name in task_name_list_dict["test"]:
+                    task_cache_config_dict[task_name]["test"] = os.path.join(
+                        self.task_cache_base_path, task_name, "test",
+                    )
+        elif isinstance(self.task_cache_config_dict, str):
+            assert self.task_cache_base_path is None
+            task_cache_config_dict = py_io.read_json(self.task_cache_config_dict)
+        elif isinstance(task_config_path_dict, dict):
+            task_cache_config_dict = self.task_config_path_dict
+        else:
+            raise RuntimeError("Need 'task_cache_base_path' or 'task_cache_dict'")
+
+        # === Compute training steps === #
+        # Computing the number of training steps across multiple tasks is slightly
+        # trickier than expected (unless max_steps is explicitly provided)
+        # We need to get the number of examples for each task, divide by the
+        # effective batch size (batch size per gpu * grad accum steps * number of gpus)
+        # AND consider a common use-case where we cap the number of examples from a given task
+        assert (self.epochs is None) != (
+            self.max_steps is None
+        ), "Specify only 'epochs' or 'max_steps'"
+        num_examples_dict = {}
+        capped_num_examples_dict = {}
+        max_steps_not_given = self.max_steps is None
+        if max_steps_not_given:
+            assert isinstance(self.epochs, (int, float))
+            max_steps = 0
+        else:
+            max_steps = self.max_steps
+        for task_name in full_task_name_list:
+            # We multiply by num_gpus because 1 step is done across (potentially) multiple GPUs
+            effective_batch_size = (
+                self.train_batch_size * self.gradient_accumulation_steps * self.num_gpus
+            )
+            num_examples = get_num_examples_from_cache(
+                cache_path=os.path.expandvars(task_cache_config_dict[task_name]["train"]),
+            )
+            capped_num_examples = cap_examples(
+                num_examples=num_examples, cap=self.train_examples_cap
+            )
+            num_examples_dict[task_name] = num_examples
+            capped_num_examples_dict[task_name] = capped_num_examples
+            if max_steps_not_given:
+                max_steps += num_examples * self.epochs // effective_batch_size
+
+        # === Compute eval_batch_size === #
+        # Eval batch size is often a multiple of train batch size,
+        #   so we provide 2 ways to specify it
+        assert (self.eval_batch_size is None) != (
+            self.eval_batch_multiplier is None
+        ), "Specify only 'eval_batch_size' or 'eval_batch_multiplier'"
+        if self.eval_batch_multiplier is not None:
+            eval_batch_size = self.train_batch_size * self.eval_batch_multiplier
+        else:
+            eval_batch_size = self.eval_batch_size
+
+        # === Configure Sampler === #
+        # We sample proportionally by default, unless our training examples are capped per task
+        if self.train_examples_cap is None:
+            sampler_config = {
+                "sampler_type": "ProportionalMultiTaskSampler",
+            }
+        else:
+            sampler_config = {
+                "sampler_type": "SpecifiedProbMultiTaskSampler",
+                "task_to_unweighted_probs": capped_num_examples_dict,
+            }
+
+        # === Build configuration === #
+        # Finally, we build our big config dictionary. Congrats!
+        config_dict = {
+            "task_config_path_dict": task_config_path_dict,
+            "task_cache_config_dict": task_cache_config_dict,
+            "sampler_config": sampler_config,
+            "global_train_config": {
+                "max_steps": max_steps,
+                "warmup_steps": int(max_steps * self.warmup_steps_proportion),
+            },
+            "task_specific_configs_dict": {
+                task_name: {
+                    "train_batch_size": self.train_batch_size,
+                    "eval_batch_size": eval_batch_size,
+                    "gradient_accumulation_steps": self.gradient_accumulation_steps,
+                    "eval_subset_num": self.eval_subset_num,
+                }
+                for task_name in full_task_name_list
+            },
+            "taskmodels_config": {
+                "task_to_taskmodel_map": {
+                    task_name: task_name for task_name in full_task_name_list
+                },
+                "taskmodel_config_map": {task_name: None for task_name in full_task_name_list},
+            },
+            "task_run_config": {
+                "train_task_list": task_name_list_dict["train"],
+                "train_val_task_list": task_name_list_dict["train_val"],
+                "val_task_list": task_name_list_dict["val"],
+                "test_task_list": task_name_list_dict["test"],
+            },
+            "metric_aggregator_config": {"metric_aggregator_type": "EqualMetricAggregator"},
+        }
+        return config_dict
 
 
 def main():
-    mode, cl_args = zconf.get_mode_and_cl_args()
-    if mode == "json":
-        args = JsonRunConfiguration.default_run_cli(cl_args=cl_args)
-        config_dict = Registry.func_dict[args.func](**py_io.read_json(args.path))
-        write_configs(
-            config_dict=config_dict, base_path=args.output_base_path,
-        )
-    else:
-        raise zconf.ModeLookupError(mode)
+    full_cl_args = zconf.core.get_sys_args()
+    assert len(full_cl_args) >= 1, "Require two arguments to start: configurator and out_path"
+    configurator_name, config_path, *cl_args = full_cl_args
+    configurator = Registry.get_configurator(configurator_name=configurator_name)
+    config_dict = configurator.default_run_cli(cl_args=cl_args).create_config()
+    os.makedirs(os.path.split(config_path)[0], exist_ok=True)
+    py_io.write_json(config_dict, path=config_path)
 
 
 if __name__ == "__main__":
