@@ -24,13 +24,6 @@ class Registry:
         return cls.configurator_dict[configurator_name]
 
 
-def replace_none(elem, default):
-    if elem is None:
-        return elem
-    else:
-        return default
-
-
 def get_num_examples_from_cache(cache_path):
     cache_metadata_path = os.path.join(cache_path, "data_args.p")
     return torch.load(cache_metadata_path)["length"]

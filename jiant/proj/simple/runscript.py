@@ -10,6 +10,7 @@ import jiant.proj.main.runscript as runscript
 import jiant.shared.distributed as distributed
 import jiant.utils.zconf as zconf
 import jiant.utils.python.io as py_io
+from jiant.utils.python.logic import replace_none
 
 
 @zconf.run_config
@@ -21,7 +22,8 @@ class RunConfiguration(zconf.RunConfig):
 
     # === Model parameters === #
     model_type = zconf.attr(type=str, required=True)
-    model_path = zconf.attr(type=str, default=None)
+    model_weights_path = zconf.attr(type=str, default=None)
+    model_cache_path = zconf.attr(type=str, default=None)
 
     # === Task parameters === #
     tasks = zconf.attr(type=str, default=None)
@@ -92,6 +94,11 @@ def create_and_write_task_configs(task_name_list, data_dir, task_config_base_pat
 
 
 def run_simple(args: RunConfiguration):
+
+    model_cache_path = replace_none(
+        args.model_cache_path, default=os.path.join(args.exp_dir, "models")
+    )
+
     with distributed.only_first_process(local_rank=args.local_rank):
         # === Step 1: Write task configs based on templates === #
         full_task_name_list = sorted(list(set(args.train_tasks + args.val_tasks + args.test_tasks)))
@@ -102,11 +109,11 @@ def run_simple(args: RunConfiguration):
         )
 
         # === Step 2: Download models === #
-        if not os.path.exists(os.path.join(args.exp_dir, "models", args.model_type)):
+        if not os.path.exists(os.path.join(model_cache_path, args.model_type)):
             print("Downloading model")
             export_model.lookup_and_export_model(
                 model_type=args.model_type,
-                output_base_path=os.path.join(args.exp_dir, "models", args.model_type),
+                output_base_path=os.path.join(model_cache_path, args.model_type),
             )
 
         # === Step 3: Tokenize and cache === #
@@ -130,7 +137,7 @@ def run_simple(args: RunConfiguration):
                     task_config_path=task_config_path_dict[task_name],
                     model_type=args.model_type,
                     model_tokenizer_path=os.path.join(
-                        args.exp_dir, "models", args.model_type, "tokenizer"
+                        model_cache_path, args.model_type, "tokenizer"
                     ),
                     output_dir=os.path.join(args.exp_dir, "cache", task_name),
                     phases=phases_to_do,
@@ -163,17 +170,17 @@ def run_simple(args: RunConfiguration):
     py_io.write_json(jiant_task_container_config, path=jiant_task_container_config_path)
 
     # === Step 5: Train/Eval! === #
-    if args.model_path:
+    if args.model_weights_path:
         model_load_mode = "partial"
-        model_path = args.model_path
+        model_weights_path = args.model_weights_path
     else:
         # From Transformers
         if any(task_name.startswith("mlm_") for task_name in full_task_name_list):
             model_load_mode = "from_transformers_with_mlm"
         else:
             model_load_mode = "from_transformers"
-        model_path = os.path.join(
-            args.exp_dir, "models", args.model_type, "model", f"{args.model_type}.p"
+        model_weights_path = os.path.join(
+            model_cache_path, args.model_type, "model", f"{args.model_type}.p"
         )
     runscript.run_loop(
         runscript.RunConfiguration(
@@ -182,11 +189,11 @@ def run_simple(args: RunConfiguration):
             output_dir=os.path.join(args.exp_dir, "runs", args.run_name),
             # === Model parameters === #
             model_type=args.model_type,
-            model_path=model_path,
+            model_path=model_weights_path,
             model_config_path=os.path.join(
-                args.exp_dir, "models", args.model_type, "model", f"{args.model_type}.json"
+                model_cache_path, args.model_type, "model", f"{args.model_type}.json"
             ),
-            model_tokenizer_path=os.path.join(args.exp_dir, "models", args.model_type, "tokenizer"),
+            model_tokenizer_path=os.path.join(model_cache_path, args.model_type, "tokenizer"),
             model_load_mode=model_load_mode,
             # === Running Setup === #
             do_train=bool(args.train_tasks),
@@ -218,6 +225,11 @@ def run_simple(args: RunConfiguration):
 
 
 def dry_run(args: RunConfiguration):
+
+    model_cache_path = replace_none(
+        args.model_cache_path, default=os.path.join(args.exp_dir, "models")
+    )
+
     print("\n# === Step 1: Write task configs based on templates === #")
     full_task_name_list = sorted(list(set(args.train_tasks + args.val_tasks + args.test_tasks)))
     for task_name in full_task_name_list:
@@ -235,7 +247,7 @@ python jiant/proj/main/write_task_configs.py \\
         f"""
 python jiant/proj/main/export_model.py \\
     --model_type {args.model_type} \\
-    --output_base_path {os.path.join(args.exp_dir, "models", args.model_type)}
+    --output_base_path {os.path.join(model_cache_path, args.model_type)}
 """.strip()
     )
 
@@ -255,7 +267,7 @@ python jiant/proj/main/export_model.py \\
 python jiant/proj/main/tokenize_and_cache.py \\
     --task_config_path {os.path.join(args.exp_dir, "task_configs", f"{task_name}_config.json")} \\
     --model_type {args.model_type} \\
-    --model_tokenizer_path {os.path.join(args.exp_dir, "models", args.model_type, "tokenizer")} \\
+    --model_tokenizer_path {os.path.join(model_cache_path, args.model_type, "tokenizer")} \\
     --output_dir {os.path.join(args.exp_dir, "cache", task_name)} \\
     --phases {",".join(phases_to_do)} \\
     --max_seq_length {args.max_seq_length} \\
@@ -284,17 +296,17 @@ python jiant/proj/main/scripts/configurator.py \\
     print(s.strip())
 
     print("\n# === Step 5: Train/Eval! === #")
-    if args.model_path:
+    if args.model_weights_path:
         model_load_mode = "partial"
-        model_path = args.model_path
+        model_weights_path = args.model_weights_path
     else:
         # From Transformers
         if any(task_name.startswith("mlm_") for task_name in full_task_name_list):
             model_load_mode = "from_transformers_with_mlm"
         else:
             model_load_mode = "from_transformers"
-        model_path = os.path.join(
-            args.exp_dir, "models", args.model_type, "model", f"{args.model_type}.p"
+        model_weights_path = os.path.join(
+            model_cache_path, args.model_type, "model", f"{args.model_type}.p"
         )
     s = f"""
 python jiant/proj/main/runscript.py \\
@@ -303,10 +315,10 @@ python jiant/proj/main/runscript.py \\
 {os.path.join(args.exp_dir, "run_configs", f"{args.run_name}_config.json")} \\
     --output_dir {os.path.join(args.exp_dir, "runs", args.run_name)} \\
     --model_type {args.model_type} \\
-    --model_path {model_path} \\
+    --model_path {model_weights_path} \\
     --model_config_path \
-    {os.path.join(args.exp_dir, "models", args.model_type, "model", f"{args.model_type}.json")} \\
-    --model_tokenizer_path {os.path.join(args.exp_dir, "models", args.model_type, "tokenizer")} \\
+    {os.path.join(model_cache_path, args.model_type, "model", f"{args.model_type}.json")} \\
+    --model_tokenizer_path {os.path.join(model_cache_path, args.model_type, "tokenizer")} \\
     --model_load_mode {model_load_mode}
 """.strip()
     if args.train_tasks:
