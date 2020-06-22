@@ -1,9 +1,11 @@
+import math
 import os
 
 import torch
 
 import jiant.utils.zconf as zconf
 import jiant.utils.python.io as py_io
+import jiant.utils.python.datastructures as py_datastructures
 
 
 class Registry:
@@ -117,11 +119,9 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
             task_name_list_dict["train_val"] = self.parse_task_name_list(
                 self.train_val_task_name_list
             )
-        full_task_name_list = [
-            task_name
-            for task_name_list in task_name_list_dict.values()
-            for task_name in task_name_list
-        ]
+        full_task_name_list = py_datastructures.get_unique_list_in_order(
+            task_name_list_dict.values()
+        )
 
         # === Gather task configs === #
         # Build task_config_path_dict, either via
@@ -209,7 +209,7 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
             num_examples_dict[task_name] = num_examples
             capped_num_examples_dict[task_name] = capped_num_examples
             if max_steps_not_given:
-                max_steps += num_examples * self.epochs // effective_batch_size
+                max_steps += self.epochs * math.ceil(capped_num_examples / effective_batch_size)
 
         # === Compute eval_batch_size === #
         # Eval batch size is often a multiple of train batch size,
