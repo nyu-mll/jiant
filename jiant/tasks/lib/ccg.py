@@ -145,7 +145,7 @@ class CCGTask(Task):
         return self._create_examples(self.val_path, set_type="val")
 
     def get_test_examples(self):
-        raise NotImplementedError()
+        return self._create_examples(path=self.test_path, set_type="test")
 
     def get_tags_to_id(self):
         tags_to_id = read_json(self.path_dict["tags_to_id"])
