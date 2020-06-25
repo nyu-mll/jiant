@@ -33,38 +33,30 @@ class SocialIQATask(mc_template.AbstractMultipleChoiceTask):
     DataRow = DataRow
     Batch = Batch
 
-    CHOICE_KEYS = [1, 2, 3]
+    CHOICE_KEYS = ["A", "B", "C"]
     CHOICE_TO_ID, ID_TO_CHOICE = labels_to_bimap(CHOICE_KEYS)
     NUM_CHOICES = len(CHOICE_KEYS)
 
     def get_train_examples(self):
-        return self._create_examples(
-            lines=read_json_lines(self.train_path),
-            labels=self._read_labels(self.path_dict["train_labels"]),
-            set_type="train",
-        )
+        return self._create_examples(lines=read_json_lines(self.train_path), set_type="train")
 
     def get_val_examples(self):
-        return self._create_examples(
-            lines=read_json_lines(self.val_path),
-            labels=self._read_labels(self.path_dict["val_labels"]),
-            set_type="val",
-        )
+        return self._create_examples(lines=read_json_lines(self.val_path), set_type="val")
 
     def get_test_examples(self):
-        raise NotImplementedError("get_test_examples")
+        return self._create_examples(lines=read_json_lines(self.test_path), set_type="test")
 
     @classmethod
-    def _create_examples(cls, lines, labels, set_type):
+    def _create_examples(cls, lines, set_type):
         examples = []
         answer_key_ls = ["answerA", "answerB", "answerC"]
-        for i, (line, label) in enumerate(zip(lines, labels)):
+        for i, line in enumerate(lines):
             examples.append(
                 Example(
                     guid="%s-%s" % (set_type, i),
                     prompt=line["context"] + " " + line["question"],
                     choice_list=[line[answer_key] for answer_key in answer_key_ls],
-                    label=label,
+                    label=line["correct"],
                 )
             )
         return examples
