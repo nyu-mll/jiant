@@ -563,7 +563,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
 
 
 def get_label_ids(task, examples):
-    return np.array([task.LABEL_BIMAP.a[example.label] for example in examples])
+    return np.array([task.LABEL_TO_ID[example.label] for example in examples])
 
 
 def get_label_id_from_data_row(data_row):

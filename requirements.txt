@@ -1,6 +1,7 @@
 attrs==19.3.0
 bs4==0.0.1
 jsonnet==0.15.0
+lxml==4.5.1
 numexpr==2.7.1
 numpy==1.18.4
 pandas==1.0.3
