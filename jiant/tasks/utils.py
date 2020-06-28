@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import NamedTuple
+from typing import NamedTuple, Sequence
 
 
 class InclusiveSpan(NamedTuple):
@@ -31,7 +31,22 @@ class ExclusiveSpan(NamedTuple):
         return self
 
 
-def truncate_sequences(tokens_ls, max_length, truncate_end=True):
+def truncate_sequences(tokens_ls: Sequence[Sequence], max_length: int, truncate_end: bool = True):
+    """Takes a sequence of sequences and trims the sub-seqs to fit within the max length.
+
+    Trims the length of subsequences within a sequence until the total length of the combined sub-
+    sequences is within the max_length. While total length exceeds the max_length, trims whichever
+    subsequence is longest until the total combined length of the subsequences is under the limit.
+
+    Args:
+        tokens_ls (Sequence[Sequence]): sequence of subsequences to truncate.
+        max_length (int): the maximum length of the combined sub-sequences.
+        truncate_end (bool): if True, truncate from the end of the sub-sequence, else from start.
+
+    Returns:
+        Sequence[Sequence] with subsequences trimmed to fit within the max length when combined.
+
+    """
     if len(tokens_ls) == 0:
         return []
     if len(tokens_ls) == 1:
