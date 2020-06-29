@@ -691,7 +691,7 @@ def add_transformers_vocab(vocab, tokenizer_name):
 
     if tokenizer_name.startswith("bert-"):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
-    elif tokenizer_name.startswith("roberta-"):
+    elif tokenizer_name.startswith("roberta-") or args.input_module.startswith("nyu-mll/roberta-"):
         tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("albert-"):
         tokenizer = AlbertTokenizer.from_pretrained(tokenizer_name)
@@ -760,7 +760,7 @@ class ModelPreprocessingInterface(object):
             from jiant.huggingface_transformers_interface.modules import BertEmbedderModule
 
             boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
-        elif args.input_module.startswith("roberta-"):
+        elif args.input_module.startswith("roberta-") or args.input_module.startswith("nyu-mll/roberta-"):
             from jiant.huggingface_transformers_interface.modules import RobertaEmbedderModule
 
             boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens
