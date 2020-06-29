@@ -691,7 +691,7 @@ def add_transformers_vocab(vocab, tokenizer_name):
 
     if tokenizer_name.startswith("bert-"):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
-    elif tokenizer_name.startswith("roberta-") or args.input_module.startswith("nyu-mll/roberta-"):
+    elif tokenizer_name.startswith("roberta-") or tokenizer_name.startswith("nyu-mll/roberta-"):
         tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("albert-"):
         tokenizer = AlbertTokenizer.from_pretrained(tokenizer_name)
