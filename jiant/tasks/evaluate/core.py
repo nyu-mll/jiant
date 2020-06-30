@@ -111,6 +111,27 @@ class SimpleAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
         return Metrics(major=acc, minor={"acc": acc})
 
 
+class MultiLabelAccAndF1EvaluationScheme(BaseLogitsEvaluationScheme):
+    def get_labels_from_cache_and_examples(self, task, cache, examples):
+        return get_multi_label_ids_from_cache(cache=cache)
+
+    def get_preds_from_accumulator(self, task, accumulator):
+        logits = accumulator.get_accumulated()
+        return (logits > 0.5).astype(int)
+
+    @classmethod
+    def compute_metrics_from_preds_and_labels(cls, preds, labels):
+        # noinspection PyUnresolvedReferences
+        acc = float((preds == labels).mean())
+        labels = np.array(labels)
+        minor = {
+            "acc": acc,
+            "f1_micro": f1_score(y_true=labels, y_pred=preds, average="micro"),
+            "acc_and_f1_micro": (acc + f1_score(y_true=labels, y_pred=preds, average="micro")) / 2,
+        }
+        return Metrics(major=minor["acc_and_f1_micro"], minor=minor)
+
+
 class AccAndF1EvaluationScheme(BaseLogitsEvaluationScheme):
     def get_preds_from_accumulator(self, task, accumulator):
         logits = accumulator.get_accumulated()
@@ -550,6 +571,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return MultipleChoiceAccuracyEvaluationScheme()
     elif isinstance(task, (tasks.MrpcTask, tasks.QqpTask,)):
         return AccAndF1EvaluationScheme()
+    elif isinstance(task, tasks.Spr1Task):
+        return MultiLabelAccAndF1EvaluationScheme()
     elif isinstance(task, (tasks.SquadTask,)):
         return SQuADEvaluationScheme()
     elif isinstance(task, tasks.MultiRCTask):
@@ -564,6 +587,16 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
 
 def get_label_ids(task, examples):
     return np.array([task.LABEL_TO_ID[example.label] for example in examples])
+
+
+def get_label_ids_from_data_row(data_row):
+    return data_row.label_ids
+
+
+def get_multi_label_ids_from_cache(cache):
+    return np.array(
+        [get_label_ids_from_data_row(data_row=datum["data_row"]) for datum in cache.iter_all()]
+    )
 
 
 def get_label_id_from_data_row(data_row):

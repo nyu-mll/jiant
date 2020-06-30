@@ -276,6 +276,17 @@ def create_taskmodel(
         taskmodel = taskmodels.SpanComparisonModel(
             encoder=encoder, span_comparison_head=span_comparison_head,
         )
+    elif task.TASK_TYPE == TaskTypes.MULTI_LABEL_SPAN_COMPARISON_CLASSIFICATION:
+        assert taskmodel_kwargs is None
+        span_comparison_head = heads.SpanComparisonHead(
+            hidden_size=encoder.config.hidden_size,
+            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            num_spans=task.num_spans,
+            num_labels=len(task.LABELS),
+        )
+        taskmodel = taskmodels.MultiLabelSpanComparisonModel(
+            encoder=encoder, span_comparison_head=span_comparison_head,
+        )
     elif task.TASK_TYPE == TaskTypes.TAGGING:
         assert taskmodel_kwargs is None
         token_classification_head = heads.TokenClassificationHead(

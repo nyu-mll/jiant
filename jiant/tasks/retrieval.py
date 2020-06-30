@@ -23,6 +23,7 @@ from jiant.tasks.lib.rte import RteTask
 from jiant.tasks.lib.scitail import SciTailTask
 from jiant.tasks.lib.snli import SnliTask
 from jiant.tasks.lib.socialiqa import SocialIQATask
+from jiant.tasks.lib.spr1 import Spr1Task
 from jiant.tasks.lib.squad import SquadTask
 from jiant.tasks.lib.sst import SstTask
 from jiant.tasks.lib.stsb import StsbTask
@@ -58,6 +59,7 @@ TASK_DICT = {
     "scitail": SciTailTask,
     "snli": SnliTask,
     "socialiqa": SocialIQATask,
+    "spr1": Spr1Task,
     "squad": SquadTask,
     "sst": SstTask,
     "stsb": StsbTask,
