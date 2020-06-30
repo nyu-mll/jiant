@@ -760,7 +760,9 @@ class ModelPreprocessingInterface(object):
             from jiant.huggingface_transformers_interface.modules import BertEmbedderModule
 
             boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
-        elif args.input_module.startswith("roberta-") or args.input_module.startswith("nyu-mll/roberta-"):
+        elif args.input_module.startswith("roberta-") or args.input_module.startswith(
+            "nyu-mll/roberta-"
+        ):
             from jiant.huggingface_transformers_interface.modules import RobertaEmbedderModule
 
             boundary_token_fn = RobertaEmbedderModule.apply_boundary_tokens

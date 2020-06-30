@@ -74,8 +74,8 @@ def _map_fn(line, tokenizer_name):
 
 
 def retokenize_file(fname, tokenizer_name, worker_pool):
-    if tokenizer_name.startswith('nyu-mll/'):
-        new_name = fname + ".retokenized." + tokenizer_name.replace('/','.')
+    if tokenizer_name.startswith("nyu-mll/"):
+        new_name = fname + ".retokenized." + tokenizer_name.replace("/", ".")
     else:
         new_name = fname + ".retokenized." + tokenizer_name
     log.info("Processing file: %s", fname)
