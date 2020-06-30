@@ -114,7 +114,10 @@ def _map_fn(record, tokenizer_name):
 
 
 def preprocess_winograd(fname, tokenizer_name, worker_pool):
-    new_name = fname + ".retokenized." + tokenizer_name
+    if tokenizer_name.startswith("nyu-mll/"):
+        new_name = fname + ".retokenized." + tokenizer_name.replace("/", ".")
+    else:
+        new_name = fname + ".retokenized." + tokenizer_name
     log.info("Processing file: %s", fname)
     # decompress into list of dictionaries
     inputs = list(pd.read_json(fname, lines=True).T.to_dict().values())

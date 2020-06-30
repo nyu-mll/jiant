@@ -38,7 +38,9 @@ class EdgeProbingTask(Task):
         """ Suffix to make sure we use the correct source files,
         based on the given tokenizer.
         """
-        if self.tokenizer_name:
+        if self.tokenizer_name.startswith("nyu-mll/"):
+            return ".retokenized." + self.tokenizer_name.replace("/", ".")
+        elif self.tokenizer_name:
             return ".retokenized." + self.tokenizer_name
         else:
             return ""
