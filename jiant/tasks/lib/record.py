@@ -102,19 +102,22 @@ class ReCoRDTask(Task):
         for line in lines:
             passage_text = line["passage"]["text"]
             for qas in line["qas"]:
-                answers_dict = {
-                    (answer["start"], answer["end"]): answer["text"] for answer in qas["answers"]
-                }
+                answers_dict = {}
+                if set_type != "test":
+                    answers_dict = {
+                        (answer["start"], answer["end"]): answer["text"]
+                        for answer in qas["answers"]
+                    }
                 for entity in line["passage"]["entities"]:
+                    label = False
                     entity_span = (entity["start"], entity["end"])
-                    if entity_span in answers_dict:
-                        assert (
-                            passage_text[entity_span[0] : entity_span[1] + 1]
-                            == answers_dict[entity_span]
-                        )
-                        label = True
-                    else:
-                        label = False
+                    if set_type != "test":
+                        if entity_span in answers_dict:
+                            assert (
+                                passage_text[entity_span[0] : entity_span[1] + 1]
+                                == answers_dict[entity_span]
+                            )
+                            label = True
                     examples.append(
                         Example(
                             guid="%s-%s" % (set_type, len(examples)),
