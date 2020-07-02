@@ -46,9 +46,8 @@ class OptimizerScheduler:
         self.scheduler = scheduler
 
     def step(self):
-        # Scheduler updates first
-        self.scheduler.step()
         self.optimizer.step()
+        self.scheduler.step()
 
     def state_dict(self):
         return {
