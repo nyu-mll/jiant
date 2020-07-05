@@ -163,11 +163,13 @@ def convert_glue_data(input_base_path, task_data_path, task_name):
     return paths_dict
 
 
-def preprocess_all_glue_data(input_base_path, output_base_path):
+def preprocess_all_glue_data(input_base_path, output_base_path, task_name_ls=None):
+    if task_name_ls is None:
+        task_name_ls = GLUE_CONVERSION.keys()
     os.makedirs(output_base_path, exist_ok=True)
     os.makedirs(os.path.join(output_base_path, "data"), exist_ok=True)
     os.makedirs(os.path.join(output_base_path, "configs"), exist_ok=True)
-    for task_name in tqdm.tqdm(GLUE_CONVERSION):
+    for task_name in tqdm.tqdm(task_name_ls):
         task_data_path = os.path.join(output_base_path, "data", task_name)
         paths_dict = convert_glue_data(
             input_base_path=input_base_path, task_data_path=task_data_path, task_name=task_name,
@@ -182,12 +184,19 @@ def preprocess_all_glue_data(input_base_path, output_base_path):
 class RunConfiguration(zconf.RunConfig):
     input_base_path = zconf.attr(type=str)
     output_base_path = zconf.attr(type=str)
+    task_name_ls = zconf.attr(type=str, default=None)
+
+    def _post_init(self):
+        if isinstance(self.task_name_ls, str):
+            self.task_name_ls = self.task_name_ls.split(",")
 
 
 def main():
     args = RunConfiguration.default_run_cli()
     preprocess_all_glue_data(
-        input_base_path=args.input_base_path, output_base_path=args.output_base_path,
+        input_base_path=args.input_base_path,
+        output_base_path=args.output_base_path,
+        task_name_ls=args.task_name_ls,
     )
 
 

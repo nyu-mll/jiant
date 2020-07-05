@@ -241,7 +241,7 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
             "task_cache_config_dict": task_cache_config_dict,
             "sampler_config": sampler_config,
             "global_train_config": {
-                "max_steps": max_steps,
+                "max_steps": int(max_steps),
                 "warmup_steps": int(max_steps * self.warmup_steps_proportion),
             },
             "task_specific_configs_dict": {
