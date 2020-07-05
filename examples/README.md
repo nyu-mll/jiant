@@ -6,7 +6,7 @@
     * Fine-tuning on multiple tasks simultaneously
 * **STILTs Training** [[Notebook](./notebooks/jiant_STILTs_Example.ipynb)] [[Colab](https://colab.research.google.com/github/jiant-dev/jiant/blob/master/examples/notebooks/jiant_STILTs_Example.ipynb)]
     * Fine-tuning on multiple tasks sequentially
-* **Multi-task Training** [[Notebook](./notebooks/jiant_XNLI_Example.ipynb)] [[Colab](https://colab.research.google.com/github/jiant-dev/jiant/blob/master/examples/notebooks/jiant_XNLI_Example.ipynb)]
+* **Zero-shot transfer to XNLI** [[Notebook](./notebooks/jiant_XNLI_Example.ipynb)] [[Colab](https://colab.research.google.com/github/jiant-dev/jiant/blob/master/examples/notebooks/jiant_XNLI_Example.ipynb)]
     * Fine-tuning on MNLI for zero-shot transfer to XNLI
-* **Multi-task Training** [[Notebook](./notebooks/jiant_MNLI_Diagnostic_Example.ipynb)] [[Colab](https://colab.research.google.com/github/jiant-dev/jiant/blob/master/examples/notebooks/jiant_MNLI_Diagnostic_Example.ipynb)]
+* **MNLI-mismatched/GLUE Diagnostic** [[Notebook](./notebooks/jiant_MNLI_Diagnostic_Example.ipynb)] [[Colab](https://colab.research.google.com/github/jiant-dev/jiant/blob/master/examples/notebooks/jiant_MNLI_Diagnostic_Example.ipynb)]
    * Fine-tuning on MNLI for MNLI-mismatched and GLUE Diagnostic set
