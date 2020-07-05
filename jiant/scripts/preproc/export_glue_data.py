@@ -114,6 +114,15 @@ GLUE_CONVERSION = {
         },
         "dir_name": "WNLI",
     },
+    "glue_diagnostic": {
+        "data": {
+            "test": {
+                "cols": {"premise": 1, "hypothesis": 2},
+                "meta": {"filename": "diagnostic", "skiprows": 1},
+            },
+        },
+        "dir_name": "diagnostic",
+    },
 }
 
 
@@ -159,7 +168,7 @@ def convert_glue_data(input_base_path, task_data_path, task_name):
         py_io.write_jsonl(
             data=phase_data, path=phase_data_path,
         )
-        paths_dict[phase] = phase_data
+        paths_dict[phase] = phase_data_path
     return paths_dict
 
 
