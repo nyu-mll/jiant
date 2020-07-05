@@ -276,7 +276,7 @@ def create_taskmodel(
         taskmodel = taskmodels.SpanComparisonModel(
             encoder=encoder, span_comparison_head=span_comparison_head,
         )
-    elif task.TASK_TYPE == TaskTypes.MULTI_LABEL_SPAN_COMPARISON_CLASSIFICATION:
+    elif task.TASK_TYPE == TaskTypes.MULTI_LABEL_SPAN_CLASSIFICATION:
         assert taskmodel_kwargs is None
         span_comparison_head = heads.SpanComparisonHead(
             hidden_size=encoder.config.hidden_size,

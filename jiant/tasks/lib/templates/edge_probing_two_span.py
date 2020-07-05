@@ -26,6 +26,7 @@ from jiant.tasks.lib.templates.shared import (
 )
 from jiant.tasks.utils import ExclusiveSpan, truncate_sequences
 from jiant.utils import retokenize
+from jiant.utils.tokenization_normalization import normalize_tokenizations
 
 
 @dataclass
@@ -41,9 +42,12 @@ class Example(BaseExample):
         raise NotImplementedError()
 
     def tokenize(self, tokenizer):
-        native_tokenization = self.text.split()
+        space_tokenization = self.text.split()
         target_tokenization = tokenizer.tokenize(self.text)
-        aligner = retokenize.TokenAligner(native_tokenization, target_tokenization)
+        normed_space_tokenization, normed_target_tokenization = normalize_tokenizations(
+            space_tokenization, target_tokenization, tokenizer
+        )
+        aligner = retokenize.TokenAligner(normed_space_tokenization, normed_target_tokenization)
         target_span1 = aligner.project_span(self.span1[0], self.span1[1])
         target_span2 = aligner.project_span(self.span2[0], self.span2[1])
         return TokenizedExample(
@@ -147,7 +151,7 @@ class Batch(BatchMixin):
 
 
 class AbstractProbingTask(Task, ABC):
-    TASK_TYPE = TaskTypes.MULTI_LABEL_SPAN_COMPARISON_CLASSIFICATION
+    TASK_TYPE = TaskTypes.MULTI_LABEL_SPAN_CLASSIFICATION
 
     LABELS = NotImplemented
     LABEL_TO_ID = NotImplemented

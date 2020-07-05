@@ -2,6 +2,8 @@ import os
 from collections import Counter
 
 import numpy as np
+import transformers
+from unittest.mock import Mock
 
 from jiant.shared import model_resolution
 from jiant.tasks import create_task_from_config_path
@@ -297,12 +299,18 @@ def test_featurization_of_task_data():
     for example in train_examples:
         token_counter.update(example.text.split())
     token_vocab = list(token_counter.keys())
-    tokenizer = SimpleSpaceTokenizer(vocabulary=token_vocab)
+    space_tokenizer = SimpleSpaceTokenizer(vocabulary=token_vocab)
+
+    # Mocking to pass normalize_tokenizations's isinstance check during example.tokenize(tokenizer)
+    tokenizer = Mock(spec_set=transformers.RobertaTokenizer)
+    tokenizer.tokenize.side_effect = space_tokenizer.tokenize
     tokenized_examples = [example.tokenize(tokenizer) for example in train_examples]
     for tokenized_example, expected_tokenized_example in zip(
         tokenized_examples, TOKENIZED_TRAIN_EXAMPLES
     ):
         assert tokenized_example.to_dict() == expected_tokenized_example
+    # Dropping the mock and continuing the test with the space tokenizer
+    tokenizer = space_tokenizer
 
     # Testing conversion of a tokenized example to a featurized example
     train_example_0_length = len(tokenized_examples[0].tokens) + 4

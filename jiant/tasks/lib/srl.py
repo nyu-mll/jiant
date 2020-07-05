@@ -9,7 +9,7 @@ from jiant.utils.python.io import read_json_lines
 class Example(edge_probing_two_span.Example):
     @property
     def task(self):
-        return Spr1Task
+        return SrlTask
 
 
 @dataclass
@@ -27,31 +27,79 @@ class Batch(edge_probing_two_span.Batch):
     pass
 
 
-class Spr1Task(edge_probing_two_span.AbstractProbingTask):
+class SrlTask(edge_probing_two_span.AbstractProbingTask):
     Example = Example
     TokenizedExample = TokenizedExample
     DataRow = DataRow
     Batch = Batch
 
     LABELS = [
-        "awareness",
-        "change_of_location",
-        "change_of_state",
-        "changes_possession",
-        "created",
-        "destroyed",
-        "existed_after",
-        "existed_before",
-        "existed_during",
-        "exists_as_physical",
-        "instigation",
-        "location_of_event",
-        "makes_physical_contact",
-        "manipulated_by_another",
-        "predicate_changed_argument",
-        "sentient",
-        "stationary",
-        "volition",
+        "ARG0",
+        "ARG1",
+        "ARG2",
+        "ARG3",
+        "ARG4",
+        "ARG5",
+        "ARGA",
+        "ARGM-ADJ",
+        "ARGM-ADV",
+        "ARGM-CAU",
+        "ARGM-COM",
+        "ARGM-DIR",
+        "ARGM-DIS",
+        "ARGM-DSP",
+        "ARGM-EXT",
+        "ARGM-GOL",
+        "ARGM-LOC",
+        "ARGM-LVB",
+        "ARGM-MNR",
+        "ARGM-MOD",
+        "ARGM-NEG",
+        "ARGM-PNC",
+        "ARGM-PRD",
+        "ARGM-PRP",
+        "ARGM-PRR",
+        "ARGM-PRX",
+        "ARGM-REC",
+        "ARGM-TMP",
+        "C-ARG0",
+        "C-ARG1",
+        "C-ARG2",
+        "C-ARG3",
+        "C-ARG4",
+        "C-ARGM-ADJ",
+        "C-ARGM-ADV",
+        "C-ARGM-CAU",
+        "C-ARGM-COM",
+        "C-ARGM-DIR",
+        "C-ARGM-DIS",
+        "C-ARGM-DSP",
+        "C-ARGM-EXT",
+        "C-ARGM-LOC",
+        "C-ARGM-MNR",
+        "C-ARGM-MOD",
+        "C-ARGM-NEG",
+        "C-ARGM-PRP",
+        "C-ARGM-TMP",
+        "R-ARG0",
+        "R-ARG1",
+        "R-ARG2",
+        "R-ARG3",
+        "R-ARG4",
+        "R-ARG5",
+        "R-ARGM-ADV",
+        "R-ARGM-CAU",
+        "R-ARGM-COM",
+        "R-ARGM-DIR",
+        "R-ARGM-EXT",
+        "R-ARGM-GOL",
+        "R-ARGM-LOC",
+        "R-ARGM-MNR",
+        "R-ARGM-MOD",
+        "R-ARGM-PNC",
+        "R-ARGM-PRD",
+        "R-ARGM-PRP",
+        "R-ARGM-TMP",
     ]
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
 
@@ -72,8 +120,6 @@ class Spr1Task(edge_probing_two_span.AbstractProbingTask):
     def _create_examples(cls, lines, set_type):
         examples = []
         for (line_num, line) in enumerate(lines):
-            # A line in the task's data file can contain multiple targets (span-pair + labels).
-            # We create an example for every target:
             for (target_num, target) in enumerate(line["targets"]):
                 span1 = target["span1"]
                 span2 = target["span2"]
@@ -83,7 +129,7 @@ class Spr1Task(edge_probing_two_span.AbstractProbingTask):
                         text=line["text"],
                         span1=span1,
                         span2=span2,
-                        labels=target["label"] if set_type != "test" else [cls.LABELS[-1]],
+                        labels=[target["label"]] if set_type != "test" else [cls.LABELS[-1]],
                     )
                 )
         return examples
