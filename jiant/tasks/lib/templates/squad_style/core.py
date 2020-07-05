@@ -328,47 +328,57 @@ class BaseSquadStyleTask(Task):
 
     @classmethod
     def read_squad_examples(cls, path, set_type):
-        with open(path, "r", encoding="utf-8") as reader:
-            input_data = json.load(reader)["data"]
+        return generic_read_squad_examples(path=path, set_type=set_type, example_class=cls.Example,)
 
-        is_training = set_type == PHASE.TRAIN
-        examples = []
-        for entry in maybe_tqdm(input_data, desc="Reading SQuAD Entries"):
+
+def generic_read_squad_examples(
+    path: str, set_type: str, example_class: type = dict, read_title: bool = True
+):
+
+    with open(path, "r", encoding="utf-8") as reader:
+        input_data = json.load(reader)["data"]
+
+    is_training = set_type == PHASE.TRAIN
+    examples = []
+    for entry in maybe_tqdm(input_data, desc="Reading SQuAD Entries"):
+        if read_title:
             title = entry["title"]
-            for paragraph in entry["paragraphs"]:
-                context_text = paragraph["context"]
-                for qa in paragraph["qas"]:
-                    qas_id = qa["id"]
-                    question_text = qa["question"]
-                    start_position_character = None
-                    answer_text = None
-                    answers = []
+        else:
+            title = "-"
+        for paragraph in entry["paragraphs"]:
+            context_text = paragraph["context"]
+            for qa in paragraph["qas"]:
+                qas_id = qa["id"]
+                question_text = qa["question"]
+                start_position_character = None
+                answer_text = None
+                answers = []
 
-                    if "is_impossible" in qa:
-                        is_impossible = qa["is_impossible"]
+                if "is_impossible" in qa:
+                    is_impossible = qa["is_impossible"]
+                else:
+                    is_impossible = False
+
+                if not is_impossible:
+                    if is_training:
+                        answer = qa["answers"][0]
+                        answer_text = answer["text"]
+                        start_position_character = answer["answer_start"]
                     else:
-                        is_impossible = False
+                        answers = qa["answers"]
 
-                    if not is_impossible:
-                        if is_training:
-                            answer = qa["answers"][0]
-                            answer_text = answer["text"]
-                            start_position_character = answer["answer_start"]
-                        else:
-                            answers = qa["answers"]
-
-                    example = cls.Example(
-                        qas_id=qas_id,
-                        question_text=question_text,
-                        context_text=context_text,
-                        answer_text=answer_text,
-                        start_position_character=start_position_character,
-                        title=title,
-                        is_impossible=is_impossible,
-                        answers=answers,
-                    )
-                    examples.append(example)
-        return examples
+                example = example_class(
+                    qas_id=qas_id,
+                    question_text=question_text,
+                    context_text=context_text,
+                    answer_text=answer_text,
+                    start_position_character=start_position_character,
+                    title=title,
+                    is_impossible=is_impossible,
+                    answers=answers,
+                )
+                examples.append(example)
+    return examples
 
 
 @dataclass

@@ -4,8 +4,10 @@ import re
 import string
 
 from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
+import seqeval.metrics as seqeval_metrics
 from sklearn.metrics import f1_score, matthews_corrcoef
 from scipy.stats import pearsonr, spearmanr
 from typing import Dict, List
@@ -13,7 +15,10 @@ from typing import Dict, List
 import jiant.shared.model_resolution as model_resolution
 import jiant.tasks as tasks
 import jiant.tasks.lib.templates.squad_style.core as squad_style
+import jiant.tasks.lib.templates.squad_style.utils as squad_style_utils
+import jiant.tasks.lib.mlqa as mlqa_lib
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
+from jiant.utils.python.io import read_json
 
 
 @dataclass
@@ -470,6 +475,58 @@ class CCGEvaluationScheme(BaseEvaluationScheme):
         )
 
 
+class F1TaggingEvaluationScheme(BaseEvaluationScheme):
+    def get_accumulator(self):
+        return ConcatenateLogitsAccumulator()
+
+    @classmethod
+    def get_labels(cls, cache, examples):
+        labels = [
+            {"pos_list": example.pos_list, "label_mask": datum["data_row"].label_mask}
+            for datum, example in zip(cache.iter_all(), examples)
+        ]
+        for label in labels:
+            assert len(label["pos_list"]) == label["label_mask"].sum()
+        return labels
+
+    @classmethod
+    def get_labels_from_cache_and_examples(cls, task, cache, examples):
+        return cls.get_labels(cache=cache, examples=examples)
+
+    def get_preds_from_accumulator(self, task, accumulator):
+        logits = accumulator.get_accumulated()
+        return np.argmax(logits, axis=-1)
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
+    ) -> Metrics:
+        preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        return self.compute_metrics_from_preds_and_labels(task=task, preds=preds, labels=labels,)
+
+    @classmethod
+    def compute_metrics_from_preds_and_labels(cls, task, preds, labels):
+        label_mask = np.stack([row["label_mask"] for row in labels])
+
+        # Account for smart-truncate
+        assert (label_mask[:, preds.shape[-1] :] == 0).all()
+        label_mask = label_mask[:, : preds.shape[-1]].astype(bool)
+
+        labels_for_eval = [label["pos_list"] for label in labels]
+        preds_for_eval = []
+        assert len(labels) == preds.shape[0]
+        for i in range(len(labels)):
+            relevant_preds = preds[i][label_mask[i]]
+            relevant_preds_pos = [task.LABEL_BIMAP.b[pos_id] for pos_id in relevant_preds]
+            preds_for_eval.append(relevant_preds_pos)
+
+        minor = {
+            "precision": seqeval_metrics.precision_score(labels_for_eval, preds_for_eval),
+            "recall": seqeval_metrics.recall_score(labels_for_eval, preds_for_eval),
+            "f1": seqeval_metrics.f1_score(labels_for_eval, preds_for_eval),
+        }
+        return Metrics(major=minor["f1"], minor=minor,)
+
+
 class SQuADEvaluationScheme(BaseEvaluationScheme):
     @classmethod
     def get_accumulator(cls) -> BaseAccumulator:
@@ -507,6 +564,78 @@ class SQuADEvaluationScheme(BaseEvaluationScheme):
         return squad_style.PartialDataRow.from_data_row(data_row)
 
 
+class XlingQAEvaluationScheme(BaseEvaluationScheme):
+    @classmethod
+    def get_accumulator(cls) -> BaseAccumulator:
+        return ConcatenateLogitsAccumulator()
+
+    @classmethod
+    def get_labels_from_cache(cls, cache):
+        return [cls.get_label_from_data_row(datum["data_row"]) for datum in cache.iter_all()]
+
+    @classmethod
+    def get_labels_from_cache_and_examples(cls, task, cache, examples):
+        return cls.get_labels_from_cache(cache=cache)
+
+    def get_preds_from_accumulator(self, task, accumulator):
+        raise NotImplementedError("Currently can't be done without access to dataset")
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: BaseAccumulator, tokenizer, labels
+    ) -> Metrics:
+        logits = accumulator.get_accumulated()
+        assert isinstance(task, (tasks.TyDiQATask, tasks.XquadTask))
+        lang = task.language
+        results, predictions = squad_style.compute_predictions_logits_v3(
+            data_rows=labels,
+            logits=logits,
+            n_best_size=task.n_best_size,
+            max_answer_length=task.max_answer_length,
+            do_lower_case=model_resolution.resolve_is_lower_case(tokenizer),
+            version_2_with_negative=task.version_2_with_negative,
+            null_score_diff_threshold=task.null_score_diff_threshold,
+            skip_get_final_text=(lang == "zh"),
+            tokenizer=tokenizer,
+        )
+        return Metrics(major=(results["f1"] + results["exact"]) / 2, minor=results,)
+
+    @classmethod
+    def get_label_from_data_row(cls, data_row):
+        return squad_style.PartialDataRow.from_data_row(data_row)
+
+
+class MLQAEvaluationScheme(SQuADEvaluationScheme):
+    def get_preds_from_accumulator(self, task, accumulator):
+        raise NotImplementedError("Too hard for now, too much handled in one giant lib")
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: BaseAccumulator, tokenizer, labels
+    ) -> Metrics:
+
+        # Todo: Fix val labels cache
+        # This is a quick hack
+        logits = accumulator.get_accumulated()
+        partial_examples = squad_style.data_rows_to_partial_examples(data_rows=labels)
+        all_pred_results = squad_style.logits_to_pred_results_list(logits)
+        assert task.context_language == task.question_language
+        lang = task.context_language
+        predictions = squad_style_utils.compute_predictions_logits_v2(
+            partial_examples=partial_examples,
+            all_results=all_pred_results,
+            n_best_size=task.n_best_size,
+            max_answer_length=task.max_answer_length,
+            do_lower_case=model_resolution.resolve_is_lower_case(tokenizer),
+            version_2_with_negative=task.version_2_with_negative,
+            null_score_diff_threshold=task.null_score_diff_threshold,
+            tokenizer=tokenizer,
+            skip_get_final_text=(lang == "zh"),
+            verbose=True,
+        )
+        dataset = read_json(task.val_path)["data"]
+        results = mlqa_lib.evaluate(dataset=dataset, predictions=predictions, lang=lang,)
+        return Metrics(major=(results["f1"] + results["exact_match"]) / 2, minor=results,)
+
+
 class MLMEvaluationScheme(BaseEvaluationScheme):
     @classmethod
     def get_accumulator(cls) -> BaseAccumulator:
@@ -542,6 +671,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.BoolQTask,
             tasks.CopaTask,
             tasks.MnliTask,
+            tasks.PawsXTask,
             tasks.QnliTask,
             tasks.RteTask,
             tasks.SciTailTask,
@@ -549,6 +679,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.SstTask,
             tasks.WiCTask,
             tasks.WSCTask,
+            tasks.XnliTask,
         ),
     ):
         return SimpleAccuracyEvaluationScheme()
@@ -575,12 +706,18 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return MultiLabelAccAndF1EvaluationScheme()
     elif isinstance(task, (tasks.SquadTask,)):
         return SQuADEvaluationScheme()
+    elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask,)):
+        return XlingQAEvaluationScheme()
+    elif isinstance(task, tasks.MlqaTask):
+        return MLQAEvaluationScheme()
     elif isinstance(task, tasks.MultiRCTask):
         return MultiRCEvaluationScheme()
     elif isinstance(task, tasks.StsbTask):
         return PearsonAndSpearmanEvaluationScheme()
     elif isinstance(task, (tasks.MLMWikitext103Task, tasks.MLMCrosslingualWikiTask)):
         return MLMEvaluationScheme()
+    elif isinstance(task, (tasks.UdposPreprocTask, tasks.PanxPreprocTask,)):
+        return F1TaggingEvaluationScheme()
     else:
         raise KeyError(task)
 

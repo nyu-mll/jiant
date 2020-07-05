@@ -195,7 +195,7 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
             max_steps = 0
         else:
             max_steps = self.max_steps
-        for task_name in full_task_name_list:
+        for task_name in task_name_list_dict["train"]:
             # We multiply by num_gpus because 1 step is done across (potentially) multiple GPUs
             effective_batch_size = (
                 self.train_batch_size * self.gradient_accumulation_steps * self.num_gpus
