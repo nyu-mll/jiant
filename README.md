@@ -12,7 +12,7 @@ pip install -r jiant/requirements-dev.txt
 ```
 
 ### Getting started
-Examples to help you get started can be found here [INSERT LINK].
+Examples to help you get started can be found here [here](./examples/README.md).
 
 ### Documentation
 Documentation for `jiant` v2.0.dev0 can be found [here](https://jiant-dev.github.io/jiant/).
