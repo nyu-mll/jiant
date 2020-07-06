@@ -107,7 +107,7 @@ html_theme_options = {
         ("Docs", "index", False, "home"),
         # ("ExternalLink", "http://example.com", True, 'launch'),
         # ("NoIconLink", "http://example.com", True, ''),
-        ("GitHub", "https://github.com/pyeres/jiant2", True, "link"),
+        ("GitHub", "https://github.com/jiant-dev/jiant", True, "link"),
     ],
     # Customize css colors.
     # For details see link.

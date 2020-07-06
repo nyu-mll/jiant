@@ -5,22 +5,5 @@
 
 .. role:: mono
 
-Documentation |release|
+Documentation |release| — coming soon!
 ==================================================
-
-:mono:`jiant` is a software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks. This documentation covers the core functionality of :mono:`jiant` v |release|.
-
-.. toctree::
-   :maxdepth: 2
-
-   getting-started
-   examples/index
-   modules/index
-
-
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`

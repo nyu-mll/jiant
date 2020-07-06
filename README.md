@@ -5,17 +5,8 @@
 
 `jiant` is a software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks. 
 
-### Installation
-```
-git clone https://github.com/jiant-dev/jiant.git
-pip install -r jiant/requirements-dev.txt
-```
-
 ### Getting started
 Examples to help you get started can be found here [here](./examples/README.md).
-
-### Documentation
-Documentation for `jiant` v2.0.dev0 can be found [here](https://jiant-dev.github.io/jiant/).
 
 ### Issues
 Templates for bug reports and feature requests are provided [here](https://github.com/jiant-dev/jiant/issues/new/choose).
