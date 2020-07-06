@@ -2,6 +2,7 @@ import os
 from typing import Optional
 
 from jiant.tasks.lib.abductive_nli import AbductiveNliTask
+from jiant.tasks.lib.acceptability_judgement.definiteness import AcceptabilityDefinitenessTask
 from jiant.tasks.lib.adversarial_nli import AdversarialNliTask
 from jiant.tasks.lib.boolq import BoolQTask
 from jiant.tasks.lib.ccg import CCGTask
@@ -27,6 +28,7 @@ from jiant.tasks.lib.qnli import QnliTask
 from jiant.tasks.lib.record import ReCoRDTask
 from jiant.tasks.lib.rte import RteTask
 from jiant.tasks.lib.scitail import SciTailTask
+from jiant.tasks.lib.senteval.tense import SentevalTenseTask
 from jiant.tasks.lib.semeval import SemevalTask
 from jiant.tasks.lib.snli import SnliTask
 from jiant.tasks.lib.socialiqa import SocialIQATask
@@ -51,6 +53,7 @@ from jiant.utils.python.io import read_json
 
 TASK_DICT = {
     "abductive_nli": AbductiveNliTask,
+    "acceptability_definiteness": AcceptabilityDefinitenessTask,
     "adversarial_nli": AdversarialNliTask,
     "boolq": BoolQTask,
     "cb": CommitmentBankTask,
@@ -76,6 +79,7 @@ TASK_DICT = {
     "record": ReCoRDTask,
     "rte": RteTask,
     "scitail": SciTailTask,
+    "senteval_tense": SentevalTenseTask,
     "semeval": SemevalTask,
     "snli": SnliTask,
     "socialiqa": SocialIQATask,
