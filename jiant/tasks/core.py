@@ -40,16 +40,19 @@ class FeaturizationSpec:
 
 
 class BatchMixin(ExtendedDataClassMixin):
-    def to(self, device):
+    def to(self, device, non_blocking=False, copy=False):
         # noinspection PyArgumentList
         return self.__class__(
-            **{k: self._val_to_device(v, device) for k, v in self.to_dict().items()}
+            **{
+                k: self._val_to_device(v=v, device=device, non_blocking=non_blocking, copy=copy,)
+                for k, v in self.to_dict().items()
+            }
         )
 
     @classmethod
-    def _val_to_device(cls, v, device):
+    def _val_to_device(cls, v, device, non_blocking=False, copy=False):
         if isinstance(v, torch.Tensor):
-            return v.to(device)
+            return v.to(device=device, non_blocking=non_blocking, copy=copy)
         else:
             return v
 
@@ -99,8 +102,11 @@ class BatchTuple(NamedTuple):
     batch: BatchMixin
     metadata: dict
 
-    def to(self, device):
-        return BatchTuple(batch=self.batch.to(device), metadata=self.metadata)
+    def to(self, device, non_blocking=False, copy=False):
+        return BatchTuple(
+            batch=self.batch.to(device=device, non_blocking=non_blocking, copy=copy,),
+            metadata=self.metadata,
+        )
 
 
 def metadata_collate_fn(metadata: list):
