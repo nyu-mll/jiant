@@ -262,7 +262,8 @@ class MultiRCEvaluationScheme(BaseEvaluationScheme):
         return self.get_labels_from_examples(task=task, examples=examples)
 
     def get_preds_from_accumulator(self, task, accumulator):
-        raise NotImplementedError()
+        logits = accumulator.get_accumulated()
+        return np.argmax(logits, axis=-1)
 
     def compute_metrics_from_accumulator(
         self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list

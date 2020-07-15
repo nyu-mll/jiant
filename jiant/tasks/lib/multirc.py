@@ -1,5 +1,4 @@
 import numpy as np
-import bs4
 
 import torch
 from dataclasses import dataclass
@@ -136,11 +135,10 @@ class MultiRCTask(Task):
     LABELS = [0, 1]
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
 
-    def __init__(self, name, path_dict, filter_sentences=True):
+    def __init__(self, name, path_dict):
         super().__init__(name=name, path_dict=path_dict)
         self.name = name
         self.path_dict = path_dict
-        self.filter_sentences = filter_sentences
 
     def get_train_examples(self):
         return self._create_examples(lines=read_json_lines(self.train_path), set_type="train")
@@ -155,28 +153,15 @@ class MultiRCTask(Task):
         examples = []
         question_id = 0
         for line in lines:
-            soup = bs4.BeautifulSoup(line["passage"]["text"], features="lxml")
-            sentence_ls = []
-            for i, elem in enumerate(soup.html.body.contents):
-                if isinstance(elem, bs4.element.NavigableString):
-                    sentence_ls.append(str(elem).strip())
-
+            passage = line["passage"]["text"]
             for question_dict in line["passage"]["questions"]:
                 question = question_dict["question"]
-                if self.filter_sentences:
-                    paragraph = " ".join(
-                        sentence
-                        for i, sentence in enumerate(sentence_ls, start=1)
-                        if i in question_dict["sentences_used"]
-                    )
-                else:
-                    paragraph = " ".join(sentence_ls)
                 for answer_dict in question_dict["answers"]:
                     answer = answer_dict["text"]
                     examples.append(
                         Example(
                             guid="%s-%s" % (set_type, line["idx"]),
-                            paragraph=paragraph,
+                            paragraph=passage,
                             question=question,
                             answer=answer,
                             label=answer_dict["label"] if set_type != "test" else self.LABELS[-1],
