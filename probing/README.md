@@ -84,6 +84,8 @@ There are two analysis notebooks which produce the main tables and figures for e
 - [analysis_edgeprobe_ICLR_camera_ready.ipynb](analysis_edgeprobe_ICLR_camera_ready.ipynb)
 - [analysis_bertlayer_ACL_camera_ready.ipynb](analysis_bertlayer_ACL_camera_ready.ipynb)
 
+**Note on coreference metrics:** the default model actually trains on two mutually-exclusive targets with labels "`0`" and "`1`". In the papers we ignore the "`0`" class and report F1 scores from treating the positive ("`1`") class as a binary target. See [this issue](https://github.com/nyu-mll/jiant/issues/1084#issuecomment-622633655) for more detail, or Ctrl+F for `is_coref_task` in the above notebooks for the relevant code.
+
 If you hit any snags (_Editor's note: it's research code, you probably will_), contact Ian (email address in the paper) for help.
 
 ## Edge Probing Utilities
