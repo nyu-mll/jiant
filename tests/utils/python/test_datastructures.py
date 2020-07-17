@@ -151,3 +151,11 @@ def test_reorder_keys():
         == ["c", "a", "b"]
     with pytest.raises(AssertionError):
         py_datastructures.reorder_keys(dict1, key_list=["d", "b", "d"])
+
+
+def test_set_dict_keys():
+    d = {"a": 1, "b": 2, "c": 3}
+    assert list(py_datastructures.set_dict_keys(d, ["a", "b", "c"])) == ["a", "b", "c"]
+    assert list(py_datastructures.set_dict_keys(d, ["a", "c", "b"])) == ["a", "c", "b"]
+    with pytest.raises(AssertionError):
+        py_datastructures.set_dict_keys(d, ["a", "b"])

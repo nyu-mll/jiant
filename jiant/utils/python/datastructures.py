@@ -105,6 +105,19 @@ def sort_dict(d: dict):
     return {k: d[k] for k in sorted(list(d.keys()))}
 
 
+def set_dict_keys(d: dict, key_list: list):
+    """Return a new dictionary with specified key order"""
+    assert set(d) == set(key_list)
+    return {k: d[k] for k in key_list}
+
+
+def replace_key(d: dict, old_key, new_key, exist_ok=False):
+    """Replace an old key with a new key (in-place)"""
+    if not exist_ok:
+        assert new_key not in d
+    d[new_key] = d.pop(old_key)
+
+
 def partition_list(ls, n, strict=False):
     length = len(ls)
     if strict:

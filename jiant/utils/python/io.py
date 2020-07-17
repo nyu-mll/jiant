@@ -79,3 +79,14 @@ def get_num_lines(path):
         for i, l in enumerate(f):
             pass
     return i + 1
+
+
+def create_dir(*args):
+    """Makes a folder and returns the path
+
+    Args:
+        *args: args to os.path.join
+    """
+    path = os.path.join(*args)
+    os.makedirs(path, exist_ok=True)
+    return path

@@ -103,6 +103,6 @@ class PawsXTask(Task):
                 text_a, text_b = segments
                 label = cls.LABELS[-1]
             examples.append(
-                Example(guid="%s-%s" % (set_type, i), text_a=text_a, text_b=text_b, label=label,)
+                Example(guid="%s-%s" % (set_type, i), text_a=text_a, text_b=text_b, label=label)
             )
         return examples
