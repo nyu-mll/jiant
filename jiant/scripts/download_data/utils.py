@@ -39,7 +39,7 @@ def convert_nlp_dataset_to_examples(
                 for old_field_name, new_field_name in field_map.items():
                     replace_key(raw_example, old_key=old_field_name, new_key=new_field_name)
             if label_map and "label" in raw_example and raw_example["label"] in label_map:
-                raw_example = label_map[raw_example["label"]]
+                raw_example["label"] = label_map[raw_example["label"]]
             phase_examples.append(raw_example)
         examples_dict[phase] = phase_examples
     return examples_dict

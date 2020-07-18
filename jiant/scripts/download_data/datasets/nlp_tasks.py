@@ -118,8 +118,8 @@ NLP_CONVERSION_DICT = {
     "snli": {"path": "snli", "label_map": SnliTask.ID_TO_LABEL},
 }
 
-# NLP uses "validation", we use "valid"
-DEFAULT_PHASE_MAP = {"validation": "valid"}
+# NLP uses "validation", we use "val"
+DEFAULT_PHASE_MAP = {"validation": "val"}
 
 
 def download_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
