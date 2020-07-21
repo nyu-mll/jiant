@@ -29,7 +29,10 @@ def write_val_results(val_results_dict, metrics_aggregator, output_dir, verbose=
 
 
 def write_preds(eval_results_dict, path):
-    preds_dict = {
-        task_name: task_results["preds"] for task_name, task_results in eval_results_dict.items()
-    }
+    preds_dict = {}
+    for task_name, task_results_dict in eval_results_dict.items():
+        preds_dict[task_name] = {
+            "preds": task_results_dict["preds"],
+            "guids": task_results_dict["accumulator"].get_guids(),
+        }
     torch.save(preds_dict, path)

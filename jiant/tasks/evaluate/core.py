@@ -62,9 +62,14 @@ class BaseEvaluationScheme:
 class ConcatenateLogitsAccumulator(BaseAccumulator):
     def __init__(self):
         self.logits_list = []
+        self.guid_list = []
 
     def update(self, batch_logits, batch_loss, batch, batch_metadata):
         self.logits_list.append(batch_logits)
+        self.guid_list.append(batch_metadata.get("guid"))
+
+    def get_guids(self):
+        return np.concatenate(self.guid_list)
 
     def get_accumulated(self):
         all_logits = np.concatenate(self.logits_list)
