@@ -29,6 +29,7 @@ def download_xnli_data_and_write_config(task_data_base_path: str, task_config_ba
                 "task": "xnli",
                 "paths": {"val": val_path, "test": test_path},
                 "name": task_name,
+                "kwargs": {"language": lang},
             },
             path=os.path.join(task_config_base_path, f"{task_name}_config.json"),
         )
@@ -55,7 +56,12 @@ def download_pawsx_data_and_write_config(task_data_base_path: str, task_config_b
             paths_dict["train"] = (os.path.join(task_data_base_path, task_name, "train.tsv"),)
             datastructures.set_dict_keys(paths_dict, ["train", "val", "test"])
         py_io.write_json(
-            data={"task": "pawsx", "paths": paths_dict, "name": task_name},
+            data={
+                "task": "pawsx",
+                "paths": paths_dict,
+                "name": task_name,
+                "kwargs": {"language": lang},
+            },
             path=os.path.join(task_config_base_path, f"{task_name}_config.json"),
         )
     shutil.rmtree(pawsx_temp_path)
