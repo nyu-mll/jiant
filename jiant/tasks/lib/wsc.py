@@ -17,8 +17,9 @@ from jiant.tasks.lib.templates.shared import (
     create_input_set_from_tokens_and_segments,
 )
 from jiant.tasks.utils import truncate_sequences, ExclusiveSpan
+from jiant.utils import retokenize
 from jiant.utils.python.io import read_json_lines
-from jiant.tasks.lib.templates import hacky_tokenization_matching as tokenization_utils
+from jiant.utils.tokenization_normalization import normalize_tokenizations
 
 
 @dataclass
@@ -32,35 +33,25 @@ class Example(BaseExample):
     label: str
 
     def tokenize(self, tokenizer):
-        # clean-up
-        text = self.text.replace("\n", " ")
-        span1_text = self.span1_text.replace("\n", " ")
-        span2_text = self.span2_text.replace("\n", " ")
-
-        space_tokens = text.strip().split()
-        word1 = space_tokens[self.span1_idx]
-        word2 = space_tokens[self.span2_idx]
-        assert word1.lower() in text.lower()
-        assert word2.lower() in text.lower()
-        assert text.strip() == " ".join(space_tokens)
-        char_span1 = extract_char_span(text, span1_text, self.span1_idx)
-        char_span2 = extract_char_span(text, span2_text, self.span2_idx)
-        if self.guid != "val-42":  # Yes, there's an error in this example
-            assert text[slice(*char_span1)].lower() == span1_text.lower()
-            assert text[slice(*char_span2)].lower() == span2_text.lower()
-
-        tokens1, span1_span = tokenization_utils.get_token_span(
-            sentence=text, span=char_span1, tokenizer=tokenizer,
+        space_tokenization = self.text.split()
+        target_tokenization = tokenizer.tokenize(self.text)
+        normed_space_tokenization, normed_target_tokenization = normalize_tokenizations(
+            space_tokenization, target_tokenization, tokenizer
         )
-        tokens2, span2_span = tokenization_utils.get_token_span(
-            sentence=text, span=char_span2, tokenizer=tokenizer,
+        aligner = retokenize.TokenAligner(normed_space_tokenization, normed_target_tokenization)
+        span1_token_count = len(self.span1_text.split())
+        span2_token_count = len(self.span2_text.split())
+        target_span1 = ExclusiveSpan(
+            *aligner.project_span(self.span1_idx, self.span1_idx + span1_token_count)
         )
-        assert tokens1 == tokens2
+        target_span2 = ExclusiveSpan(
+            *aligner.project_span(self.span2_idx, self.span2_idx + span2_token_count)
+        )
         return TokenizedExample(
             guid=self.guid,
-            tokens=tokens1,
-            span1_span=span1_span,
-            span2_span=span2_span,
+            tokens=target_tokenization,
+            span1_span=target_span1,
+            span2_span=target_span2,
             span1_text=self.span1_text,
             span2_text=self.span2_text,
             label_id=WSCTask.LABEL_TO_ID[self.label],
@@ -71,8 +62,8 @@ class Example(BaseExample):
 class TokenizedExample(BaseTokenizedExample):
     guid: str
     tokens: List
-    span1_span: List
-    span2_span: List
+    span1_span: ExclusiveSpan
+    span2_span: ExclusiveSpan
     span1_text: str
     span2_text: str
     label_id: int
