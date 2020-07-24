@@ -28,13 +28,14 @@ class RunConfiguration(zconf.RunConfig):
     skip_write_output_paths = zconf.attr(action="store_true")
 
 
-def chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfiguration):
+def chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunConfiguration):
     """Convert Examples to DataRows, optionally truncate sequences if possible, and save to disk.
 
     Note:
         If args.do_iter is True, processes data without loading whole dataset into memory.
 
     Args:
+        task: Task object
         phase (str): string identifying the data subset (e.g., train, val or test).
         examples (list[Example]): list of task Examples.
         feat_spec: (FeaturizationSpec): Tokenization-related metadata.
@@ -44,18 +45,29 @@ def chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfiguration
     """
     if args.do_iter:
         iter_chunk_and_save(
-            phase=phase, examples=examples, feat_spec=feat_spec, tokenizer=tokenizer, args=args
+            task=task,
+            phase=phase,
+            examples=examples,
+            feat_spec=feat_spec,
+            tokenizer=tokenizer,
+            args=args,
         )
     else:
         full_chunk_and_save(
-            phase=phase, examples=examples, feat_spec=feat_spec, tokenizer=tokenizer, args=args
+            task=task,
+            phase=phase,
+            examples=examples,
+            feat_spec=feat_spec,
+            tokenizer=tokenizer,
+            args=args,
         )
 
 
-def full_chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfiguration):
+def full_chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunConfiguration):
     """Convert Examples to ListDataset, optionally truncate sequences if possible, and save to disk.
 
     Args:
+        task: Task object
         phase (str): string identifying the data subset (e.g., train, val or test).
         examples (list[Example]): list of task Examples.
         feat_spec: (FeaturizationSpec): Tokenization-related metadata.
@@ -64,7 +76,12 @@ def full_chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfigur
 
     """
     dataset = preprocessing.convert_examples_to_dataset(
-        examples=examples, feat_spec=feat_spec, tokenizer=tokenizer, phase=phase, verbose=True,
+        task=task,
+        examples=examples,
+        feat_spec=feat_spec,
+        tokenizer=tokenizer,
+        phase=phase,
+        verbose=True,
     )
     if args.smart_truncate:
         dataset, length = preprocessing.smart_truncate(
@@ -83,10 +100,11 @@ def full_chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfigur
     )
 
 
-def iter_chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfiguration):
+def iter_chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunConfiguration):
     """Convert Examples to DataRows, optionally truncate sequences if possible, stream to disk.
 
     Args:
+        task: Task object
         phase (str): string identifying the data subset (e.g., train, val or test).
         examples (list[Example]): list of task Examples.
         feat_spec: (FeaturizationSpec): Tokenization-related metadata.
@@ -95,7 +113,12 @@ def iter_chunk_and_save(phase, examples, feat_spec, tokenizer, args: RunConfigur
 
     """
     dataset_generator = preprocessing.iter_chunk_convert_examples_to_dataset(
-        examples=examples, feat_spec=feat_spec, tokenizer=tokenizer, phase=phase, verbose=True,
+        task=task,
+        examples=examples,
+        feat_spec=feat_spec,
+        tokenizer=tokenizer,
+        phase=phase,
+        verbose=True,
     )
     max_valid_length_recorder = preprocessing.MaxValidLengthRecorder(args.max_seq_length)
     shared_caching.iter_chunk_and_save(
@@ -136,6 +159,7 @@ def main(args: RunConfiguration):
 
     if PHASE.TRAIN in phases:
         chunk_and_save(
+            task=task,
             phase=PHASE.TRAIN,
             examples=task.get_train_examples(),
             feat_spec=feat_spec,
@@ -147,6 +171,7 @@ def main(args: RunConfiguration):
     if PHASE.VAL in phases:
         val_examples = task.get_val_examples()
         chunk_and_save(
+            task=task,
             phase=PHASE.VAL,
             examples=val_examples,
             feat_spec=feat_spec,
@@ -171,6 +196,7 @@ def main(args: RunConfiguration):
 
     if PHASE.TEST in phases:
         chunk_and_save(
+            task=task,
             phase=PHASE.TEST,
             examples=task.get_test_examples(),
             feat_spec=feat_spec,

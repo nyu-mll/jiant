@@ -3,8 +3,7 @@ import torch
 
 import jiant.shared.caching as shared_caching
 import jiant.utils.torch_utils as torch_utils
-from jiant.tasks.core import FeaturizationSpec
-import jiant.tasks.lib.templates.squad_style.core as squad_style
+from jiant.tasks.core import FeaturizationSpec, TaskTypes
 from jiant.utils.display import maybe_tqdm, maybe_trange
 
 
@@ -101,11 +100,12 @@ def smart_truncate_datum(datum, max_seq_length, max_valid_length):
 
 
 def convert_examples_to_dataset(
-    examples: list, tokenizer, feat_spec: FeaturizationSpec, phase: str, verbose=False
+    task, examples: list, tokenizer, feat_spec: FeaturizationSpec, phase: str, verbose=False
 ):
     """Create ListDataset containing DataRows and metadata.
 
     Args:
+        task (Task): Task object
         examples (list[Example]): list of task Examples.
         tokenizer: TODO  (Issue #44)
         feat_spec (FeaturizationSpec): Tokenization-related metadata.
@@ -117,7 +117,12 @@ def convert_examples_to_dataset(
 
     """
     data_rows = tokenize_and_featurize(
-        examples=examples, tokenizer=tokenizer, feat_spec=feat_spec, phase=phase, verbose=verbose,
+        task=task,
+        examples=examples,
+        tokenizer=tokenizer,
+        feat_spec=feat_spec,
+        phase=phase,
+        verbose=verbose,
     )
     metadata = {"example_id": list(range(len(data_rows)))}
     data = []
@@ -128,10 +133,11 @@ def convert_examples_to_dataset(
 
 
 def iter_chunk_convert_examples_to_dataset(
-    examples: list, tokenizer, feat_spec: FeaturizationSpec, phase: str, verbose=False
+    task, examples: list, tokenizer, feat_spec: FeaturizationSpec, phase: str, verbose=False
 ):
     for i, data_row in enumerate(
         iter_chunk_tokenize_and_featurize(
+            task=task,
             examples=examples,
             tokenizer=tokenizer,
             feat_spec=feat_spec,
@@ -144,11 +150,12 @@ def iter_chunk_convert_examples_to_dataset(
 
 
 def tokenize_and_featurize(
-    examples: list, tokenizer, feat_spec: FeaturizationSpec, phase, verbose=False
+    task, examples: list, tokenizer, feat_spec: FeaturizationSpec, phase, verbose=False
 ):
     """Create list of DataRows containing tokenized and featurized examples.
 
     Args:
+        task (Task): Task object
         examples (list[Example]): list of task Examples.
         tokenizer: TODO  (Issue #44)
         feat_spec (FeaturizationSpec): Tokenization-related metadata.
@@ -160,16 +167,14 @@ def tokenize_and_featurize(
 
     """
     # TODO: Better solution  (Issue #48)
-    if isinstance(examples[0], squad_style.Example):
+    if task.TASK_TYPE == TaskTypes.SQUAD_STYLE_QA:
         data_rows = []
         for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose):
-            # TODO: Expose parameters  (Issue #49)
             data_rows += example.to_feature_list(
                 tokenizer=tokenizer,
-                feat_spec=feat_spec,
                 max_seq_length=feat_spec.max_seq_length,
-                doc_stride=128,
-                max_query_length=64,
+                doc_stride=task.doc_stride,
+                max_query_length=task.max_query_length,
                 set_type=phase,
             )
     else:
@@ -181,11 +186,12 @@ def tokenize_and_featurize(
 
 
 def iter_chunk_tokenize_and_featurize(
-    examples: list, tokenizer, feat_spec: FeaturizationSpec, phase, verbose=False
+    task, examples: list, tokenizer, feat_spec: FeaturizationSpec, phase, verbose=False
 ):
     """Generator of DataRows containing tokenized and featurized examples.
 
     Args:
+        task (Task): Task object
         examples (list[Example]): list of task Examples.
         tokenizer: TODO  (Issue #44)
         feat_spec (FeaturizationSpec): Tokenization-related metadata.
@@ -198,13 +204,12 @@ def iter_chunk_tokenize_and_featurize(
     """
     for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose):
         # TODO: Better solution  (Issue #48)
-        if isinstance(example, squad_style.Example):
-            # TODO: Expose parameters  (Issue #49)
+        if task.TASK_TYPE == TaskTypes.SQUAD_STYLE_QA:
             yield from example.to_feature_list(
                 tokenizer=tokenizer,
                 max_seq_length=feat_spec.max_seq_length,
-                doc_stride=128,
-                max_query_length=64,
+                doc_stride=task.doc_stride,
+                max_query_length=task.max_query_length,
                 set_type=phase,
             )
         else:

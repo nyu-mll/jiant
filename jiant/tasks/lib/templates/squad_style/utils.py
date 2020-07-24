@@ -272,7 +272,6 @@ def compute_predictions_logits(
     )
 
     all_predictions = collections.OrderedDict()
-    all_nbest_json = collections.OrderedDict()
     scores_diff_json = collections.OrderedDict()
 
     for (example_index, example) in enumerate(all_examples):
@@ -439,7 +438,6 @@ def compute_predictions_logits(
                 all_predictions[example.qas_id] = ""
             else:
                 all_predictions[example.qas_id] = best_non_null_entry.text
-        all_nbest_json[example.qas_id] = nbest_json
 
     return all_predictions
 

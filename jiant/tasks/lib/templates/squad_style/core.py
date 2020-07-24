@@ -117,11 +117,14 @@ class Example(BaseExample):
         spans = []
 
         truncated_query = tokenizer.encode(
-            self.question_text, add_special_tokens=False, max_length=max_query_length
+            self.question_text,
+            add_special_tokens=False,
+            truncation=True,
+            max_length=max_query_length,
         )
         sequence_added_tokens = (
             tokenizer.max_len - tokenizer.max_len_single_sentence + 1
-            if "roberta" in str(type(tokenizer))
+            if "roberta" in str(type(tokenizer)) or "camembert" in str(type(tokenizer))
             else tokenizer.max_len - tokenizer.max_len_single_sentence
         )
         sequence_pair_added_tokens = tokenizer.max_len - tokenizer.max_len_sentences_pair
@@ -129,19 +132,17 @@ class Example(BaseExample):
         span_doc_tokens = all_doc_tokens
         while len(spans) * doc_stride < len(all_doc_tokens):
 
-            encoded_dict = tokenizer.encode_plus(
+            encoded_dict = tokenizer.encode_plus(  # TODO(thom) update this logic
                 truncated_query if tokenizer.padding_side == "right" else span_doc_tokens,
                 span_doc_tokens if tokenizer.padding_side == "right" else truncated_query,
+                truncation="only_second" if tokenizer.padding_side == "right" else "only_first",
+                padding="max_length",
                 max_length=max_seq_length,
                 return_overflowing_tokens=True,
-                pad_to_max_length=True,
                 stride=max_seq_length
                 - doc_stride
                 - len(truncated_query)
                 - sequence_pair_added_tokens,
-                truncation_strategy="only_second"
-                if tokenizer.padding_side == "right"
-                else "only_first",
                 return_token_type_ids=True,
             )
 
@@ -151,9 +152,18 @@ class Example(BaseExample):
             )
 
             if tokenizer.pad_token_id in encoded_dict["input_ids"]:
-                non_padded_ids = encoded_dict["input_ids"][
-                    : encoded_dict["input_ids"].index(tokenizer.pad_token_id)
-                ]
+                if tokenizer.padding_side == "right":
+                    non_padded_ids = encoded_dict["input_ids"][
+                        : encoded_dict["input_ids"].index(tokenizer.pad_token_id)
+                    ]
+                else:
+                    last_padding_id_position = (
+                        len(encoded_dict["input_ids"])
+                        - 1
+                        - encoded_dict["input_ids"][::-1].index(tokenizer.pad_token_id)
+                    )
+                    non_padded_ids = encoded_dict["input_ids"][last_padding_id_position + 1 :]
+
             else:
                 non_padded_ids = encoded_dict["input_ids"]
 
@@ -180,7 +190,10 @@ class Example(BaseExample):
 
             spans.append(encoded_dict)
 
-            if "overflowing_tokens" not in encoded_dict:
+            if "overflowing_tokens" not in encoded_dict or (
+                "overflowing_tokens" in encoded_dict
+                and len(encoded_dict["overflowing_tokens"]) == 0
+            ):
                 break
             span_doc_tokens = encoded_dict["overflowing_tokens"]
 
@@ -203,17 +216,23 @@ class Example(BaseExample):
             # p_mask: mask with 1 for token than cannot be in the answer
             #         (0 for token which can be in an answer)
             # Original TF implem also keep the classification token (set to 0) (not sure why...)
-            p_mask = np.array(span["token_type_ids"])
-
-            p_mask = np.minimum(p_mask, 1)
-
+            p_mask = np.ones_like(span["token_type_ids"])
             if tokenizer.padding_side == "right":
-                # Limit positive values to one
-                p_mask = 1 - p_mask
+                p_mask[len(truncated_query) + sequence_added_tokens :] = 0
+            else:
+                p_mask[-len(span["tokens"]) : -(len(truncated_query) + sequence_added_tokens)] = 0
 
-            p_mask[np.where(np.array(span["input_ids"]) == tokenizer.sep_token_id)[0]] = 1
+            pad_token_indices = np.where(span["input_ids"] == tokenizer.pad_token_id)
+            special_token_indices = np.asarray(
+                tokenizer.get_special_tokens_mask(
+                    span["input_ids"], already_has_special_tokens=True
+                )
+            ).nonzero()
 
-            # Set the CLS index to '0'
+            p_mask[pad_token_indices] = 1
+            p_mask[special_token_indices] = 1
+
+            # Set the cls index to 0: the CLS index can be used for impossible answers
             p_mask[cls_index] = 0
 
             span_is_impossible = self.is_impossible
@@ -226,12 +245,16 @@ class Example(BaseExample):
                 doc_end = span["start"] + span["length"] - 1
                 out_of_span = False
 
+                # noinspection PyUnboundLocalVariable
                 if not (tok_start_position >= doc_start and tok_end_position <= doc_end):
                     out_of_span = True
 
                 if out_of_span:
                     start_position = cls_index
                     end_position = cls_index
+
+                    # We store "is_impossible" at an example level instead
+                    # noinspection PyUnusedLocal
                     span_is_impossible = True
                 else:
                     if tokenizer.padding_side == "left":
@@ -310,12 +333,38 @@ class BaseSquadStyleTask(Task):
         n_best_size=20,
         max_answer_length=30,
         null_score_diff_threshold=0.0,
+        doc_stride=128,
+        max_query_length=64,
     ):
+        """SQuAD-style Task object, with support for both SQuAD v1.1 and SQuAD v2.0 formats
+
+        Args:
+            name (str): task_name
+            path_dict (Dict[str, str]): Dictionary to paths to data
+            version_2_with_negative (bool): Whether negative (impossible-to-answer) is an option.
+                                            False for SQuAD v1.1-type tasks
+                                            True for SquAD 2.0-type tasks
+            n_best_size (int): The total number of n-best predictions to generate in the
+                               n-best predictions.
+            max_answer_length (int): The maximum length of an answer that can be generated.
+                                     This is needed because the start and end predictions are
+                                     not conditioned on one another.
+            null_score_diff_threshold (float): If null_score - best_non_null is greater than
+                                               the threshold predict null.
+            doc_stride (int): When splitting up a long document into chunks, how much stride
+                              to take between chunks.
+            max_query_length (int): The maximum number of tokens for the question. Questions
+                                    longer than this will be truncated to this length.
+        """
         super().__init__(name=name, path_dict=path_dict)
         self.version_2_with_negative = version_2_with_negative
         self.n_best_size = n_best_size
         self.max_answer_length = max_answer_length
         self.null_score_diff_threshold = null_score_diff_threshold
+
+        # Tokenization hyperparameters
+        self.doc_stride = doc_stride
+        self.max_query_length = max_query_length
 
     def get_train_examples(self):
         return self.read_squad_examples(path=self.train_path, set_type=PHASE.TRAIN)
