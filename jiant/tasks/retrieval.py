@@ -13,6 +13,7 @@ from jiant.tasks.lib.copa import CopaTask
 from jiant.tasks.lib.coref import CorefTask
 from jiant.tasks.lib.cosmosqa import CosmosQATask
 from jiant.tasks.lib.dpr import DprTask
+from jiant.tasks.lib.glue_diagnostics import GlueDiagnosticsTask
 from jiant.tasks.lib.hellaswag import HellaSwagTask
 from jiant.tasks.lib.mlm_crosslingual_wiki import MLMCrosslingualWikiTask
 from jiant.tasks.lib.mlm_wikitext_103 import MLMWikitext103Task
@@ -65,6 +66,7 @@ TASK_DICT = {
     "coref": CorefTask,
     "cosmosqa": CosmosQATask,
     "dpr": DprTask,
+    "glue_diagnostics": GlueDiagnosticsTask,
     "hellaswag": HellaSwagTask,
     "mlm_wikitext103": MLMWikitext103Task,
     "mlm_crosslingual_wiki": MLMCrosslingualWikiTask,

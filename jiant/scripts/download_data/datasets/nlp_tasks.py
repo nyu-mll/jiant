@@ -18,6 +18,7 @@ from jiant.tasks.retrieval import (
     WiCTask,
     WSCTask,
     SnliTask,
+    GlueDiagnosticsTask,
 )
 
 
@@ -88,8 +89,9 @@ NLP_CONVERSION_DICT = {
     "glue_diagnostics": {
         "path": "glue",
         "name": "ax",
+        "label_map": GlueDiagnosticsTask.ID_TO_LABEL,
         "phase_map": None,
-        "jiant_task_name": "mnli",
+        "jiant_task_name": "glue_diagnostics",
     },
     # === SuperGLUE === #
     "boolq": {"path": "super_glue", "name": "boolq", "label_map": BoolQTask.ID_TO_LABEL},
