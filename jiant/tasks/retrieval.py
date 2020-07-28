@@ -38,6 +38,7 @@ from jiant.tasks.lib.squad import SquadTask
 from jiant.tasks.lib.srl import SrlTask
 from jiant.tasks.lib.sst import SstTask
 from jiant.tasks.lib.stsb import StsbTask
+from jiant.tasks.lib.superglue_axb import SuperglueBroadcoverageDiagnosticsTask
 from jiant.tasks.lib.swag import SWAGTask
 from jiant.tasks.lib.tydiqa import TyDiQATask
 from jiant.tasks.lib.udpos import UdposPreprocTask
@@ -89,6 +90,7 @@ TASK_DICT = {
     "srl": SrlTask,
     "sst": SstTask,
     "stsb": StsbTask,
+    "superglue_axb": SuperglueBroadcoverageDiagnosticsTask,
     "swag": SWAGTask,
     "tydiqa": TyDiQATask,
     "udpos": UdposPreprocTask,
