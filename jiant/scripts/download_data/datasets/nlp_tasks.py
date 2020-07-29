@@ -6,7 +6,6 @@ import jiant.utils.python.io as py_io
 # Note to future selves: beware of circular imports when refactoring
 from jiant.tasks.retrieval import (
     ColaTask,
-    MnliTask,
     MrpcTask,
     QnliTask,
     QqpTask,
@@ -17,7 +16,6 @@ from jiant.tasks.retrieval import (
     CommitmentBankTask,
     WiCTask,
     WSCTask,
-    SnliTask,
     SuperglueWinogenderDiagnosticsTask,
     GlueDiagnosticsTask,
 )
@@ -34,14 +32,14 @@ NLP_CONVERSION_DICT = {
     "mnli": {
         "path": "glue",
         "name": "mnli",
-        "label_map": MnliTask.ID_TO_LABEL,
+        "label_map": {0: "entailment", 1: "neutral", 2: "contradiction"},
         "phase_map": {"validation_matched": "val", "test_matched": "test"},
         "phase_list": ["train", "val", "test"],
     },
     "mnli_mismatched": {
         "path": "glue",
         "name": "mnli",
-        "label_map": MnliTask.ID_TO_LABEL,
+        "label_map": {0: "entailment", 1: "neutral", 2: "contradiction"},
         "phase_map": {"validation_mismatched": "val", "test_mismatched": "test"},
         "phase_list": ["val", "test"],
         "jiant_task_name": "mnli",
@@ -118,7 +116,7 @@ NLP_CONVERSION_DICT = {
         "jiant_task_name": "superglue_axg",
     },
     # === Other === #
-    "snli": {"path": "snli", "label_map": SnliTask.ID_TO_LABEL},
+    "snli": {"path": "snli", "label_map": {0: "entailment", 1: "neutral", 2: "contradiction"}},
 }
 
 # NLP uses "validation", we use "val"
