@@ -1,13 +1,14 @@
 import collections
+import itertools
 import json
 import re
 import string
-
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 import seqeval.metrics as seqeval_metrics
+import torch
 from sklearn.metrics import f1_score, matthews_corrcoef
 from scipy.stats import pearsonr, spearmanr
 from typing import Dict, List
@@ -17,6 +18,8 @@ import jiant.tasks as tasks
 import jiant.tasks.lib.templates.squad_style.core as squad_style
 import jiant.tasks.lib.templates.squad_style.utils as squad_style_utils
 import jiant.tasks.lib.mlqa as mlqa_lib
+import jiant.tasks.lib.bucc2018 as bucc2018_lib
+import jiant.tasks.lib.tatoeba as tatoeba_lib
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
 from jiant.utils.python.io import read_json
 
@@ -86,6 +89,43 @@ class ConcatenateLossAccumulator(BaseAccumulator):
     def get_accumulated(self):
         all_loss = np.array(self.loss_list)
         return all_loss
+
+
+class TatoebaAccumulator(BaseAccumulator):
+    def __init__(self):
+        self.embeddings_list = []
+        self.is_english_list = []
+
+    def update(self, batch_logits, batch_loss, batch, batch_metadata):
+        self.embeddings_list.append(batch_logits)
+        self.is_english_list.append(batch.is_english.cpu().numpy())
+
+    def get_accumulated(self):
+        all_embeddings = np.concatenate(self.embeddings_list)
+        is_english_arr = np.concatenate(self.is_english_list).astype(bool)
+        return all_embeddings, is_english_arr
+
+
+class Bucc2018Accumulator(BaseAccumulator):
+    def __init__(self):
+        self.embeddings_list = []
+        self.is_english_list = []
+        self.text_hash_list = []
+        self.guid_list = []
+
+    def update(self, batch_logits, batch_loss, batch, batch_metadata):
+        self.embeddings_list.append(batch_logits)
+        self.is_english_list.append(batch.is_english.cpu().numpy())
+        self.text_hash_list += batch.text_hash
+        self.guid_list += batch.guid
+
+    def get_accumulated(self):
+        return {
+            "all_embeddings": np.concatenate(self.embeddings_list),
+            "is_english_arr": np.concatenate(self.is_english_list).astype(bool),
+            "text_hash_list": self.text_hash_list,
+            "guid_list": self.guid_list,
+        }
 
 
 class BaseLogitsEvaluationScheme(BaseEvaluationScheme):
@@ -667,6 +707,94 @@ class MLMEvaluationScheme(BaseEvaluationScheme):
         )
 
 
+class TatoebaEvaluationScheme(BaseEvaluationScheme):
+    def get_accumulator(self):
+        return TatoebaAccumulator()
+
+    def get_labels_from_cache_and_examples(self, task, cache, examples):
+        return task.get_val_labels()
+
+    def get_preds_from_accumulator(self, task, accumulator):
+        all_embeddings, is_english_arr = accumulator.get_accumulated()
+        other_lang_embeddings = all_embeddings[~is_english_arr]
+        eng_embeddings = all_embeddings[is_english_arr]
+        predictions = tatoeba_lib.similarity_search(
+            x=other_lang_embeddings,
+            y=eng_embeddings,
+            dim=other_lang_embeddings.shape[-1],
+            normalize=True,
+        ).flatten()
+        return predictions
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
+    ) -> Metrics:
+        preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels,)
+
+    @classmethod
+    def compute_metrics_from_preds_and_labels(cls, preds, labels):
+        # noinspection PyUnresolvedReferences
+        acc = (preds == labels).mean()
+        return Metrics(major=acc, minor={"acc": acc})
+
+
+class Bucc2018EvaluationScheme(BaseEvaluationScheme):
+    def get_accumulator(self):
+        return Bucc2018Accumulator()
+
+    def get_labels_from_cache_and_examples(self, task, cache, examples):
+        return task.get_val_labels()
+
+    def get_preds_from_accumulator(self, task, accumulator, threshold=0):
+        accumulated = accumulator.get_accumulated()
+        is_english_arr = accumulated["is_english_arr"]
+        all_embeddings = accumulated["all_embeddings"]
+        guids = accumulated["guid_list"]
+        text_hash_list = accumulated["text_hash_list"]
+        other_lang_embeddings = all_embeddings[~is_english_arr]
+        eng_embeddings = all_embeddings[is_english_arr]
+        english_guids = [x.split("-", 1)[1] for x in np.array(guids)[is_english_arr]]
+        other_guids = [x.split("-", 1)[1] for x in np.array(guids)[~is_english_arr]]
+
+        n = len(is_english_arr)
+        src_inds, _ = bucc2018_lib.get_unique_lines(
+            [text_hash_list[i] for i in np.arange(n) if not is_english_arr[i]]
+        )
+        trg_inds, _ = bucc2018_lib.get_unique_lines(
+            [text_hash_list[i] for i in np.arange(n) if is_english_arr[i]]
+        )
+        src_ids_map = bucc2018_lib.create_ids_map(src_inds, other_guids)
+        trg_ids_map = bucc2018_lib.create_ids_map(trg_inds, english_guids)
+
+        result = bucc2018_lib.mine_bitext(
+            x=other_lang_embeddings,
+            y=eng_embeddings,
+            src_inds=src_inds,
+            trg_inds=trg_inds,
+            threshold=threshold,
+            use_gpu=torch.cuda.is_available(),
+        )
+        # Note: Setting thresholds only available in test script
+        candidates2score = {}
+        for score, src_idx, trg_idx in result:
+            for src_key, trg_key in itertools.product(src_ids_map[src_idx], trg_ids_map[trg_idx]):
+                candidates2score[src_key, trg_key] = score
+        return candidates2score
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
+    ) -> Metrics:
+        preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels,)
+
+    @classmethod
+    def compute_metrics_from_preds_and_labels(cls, preds, labels):
+        labels = [tuple(x.split("\t")) for x in labels]
+        result = bucc2018_lib.bucc_eval(preds, gold=labels, threshold=None)
+        return Metrics(major=result["F1"], minor=result,)
+
+
 def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
     # TODO: move logic to task?  (Issue #52)
     if isinstance(
@@ -724,9 +852,9 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         ),
     ):
         return MultiLabelAccAndF1EvaluationScheme()
-    elif isinstance(task, (tasks.SquadTask,)):
+    elif isinstance(task, tasks.SquadTask):
         return SQuADEvaluationScheme()
-    elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask,)):
+    elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask)):
         return XlingQAEvaluationScheme()
     elif isinstance(task, tasks.MlqaTask):
         return MLQAEvaluationScheme()
@@ -736,8 +864,12 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return PearsonAndSpearmanEvaluationScheme()
     elif isinstance(task, (tasks.MLMWikitext103Task, tasks.MLMCrosslingualWikiTask)):
         return MLMEvaluationScheme()
-    elif isinstance(task, (tasks.UdposPreprocTask, tasks.PanxPreprocTask,)):
+    elif isinstance(task, (tasks.UdposPreprocTask, tasks.PanxPreprocTask)):
         return F1TaggingEvaluationScheme()
+    elif isinstance(task, tasks.Bucc2018Task):
+        return Bucc2018EvaluationScheme()
+    elif isinstance(task, tasks.TatoebaTask):
+        return TatoebaEvaluationScheme()
     else:
         raise KeyError(task)
 

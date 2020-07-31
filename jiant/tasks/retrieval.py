@@ -5,6 +5,7 @@ from jiant.tasks.lib.abductive_nli import AbductiveNliTask
 from jiant.tasks.lib.acceptability_judgement.definiteness import AcceptabilityDefinitenessTask
 from jiant.tasks.lib.adversarial_nli import AdversarialNliTask
 from jiant.tasks.lib.boolq import BoolQTask
+from jiant.tasks.lib.bucc2018 import Bucc2018Task
 from jiant.tasks.lib.ccg import CCGTask
 from jiant.tasks.lib.cola import ColaTask
 from jiant.tasks.lib.commitmentbank import CommitmentBankTask
@@ -42,6 +43,7 @@ from jiant.tasks.lib.stsb import StsbTask
 from jiant.tasks.lib.superglue_axg import SuperglueWinogenderDiagnosticsTask
 from jiant.tasks.lib.superglue_axb import SuperglueBroadcoverageDiagnosticsTask
 from jiant.tasks.lib.swag import SWAGTask
+from jiant.tasks.lib.tatoeba import TatoebaTask
 from jiant.tasks.lib.tydiqa import TyDiQATask
 from jiant.tasks.lib.udpos import UdposPreprocTask
 from jiant.tasks.lib.wic import WiCTask
@@ -60,6 +62,7 @@ TASK_DICT = {
     "acceptability_definiteness": AcceptabilityDefinitenessTask,
     "adversarial_nli": AdversarialNliTask,
     "boolq": BoolQTask,
+    "bucc2018": Bucc2018Task,
     "cb": CommitmentBankTask,
     "ccg": CCGTask,
     "cola": ColaTask,
@@ -96,6 +99,7 @@ TASK_DICT = {
     "stsb": StsbTask,
     "superglue_axb": SuperglueBroadcoverageDiagnosticsTask,
     "swag": SWAGTask,
+    "tatoeba": TatoebaTask,
     "tydiqa": TyDiQATask,
     "udpos": UdposPreprocTask,
     "wic": WiCTask,
