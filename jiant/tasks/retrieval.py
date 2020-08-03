@@ -77,7 +77,7 @@ TASK_DICT = {
     "mlm_crosslingual_wiki": MLMCrosslingualWikiTask,
     "mlqa": MlqaTask,
     "mnli": MnliTask,
-    "mrc": MultiRCTask,
+    "multirc": MultiRCTask,
     "mrpc": MrpcTask,
     "ner": NerTask,
     "pawsx": PawsXTask,
