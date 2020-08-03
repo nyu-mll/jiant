@@ -110,7 +110,7 @@ NLP_CONVERSION_DICT = {
     },
     "superglue_winogender_diagnostics": {
         "path": "super_glue",
-        "name": "superglue_axg",
+        "name": "axg",
         "label_map": SuperglueWinogenderDiagnosticsTask.ID_TO_LABEL,
         "phase_map": None,
         "jiant_task_name": "superglue_axg",
