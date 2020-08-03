@@ -36,7 +36,7 @@ conda activate jiant
 
 before running any `jiant` code. (To deactivate run: `source deactivate`)
 
-If you are unable to use `conda` for any reason, it should be possible to install all of the necessary dependencies using pip or other tools, but you'll be on your own. Consult [`environment.yml`](https://github.com/nyu-mll/jiant/blob/v1.3.2/environment.yml) for a full list of requirements. If you have access to Docker, you may alse be able to make use of the [Dockerfile](https://github.com/nyu-mll/jiant/blob/v1.3.2/Dockerfile), which we use to set up `jiant` on new cloud machines when running tests.
+If you are unable to use `conda` for any reason, it should be possible to install all of the necessary dependencies using pip or other tools, but you'll be on your own. Consult [`environment.yml`](https://github.com/nyu-mll/jiant/blob/v1.3.2/environment.yml) for a full list of requirements. If you have access to Docker, you may alse be able to make use of the [`Dockerfile`](https://github.com/nyu-mll/jiant/blob/v1.3.2/Dockerfile), which we use to set up `jiant` on new cloud machines when running tests.
 
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
