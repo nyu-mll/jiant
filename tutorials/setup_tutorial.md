@@ -36,9 +36,11 @@ conda activate jiant
 
 before running any `jiant` code. (To deactivate run: `source deactivate`)
 
+If you are unable to use `conda` for any reason, it should be possible to install all of the necessary dependencies using pip or other tools, but you'll be on your own. Consult [`environment.yml`](https://github.com/nyu-mll/jiant/blob/v1.3.2/environment.yml) for a full list of requirements. If you have access to Docker, you may alse be able to make use of the [Dockerfile](https://github.com/nyu-mll/jiant/blob/v1.3.2/Dockerfile), which we use to set up `jiant` on new cloud machines when running tests.
+
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
-You will also need to install dependencies for `nltk` if you do not already have them:
+Once you have the environment set up, you will also need to install dependencies for `nltk` if you do not already have them:
 ```
 python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
@@ -87,7 +89,7 @@ Finally, you'll need to set a few environment variables in [user_config_template
 
 
 To avoid having your custom paths overwritten by future updates, you should save a copy of this file as `user_config.sh` (or something similar, but a file with the name `user_config.sh` will be automatically ignored by git).
-Before running any experiments, you should run:
+Before running any experiments in a new terminal session, you should run this command to set the relevant environment variables for your session:
 
 ```
 source user_config.sh
@@ -99,13 +101,13 @@ To remember to do this, it can help to run commands like this by default:
 source user_config.sh; python main.py ...
 ```
 
-Or, for a more permanent solution, run
+Alternately, we offer a more permanent solution for `bash` users. Run
 
 ```
 source scripts/export_from_bash.sh
 ```
 
-from the root of the `jiant` directory, which adds the source command directly to your machine's bash file.
+from the root of the `jiant` directory, which adds the source command directly to your machine's `.bashrc` or `.bash_profile` file.
 
 Now that we've set up the environment, let's get started!
 
