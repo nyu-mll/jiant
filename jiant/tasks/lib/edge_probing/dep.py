@@ -1,3 +1,9 @@
+"""Dependency labeling Edge Probing task.
+
+Task source paper: https://arxiv.org/pdf/1905.06316.pdf.
+Task data prep directions: https://github.com/nyu-mll/jiant/blob/master/probing/data/README.md.
+
+"""
 from dataclasses import dataclass
 
 from jiant.tasks.lib.templates.shared import labels_to_bimap
@@ -9,7 +15,7 @@ from jiant.utils.python.io import read_json_lines
 class Example(edge_probing_two_span.Example):
     @property
     def task(self):
-        return CorefTask
+        return DepTask
 
 
 @dataclass
@@ -27,13 +33,63 @@ class Batch(edge_probing_two_span.Batch):
     pass
 
 
-class CorefTask(edge_probing_two_span.AbstractProbingTask):
+class DepTask(edge_probing_two_span.AbstractProbingTask):
     Example = Example
     TokenizedExample = TokenizedExample
     DataRow = DataRow
     Batch = Batch
 
-    LABELS = ["0", "1"]
+    LABELS = [
+        "acl",
+        "acl:relcl",
+        "advcl",
+        "advmod",
+        "amod",
+        "appos",
+        "aux",
+        "aux:pass",
+        "case",
+        "cc",
+        "cc:preconj",
+        "ccomp",
+        "compound",
+        "compound:prt",
+        "conj",
+        "cop",
+        "csubj",
+        "csubj:pass",
+        "dep",
+        "det",
+        "det:predet",
+        "discourse",
+        "dislocated",
+        "expl",
+        "fixed",
+        "flat",
+        "flat:foreign",
+        "goeswith",
+        "iobj",
+        "list",
+        "mark",
+        "nmod",
+        "nmod:npmod",
+        "nmod:poss",
+        "nmod:tmod",
+        "nsubj",
+        "nsubj:pass",
+        "nummod",
+        "obj",
+        "obl",
+        "obl:npmod",
+        "obl:tmod",
+        "orphan",
+        "parataxis",
+        "punct",
+        "reparandum",
+        "root",
+        "vocative",
+        "xcomp",
+    ]
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
 
     @property

@@ -849,6 +849,9 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.NerTask,
             tasks.CorefTask,
             tasks.DprTask,
+            tasks.DepTask,
+            tasks.PosTask,
+            tasks.NonterminalTask,
         ),
     ):
         return MultiLabelAccAndF1EvaluationScheme()

@@ -1,3 +1,9 @@
+"""Semantic proto-role (2) Edge Probing task.
+
+Task source paper: https://arxiv.org/pdf/1905.06316.pdf.
+Task data prep directions: https://github.com/nyu-mll/jiant/blob/master/probing/data/README.md.
+
+"""
 from dataclasses import dataclass
 
 from jiant.tasks.lib.templates.shared import labels_to_bimap
@@ -9,7 +15,7 @@ from jiant.utils.python.io import read_json_lines
 class Example(edge_probing_two_span.Example):
     @property
     def task(self):
-        return SemevalTask
+        return Spr2Task
 
 
 @dataclass
@@ -27,32 +33,33 @@ class Batch(edge_probing_two_span.Batch):
     pass
 
 
-class SemevalTask(edge_probing_two_span.AbstractProbingTask):
+class Spr2Task(edge_probing_two_span.AbstractProbingTask):
     Example = Example
     TokenizedExample = TokenizedExample
     DataRow = DataRow
     Batch = Batch
 
     LABELS = [
-        "Cause-Effect(e1,e2)",
-        "Cause-Effect(e2,e1)",
-        "Component-Whole(e1,e2)",
-        "Component-Whole(e2,e1)",
-        "Content-Container(e1,e2)",
-        "Content-Container(e2,e1)",
-        "Entity-Destination(e1,e2)",
-        "Entity-Destination(e2,e1)",
-        "Entity-Origin(e1,e2)",
-        "Entity-Origin(e2,e1)",
-        "Instrument-Agency(e1,e2)",
-        "Instrument-Agency(e2,e1)",
-        "Member-Collection(e1,e2)",
-        "Member-Collection(e2,e1)",
-        "Message-Topic(e1,e2)",
-        "Message-Topic(e2,e1)",
-        "Other",
-        "Product-Producer(e1,e2)",
-        "Product-Producer(e2,e1)",
+        "awareness",
+        "change_of_location",
+        "change_of_possession",
+        "change_of_state",
+        "change_of_state_continuous",
+        "changes_possession",
+        "existed_after",
+        "existed_before",
+        "existed_during",
+        "exists_as_physical",
+        "instigation",
+        "location_of_event",
+        "makes_physical_contact",
+        "partitive",
+        "predicate_changed_argument",
+        "sentient",
+        "stationary",
+        "volition",
+        "was_for_benefit",
+        "was_used",
     ]
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
 
@@ -82,7 +89,7 @@ class SemevalTask(edge_probing_two_span.AbstractProbingTask):
                         text=line["text"],
                         span1=span1,
                         span2=span2,
-                        labels=[target["label"]] if set_type != "test" else [cls.LABELS[-1]],
+                        labels=target["label"] if set_type != "test" else [cls.LABELS[-1]],
                     )
                 )
         return examples

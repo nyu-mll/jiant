@@ -1,3 +1,9 @@
+"""Semantic role labeling Edge Probing task.
+
+Task source paper: https://arxiv.org/pdf/1905.06316.pdf.
+Task data prep directions: https://github.com/nyu-mll/jiant/blob/master/probing/data/README.md.
+
+"""
 from dataclasses import dataclass
 
 from jiant.tasks.lib.templates.shared import labels_to_bimap
