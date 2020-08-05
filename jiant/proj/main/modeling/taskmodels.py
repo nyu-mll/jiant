@@ -120,6 +120,31 @@ class SpanComparisonModel(Taskmodel):
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+class SpanPredictionModel(Taskmodel):
+    def __init__(self, encoder, span_prediction_head: heads.TokenClassificationHead):
+        super().__init__(encoder=encoder)
+        self.offset_margin = 1000
+        # 1000 is a big enough number that exp(-1000) will be strict 0 in float32.
+        # So that if we add 1000 to the valid dimensions in the input of softmax,
+        # we can guarantee the output distribution will only be non-zero at those dimensions.
+        self.span_prediction_head = span_prediction_head
+
+    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+        encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
+        logits = self.span_prediction_head(unpooled=encoder_output.unpooled)
+        # Ensure logits in valid range is at least self.offset_margin higher than others
+        logits_offset = logits.max() - logits.min() + self.offset_margin
+        logits = logits + logits_offset * batch.selection_token_mask.unsqueeze(dim=2)
+        if compute_loss:
+            loss_fct = nn.CrossEntropyLoss()
+            loss = loss_fct(
+                logits.transpose(dim0=1, dim1=2).flatten(end_dim=1), batch.gt_span_idxs.flatten(),
+            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
+        else:
+            return LogitsOutput(logits=logits, other=encoder_output.other)
+
+
 class MultiLabelSpanComparisonModel(Taskmodel):
     def __init__(self, encoder, span_comparison_head: heads.SpanComparisonHead):
         super().__init__(encoder=encoder)

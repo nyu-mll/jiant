@@ -1,8 +1,5 @@
-import collections
 import itertools
 import json
-import re
-import string
 from dataclasses import dataclass
 
 import numpy as np
@@ -22,6 +19,7 @@ import jiant.tasks.lib.bucc2018 as bucc2018_lib
 import jiant.tasks.lib.tatoeba as tatoeba_lib
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
 from jiant.utils.python.io import read_json
+from jiant.utils.string_comparing import string_f1_score, exact_match_score
 
 
 @dataclass
@@ -89,6 +87,52 @@ class ConcatenateLossAccumulator(BaseAccumulator):
     def get_accumulated(self):
         all_loss = np.array(self.loss_list)
         return all_loss
+
+
+class ConcatenateStringListAccumulator(BaseAccumulator):
+    def __init__(self):
+        self.str_list = []
+
+    def update(self, batch_logits, batch_loss, batch, batch_metadata):
+        bs = len(batch_logits)
+        span_pred = batch_logits.argmax(axis=1)
+        pred_token_start, pred_token_end = span_pred[:, 0], span_pred[:, 1]
+        pred_char_start = batch.token_idx_to_char_idx_start.cpu().numpy()[
+            range(bs), pred_token_start
+        ]
+        pred_char_end = batch.token_idx_to_char_idx_end.cpu().numpy()[range(bs), pred_token_end]
+        self.str_list.extend(
+            [
+                s[i1 : i2 + 1]
+                for i1, i2, s in zip(pred_char_start, pred_char_end, batch.selection_str)
+            ]
+        )
+
+    def get_accumulated(self):
+        return self.str_list
+
+
+class SpanPredictionF1andEMScheme(BaseEvaluationScheme):
+    def get_accumulator(self):
+        return ConcatenateStringListAccumulator()
+
+    def get_labels_from_cache_and_examples(self, task, cache, examples):
+        return [datum["data_row"].gt_span_str for datum in cache.iter_all()]
+
+    def get_preds_from_accumulator(self, task, accumulator):
+        return accumulator.get_accumulated()
+
+    def compute_metrics_from_preds_and_labels(self, preds, labels):
+        em = sum([exact_match_score(s1, s2) for s1, s2 in zip(preds, labels)]) / len(labels)
+        f1 = sum([string_f1_score(s1, s2) for s1, s2 in zip(preds, labels)]) / len(labels)
+        scores = {"f1": f1, "em": em, "avg": (f1 + em) / 2}
+        return Metrics(major=scores["avg"], minor=scores)
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: ConcatenateStringListAccumulator, tokenizer, labels: list
+    ) -> Metrics:
+        preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels)
 
 
 class TatoebaAccumulator(BaseAccumulator):
@@ -398,11 +442,11 @@ class ReCordEvaluationScheme(BaseEvaluationScheme):
             pred_ans = relevant_examples[psg_qns_pred].entity_str
 
             # F1
-            f1 = cls.metric_max_over_ground_truths(cls.f1_score, pred_ans, golds)
+            f1 = cls.metric_max_over_ground_truths(string_f1_score, pred_ans, golds)
             f1_ls.append(f1)
 
             # EM
-            em = cls.metric_max_over_ground_truths(cls.exact_match_score, pred_ans, golds)
+            em = cls.metric_max_over_ground_truths(exact_match_score, pred_ans, golds)
             em_ls.append(em)
             predictions_dict[psq_qns_idx] = psg_qns_pred
 
@@ -415,50 +459,6 @@ class ReCordEvaluationScheme(BaseEvaluationScheme):
         }
         metrics = Metrics(major=minor["f1_em"], minor=minor,)
         return predictions_dict, metrics
-
-    @classmethod
-    def normalize_answer(cls, s):
-        """Lower text and remove punctuation, articles and extra whitespace.
-        From official ReCoRD eval script
-        """
-
-        def remove_articles(text):
-            return re.sub(r"\b(a|an|the)\b", " ", text)
-
-        def white_space_fix(text):
-            return " ".join(text.split())
-
-        def remove_punc(text):
-            exclude = set(string.punctuation)
-            return "".join(ch for ch in text if ch not in exclude)
-
-        def lower(text):
-            return text.lower()
-
-        return white_space_fix(remove_articles(remove_punc(lower(s))))
-
-    @classmethod
-    def f1_score(cls, prediction, ground_truth):
-        """Compute normalized token level F1
-        From official ReCoRD eval script
-        """
-        prediction_tokens = cls.normalize_answer(prediction).split()
-        ground_truth_tokens = cls.normalize_answer(ground_truth).split()
-        common = collections.Counter(prediction_tokens) & collections.Counter(ground_truth_tokens)
-        num_same = sum(common.values())
-        if num_same == 0:
-            return 0
-        precision = 1.0 * num_same / len(prediction_tokens)
-        recall = 1.0 * num_same / len(ground_truth_tokens)
-        f1 = (2 * precision * recall) / (precision + recall)
-        return f1
-
-    @classmethod
-    def exact_match_score(cls, prediction, ground_truth):
-        """Compute normalized exact match
-        From official ReCoRD eval script
-        """
-        return cls.normalize_answer(prediction) == cls.normalize_answer(ground_truth)
 
     @classmethod
     def metric_max_over_ground_truths(cls, metric_fn, prediction, ground_truths):
@@ -867,7 +867,9 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return PearsonAndSpearmanEvaluationScheme()
     elif isinstance(task, (tasks.MLMWikitext103Task, tasks.MLMCrosslingualWikiTask)):
         return MLMEvaluationScheme()
-    elif isinstance(task, (tasks.UdposPreprocTask, tasks.PanxPreprocTask)):
+    elif isinstance(task, (tasks.QAMRTask, tasks.QASRLTask)):
+        return SpanPredictionF1andEMScheme()
+    elif isinstance(task, (tasks.UdposPreprocTask, tasks.PanxPreprocTask,)):
         return F1TaggingEvaluationScheme()
     elif isinstance(task, tasks.Bucc2018Task):
         return Bucc2018EvaluationScheme()

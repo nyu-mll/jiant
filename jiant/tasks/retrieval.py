@@ -24,6 +24,8 @@ from jiant.tasks.lib.mlqa import MlqaTask
 from jiant.tasks.lib.mnli import MnliTask
 from jiant.tasks.lib.mrpc import MrpcTask
 from jiant.tasks.lib.multirc import MultiRCTask
+from jiant.tasks.lib.qamr import QAMRTask
+from jiant.tasks.lib.qasrl import QASRLTask
 from jiant.tasks.lib.edge_probing.ner import NerTask
 from jiant.tasks.lib.panx import PanxPreprocTask
 from jiant.tasks.lib.pawsx import PawsXTask
@@ -84,6 +86,8 @@ TASK_DICT = {
     "mnli": MnliTask,
     "multirc": MultiRCTask,
     "mrpc": MrpcTask,
+    "qamr": QAMRTask,
+    "qasrl": QASRLTask,
     "ner": NerTask,
     "pawsx": PawsXTask,
     "panx": PanxPreprocTask,

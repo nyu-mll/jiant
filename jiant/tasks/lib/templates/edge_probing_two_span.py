@@ -48,8 +48,8 @@ class Example(BaseExample):
             space_tokenization, target_tokenization, tokenizer
         )
         aligner = retokenize.TokenAligner(normed_space_tokenization, normed_target_tokenization)
-        target_span1 = aligner.project_span(self.span1[0], self.span1[1])
-        target_span2 = aligner.project_span(self.span2[0], self.span2[1])
+        target_span1 = aligner.project_token_span(self.span1[0], self.span1[1])
+        target_span2 = aligner.project_token_span(self.span2[0], self.span2[1])
         return TokenizedExample(
             guid=self.guid,
             tokens=target_tokenization,

@@ -266,6 +266,16 @@ def create_taskmodel(
         taskmodel = taskmodels.MultipleChoiceModel(
             encoder=encoder, num_choices=task.NUM_CHOICES, choice_scoring_head=choice_scoring_head,
         )
+    elif task.TASK_TYPE == TaskTypes.SPAN_PREDICTION:
+        assert taskmodel_kwargs is None
+        span_prediction_head = heads.TokenClassificationHead(
+            hidden_size=encoder.config.hidden_size,
+            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            num_labels=2,
+        )
+        taskmodel = taskmodels.SpanPredictionModel(
+            encoder=encoder, span_prediction_head=span_prediction_head,
+        )
     elif task.TASK_TYPE == TaskTypes.SPAN_COMPARISON_CLASSIFICATION:
         assert taskmodel_kwargs is None
         span_comparison_head = heads.SpanComparisonHead(

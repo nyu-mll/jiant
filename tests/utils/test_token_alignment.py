@@ -39,7 +39,7 @@ def test_token_aligner_project_single_token_index():
     source_tokens = ["abc", "def", "ghi", "jkl"]
     target_tokens = ["abc", "d", "ef", "ghi", "jkl"]
     ta = TokenAligner(source_tokens, target_tokens)
-    m = ta.project_tokens(1)
+    m = ta.project_token_idxs(1)
     m_expected = np.array([1, 2])
     assert (m == m_expected).all()
 
@@ -48,7 +48,7 @@ def test_token_aligner_project_multiple_token_indices():
     source_tokens = ["abc", "def", "ghi", "jkl"]
     target_tokens = ["abc", "d", "ef", "ghi", "jkl"]
     ta = TokenAligner(source_tokens, target_tokens)
-    m = ta.project_tokens([1, 3])
+    m = ta.project_token_idxs([1, 3])
     m_expected = np.array([1, 2, 4])
     assert (m == m_expected).all()
 
@@ -57,7 +57,7 @@ def test_token_aligner_project_to_empty_target_token_sequence():
     source_tokens = ["abc", "def", "ghi", "jkl"]
     target_tokens = []
     ta = TokenAligner(source_tokens, target_tokens)
-    m = ta.project_tokens([1, 3])
+    m = ta.project_token_idxs([1, 3])
     m_expected = np.array([])
     assert (m == m_expected).all()
 
@@ -66,25 +66,25 @@ def test_token_aligner_project_to_mismatched_token_sequence():
     source_tokens = ["abc", "def", "ghi", "jkl"]
     target_tokens = ["qrs", "tuv", "wxy", "z"]
     ta = TokenAligner(source_tokens, target_tokens)
-    m = ta.project_tokens([1])
+    m = ta.project_token_idxs([1])
     m_expected = np.array([])
     assert (m == m_expected).all()
 
 
-def test_token_aligner_project_span():
+def test_token_aligner_project_token_span():
     source_tokens = ["abc", "def", "ghi", "jkl"]
     target_tokens = ["abc", "d", "ef", "ghi", "jkl"]
     ta = TokenAligner(source_tokens, target_tokens)
-    m = ta.project_span(1, 2)
+    m = ta.project_token_span(1, 2)
     m_expected = np.array([1, 3])
     assert (m == m_expected).all()
 
 
-def test_token_aligner_project_span_last_token_range_is_end_exclusive():
+def test_token_aligner_project_token_span_last_token_range_is_end_exclusive():
     source_tokens = ["abc", "def", "ghi", "jkl"]
     target_tokens = ["abc", "d", "ef", "ghi", "jkl"]
     ta = TokenAligner(source_tokens, target_tokens)
-    m = ta.project_span(3, 4)
+    m = ta.project_token_span(3, 4)
     m_expected = np.array([4, 5])
     assert (m == m_expected).all()
 
@@ -95,7 +95,7 @@ def test_wpm_tok_idx_proj_1():
     tgt_token_index = [[0], [1], [2], [3], [4], [5], [6]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -105,7 +105,7 @@ def test_wpm_tok_idx_proj_2():
     tgt_token_index = [[0], [1], [2], [3, 4, 5], [6, 7], [8], [9], [10, 11, 12]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -161,7 +161,7 @@ def test_wpm_tok_idx_proj_3():
     ]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -171,7 +171,7 @@ def test_wpm_tok_idx_proj_4():
     tgt_token_index = [[0, 1]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -181,7 +181,7 @@ def test_moses_tok_idx_proj_1():
     tgt_token_index = [[0], [1], [2], [3], [4], [5], [6]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -191,7 +191,7 @@ def test_moses_tok_idx_proj_2():
     tgt_token_index = [[0], [1], [2], [3, 4], [5, 6], [7], [8], [9, 10, 11]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -226,7 +226,7 @@ def test_moses_tok_idx_proj_3():
     tgt_token_index = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10, 11]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -236,7 +236,7 @@ def test_moses_tok_idx_proj_4():
     tgt_token_index = [[0, 1]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -254,7 +254,7 @@ def test_bpe_tok_idx_proj_1():
     tgt_token_index = [[0], [1], [2], [3], [4], [5], [6]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -277,7 +277,7 @@ def test_bpe_tok_idx_proj_2():
     tgt_token_index = [[0], [1], [2], [3, 4], [5, 6], [7], [8], [9, 10, 11]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -316,7 +316,7 @@ def test_bpe_tok_idx_proj_3():
     tgt_token_index = [[0], [1, 2], [3], [4], [5], [6], [7], [8, 9, 10, 11], [12], [13], [14, 15]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -326,7 +326,7 @@ def test_bpe_tok_idx_proj_4():
     tgt_token_index = [[0, 1]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -336,7 +336,7 @@ def test_sentencepiece_tok_idx_proj_1():
     tgt_token_index = [[0], [1], [2], [3], [4], [5], [6]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -360,7 +360,7 @@ def test_sentencepiece_tok_idx_proj_2():
     tgt_token_index = [[0], [1], [2], [3, 4, 5], [6, 7], [8], [9], [10, 11, 12]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -416,7 +416,7 @@ def test_sentencepiece_tok_idx_proj_3():
     ]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -426,7 +426,7 @@ def test_sentencepiece_tok_idx_proj_4():
     tgt_token_index = [[0, 1]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -436,7 +436,7 @@ def test_bytebpe_tok_idx_proj_1():
     tgt_token_index = [[0], [1], [2], [3], [4, 5], [6], [7]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -459,7 +459,7 @@ def test_bytebpe_tok_idx_proj_2():
     tgt_token_index = [[0], [1], [2], [3, 4], [5, 6], [7], [8], [9, 10, 11]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -498,7 +498,7 @@ def test_bytebpe_tok_idx_proj_3():
     tgt_token_index = [[0, 1], [2, 3], [4], [5], [6], [7], [8], [9, 10, 11], [12], [13], [14, 15]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
@@ -508,48 +508,48 @@ def test_bytebpe_tok_idx_proj_4():
     tgt_token_index = [[0, 1]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     for src_token_idx in range(len(src_tokens)):
-        projected_tgt_tok_idx = ta.project_tokens(src_token_idx)
+        projected_tgt_tok_idx = ta.project_token_idxs(src_token_idx)
         assert (tgt_token_index[src_token_idx] == projected_tgt_tok_idx).all()
 
 
 """
-Note: test_project_span_* tests use same data and token aligner as test_bytebpe_tok_idx_proj_1. 
+Note: test_project_token_span_* tests use same data and token aligner as test_bytebpe_tok_idx_proj_1. 
 Token projection is tested extensively above, the focus of the following tests is span projection. 
 For span prediction token token projection does the heavy lifting — tests covering span prediction 
 need to check that careful indexing.
 """
 
 
-def test_project_span_single_token():
+def test_project_token_span_single_token():
     src_tokens = ["Members", "of", "the", "House", "clapped", "their", "hands"]
     tgt_tokens = ["Members", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"]
     # reference: tgt_token_index = [[0], [1], [2], [3], [4, 5], [6], [7]]
     ta = TokenAligner(src_tokens, tgt_tokens)
-    assert (0, 1) == ta.project_span(0, 1)
+    assert (0, 1) == ta.project_token_span(0, 1)
 
 
-def test_project_span_covering_multiple_source_sequence_tokens():
+def test_project_token_span_covering_multiple_source_sequence_tokens():
     src_tokens = ["Members", "of", "the", "House", "clapped", "their", "hands"]
     tgt_tokens = ["Members", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"]
     # reference: tgt_token_index = [[0], [1], [2], [3], [4, 5], [6], [7]]
     ta = TokenAligner(src_tokens, tgt_tokens)
-    assert (0, 2) == ta.project_span(0, 2)
+    assert (0, 2) == ta.project_token_span(0, 2)
 
 
-def test_project_span_covering_multiple_target_sequence_tokens():
+def test_project_token_span_covering_multiple_target_sequence_tokens():
     src_tokens = ["Members", "of", "the", "House", "clapped", "their", "hands"]
     tgt_tokens = ["Members", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"]
     # reference: tgt_token_index = [[0], [1], [2], [3], [4, 5], [6], [7]]
     ta = TokenAligner(src_tokens, tgt_tokens)
-    assert (4, 6) == ta.project_span(4, 5)
+    assert (4, 6) == ta.project_token_span(4, 5)
 
 
-def test_project_span_covering_whole_sequence():
+def test_project_token_span_covering_whole_sequence():
     src_tokens = ["Members", "of", "the", "House", "clapped", "their", "hands"]
     tgt_tokens = ["Members", "Ġof", "Ġthe", "ĠHouse", "Ġcl", "apped", "Ġtheir", "Ġhands"]
     # reference: tgt_token_index = [[0], [1], [2], [3], [4, 5], [6], [7]]
     ta = TokenAligner(src_tokens, tgt_tokens)
-    assert (0, 8) == ta.project_span(0, 7)
+    assert (0, 8) == ta.project_token_span(0, 7)
 
 
 def test_project_invalid_span():
@@ -558,4 +558,16 @@ def test_project_invalid_span():
     # reference: tgt_token_index = [[0], [1], [2], [3], [4, 5], [6], [7]]
     ta = TokenAligner(src_tokens, tgt_tokens)
     with pytest.raises(ValueError):
-        ta.project_span(0, 0)
+        ta.project_token_span(0, 0)
+
+
+def test_private_project_token_span():
+    mat = np.eye(5, dtype=int)
+    mat[0][0] = 0
+    mat[3][3] = 0
+    assert TokenAligner._project_span(mat, 1, 3, inclusive=True) == (1, 2)
+    assert TokenAligner._project_span(mat, 1, 3, inclusive=False) == (1, 3)
+    assert TokenAligner._project_span(mat, 1, 2, inclusive=True) == (1, 2)
+    assert TokenAligner._project_span(mat, 1, 2, inclusive=False) == (1, 2)
+    assert TokenAligner._project_span(mat, 1, 4, inclusive=True) == (1, 4)
+    assert TokenAligner._project_span(mat, 1, 4, inclusive=False) == (1, 3)
