@@ -122,7 +122,8 @@ class SpanPredictionF1andEMScheme(BaseEvaluationScheme):
     def get_preds_from_accumulator(self, task, accumulator):
         return accumulator.get_accumulated()
 
-    def compute_metrics_from_preds_and_labels(self, preds, labels):
+    @classmethod
+    def compute_metrics_from_preds_and_labels(cls, preds, labels):
         em = sum([exact_match_score(s1, s2) for s1, s2 in zip(preds, labels)]) / len(labels)
         f1 = sum([string_f1_score(s1, s2) for s1, s2 in zip(preds, labels)]) / len(labels)
         scores = {"f1": f1, "em": em, "avg": (f1 + em) / 2}
@@ -526,18 +527,20 @@ class F1TaggingEvaluationScheme(BaseEvaluationScheme):
         return ConcatenateLogitsAccumulator()
 
     @classmethod
-    def get_labels(cls, cache, examples):
-        labels = [
-            {"pos_list": example.pos_list, "label_mask": datum["data_row"].label_mask}
-            for datum, example in zip(cache.iter_all(), examples)
-        ]
-        for label in labels:
-            assert len(label["pos_list"]) == label["label_mask"].sum()
-        return labels
-
-    @classmethod
     def get_labels_from_cache_and_examples(cls, task, cache, examples):
-        return cls.get_labels(cache=cache, examples=examples)
+        labels = []
+        for datum in cache.iter_all():
+            label_mask = datum["data_row"].label_mask.astype(bool)
+            pos_list = [
+                task.ID_TO_LABEL[pos_id] for pos_id in datum["data_row"].label_ids[label_mask]
+            ]
+            label = {
+                "pos_list": pos_list,
+                "label_mask": label_mask,
+            }
+            labels.append(label)
+            assert len(pos_list) == label_mask.sum()
+        return labels
 
     def get_preds_from_accumulator(self, task, accumulator):
         logits = accumulator.get_accumulated()
@@ -555,14 +558,14 @@ class F1TaggingEvaluationScheme(BaseEvaluationScheme):
 
         # Account for smart-truncate
         assert (label_mask[:, preds.shape[-1] :] == 0).all()
-        label_mask = label_mask[:, : preds.shape[-1]].astype(bool)
+        label_mask = label_mask[:, : preds.shape[-1]]
 
         labels_for_eval = [label["pos_list"] for label in labels]
         preds_for_eval = []
         assert len(labels) == preds.shape[0]
         for i in range(len(labels)):
             relevant_preds = preds[i][label_mask[i]]
-            relevant_preds_pos = [task.LABEL_BIMAP.b[pos_id] for pos_id in relevant_preds]
+            relevant_preds_pos = [task.ID_TO_LABEL[pos_id] for pos_id in relevant_preds]
             preds_for_eval.append(relevant_preds_pos)
 
         minor = {
@@ -869,7 +872,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return MLMEvaluationScheme()
     elif isinstance(task, (tasks.QAMRTask, tasks.QASRLTask)):
         return SpanPredictionF1andEMScheme()
-    elif isinstance(task, (tasks.UdposPreprocTask, tasks.PanxPreprocTask,)):
+    elif isinstance(task, (tasks.UdposTask, tasks.PanxTask)):
         return F1TaggingEvaluationScheme()
     elif isinstance(task, tasks.Bucc2018Task):
         return Bucc2018EvaluationScheme()

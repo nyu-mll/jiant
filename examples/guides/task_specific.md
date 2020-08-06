@@ -1,6 +1,22 @@
 # Task-specific setup
 
-## Bucc2018, Tatoeba
+## UDPOS (XTREME)
+
+UDPOS requires a specific version `networkx` to download. You can install it via
+
+```bash
+pip install networkx==1.11
+```
+
+
+## PAN-X (XTREME)
+
+To preprocess PAN-X, you actually first need to download the file from: https://www.amazon.com/clouddrive/share/d3KGCRCIYwhKJF0H3eWA26hjg2ZCRhjpEQtDL70FSBN.
+
+The file should be named `AmazonPhotos.zip`, and it should be placed in `${task_data_base_path}/panx_temp/AmazonPhotos.zip` before running the download script.
+
+
+## Bucc2018, Tatoeba (XTREME)
 
 The Bucc2018 and Tatoeba tasks are sentence retrieval tasks, and require the `faiss` library to run. `faiss-gpu` is recommended for speed reasons.
 

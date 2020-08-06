@@ -1,4 +1,7 @@
 import os
+import importlib
+import sys
+from contextlib import contextmanager
 
 
 def find_files(base_path, func):
@@ -41,3 +44,18 @@ def get_code_asset_path(*rel_path):
         Path to file/folder within code base
     """
     return os.path.join(get_code_base_path(), *rel_path)
+
+
+@contextmanager
+def temporarily_add_sys_path(path):
+    sys.path = [path] + sys.path
+    yield
+    sys.path = sys.path[1:]
+
+
+def import_from_path(path):
+    base_path, filename = os.path.split(path)
+    module_name = filename[:-3] if filename.endswith(".py") else filename
+    with temporarily_add_sys_path(base_path):
+        module = importlib.import_module(module_name)
+    return module

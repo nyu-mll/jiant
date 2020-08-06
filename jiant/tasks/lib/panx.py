@@ -17,8 +17,13 @@ from jiant.tasks.lib.templates.shared import (
     construct_single_input_tokens_and_segment_ids,
     pad_single_with_feat_spec,
 )
-from jiant.utils.python.datastructures import zip_equal, get_all_same
+from jiant.utils.python.datastructures import zip_equal
 from jiant.utils.python.io import read_file_lines
+
+ARBITRARY_OVERLY_LONG_WORD_CONSTRAINT = 100
+# In a rare number of cases, a single word (usually something like a mis-processed URL)
+#  is overly long, and should not be treated as a real multi-subword-token word.
+# In these cases, we simply replace it with an UNK token.
 
 
 @dataclass
@@ -34,9 +39,12 @@ class Example(BaseExample):
         for token, pos in zip_equal(self.tokens, self.pos_list):
             # Tokenize each "token" separately, assign label only to first token
             tokenized = tokenizer.tokenize(token)
+            # If the token can't be tokenized, or is too long, replace with a single <unk>
+            if len(tokenized) == 0 or len(tokenized) > ARBITRARY_OVERLY_LONG_WORD_CONSTRAINT:
+                tokenized = [tokenizer.unk_token]
             all_tokenized_tokens += tokenized
             padding_length = len(tokenized) - 1
-            labels += [PanxPreprocTask.LABEL_TO_ID.get(pos, None)] + [None] * padding_length
+            labels += [PanxTask.LABEL_TO_ID.get(pos, None)] + [None] * padding_length
             label_mask += [1] + [0] * padding_length
 
         return TokenizedExample(
@@ -118,8 +126,7 @@ class Batch(BatchMixin):
     tokens: list
 
 
-class PanxPreprocTask(Task):
-    # Update UDPOS, PANX to not use preprocessed versions of data (Issue #90)
+class PanxTask(Task):
 
     Example = Example
     TokenizedExample = Example
@@ -139,35 +146,22 @@ class PanxPreprocTask(Task):
         return len(self.LABELS)
 
     def get_train_examples(self):
-        return self._create_examples(
-            data_path=self.path_dict["train"]["data"],
-            idx_path=self.path_dict["train"]["idx"],
-            set_type="train",
-        )
+        return self._create_examples(data_path=self.path_dict["train"], set_type="train")
 
     def get_val_examples(self):
-        return self._create_examples(
-            data_path=self.path_dict["val"]["data"],
-            idx_path=self.path_dict["val"]["idx"],
-            set_type="val",
-        )
+        return self._create_examples(data_path=self.path_dict["val"], set_type="val")
 
     def get_test_examples(self):
-        return self._create_examples(
-            data_path=self.path_dict["test"]["data"],
-            idx_path=self.path_dict["test"]["idx"],
-            set_type="test",
-        )
+        return self._create_examples(data_path=self.path_dict["test"], set_type="test")
 
     @classmethod
-    def _create_examples(cls, data_path, idx_path, set_type):
-        curr_token_list, curr_pos_list, idx_ls = [], [], []
+    def _create_examples(cls, data_path, set_type):
+        curr_token_list, curr_pos_list = [], []
         data_lines = read_file_lines(data_path, "r", encoding="utf-8")
-        idx_lines = read_file_lines(idx_path, "r", encoding="utf-8")
         examples = []
-        for data_line, idx_line in zip_equal(data_lines, idx_lines):
-            data_line, idx_line = data_line.strip(), idx_line.strip()
-            assert bool(data_line) == bool(idx_line)
+        idx = 0
+        for data_line in data_lines:
+            data_line = data_line.strip()
             if data_line:
                 if set_type == "test":
                     line_tokens = data_line.split("\t")
@@ -179,9 +173,7 @@ class PanxPreprocTask(Task):
                     token, pos = data_line.split("\t")
                 curr_token_list.append(token)
                 curr_pos_list.append(pos)
-                idx_ls.append(int(idx_line))
             else:
-                idx = get_all_same(idx_ls)
                 examples.append(
                     Example(
                         guid="%s-%s" % (set_type, idx),
@@ -189,10 +181,10 @@ class PanxPreprocTask(Task):
                         pos_list=curr_pos_list,
                     )
                 )
-                curr_token_list, curr_pos_list, idx_ls = [], [], []
+                idx += 1
+                curr_token_list, curr_pos_list = [], []
         if curr_token_list:
-            idx = get_all_same(idx_ls)
             examples.append(
-                Example(guid="%s-%s" % (idx, idx), tokens=curr_token_list, pos_list=curr_pos_list,)
+                Example(guid="%s-%s" % (idx, idx), tokens=curr_token_list, pos_list=curr_pos_list)
             )
         return examples

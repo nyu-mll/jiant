@@ -156,6 +156,7 @@ def main(args: RunConfiguration):
     assert set(phases) <= {PHASE.TRAIN, PHASE.VAL, PHASE.TEST}
 
     paths_dict = {}
+    os.makedirs(args.output_dir, exist_ok=True)
 
     if PHASE.TRAIN in phases:
         chunk_and_save(

@@ -59,21 +59,34 @@ def download_and_unzip(url, extract_location):
     """Downloads and unzips a file, and deletes the zip after"""
     _, file_name = os.path.split(url)
     zip_path = os.path.join(extract_location, file_name)
-    download_file(url, zip_path)
+    download_file(url=url, file_path=zip_path)
+    unzip_file(zip_path=zip_path, extract_location=extract_location, delete=True)
+
+
+def unzip_file(zip_path, extract_location, delete=False):
+    """Unzip a file, optionally deleting after"""
     with zipfile.ZipFile(zip_path) as zip_ref:
         zip_ref.extractall(extract_location)
-    os.remove(zip_path)
+    if delete:
+        os.remove(zip_path)
 
 
 def download_and_untar(url, extract_location):
-    _, file_name = os.path.split(url)
     """Downloads and untars a file, and deletes the tar after"""
+    _, file_name = os.path.split(url)
     tar_path = os.path.join(extract_location, file_name)
     download_file(url, tar_path)
+    untar_file(tar_path=tar_path, extract_location=extract_location, delete=True)
+
+
+def untar_file(tar_path, extract_location, delete=False):
+    """Untars a file, optionally deleting after"""
     with tarfile.open(tar_path) as tar:
         tar.extractall(path=extract_location)
-    os.remove(tar_path)
+    if delete:
+        os.remove(tar_path)
 
 
 def download_file(url, file_path):
+    # noinspection PyUnresolvedReferences
     urllib.request.urlretrieve(url, file_path)
