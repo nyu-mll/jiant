@@ -8,6 +8,7 @@ from jiant.tasks.core import (
     BaseTokenizedExample,
     BaseDataRow,
     BatchMixin,
+    GlueMixin,
     Task,
     TaskTypes,
 )
@@ -69,7 +70,7 @@ class Batch(BatchMixin):
     tokens: list
 
 
-class WnliTask(Task):
+class WnliTask(GlueMixin, Task):
     Example = Example
     TokenizedExample = Example
     DataRow = DataRow
@@ -94,6 +95,7 @@ class WnliTask(Task):
         for (i, line) in enumerate(lines):
             examples.append(
                 Example(
+                    # NOTE: get_glue_preds() is dependent on this guid format.
                     guid="%s-%s" % (set_type, i),
                     input_premise=line["premise"],
                     input_hypothesis=line["hypothesis"],

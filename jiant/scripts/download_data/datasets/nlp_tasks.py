@@ -42,7 +42,7 @@ NLP_CONVERSION_DICT = {
         "label_map": {0: "entailment", 1: "neutral", 2: "contradiction"},
         "phase_map": {"validation_mismatched": "val", "test_mismatched": "test"},
         "phase_list": ["val", "test"],
-        "jiant_task_name": "mnli",
+        "jiant_task_name": "mnli_mismatched",
     },
     "mrpc": {
         "path": "glue",
