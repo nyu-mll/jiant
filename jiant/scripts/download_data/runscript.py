@@ -57,7 +57,7 @@ def download_data(task_names, output_base_path):
             files_tasks_download.download_squad_data_and_write_config(
                 task_name=task_name,
                 task_data_path=task_data_path,
-                task_config_path=os.path.join(task_config_base_path, f"{task_name}.json"),
+                task_config_path=os.path.join(task_config_base_path, f"{task_name}_config.json"),
             )
         else:
             raise KeyError()

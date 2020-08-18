@@ -96,13 +96,12 @@ class PawsXTask(Task):
     def _create_examples(cls, lines, set_type):
         examples = []
         for (i, line) in enumerate(lines):
+            # Skip the header (first line)
+            if i == 0:
+                continue
             segments = line.strip().split("\t")
-            if set_type != "test":
-                text_a, text_b, label = segments
-            else:
-                text_a, text_b = segments
-                label = cls.LABELS[-1]
+            idx, text_a, text_b, label = segments
             examples.append(
-                Example(guid="%s-%s" % (set_type, i), text_a=text_a, text_b=text_b, label=label)
+                Example(guid="%s-%s" % (set_type, idx), text_a=text_a, text_b=text_b, label=label)
             )
         return examples

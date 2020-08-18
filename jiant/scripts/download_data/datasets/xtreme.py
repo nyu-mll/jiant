@@ -59,7 +59,7 @@ def download_pawsx_data_and_write_config(task_data_base_path: str, task_config_b
             "test": os.path.join(task_data_base_path, task_name, "test_2k.tsv"),
         }
         if lang == "en":
-            paths_dict["train"] = (os.path.join(task_data_base_path, task_name, "train.tsv"),)
+            paths_dict["train"] = os.path.join(task_data_base_path, task_name, "train.tsv")
             datastructures.set_dict_keys(paths_dict, ["train", "val", "test"])
         py_io.write_json(
             data={
@@ -167,7 +167,7 @@ def download_udpos_data_and_write_config(task_data_base_path: str, task_config_b
         os.path.join(udpos_temp_path, "conll.py"),
     )
     conll = filesystem.import_from_path(os.path.join(udpos_temp_path, "conll.py"))
-    conllu_path_ls = glob.glob(os.path.join(udpos_temp_path, "*", "*", "*.conllu"))
+    conllu_path_ls = sorted(glob.glob(os.path.join(udpos_temp_path, "*", "*", "*.conllu")))
     conll_path = os.path.join(udpos_temp_path, "conll")
 
     # === Convert conllu files to conll === #
@@ -180,7 +180,7 @@ def download_udpos_data_and_write_config(task_data_base_path: str, task_config_b
         )
         pos_rank_precedence_dict = {
             "default": (
-                "VERB NOUN PROPN PRON ADJ NUM ADV INTJ AUX ADP DET PART CCONJ SCONJ X PUNCT "
+                "VERB NOUN PROPN PRON ADJ NUM ADV INTJ AUX ADP DET PART CCONJ SCONJ X PUNCT"
             ).split(" "),
             "es": "VERB AUX PRON ADP DET".split(" "),
             "fr": "VERB AUX PRON NOUN ADJ ADV ADP DET PART SCONJ CONJ".split(" "),
@@ -391,7 +391,6 @@ def download_tydiqa_data_and_write_config(task_data_base_path: str, task_config_
     # Split train data
     data = py_io.read_json(full_train_path)
     lang2data = {lang: [] for lang in languages_dict.values()}
-    version = data["version"]
     for doc in data["data"]:
         for par in doc["paragraphs"]:
             context = par["context"]
@@ -422,7 +421,7 @@ def download_tydiqa_data_and_write_config(task_data_base_path: str, task_config_
         task_data_path = py_io.create_dir(task_data_base_path, task_name)
         train_path = os.path.join(task_data_path, f"tydiqa.{lang}.train.json")
         py_io.write_json(
-            data={"data": data, "version": version}, path=train_path,
+            data=data, path=train_path,
         )
         val_path = os.path.join(task_data_path, f"tydiqa.{lang}.dev.json")
         os.rename(
@@ -607,6 +606,14 @@ def download_xtreme_data_and_write_config(
         download_pawsx_data_and_write_config(
             task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
         )
+    elif task_name == "udpos":
+        download_udpos_data_and_write_config(
+            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+        )
+    elif task_name == "panx":
+        download_panx_data_and_write_config(
+            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+        )
     elif task_name == "xquad":
         download_xquad_data_and_write_config(
             task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
@@ -627,7 +634,5 @@ def download_xtreme_data_and_write_config(
         download_tatoeba_data_and_write_config(
             task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
         )
-    elif task_name in ["udpos", "panx"]:
-        raise NotImplementedError(task_name)
     else:
         raise KeyError(task_name)
