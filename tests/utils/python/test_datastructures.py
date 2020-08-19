@@ -145,10 +145,16 @@ def test_get_unique_list_in_order():
 
 def test_reorder_keys():
     dict1 = {"a": 1, "b": 1, "c": 1}
-    assert list(py_datastructures.reorder_keys(dict1, key_list=["a", "b", "c"]).keys()) \
-        == ["a", "b", "c"]
-    assert list(py_datastructures.reorder_keys(dict1, key_list=["c", "a", "b"]).keys()) \
-        == ["c", "a", "b"]
+    assert list(py_datastructures.reorder_keys(dict1, key_list=["a", "b", "c"]).keys()) == [
+        "a",
+        "b",
+        "c",
+    ]
+    assert list(py_datastructures.reorder_keys(dict1, key_list=["c", "a", "b"]).keys()) == [
+        "c",
+        "a",
+        "b",
+    ]
     with pytest.raises(AssertionError):
         py_datastructures.reorder_keys(dict1, key_list=["d", "b", "d"])
 

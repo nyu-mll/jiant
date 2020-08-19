@@ -23,11 +23,15 @@ def test_args_required_command_line():
 
 
 def test_empty():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("empty.json")}
         --str_attr "hi"
         --int_attr 1
-    """))
+    """
+        )
+    )
     assert args.str_attr == "hi"
     assert args.int_attr == 1
     assert args.int_default_attr == 2
@@ -35,10 +39,14 @@ def test_empty():
 
 
 def test_simple():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("simple.json")}
         --int_attr 1
-    """))
+    """
+        )
+    )
     assert args.str_attr == "hello"
     assert args.int_attr == 1
     assert args.int_default_attr == 3
@@ -47,20 +55,28 @@ def test_simple():
 
 def test_simple_override_conflict():
     with pytest.raises(RuntimeError):
-        RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+        RunConfiguration.run_cli_json_prepend(
+            cl_args=shlex.split(
+                f"""
             --ZZsrc={get_json_path("simple.json")}
             --str_attr "bye"
             --int_attr 1
-        """))
+        """
+            )
+        )
 
 
 def test_simple_override_working():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("simple.json")}
         --ZZoverrides str_attr
         --str_attr "bye"
         --int_attr 1
-    """))
+    """
+        )
+    )
     assert args.str_attr == "bye"
     assert args.int_attr == 1
     assert args.int_default_attr == 3
@@ -68,13 +84,17 @@ def test_simple_override_working():
 
 
 def test_simple_double_override():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("simple.json")}
         --ZZoverrides str_attr int_default_attr
         --str_attr "bye"
         --int_attr 1
         --int_default_attr 4
-    """))
+    """
+        )
+    )
     assert args.str_attr == "bye"
     assert args.int_attr == 1
     assert args.int_default_attr == 4
@@ -82,11 +102,15 @@ def test_simple_double_override():
 
 
 def test_store_true():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("store_true.json")}
         --str_attr "hello"
         --int_attr 1
-    """))
+    """
+        )
+    )
     assert args.str_attr == "hello"
     assert args.int_attr == 1
     assert args.int_default_attr == 2
@@ -94,11 +118,15 @@ def test_store_true():
 
 
 def test_store_true_false():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("store_true_false.json")}
         --str_attr "hello"
         --int_attr 1
-    """))
+    """
+        )
+    )
     assert args.str_attr == "hello"
     assert args.int_attr == 1
     assert args.int_default_attr == 2
@@ -106,12 +134,16 @@ def test_store_true_false():
 
 
 def test_store_true_override():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("store_true.json")}
         --ZZoverrides store_true_attr
         --str_attr "hello"
         --int_attr 1
-    """))
+    """
+        )
+    )
     assert args.str_attr == "hello"
     assert args.int_attr == 1
     assert args.int_default_attr == 2
@@ -119,13 +151,17 @@ def test_store_true_override():
 
 
 def test_store_true_false_override():
-    args = RunConfiguration.run_cli_json_prepend(cl_args=shlex.split(f"""
+    args = RunConfiguration.run_cli_json_prepend(
+        cl_args=shlex.split(
+            f"""
         --ZZsrc={get_json_path("store_true_false.json")}
         --ZZoverrides store_true_attr
         --str_attr "hello"
         --int_attr 1
         --store_true_attr
-    """))
+    """
+        )
+    )
     assert args.str_attr == "hello"
     assert args.int_attr == 1
     assert args.int_default_attr == 2
