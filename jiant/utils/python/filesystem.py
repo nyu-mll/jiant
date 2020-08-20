@@ -46,6 +46,12 @@ def get_code_asset_path(*rel_path):
     return os.path.join(get_code_base_path(), *rel_path)
 
 
+def find_case_insensitive_filename(filename, path):
+    for f in os.listdir(path):
+        if f.lower() == filename.lower():
+            return f
+
+
 @contextmanager
 def temporarily_add_sys_path(path):
     sys.path = [path] + sys.path
