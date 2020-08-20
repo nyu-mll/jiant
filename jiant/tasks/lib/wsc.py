@@ -42,10 +42,10 @@ class Example(BaseExample):
         span1_token_count = len(self.span1_text.split())
         span2_token_count = len(self.span2_text.split())
         target_span1 = ExclusiveSpan(
-            *aligner.project_span(self.span1_idx, self.span1_idx + span1_token_count)
+            *aligner.project_token_span(self.span1_idx, self.span1_idx + span1_token_count)
         )
         target_span2 = ExclusiveSpan(
-            *aligner.project_span(self.span2_idx, self.span2_idx + span2_token_count)
+            *aligner.project_token_span(self.span2_idx, self.span2_idx + span2_token_count)
         )
         return TokenizedExample(
             guid=self.guid,
