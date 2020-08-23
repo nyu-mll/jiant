@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import jiant.tasks.lib.mnli as mnli
+from . import mnli
 
 
 @dataclass

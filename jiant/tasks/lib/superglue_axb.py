@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import jiant.tasks.lib.rte as rte
+from . import rte
 
 
 @dataclass
