@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from dataclasses import dataclass
 from typing import List
+import string
 
 from jiant.tasks.core import (
     BaseExample,
@@ -18,7 +19,8 @@ from jiant.tasks.lib.templates.shared import (
 )
 from jiant.tasks.utils import truncate_sequences, ExclusiveSpan
 from jiant.utils.python.io import read_json_lines
-from jiant.tasks.lib.templates import hacky_tokenization_matching as tokenization_utils
+from jiant.utils import retokenize
+from jiant.utils.tokenization_normalization import normalize_tokenizations
 
 
 @dataclass
@@ -32,20 +34,61 @@ class Example(BaseExample):
     label: str
 
     def tokenize(self, tokenizer):
-        sentence1_tokens, sentence1_span = tokenization_utils.get_token_span(
-            sentence=self.sentence1, span=self.span1, tokenizer=tokenizer,
+        def tokenize_span(tokenizer, sentence: str, char_span: ExclusiveSpan):
+            """Tokenizes sentence and projects char_span to token span.
+
+            Args:
+                tokenizer (transformers.PreTrainedTokenizer): Tokenizer used
+                sentence (str): Sentence to be tokenized
+                char_span (ExclusiveSpan): character indexed span for sentence
+
+            Returns:
+                sentence_target_tokenization (List[str]): tokenized sentence
+                target_span (ExclusiveSpane): token span for sentence
+            """
+            span_start_idx = len(sentence[: char_span.start].split())
+            # If the first word in a span starts with punctuation, the first word will
+            # erroneously be split into two strings by .split().
+            # ie: 'takeaway' -> ["'", "takeaway"]
+            # For span alignment, we start the list index at the punctuation.
+            if (span_start_idx != 0) and (sentence[: (char_span.start)][-1] in string.punctuation):
+                span_start_idx = span_start_idx - 1
+            span_text = sentence[char_span.start : char_span.end]
+
+            sentence_space_tokenization = sentence.split()
+            sentence_target_tokenization = tokenizer.tokenize(sentence)
+            (
+                sentence_normed_space_tokenization,
+                sentence_normed_target_tokenization,
+            ) = normalize_tokenizations(
+                sentence_space_tokenization, sentence_target_tokenization, tokenizer
+            )
+            span_start_char = len(" ".join(sentence_normed_space_tokenization[:span_start_idx]))
+            span_text_char = len(span_text)
+            aligner = retokenize.TokenAligner(
+                sentence_normed_space_tokenization, sentence_normed_target_tokenization
+            )
+            target_span = ExclusiveSpan(
+                *aligner.project_char_to_token_span(
+                    span_start_char, span_start_char + span_text_char
+                )
+            )
+            return sentence_target_tokenization, target_span
+
+        sentence1_target_tokenization, target_span1 = tokenize_span(
+            tokenizer, self.sentence1, self.span1
         )
-        sentence2_tokens, sentence2_span = tokenization_utils.get_token_span(
-            sentence=self.sentence2, span=self.span2, tokenizer=tokenizer,
+        sentence2_target_tokenization, target_span2 = tokenize_span(
+            tokenizer, self.sentence2, self.span2
         )
 
         return TokenizedExample(
             guid=self.guid,
-            sentence1_tokens=sentence1_tokens,
-            sentence2_tokens=sentence2_tokens,
+            sentence1_tokens=sentence1_target_tokenization,
+            sentence2_tokens=sentence2_target_tokenization,
             word=tokenizer.tokenize(self.word),  # might be more than one token
-            sentence1_span=sentence1_span,
-            sentence2_span=sentence2_span,
+            sentence1_span=target_span1,
+            sentence2_span=target_span2,
             label_id=WiCTask.LABEL_TO_ID[self.label],
         )
 
