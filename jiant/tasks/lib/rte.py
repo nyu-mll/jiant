@@ -9,6 +9,7 @@ from jiant.tasks.core import (
     BaseDataRow,
     BatchMixin,
     GlueMixin,
+    SuperGlueMixin,
     Task,
     TaskTypes,
 )
@@ -70,7 +71,7 @@ class Batch(BatchMixin):
     tokens: list
 
 
-class RteTask(GlueMixin, Task):
+class RteTask(SuperGlueMixin, GlueMixin, Task):
     Example = Example
     TokenizedExample = Example
     DataRow = DataRow
@@ -92,13 +93,22 @@ class RteTask(GlueMixin, Task):
     @classmethod
     def _create_examples(cls, lines, set_type):
         examples = []
-        for (i, line) in enumerate(lines):
+        for line in lines:
             examples.append(
                 Example(
-                    guid="%s-%s" % (set_type, i),
+                    # NOTE: RteTask.super_glue_format_preds() is dependent on this guid format.
+                    guid="%s-%s" % (set_type, line["idx"]),
                     input_premise=line["premise"],
                     input_hypothesis=line["hypothesis"],
                     label=line["label"] if set_type != "test" else cls.LABELS[-1],
                 )
             )
         return examples
+
+    @classmethod
+    def super_glue_format_preds(cls, pred_dict):
+        """Reformat this task's raw predictions to have the structure expected by SuperGLUE."""
+        lines = []
+        for pred, guid in zip(list(pred_dict["preds"]), list(pred_dict["guids"])):
+            lines.append({"idx": int(guid.split("-")[1]), "label": cls.LABELS[pred]})
+        return lines

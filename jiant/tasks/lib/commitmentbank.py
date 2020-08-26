@@ -8,6 +8,7 @@ from jiant.tasks.core import (
     BaseTokenizedExample,
     BaseDataRow,
     BatchMixin,
+    SuperGlueMixin,
     Task,
     TaskTypes,
 )
@@ -69,7 +70,7 @@ class Batch(BatchMixin):
     tokens: list
 
 
-class CommitmentBankTask(Task):
+class CommitmentBankTask(SuperGlueMixin, Task):
     Example = Example
     TokenizedExample = Example
     DataRow = DataRow
@@ -94,6 +95,8 @@ class CommitmentBankTask(Task):
         for line in lines:
             examples.append(
                 Example(
+                    # NOTE: CommitmentBankTask.super_glue_format_preds() is
+                    # dependent on this guid format.
                     guid="%s-%s" % (set_type, line["idx"]),
                     input_premise=line["premise"],
                     input_hypothesis=line["hypothesis"],
@@ -101,3 +104,11 @@ class CommitmentBankTask(Task):
                 )
             )
         return examples
+
+    @classmethod
+    def super_glue_format_preds(cls, pred_dict):
+        """Reformat this task's raw predictions to have the structure expected by SuperGLUE."""
+        lines = []
+        for pred, guid in zip(list(pred_dict["preds"]), list(pred_dict["guids"])):
+            lines.append({"idx": int(guid.split("-")[1]), "label": cls.LABELS[pred]})
+        return lines

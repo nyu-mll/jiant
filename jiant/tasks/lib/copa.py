@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from jiant.tasks.lib.templates.shared import labels_to_bimap
 from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.utils.python.io import read_json_lines
+from jiant.tasks.core import SuperGlueMixin
 
 
 @dataclass
@@ -27,7 +28,7 @@ class Batch(mc_template.Batch):
     pass
 
 
-class CopaTask(mc_template.AbstractMultipleChoiceTask):
+class CopaTask(SuperGlueMixin, mc_template.AbstractMultipleChoiceTask):
     Example = Example
     TokenizedExample = Example
     DataRow = DataRow
@@ -58,6 +59,7 @@ class CopaTask(mc_template.AbstractMultipleChoiceTask):
             question = cls._QUESTION_DICT[line["question"]]
             examples.append(
                 Example(
+                    # NOTE: CopaTask.super_glue_format_preds() is dependent on this guid format.
                     guid="%s-%s" % (set_type, line["idx"]),
                     prompt=line["premise"] + " " + question,
                     choice_list=[line["choice1"], line["choice2"]],
@@ -65,3 +67,11 @@ class CopaTask(mc_template.AbstractMultipleChoiceTask):
                 )
             )
         return examples
+
+    @classmethod
+    def super_glue_format_preds(cls, pred_dict):
+        """Reformat this task's raw predictions to have the structure expected by SuperGLUE."""
+        lines = []
+        for pred, guid in zip(list(pred_dict["preds"]), list(pred_dict["guids"])):
+            lines.append({"idx": int(guid.split("-")[1]), "label": cls.CHOICE_KEYS[pred]})
+        return lines

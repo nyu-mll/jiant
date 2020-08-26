@@ -1,5 +1,5 @@
 import numpy as np
-from typing import NamedTuple, Mapping
+from typing import NamedTuple, Mapping, Dict
 from enum import Enum
 from dataclasses import dataclass
 
@@ -176,10 +176,48 @@ class Task:
             raise TypeError(f"Unknown type for collate_fn {type(elem)}")
 
 
-class GlueMixin:
+class SuperGlueMixin:
+    """Mixin for :class:`jiant.tasks.core.Task`s in the `SuperGLUE<https://super.gluebenchmark.com/>`_
+    benchmark.
+    """
+
     @classmethod
-    def get_glue_preds(cls, pred_dict):
-        """Returns a tuple of (index, prediction) as expected by GLUE."""
+    def super_glue_format_preds(cls, pred_dict: Dict):
+        """Tasks in the SuperGLUE benchmark must implement this method to return
+        predictions in the expected SuperGLUE format. This function is expect to
+        return a List[Dict] with each Dict value in the format expected by the
+        SuperGLUE benchmark submission grader.
+
+        Args:
+            pred_dict (Dict): Dictionary mapping "preds" to List of label ids
+            and
+            "guids" to List of example ids
+
+        Raises:
+            NotImplementedError
+        """
+        raise NotImplementedError()
+
+
+class GlueMixin:
+    """Mixin for :class:`jiant.tasks.core.Task`s in the `GLUE<https://gluebenchmark.com/>`_
+    benchmark.
+    """
+
+    @classmethod
+    def get_glue_preds(cls, pred_dict: Dict):
+        """Returns a tuple of (index, prediction) for GLUE benchmark submission.
+
+        Args:
+            pred_dict (Dict): Dictionary mapping "preds" to label ids and "guids"
+            to example ids
+
+        Returns:
+            (tuple): tuple containing:
+                indexes (List[int]): example ids
+                predictions (List[str]): prediction labels (in original task
+                format)
+        """
         indexes = []
         predictions = []
         for pred, guid in zip(list(pred_dict["preds"]), list(pred_dict["guids"])):

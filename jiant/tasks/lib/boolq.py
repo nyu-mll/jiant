@@ -8,6 +8,7 @@ from jiant.tasks.core import (
     BaseTokenizedExample,
     BaseDataRow,
     BatchMixin,
+    SuperGlueMixin,
     Task,
     TaskTypes,
 )
@@ -69,7 +70,7 @@ class Batch(BatchMixin):
     tokens: list
 
 
-class BoolQTask(Task):
+class BoolQTask(SuperGlueMixin, Task):
     Example = Example
     TokenizedExample = Example
     DataRow = DataRow
@@ -91,13 +92,22 @@ class BoolQTask(Task):
     @classmethod
     def _create_examples(cls, lines, set_type):
         examples = []
-        for (i, line) in enumerate(lines):
+        for line in lines:
             examples.append(
                 Example(
-                    guid="%s-%s" % (set_type, i),
+                    # NOTE: BoolQTask.super_glue_format_preds() is dependent on this guid format.
+                    guid="%s-%s" % (set_type, line["idx"]),
                     input_question=line["question"],
                     input_passage=line["passage"],
                     label=line["label"] if set_type != "test" else cls.LABELS[-1],
                 )
             )
         return examples
+
+    @classmethod
+    def super_glue_format_preds(cls, pred_dict):
+        """Reformat this task's raw predictions to have the structure expected by SuperGLUE."""
+        lines = []
+        for pred, guid in zip(list(pred_dict["preds"]), list(pred_dict["guids"])):
+            lines.append({"idx": int(guid.split("-")[1]), "label": str(cls.LABELS[pred]).lower()})
+        return lines

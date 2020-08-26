@@ -9,6 +9,7 @@ from jiant.tasks.core import (
     BaseTokenizedExample,
     BaseDataRow,
     BatchMixin,
+    SuperGlueMixin,
     Task,
     TaskTypes,
 )
@@ -215,7 +216,7 @@ class Batch(BatchMixin):
     word: List
 
 
-class WiCTask(Task):
+class WiCTask(SuperGlueMixin, Task):
     Example = Example
     TokenizedExample = Example
     DataRow = DataRow
@@ -248,6 +249,7 @@ class WiCTask(Task):
             #   hence we don't do an assert here.
             examples.append(
                 Example(
+                    # NOTE: WiCTask.super_glue_format_preds() is dependent on this guid format.
                     guid="%s-%s" % (set_type, line["idx"]),
                     sentence1=line["sentence1"],
                     sentence2=line["sentence2"],
@@ -258,3 +260,11 @@ class WiCTask(Task):
                 )
             )
         return examples
+
+    @classmethod
+    def super_glue_format_preds(cls, pred_dict):
+        """Reformat this task's raw predictions to have the structure expected by SuperGLUE."""
+        lines = []
+        for pred, guid in zip(list(pred_dict["preds"]), list(pred_dict["guids"])):
+            lines.append({"idx": int(guid.split("-")[1]), "label": str(cls.LABELS[pred]).lower()})
+        return lines
