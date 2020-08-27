@@ -67,10 +67,15 @@ class ConcatenateLogitsAccumulator(BaseAccumulator):
 
     def update(self, batch_logits, batch_loss, batch, batch_metadata):
         self.logits_list.append(batch_logits)
-        self.guid_list.append(batch_metadata.get("guid"))
+        batch_guid = batch_metadata.get("guid")
+        if batch_guid is not None:
+            self.guid_list.append(batch_guid)
 
     def get_guids(self):
-        return np.concatenate(self.guid_list)
+        if self.guid_list:
+            return np.concatenate(self.guid_list)
+        else:
+            return None
 
     def get_accumulated(self):
         all_logits = np.concatenate(self.logits_list)
@@ -145,6 +150,10 @@ class TatoebaAccumulator(BaseAccumulator):
         self.embeddings_list.append(batch_logits)
         self.is_english_list.append(batch.is_english.cpu().numpy())
 
+    @classmethod
+    def get_guids(cls):
+        return None
+
     def get_accumulated(self):
         all_embeddings = np.concatenate(self.embeddings_list)
         is_english_arr = np.concatenate(self.is_english_list).astype(bool)
@@ -163,6 +172,10 @@ class Bucc2018Accumulator(BaseAccumulator):
         self.is_english_list.append(batch.is_english.cpu().numpy())
         self.text_hash_list += batch.text_hash
         self.guid_list += batch.guid
+
+    @classmethod
+    def get_guids(cls):
+        return None
 
     def get_accumulated(self):
         return {

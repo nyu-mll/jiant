@@ -26,6 +26,8 @@ We recommend running:
 conda install faiss-gpu cudatoolkit=10.1 -c pytorch
 ```
 
+(Use the appropriate `cudatoolkit` version, which you can check with `nvcc --version`.)
+
 Additionally, the task-model corresponding to retrieval tasks outputs an pooled embedding from a given layer of the encoder. As such, both the layer and pooling method need to be specified in taskmodel config. For instance, to replicate the baseline used in the XTREME benchmark, consider using:
 
 ```python

@@ -313,7 +313,15 @@ def run_val(
     return output
 
 
-def run_test(test_dataloader, jiant_model: JiantModel, task, device, local_rank, verbose=True):
+def run_test(
+    test_dataloader,
+    jiant_model: JiantModel,
+    task,
+    device,
+    local_rank,
+    verbose=True,
+    return_preds=True,
+):
     if not local_rank == -1:
         return
     jiant_model.eval()
@@ -333,9 +341,11 @@ def run_test(test_dataloader, jiant_model: JiantModel, task, device, local_rank,
         eval_accumulator.update(
             batch_logits=batch_logits, batch_loss=0, batch=batch, batch_metadata=batch_metadata,
         )
-    return {
-        "preds": evaluation_scheme.get_preds_from_accumulator(
-            task=task, accumulator=eval_accumulator,
-        ),
+    output = {
         "accumulator": eval_accumulator,
     }
+    if return_preds:
+        output["preds"] = evaluation_scheme.get_preds_from_accumulator(
+            task=task, accumulator=eval_accumulator,
+        )
+    return output

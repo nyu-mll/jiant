@@ -77,15 +77,15 @@ def download_udpos_data_and_write_config(task_data_base_path: str, task_config_b
     # UDPOS requires networkx==1.11
 
     def _read_one_file(file):
-        # Adapted from https://github.com/google-research/xtreme/blob/
-        #              522434d1aece34131d997a97ce7e9242a51a688a/utils_preprocess.py#L188
+        # Adapted from https://github.com/JunjieHu/xtreme/blob/
+        #              9fe0b142d0ee3eb7dd047ab86f12a76702e79bb4/utils_preprocess.py
         data = []
         sent, tag, lines = [], [], []
         for line in open(file, "r"):
             items = line.strip().split("\t")
             if len(items) != 10:
-                empty = all(w == "_" for w in sent)
-                if not empty:
+                num_empty = sum([int(w == "_") for w in sent])
+                if num_empty == 0 or num_empty < len(sent) - 1:
                     data.append((sent, tag, lines))
                 sent, tag, lines = [], [], []
             else:
@@ -219,7 +219,7 @@ def download_udpos_data_and_write_config(task_data_base_path: str, task_config_b
         task_data_path = os.path.join(task_data_base_path, task_name)
         os.makedirs(task_data_path, exist_ok=True)
         all_examples = {k: [] for k in ["train", "val", "test"]}
-        for path in glob.glob(os.path.join(conll_path, lang, "*.conll")):
+        for path in sorted(glob.glob(os.path.join(conll_path, lang, "*.conll"))):
             examples = _read_one_file(path)
             if "train" in path:
                 all_examples["train"] += examples
