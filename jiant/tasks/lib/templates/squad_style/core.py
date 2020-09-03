@@ -136,7 +136,7 @@ class Example(BaseExample):
                 truncated_query if tokenizer.padding_side == "right" else span_doc_tokens,
                 span_doc_tokens if tokenizer.padding_side == "right" else truncated_query,
                 truncation="only_second" if tokenizer.padding_side == "right" else "only_first",
-                padding="max_length",
+                pad_to_max_length=True,
                 max_length=max_seq_length,
                 return_overflowing_tokens=True,
                 stride=max_seq_length
