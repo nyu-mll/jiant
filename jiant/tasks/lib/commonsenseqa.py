@@ -50,13 +50,41 @@ class CommonsenseQATask(mc_template.AbstractMultipleChoiceTask):
     def _create_examples(cls, lines, set_type):
         examples = []
         for i, line in enumerate(lines):
-            choice_dict = {elem["label"]: elem["text"] for elem in line["question"]["choices"]}
-            examples.append(
-                Example(
-                    guid="%s-%s" % (set_type, i),
-                    prompt=line["question"]["stem"],
-                    choice_list=[choice_dict[key] for key in cls.CHOICE_KEYS],
-                    label=line["answerKey"] if set_type != "test" else cls.CHOICE_KEYS[-1],
-                )
-            )
+            examples.append(cls._create_example(raw_example=line, set_type=set_type, i=i,))
         return examples
+
+    @classmethod
+    def _create_example(cls, raw_example, set_type, i):
+        # Use heuristic for determining original or NLP format
+        if isinstance(raw_example["question"], dict):
+            return cls._create_example_from_original_format(
+                raw_example=raw_example, set_type=set_type, i=i,
+            )
+        elif isinstance(raw_example["question"], str):
+            return cls._create_example_from_nlp_format(
+                raw_example=raw_example, set_type=set_type, i=i,
+            )
+        else:
+            raise TypeError(raw_example["question"])
+
+    @classmethod
+    def _create_example_from_original_format(cls, raw_example, set_type, i):
+        """Return question and choices from original example format"""
+        choice_dict = {elem["label"]: elem["text"] for elem in raw_example["question"]["choices"]}
+        choice_list = [choice_dict[key] for key in cls.CHOICE_KEYS]
+        return Example(
+            guid="%s-%s" % (set_type, i),
+            prompt=raw_example["question"]["stem"],
+            choice_list=choice_list,
+            label=raw_example["answerKey"] if set_type != "test" else cls.CHOICE_KEYS[-1],
+        )
+
+    @classmethod
+    def _create_example_from_nlp_format(cls, raw_example, set_type, i):
+        """Return question and choices from NLP example format"""
+        return Example(
+            guid="%s-%s" % (set_type, i),
+            prompt=raw_example["question"],
+            choice_list=raw_example["choices"]["text"],
+            label=raw_example["answerKey"] if set_type != "test" else cls.CHOICE_KEYS[-1],
+        )

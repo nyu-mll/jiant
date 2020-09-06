@@ -48,7 +48,12 @@ class CosmosQATask(mc_template.AbstractMultipleChoiceTask):
 
     @classmethod
     def _create_examples(cls, path, set_type):
-        df = pd.read_csv(path)
+        if path.endswith(".csv"):
+            df = pd.read_csv(path)
+        elif path.endswith(".jsonl"):
+            df = pd.read_json(path, lines=True)
+        else:
+            raise RuntimeError("Format not supported")
         examples = []
         for i, row in enumerate(df.itertuples()):
             examples.append(

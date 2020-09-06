@@ -25,6 +25,13 @@ SUPERGLUE_TASKS = {
     "superglue_winogender_diagnostics",
 }
 
+OTHER_NLP_TASKS = {
+    "snli",
+    "commonsenseqa",
+    "hellaswag",
+    "cosmosqa",
+}
+
 XTREME_TASKS = {
     "xnli",
     "pawsx",

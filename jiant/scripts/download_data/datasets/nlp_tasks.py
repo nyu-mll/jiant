@@ -117,6 +117,13 @@ NLP_CONVERSION_DICT = {
     },
     # === Other === #
     "snli": {"path": "snli", "label_map": {0: "entailment", 1: "neutral", 2: "contradiction"}},
+    "commonsenseqa": {"path": "commonsense_qa", "phase_list": ["train", "val", "test"]},
+    "hellaswag": {
+        "path": "hellaswag",
+        "phase_list": ["train", "val", "test"],
+        "label_map": {"0": 0, "1": 1, "2": 2, "3": 3},
+    },
+    "cosmosqa": {"path": "cosmos_qa", "phase_list": ["train", "val", "test"]},
 }
 
 # NLP uses "validation", we use "val"
