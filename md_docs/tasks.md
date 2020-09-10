@@ -22,6 +22,7 @@
 | EP-DPR | dpr | ✅ |  | dpr | Edge-Probing |
 | GLUE Diagnostic | glue_diagnostics | ✅ | ✅ | glue_diagnostics | GLUE |
 | HellaSwag | hellaswag | ✅ | ✅ | hellaswag |  |
+| MLM | * | ✅ |  | mlm_simple | See task-specific notes. |
 | MLQA | `mlqa_{lang1}_{lang2}` | ✅ | ✅ | mlqa | XTREME, multi-lang |
 | MNLI | mnli | ✅ | ✅ | mnli | GLUE, MNLI-matched |
 | MNLI-mismatched | mnli_mismatched | ✅ | ✅ | mnli_mismatched | GLUE |
@@ -70,3 +71,23 @@
 ### Adversarial NLI
 
 [Adversarial NLI](https://arxiv.org/pdf/1910.14599.pdf) has 3 rounds of adversarial data creation. A1/A2/A3 are expanding supersets of the previous round.
+
+
+### Masked Language Modeling (MLM)
+
+MLM is a generic task, implemented with the `jiant_task_name` "`mlm_simple`". In other words, it is meant to be used with any appropriately formatted file. 
+
+`mlm_simple` expects input data files to be a single text file per phase, where each line corresponds to one example, and empty lines are ignored. This means that if a line corresponds to more than the `max_seq_length` of tokens during tokenization, everything past the first `max_seq_length` tokens per line will be ignored. We plan to add more complex implementations in the future.
+
+You can structure your MLM task config file as follow:
+
+```json
+{
+  "task": "mlm_simple",
+  "paths": {
+    "train": "/path/to/train.txt",
+    "val": "/path/to/val.txt"
+  },
+  "name": "my_mlm_task"
+}
+```

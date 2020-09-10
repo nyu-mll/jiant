@@ -174,7 +174,7 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
             assert self.task_cache_base_path is None
             task_cache_config_dict = py_io.read_json(self.task_cache_config_dict)
         elif isinstance(task_config_path_dict, dict):
-            task_cache_config_dict = self.task_config_path_dict
+            task_cache_config_dict = self.task_cache_config_dict
         else:
             raise RuntimeError("Need 'task_cache_base_path' or 'task_cache_dict'")
 

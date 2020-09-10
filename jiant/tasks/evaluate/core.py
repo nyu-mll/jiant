@@ -881,7 +881,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return MultiRCEvaluationScheme()
     elif isinstance(task, tasks.StsbTask):
         return PearsonAndSpearmanEvaluationScheme()
-    elif isinstance(task, (tasks.MLMWikitext103Task, tasks.MLMCrosslingualWikiTask)):
+    elif isinstance(task, tasks.MLMSimpleTask):
         return MLMEvaluationScheme()
     elif isinstance(task, (tasks.QAMRTask, tasks.QASRLTask)):
         return SpanPredictionF1andEMScheme()
