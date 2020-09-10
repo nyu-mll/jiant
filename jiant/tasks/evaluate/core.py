@@ -619,7 +619,11 @@ class SQuADEvaluationScheme(BaseEvaluationScheme):
             null_score_diff_threshold=task.null_score_diff_threshold,
             tokenizer=tokenizer,
         )
-        return Metrics(major=(results["f1"] + results["exact"]) / 2, minor=results,)
+        if task.version_2_with_negative:
+            # Return the score after the best thresholds for answering has been selected
+            return Metrics(major=(results["best_f1"] + results["best_exact"]) / 2, minor=results)
+        else:
+            return Metrics(major=(results["f1"] + results["exact"]) / 2, minor=results)
 
     @classmethod
     def get_label_from_data_row(cls, data_row):
