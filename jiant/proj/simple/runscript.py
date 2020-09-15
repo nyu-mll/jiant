@@ -34,9 +34,10 @@ class RunConfiguration(zconf.RunConfig):
     # === Misc parameters === #
     train_batch_size = zconf.attr(type=int, default=32)
     max_seq_length = zconf.attr(type=int, default=256)
-    num_train_epochs = zconf.attr(type=int, default=3)
+    num_train_epochs = zconf.attr(type=float, default=3)
     train_examples_cap = zconf.attr(type=int, default=None)
     dry_run = zconf.attr(action="store_true")
+    create_config = zconf.attr(action="store_true")
 
     # === Running Setup === #
     do_save = zconf.attr(action="store_true")
@@ -102,11 +103,18 @@ def run_simple(args: RunConfiguration):
     with distributed.only_first_process(local_rank=args.local_rank):
         # === Step 1: Write task configs based on templates === #
         full_task_name_list = sorted(list(set(args.train_tasks + args.val_tasks + args.test_tasks)))
-        task_config_path_dict = create_and_write_task_configs(
-            task_name_list=full_task_name_list,
-            data_dir=args.data_dir,
-            task_config_base_path=os.path.join(args.exp_dir, "task_configs"),
-        )
+        task_config_path_dict = {}
+        if args.create_config:
+            task_config_path_dict = create_and_write_task_configs(
+                task_name_list=full_task_name_list,
+                data_dir=args.data_dir,
+                task_config_base_path=os.path.join(args.data_dir, "configs"),
+            )
+        else:
+            for task_name in full_task_name_list:
+                task_config_path_dict[task_name] = os.path.join(
+                    args.data_dir, "configs", f"{task_name}_config.json"
+                )
 
         # === Step 2: Download models === #
         if not os.path.exists(os.path.join(model_cache_path, args.model_type)):
@@ -152,7 +160,7 @@ def run_simple(args: RunConfiguration):
     # We'll do this with a configurator. Creating a jiant_task_config has a surprising
     # number of moving parts.
     jiant_task_container_config = configurator.SimpleAPIMultiTaskConfigurator(
-        task_config_base_path=os.path.join(args.exp_dir, "task_configs"),
+        task_config_base_path=os.path.join(args.data_dir, "configs"),
         task_cache_base_path=os.path.join(args.exp_dir, "cache"),
         train_task_name_list=args.train_tasks,
         val_task_name_list=args.val_tasks,
@@ -235,10 +243,10 @@ def dry_run(args: RunConfiguration):
     for task_name in full_task_name_list:
         print(
             f"""
-python jiant/proj/main/write_task_configs.py \\
+python jiant/proj/main/write_configs.py \\
     --task_name {task_name} \\
     --task_data_dir {os.path.join(args.data_dir, task_name)} \\
-    --task_config_path {os.path.join(args.exp_dir, "task_configs", f"{task_name}_config.json")}
+    --task_config_path {os.path.join(args.data_dir, "configs", f"{task_name}_config.json")}
 """.strip()
         )
 
@@ -265,7 +273,7 @@ python jiant/proj/main/export_model.py \\
         print(
             f"""
 python jiant/proj/main/tokenize_and_cache.py \\
-    --task_config_path {os.path.join(args.exp_dir, "task_configs", f"{task_name}_config.json")} \\
+    --task_config_path {os.path.join(args.data_dir, "configs", f"{task_name}_config.json")} \\
     --model_type {args.model_type} \\
     --model_tokenizer_path {os.path.join(model_cache_path, args.model_type, "tokenizer")} \\
     --output_dir {os.path.join(args.exp_dir, "cache", task_name)} \\
@@ -281,7 +289,7 @@ python jiant/proj/main/tokenize_and_cache.py \\
 python jiant/proj/main/scripts/configurator.py \\
     SimpleAPIMultiTaskConfigurator \\
     {os.path.join(args.exp_dir, "run_configs", f"{args.run_name}_config.json")} \\
-    --task_config_base_path {os.path.join(args.exp_dir, "task_configs")} \\
+    --task_config_base_path {os.path.join(args.data_dir, "configs")} \\
     --task_cache_base_path {os.path.join(args.exp_dir, "cache")} \\
     --train_task_name_list {",".join(args.train_tasks)} \\
     --val_task_name_list {",".join(args.val_tasks)} \\
