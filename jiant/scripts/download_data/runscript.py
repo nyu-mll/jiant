@@ -62,12 +62,6 @@ def download_data(task_names, output_base_path):
                 task_data_base_path=task_data_base_path,
                 task_config_base_path=task_config_base_path,
             )
-        elif task_name in SQUAD_TASKS:
-            files_tasks_download.download_squad_data_and_write_config(
-                task_name=task_name,
-                task_data_path=task_data_path,
-                task_config_path=os.path.join(task_config_base_path, f"{task_name}_config.json"),
-            )
         elif task_name in DIRECT_DOWNLOAD_TASKS:
             files_tasks_download.download_task_data_and_write_config(
                 task_name=task_name,

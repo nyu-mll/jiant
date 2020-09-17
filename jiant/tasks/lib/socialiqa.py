@@ -50,13 +50,24 @@ class SocialIQATask(mc_template.AbstractMultipleChoiceTask):
     def _create_examples(cls, lines, set_type):
         examples = []
         answer_key_ls = ["answerA", "answerB", "answerC"]
+        nlp_label_map = {
+            "1\n": "A",
+            "2\n": "B",
+            "3\n": "C",
+        }
         for i, line in enumerate(lines):
+            if "label" in line:
+                # Loading from NLP data
+                label = nlp_label_map[line["label"]]
+            else:
+                # Loading from original data
+                label = line["correct"]
             examples.append(
                 Example(
                     guid="%s-%s" % (set_type, i),
                     prompt=line["context"] + " " + line["question"],
                     choice_list=[line[answer_key] for answer_key in answer_key_ls],
-                    label=line["correct"],
+                    label=label,
                 )
             )
         return examples

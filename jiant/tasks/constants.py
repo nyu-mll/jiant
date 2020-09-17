@@ -30,6 +30,8 @@ OTHER_NLP_TASKS = {
     "commonsenseqa",
     "hellaswag",
     "cosmosqa",
+    "socialiqa",
+    "scitail",
 }
 
 XTREME_TASKS = {

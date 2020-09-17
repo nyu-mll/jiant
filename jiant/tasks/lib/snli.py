@@ -92,14 +92,28 @@ class SnliTask(Task):
     def _create_examples(cls, lines, set_type):
         examples = []
         for (i, line) in enumerate(lines):
-            if line["gold_label"] == "-":
-                continue
-            examples.append(
-                Example(
-                    guid="%s-%s" % (set_type, i),
-                    input_premise=line["sentence1"],
-                    input_hypothesis=line["sentence2"],
-                    label=line["gold_label"] if set_type != "test" else cls.LABELS[-1],
+            if "gold_label" in line:
+                # Loading from original data
+                if line["gold_label"] == "-":
+                    continue
+                examples.append(
+                    Example(
+                        guid="%s-%s" % (set_type, i),
+                        input_premise=line["sentence1"],
+                        input_hypothesis=line["sentence2"],
+                        label=line["gold_label"] if set_type != "test" else cls.LABELS[-1],
+                    )
                 )
-            )
+            else:
+                # Loading from NLP data
+                if line["label"] == -1:
+                    continue
+                examples.append(
+                    Example(
+                        guid="%s-%s" % (set_type, i),
+                        input_premise=line["premise"],
+                        input_hypothesis=line["hypothesis"],
+                        label=line["label"] if set_type != "test" else cls.LABELS[-1],
+                    )
+                )
         return examples
