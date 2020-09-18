@@ -14,11 +14,10 @@ The files specific to this paper are located in the [`data-collection-util` dire
 ## Citation
 
 ```bibtex
-@article{Bowman2020EntailmentNewProtocols,
+@inproceedings{Bowman2020EntailmentNewProtocols,
   title={Collecting Entailment Data for Pretraining: New Protocols and Negative Results},
   author={Samuel R. Bowman and Jennimaria Palomaki and Livio Baldini Soares and Emily Pitler},
-  journal={ArXiv},
   year={2020},
-  volume={abs/2004.11997}
+  booktitle={Proceedings of EMNLP}
 }
 ```
