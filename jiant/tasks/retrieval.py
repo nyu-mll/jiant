@@ -32,6 +32,7 @@ from jiant.tasks.lib.qamr import QAMRTask
 from jiant.tasks.lib.qasrl import QASRLTask
 from jiant.tasks.lib.qqp import QqpTask
 from jiant.tasks.lib.qnli import QnliTask
+from jiant.tasks.lib.race import RaceTask
 from jiant.tasks.lib.record import ReCoRDTask
 from jiant.tasks.lib.rte import RteTask
 from jiant.tasks.lib.scitail import SciTailTask
@@ -94,6 +95,7 @@ TASK_DICT = {
     "qasrl": QASRLTask,
     "qnli": QnliTask,
     "qqp": QqpTask,
+    "race": RaceTask,
     "record": ReCoRDTask,
     "rte": RteTask,
     "scitail": SciTailTask,
