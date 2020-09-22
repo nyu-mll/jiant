@@ -129,13 +129,13 @@ NLP_CONVERSION_DICT = {
     "socialiqa": {"path": "social_i_qa", "phase_list": ["train", "val"]},
     "scitail": {"path": "scitail", "name": "tsv_format", "phase_list": ["train", "val", "test"]},
     # === Additional for IRT === #
-    "winogrande":{
-        "path":"winogrande",
-        "name":"winogrande_xs",
-        "phase_map": {"dev": "val", "train_xs":"train"},
-        "phase_list": ["train", "val", "test"],
-        "label_map":WinograndeTask.ID_TO_CHOICE,
-    }
+    # "winogrande":{
+    #     "path":"winogrande",
+    #     "name":"winogrande_xs",
+    #     "phase_map": {"dev": "val", "train_xs":"train"},
+    #     "phase_list": ["train", "val", "test"],
+    #     "label_map":WinograndeTask.ID_TO_CHOICE,
+    # }
 }
 
 # NLP uses "validation", we use "val"
