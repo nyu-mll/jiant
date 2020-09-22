@@ -32,6 +32,7 @@ OTHER_NLP_TASKS = {
     "cosmosqa",
     "socialiqa",
     "scitail",
+    "winogrande",
 }
 
 XTREME_TASKS = {
