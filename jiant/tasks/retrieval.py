@@ -19,6 +19,8 @@ from jiant.tasks.lib.edge_probing.dpr import DprTask
 from jiant.tasks.lib.glue_diagnostics import GlueDiagnosticsTask
 from jiant.tasks.lib.hellaswag import HellaSwagTask
 from jiant.tasks.lib.mlm_simple import MLMSimpleTask
+from jiant.tasks.lib.mlm_premasked import MLMPremaskedTask
+from jiant.tasks.lib.mlm_pretokenized import MLMPretokenizedTask
 from jiant.tasks.lib.mlqa import MlqaTask
 from jiant.tasks.lib.mnli import MnliTask
 from jiant.tasks.lib.mnli_mismatched import MnliMismatchedTask
@@ -81,6 +83,8 @@ TASK_DICT = {
     "glue_diagnostics": GlueDiagnosticsTask,
     "hellaswag": HellaSwagTask,
     "mlm_simple": MLMSimpleTask,
+    "mlm_premasked": MLMPremaskedTask,
+    "mlm_pretokenized": MLMPretokenizedTask,
     "mlqa": MlqaTask,
     "mnli": MnliTask,
     "mnli_mismatched": MnliMismatchedTask,

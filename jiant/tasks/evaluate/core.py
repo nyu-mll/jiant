@@ -17,6 +17,7 @@ import jiant.tasks.lib.templates.squad_style.utils as squad_style_utils
 import jiant.tasks.lib.mlqa as mlqa_lib
 import jiant.tasks.lib.bucc2018 as bucc2018_lib
 import jiant.tasks.lib.tatoeba as tatoeba_lib
+from jiant.tasks.lib.templates import mlm as mlm_template
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
 from jiant.utils.python.io import read_json
 from jiant.utils.string_comparing import string_f1_score, exact_match_score
@@ -35,6 +36,9 @@ class BaseEvaluation:
 class BaseAccumulator:
     def update(self, batch_logits, batch_loss, batch, batch_metadata):
         raise NotImplementedError()
+
+    def get_guids(self):
+        return None
 
     def get_accumulated(self):
         raise NotImplementedError()
@@ -139,6 +143,26 @@ class SpanPredictionF1andEMScheme(BaseEvaluationScheme):
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
         return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels)
+
+
+class MLMPremaskedAccumulator(BaseAccumulator):
+    def __init__(self):
+        self.loss_list = []
+        self.logits_list = []
+
+    def update(self, batch_logits, batch_loss, batch, batch_metadata):
+        batch_size = len(batch)
+        # Select the tokens that we do MLM prediction on
+        masked_tokens_selector = (
+            batch.masked_lm_labels.cpu().numpy() != mlm_template.NON_MASKED_TOKEN_LABEL_ID
+        )
+        for i in range(batch_size):
+            # noinspection PyUnresolvedReferences
+            self.logits_list.append(batch_logits[i][masked_tokens_selector[i]])
+        self.loss_list.append(batch_loss)
+
+    def get_accumulated(self):
+        return self.loss_list, self.logits_list
 
 
 class TatoebaAccumulator(BaseAccumulator):
@@ -727,6 +751,37 @@ class MLMEvaluationScheme(BaseEvaluationScheme):
         )
 
 
+class MLMPremaskedEvaluationScheme(MLMEvaluationScheme):
+    @classmethod
+    def get_accumulator(cls) -> BaseAccumulator:
+        return MLMPremaskedAccumulator()
+
+    @classmethod
+    def get_labels_from_cache_and_examples(cls, task, cache, examples):
+        labels = []
+        for datum in cache.iter_all():
+            masked_lm_labels = datum["data_row"].masked_lm_labels
+            labels.append(
+                masked_lm_labels[masked_lm_labels != mlm_template.NON_MASKED_TOKEN_LABEL_ID]
+            )
+        return labels
+
+    def get_preds_from_accumulator(self, task, accumulator):
+        return accumulator.get_accumulated()
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: BaseAccumulator, tokenizer, labels
+    ) -> Metrics:
+        loss_list, _ = accumulator.get_accumulated()
+        average_loss = mean(loss_list)
+        perplexity = np.exp(average_loss)
+        return Metrics(
+            # Major = negative perplexity
+            major=-perplexity,
+            minor={"perplexity": perplexity},
+        )
+
+
 class TatoebaEvaluationScheme(BaseEvaluationScheme):
     def get_accumulator(self):
         return TatoebaAccumulator()
@@ -887,6 +942,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return PearsonAndSpearmanEvaluationScheme()
     elif isinstance(task, tasks.MLMSimpleTask):
         return MLMEvaluationScheme()
+    elif isinstance(task, (tasks.MLMPremaskedTask, tasks.MLMPretokenizedTask)):
+        return MLMPremaskedEvaluationScheme()
     elif isinstance(task, (tasks.QAMRTask, tasks.QASRLTask)):
         return SpanPredictionF1andEMScheme()
     elif isinstance(task, (tasks.UdposTask, tasks.PanxTask)):

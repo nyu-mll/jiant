@@ -18,6 +18,8 @@ from jiant.tasks.lib.templates.shared import (
     create_input_set_from_tokens_and_segments,
 )
 
+NON_MASKED_TOKEN_LABEL_ID = -100
+
 
 @dataclass
 class Example(BaseExample):
@@ -62,8 +64,13 @@ class DataRow(BaseDataRow):
     tokens: list
 
 
+class BaseMLMBatch:
+    def get_masked(self, mlm_probability, tokenizer, do_mask):
+        raise NotImplementedError
+
+
 @dataclass
-class Batch(BatchMixin):
+class Batch(BatchMixin, BaseMLMBatch):
     input_ids: torch.LongTensor
     input_mask: torch.LongTensor
     segment_ids: torch.LongTensor
@@ -161,7 +168,7 @@ def mlm_mask_tokens(
         padding_mask = labels.eq(tokenizer.pad_token_id)
         probability_matrix.masked_fill_(padding_mask, value=0.0)
     masked_indices = torch.bernoulli(probability_matrix).bool()
-    labels[~masked_indices] = -100  # We only compute loss on masked tokens
+    labels[~masked_indices] = NON_MASKED_TOKEN_LABEL_ID  # We only compute loss on masked tokens
 
     # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
     indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
