@@ -240,6 +240,9 @@ def download_winogrande_data_and_write_config(
         "https://storage.googleapis.com/ai2-mosaic/public/winogrande/winogrande_1.1.zip",
         task_data_path,
     )
+
+    task_data_path = os.path.join(task_data_path, "winogrande_1.1")
+
     py_io.write_json(
         data={
             "task": task_name,
