@@ -132,7 +132,7 @@ NLP_CONVERSION_DICT = {
     "winogrande":{
         "path":"winogrande",
         "name":"winogrande_xs",
-        "phase_map": {"dev": "val"},
+        "phase_map": {"dev": "val", "train_xs":"train"},
         "phase_list": ["train", "val", "test"],
         "label_map":WinograndeTask.ID_TO_CHOICE,
     }
