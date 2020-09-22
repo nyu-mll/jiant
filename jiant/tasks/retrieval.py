@@ -56,6 +56,9 @@ from jiant.tasks.lib.wnli import WnliTask
 from jiant.tasks.lib.wsc import WSCTask
 from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
+# === Additional for IRT === #
+from jiant.tasks.lib.winogrande import WinograndeTask
+
 
 from jiant.tasks.core import Task
 from jiant.utils.python.io import read_json
@@ -117,6 +120,8 @@ TASK_DICT = {
     "wsc": WSCTask,
     "xnli": XnliTask,
     "xquad": XquadTask,
+    # === Additional for IRT === #
+    "winogrande": WinograndeTask,
 }
 
 
