@@ -260,7 +260,7 @@ def download_winogrande_data_and_write_config(
                 "train_xl_labels": os.path.join(task_data_path, "train_xl-labels.lst"),
                 "val": os.path.join(task_data_path, "dev.jsonl"),
                 "val_labels": os.path.join(task_data_path, "dev-labels.lst"),
-                "test": os.path.join(task_data_path, "test.lst"),
+                "test": os.path.join(task_data_path, "test.jsonl"),
             },
             "name": task_name,
         },
