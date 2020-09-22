@@ -131,7 +131,8 @@ NLP_CONVERSION_DICT = {
     # === Additional for IRT === #
     "winogrande":{
         "path":"winogrande",
-        "phase_map": {"dev": "val", "train_s": "train"},
+        "name":"winogrande_xs",
+        "phase_map": {"dev": "val"},
         "phase_list": ["train", "val", "test"],
         "label_map":WinograndeTask.ID_TO_CHOICE,
     }
