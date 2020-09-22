@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from jiant.tasks.lib.templates.shared import labels_to_bimap
 from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.utils.python.io import read_json_lines
-
+from typing import List
 
 @dataclass
 class Example(mc_template.Example):
