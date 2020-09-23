@@ -29,7 +29,7 @@ class Batch(mc_template.Batch):
     pass
 
 
-class WinograndeTask(mc_template.AbstractMultipleChoiceTask):
+class ArctTask(mc_template.AbstractMultipleChoiceTask):
     Example = Example
     TokenizedExample = Example
     DataRow = DataRow

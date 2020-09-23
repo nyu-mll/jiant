@@ -125,7 +125,7 @@ TASK_DICT = {
     # === Additional for IRT === #
     "winogrande": WinograndeTask,
     "arct": ArctTask,
-    "mcscript" : MCScriptTask
+    "mcscript" : MCScriptTask,
 }
 
 
