@@ -66,11 +66,15 @@ class RunConfiguration(zconf.RunConfig):
     server_port = zconf.attr(default="", type=str)
 
     def _post_init(self):
-        assert (
-            (self.train_tasks or self.val_tasks or self.test_tasks)
-            and not self.tasks
-            or (self.tasks and not (self.train_tasks or self.val_tasks or self.test_tasks))
-        ), "Can only specify tasks, or train_tasks/val_tasks/test_tasks"
+        assert self.tasks or (
+            self.train_tasks or self.val_tasks or self.test_tasks
+        ), "Must include tasks or one of train_tasks, val_tasks, tests_tasks"
+        if self.tasks and (self.train_tasks or self.val_tasks or self.test_tasks):
+            assert (
+                ([self.tasks] == self.train_tasks)
+                and ([self.tasks] == self.val_tasks)
+                and ([self.tasks] == self.test_tasks)
+            ), "Tasks must be same as train_tasks/val_tasks/test_tasks if both are present"
         if self.tasks:
             self.train_tasks = self.tasks
             self.val_tasks = self.tasks
@@ -190,11 +194,12 @@ def run_simple(args: RunConfiguration):
         model_weights_path = os.path.join(
             model_cache_path, args.model_type, "model", f"{args.model_type}.p"
         )
+    run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
     runscript.run_loop(
         runscript.RunConfiguration(
             # === Required parameters === #
             jiant_task_container_config_path=jiant_task_container_config_path,
-            output_dir=os.path.join(args.exp_dir, "runs", args.run_name),
+            output_dir=run_output_dir,
             # === Model parameters === #
             model_type=args.model_type,
             model_path=model_weights_path,
@@ -230,6 +235,7 @@ def run_simple(args: RunConfiguration):
             server_port=args.server_port,
         )
     )
+    py_io.write_file(args.to_json(), os.path.join(run_output_dir, "simple_run_config.json"))
 
 
 def dry_run(args: RunConfiguration):
