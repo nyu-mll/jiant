@@ -1,0 +1,5 @@
+{"premise": "The new rights are nice enough", "hypothesis": "Everyone really likes the newest benefits ", "label": "neutral"}
+{"premise": "This site includes a list of all award winners and a searchable database of Government Executive articles.", "hypothesis": "The Government Executive articles housed on the website are not able to be searched.", "label": "contradiction"}
+{"premise": "uh i don't know i i have mixed emotions about him uh sometimes i like him but at the same times i love to see somebody beat him", "hypothesis": "I like him for the most part, but would still enjoy seeing someone beat him.", "label": "entailment"}
+{"premise": "yeah i i think my favorite restaurant is always been the one closest  you know the closest as long as it's it meets the minimum criteria you know of good food", "hypothesis": "My favorite restaurants are always at least a hundred miles away from my house. ", "label": "contradiction"}
+{"premise": "i don't know um do you do a lot of camping", "hypothesis": "I know exactly.", "label": "contradiction"}

@@ -1,10 +1,10 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.1.0
+-   repo: https://github.com/ambv/black
+    rev: stable
     hooks:
-      - id: trailing-whitespace
-      - id: check-yaml
-  - repo: https://github.com/ambv/black
-    rev: 19.3b0
+    - id: black
+      language_version: python3.7
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.9
     hooks:
-      - id: black
+    - id: flake8
