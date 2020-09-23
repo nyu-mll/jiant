@@ -142,7 +142,7 @@ def load_encoder_from_transformers_weights(
     """
     remainder_weights_dict = {}
     load_weights_dict = {}
-    model_arch = get_model_arch_from_encoder(encoder=encoder)
+    model_arch = ModelArchitectures.from_encoder(encoder=encoder)
     encoder_prefix = MODEL_PREFIX[model_arch] + "."
     # Encoder
     for k, v in weights_dict.items():
@@ -240,11 +240,29 @@ def create_taskmodel(
         Taskmodel (e.g., ClassificationModel) appropriate for the task type and encoder.
 
     """
+    if model_arch in [
+        ModelArchitectures.BERT,
+        ModelArchitectures.ROBERTA,
+        ModelArchitectures.ALBERT,
+        ModelArchitectures.XLM_ROBERTA,
+        ModelArchitectures.ELECTRA,
+    ]:
+        hidden_size = encoder.config.hidden_size
+        hidden_dropout_prob = encoder.config.hidden_dropout_prob
+    elif model_arch in [
+        ModelArchitectures.BART,
+        ModelArchitectures.MBART,
+    ]:
+        hidden_size = encoder.config.d_model
+        hidden_dropout_prob = encoder.config.dropout
+    else:
+        raise KeyError()
+
     if task.TASK_TYPE == TaskTypes.CLASSIFICATION:
         assert taskmodel_kwargs is None
         classification_head = heads.ClassificationHead(
-            hidden_size=encoder.config.hidden_size,
-            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            hidden_size=hidden_size,
+            hidden_dropout_prob=hidden_dropout_prob,
             num_labels=len(task.LABELS),
         )
         taskmodel = taskmodels.ClassificationModel(
@@ -253,15 +271,13 @@ def create_taskmodel(
     elif task.TASK_TYPE == TaskTypes.REGRESSION:
         assert taskmodel_kwargs is None
         regression_head = heads.RegressionHead(
-            hidden_size=encoder.config.hidden_size,
-            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            hidden_size=hidden_size, hidden_dropout_prob=hidden_dropout_prob,
         )
         taskmodel = taskmodels.RegressionModel(encoder=encoder, regression_head=regression_head)
     elif task.TASK_TYPE == TaskTypes.MULTIPLE_CHOICE:
         assert taskmodel_kwargs is None
         choice_scoring_head = heads.RegressionHead(
-            hidden_size=encoder.config.hidden_size,
-            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            hidden_size=hidden_size, hidden_dropout_prob=hidden_dropout_prob,
         )
         taskmodel = taskmodels.MultipleChoiceModel(
             encoder=encoder, num_choices=task.NUM_CHOICES, choice_scoring_head=choice_scoring_head,
@@ -279,8 +295,8 @@ def create_taskmodel(
     elif task.TASK_TYPE == TaskTypes.SPAN_COMPARISON_CLASSIFICATION:
         assert taskmodel_kwargs is None
         span_comparison_head = heads.SpanComparisonHead(
-            hidden_size=encoder.config.hidden_size,
-            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            hidden_size=hidden_size,
+            hidden_dropout_prob=hidden_dropout_prob,
             num_spans=task.num_spans,
             num_labels=len(task.LABELS),
         )
@@ -290,8 +306,8 @@ def create_taskmodel(
     elif task.TASK_TYPE == TaskTypes.MULTI_LABEL_SPAN_CLASSIFICATION:
         assert taskmodel_kwargs is None
         span_comparison_head = heads.SpanComparisonHead(
-            hidden_size=encoder.config.hidden_size,
-            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            hidden_size=hidden_size,
+            hidden_dropout_prob=hidden_dropout_prob,
             num_spans=task.num_spans,
             num_labels=len(task.LABELS),
         )
@@ -301,8 +317,8 @@ def create_taskmodel(
     elif task.TASK_TYPE == TaskTypes.TAGGING:
         assert taskmodel_kwargs is None
         token_classification_head = heads.TokenClassificationHead(
-            hidden_size=encoder.config.hidden_size,
-            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
+            hidden_size=hidden_size,
+            hidden_dropout_prob=hidden_dropout_prob,
             num_labels=len(task.LABELS),
         )
         taskmodel = taskmodels.TokenClassificationModel(
@@ -340,6 +356,12 @@ def create_taskmodel(
                 vocab_size=encoder.config.vocab_size,
                 layer_norm_eps=encoder.config.layer_norm_eps,
             )
+        elif model_arch in (
+            ModelArchitectures.BART,
+            ModelArchitectures.MBART,
+            ModelArchitectures.ELECTRA,
+        ):
+            raise NotImplementedError()
         else:
             raise KeyError(model_arch)
         taskmodel = taskmodels.MLMModel(encoder=encoder, mlm_head=mlm_head)
@@ -384,6 +406,10 @@ def get_encoder(model_arch, ancestor_model):
         return ancestor_model.albert
     elif model_arch == ModelArchitectures.XLM_ROBERTA:
         return ancestor_model.roberta
+    elif model_arch in (ModelArchitectures.BART, ModelArchitectures.MBART):
+        return ancestor_model.model
+    elif model_arch == ModelArchitectures.ELECTRA:
+        return ancestor_model.electra
     else:
         raise KeyError(model_arch)
 
@@ -416,20 +442,22 @@ TRANSFORMERS_CLASS_SPEC_DICT = {
         tokenizer_class=transformers.XLMRobertaTokenizer,
         model_class=transformers.XLMRobertaForMaskedLM,
     ),
+    ModelArchitectures.BART: TransformersClassSpec(
+        config_class=transformers.BartConfig,
+        tokenizer_class=transformers.BartTokenizer,
+        model_class=transformers.BartForConditionalGeneration,
+    ),
+    ModelArchitectures.MBART: TransformersClassSpec(
+        config_class=transformers.BartConfig,
+        tokenizer_class=transformers.MBartTokenizer,
+        model_class=transformers.BartForConditionalGeneration,
+    ),
+    ModelArchitectures.ELECTRA: TransformersClassSpec(
+        config_class=transformers.ElectraConfig,
+        tokenizer_class=transformers.ElectraTokenizer,
+        model_class=transformers.ElectraForPreTraining,
+    ),
 }
-
-
-def get_model_arch_from_encoder(encoder: nn.Module) -> ModelArchitectures:
-    if type(encoder) is transformers.BertModel:
-        return ModelArchitectures.BERT
-    elif type(encoder) is transformers.RobertaModel:
-        return ModelArchitectures.ROBERTA
-    elif type(encoder) is transformers.AlbertModel:
-        return ModelArchitectures.ALBERT
-    elif type(encoder) is transformers.XLMRobertaModel:
-        return ModelArchitectures.XLM_ROBERTA
-    else:
-        raise KeyError(type(encoder))
 
 
 def get_taskmodel_and_task_names(task_to_taskmodel_map: Dict[str, str]) -> Dict[str, List[str]]:
@@ -451,7 +479,7 @@ def get_taskmodel_and_task_names(task_to_taskmodel_map: Dict[str, str]) -> Dict[
 
 
 def get_model_arch_from_jiant_model(jiant_model: nn.Module) -> ModelArchitectures:
-    return get_model_arch_from_encoder(encoder=jiant_model.encoder)
+    return ModelArchitectures.from_encoder(encoder=jiant_model.encoder)
 
 
 MODEL_PREFIX = {
@@ -459,6 +487,9 @@ MODEL_PREFIX = {
     ModelArchitectures.ROBERTA: "roberta",
     ModelArchitectures.ALBERT: "albert",
     ModelArchitectures.XLM_ROBERTA: "xlm-roberta",
+    ModelArchitectures.BART: "model",
+    ModelArchitectures.MBART: "model",
+    ModelArchitectures.ELECTRA: "electra",
 }
 
 
