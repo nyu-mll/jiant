@@ -8,7 +8,7 @@ from jiant.tasks.core import (
     BaseExample,
 )
 from jiant.tasks.utils import ExclusiveSpan
-import jiant.tasks.lib.templates.mlm_premasked as mlm_premasked_template
+from .templates import mlm_premasked as mlm_premasked_template
 
 
 @dataclass

@@ -767,7 +767,8 @@ class MLMPremaskedEvaluationScheme(MLMEvaluationScheme):
         return labels
 
     def get_preds_from_accumulator(self, task, accumulator):
-        return accumulator.get_accumulated()
+        _, preds = accumulator.get_accumulated()
+        return preds
 
     def compute_metrics_from_accumulator(
         self, task, accumulator: BaseAccumulator, tokenizer, labels
