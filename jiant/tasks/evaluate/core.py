@@ -839,6 +839,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.XnliTask,
             # === Additional for IRT === #
             tasks.WinograndeTask,
+            tasks.ArctTask,
+            tasks.MCScriptTask,
         ),
     ):
         return SimpleAccuracyEvaluationScheme()

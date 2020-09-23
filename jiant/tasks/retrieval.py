@@ -58,6 +58,8 @@ from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
 # === Additional for IRT === #
 from jiant.tasks.lib.winogrande import WinograndeTask
+from jiant.tasks.lib.arct import ArctTask
+from jiant.tasks.lib.mcscript import MCScriptTask
 
 
 from jiant.tasks.core import Task
@@ -122,6 +124,8 @@ TASK_DICT = {
     "xquad": XquadTask,
     # === Additional for IRT === #
     "winogrande": WinograndeTask,
+    "arct": ArctTask,
+    "mcscript" : MCScriptTask
 }
 
 
