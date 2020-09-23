@@ -247,8 +247,8 @@ def download_winogrande_data_and_write_config(
         data={
             "task": task_name,
             "paths": {
-                "train": os.path.join(task_data_path, "train_m.jsonl"),
-                "train_labels": os.path.join(task_data_path, "train_m-labels.lst"),
+                "train": os.path.join(task_data_path, "train_l.jsonl"),
+                "train_labels": os.path.join(task_data_path, "train_l-labels.lst"),
                 "train_xs": os.path.join(task_data_path, "train_xs.jsonl"),
                 "train_xs_labels": os.path.join(task_data_path, "train_xs-labels.lst"),
                 "train_s": os.path.join(task_data_path, "train_s.jsonl"),
