@@ -62,7 +62,7 @@ class MCScriptTask(mc_template.AbstractMultipleChoiceTask):
                         guid="%s-%s-%s" % (set_type, passage_id, question_id),
                         prompt=passage,
                         choice_list=[question+' '+answer_dict["text"] for answer_dict in answer_dicts],
-                        label_id=answer_dicts[1]["label"] == 'True' if set_type != "test" else cls.CHOICE_KEYS[-1],
+                        label=answer_dicts[1]["label"] == 'True' if set_type != "test" else cls.CHOICE_KEYS[-1],
                     )
                 )
 
