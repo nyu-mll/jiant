@@ -92,7 +92,7 @@ class WinograndeTask(mc_template.AbstractMultipleChoiceTask):
     DataRow = DataRow
     Batch = Batch
 
-    CHOICE_KEYS = [1, 2]
+    CHOICE_KEYS = [0, 1]
     CHOICE_TO_ID, ID_TO_CHOICE = labels_to_bimap(CHOICE_KEYS)
     NUM_CHOICES = len(CHOICE_KEYS)
 
@@ -118,7 +118,7 @@ class WinograndeTask(mc_template.AbstractMultipleChoiceTask):
                     guid="%s-%s" % (set_type, i),
                     prompt=option,
                     choice_list=[choice_pre + line["option1"], choice_pre + line["option2"]],
-                    label=int(line["answer"]) if set_type != "test" else cls.CHOICE_KEYS[-1],
+                    label=-(int(line["answer"])-2) if set_type != "test" else cls.CHOICE_KEYS[-1],
                 )
             )
         return examples
