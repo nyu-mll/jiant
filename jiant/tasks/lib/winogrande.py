@@ -92,7 +92,7 @@ class WinograndeTask(mc_template.AbstractMultipleChoiceTask):
     DataRow = DataRow
     Batch = Batch
 
-    CHOICE_KEYS = ["1", "2"]
+    CHOICE_KEYS = [1, 2]
     CHOICE_TO_ID, ID_TO_CHOICE = labels_to_bimap(CHOICE_KEYS)
     NUM_CHOICES = len(CHOICE_KEYS)
 
