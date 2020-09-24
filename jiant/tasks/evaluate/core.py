@@ -838,7 +838,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.WSCTask,
             tasks.XnliTask,
             # === Additional for IRT === #
-            tasks.WinograndeTask,
+            # tasks.WinograndeTask,
             tasks.ArctTask,
             tasks.MCScriptTask,
         ),
@@ -858,6 +858,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.SWAGTask,
             tasks.HellaSwagTask,
             tasks.SocialIQATask,
+            # === Additional for IRT === #
+            tasks.WinograndeTask,
         ),
     ):
         return MultipleChoiceAccuracyEvaluationScheme()
