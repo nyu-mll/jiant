@@ -40,8 +40,169 @@ def cap_examples(num_examples, cap):
 
 @Registry.register
 @zconf.run_config
+class SingleTaskConfigurator(zconf.RunConfig):
+    """Single-task Configurator
+
+    Required:
+        task_name
+        train_batch_size
+
+    (Task config) Need one of:
+        task_config_path
+        task_config_base_path
+
+    (Task cache) Need one of:
+        task_cache_path
+        task_cache_base_path
+
+    (Eval batch size) Need one of:
+        eval_batch_multiplier
+        eval_batch_size
+
+    (Computing max steps) Need one of:
+        epochs
+        max_steps
+        (Set to 0 if not training)
+
+    (Task name list) Specify at least one of:
+        do_train
+        do_val
+        do_test
+
+    Optional:
+        gradient_accumulation_steps
+        eval_subset_num
+        num_gpus
+        train_examples_cap
+        warmup_steps_proportion
+    """
+
+    task_name = zconf.attr(type=str, default=None)
+    task_config_base_path = zconf.attr(type=str, default=None)
+    task_config_path = zconf.attr(type=str, default=None)
+    task_cache_base_path = zconf.attr(type=str, default=None)
+    task_cache_path = zconf.attr(type=str, default=None)
+    do_train = zconf.attr(type=bool, action="store_true")
+    do_val = zconf.attr(type=bool, action="store_true")
+    do_test = zconf.attr(type=bool, action="store_true")
+    train_batch_size = zconf.attr(type=int, required=True)
+    eval_batch_multiplier = zconf.attr(type=int, default=None)
+    eval_batch_size = zconf.attr(type=int, default=None)
+    gradient_accumulation_steps = zconf.attr(type=int, default=1)
+    eval_subset_num = zconf.attr(type=int, default=500)
+    epochs = zconf.attr(type=int, default=None)
+    max_steps = zconf.attr(type=int, default=None)
+    num_gpus = zconf.attr(type=int, default=None)
+    warmup_steps_proportion = zconf.attr(type=float, default=0.1)
+
+    def create_config(self):
+        # === Get task config === #
+        if self.task_config_path:
+            assert self.task_config_base_path is None
+            task_config_path = self.task_config_path
+        elif self.task_config_base_path is not None:
+            assert self.task_config_path is None
+            task_config_path = os.path.join(
+                self.task_config_base_path,
+                f"{self.task_name}_config.json",
+            )
+        else:
+            raise RuntimeError("Require either `task_config_path` or `task_config_base_path`")
+
+        # === Get cache === #
+        if self.task_cache_path is not None:
+            assert self.task_cache_base_path is None
+            task_cache_path = self.task_cache_path
+        elif self.task_cache_base_path is not None:
+            assert self.task_cache_path is None
+            task_cache_path = os.path.join(self.task_cache_base_path, self.task_name)
+        else:
+            raise RuntimeError("Need `task_cache_path` or `task_cache_base_path`")
+        task_cache_config = {}
+        if self.do_train:
+            task_cache_config["train"] = os.path.join(task_cache_path, "train")
+            task_cache_config["train_val"] = os.path.join(task_cache_path, "train_val")
+        if self.do_val:
+            task_cache_config["val"] = os.path.join(task_cache_path, "val")
+        if self.do_test:
+            task_cache_config["test"] = os.path.join(task_cache_path, "test")
+        for v in task_cache_config.values():
+            assert os.path.exists(v)
+
+        # === Compute training steps === #
+        if not self.do_train:
+            assert self.epochs is None
+            assert self.max_steps is None
+            max_steps = 0
+        elif self.max_steps is not None:
+            max_steps = self.max_steps
+        elif self.epochs is not None:
+            assert self.max_steps is None
+            if self.num_gpus:
+                # We multiply by num_gpus because 1 step is done across (potentially) multiple GPUs
+                effective_batch_size = (
+                    self.train_batch_size * self.gradient_accumulation_steps * self.num_gpus
+                )
+            else:
+                effective_batch_size = self.train_batch_size * self.gradient_accumulation_steps
+            num_examples = get_num_examples_from_cache(
+                cache_path=os.path.expandvars(task_cache_config["train"]),
+            )
+            max_steps = self.epochs * math.ceil(num_examples / effective_batch_size)
+        else:
+            raise RuntimeError("Require either `epochs` or `max_steps`")
+
+        # === Compute eval_batch_size === #
+        if self.eval_batch_size is not None:
+            assert self.eval_batch_multiplier is None
+            eval_batch_size = self.eval_batch_size
+        elif self.eval_batch_multiplier is not None:
+            assert self. eval_batch_size is None
+            eval_batch_size = self.train_batch_size * self.eval_batch_multiplier
+        else:
+            raise RuntimeError("Require either `eval_batch_size` or `eval_batch_multiplier`")
+
+        # === Build configuration === #
+        # Finally, we build our big config dictionary. Congrats!
+        config_dict = {
+            "task_config_path_dict": {self.task_name: task_config_path},
+            "task_cache_config_dict": {self.task_name: task_cache_config},
+            "sampler_config": {"sampler_type": "UniformMultiTaskSampler"},
+            "global_train_config": {
+                "max_steps": int(max_steps),
+                "warmup_steps": int(max_steps * self.warmup_steps_proportion),
+            },
+            "task_specific_configs_dict": {
+                self.task_name: {
+                    "train_batch_size": self.train_batch_size,
+                    "eval_batch_size": eval_batch_size,
+                    "gradient_accumulation_steps": self.gradient_accumulation_steps,
+                    "eval_subset_num": self.eval_subset_num,
+                }
+            },
+            "taskmodels_config": {
+                "task_to_taskmodel_map": {self.task_name: self.task_name},
+                "taskmodel_config_map": {self.task_name: None},
+            },
+            "task_run_config": {
+                "train_task_list": [self.task_name] if self.do_train else [],
+                "train_val_task_list": [self.task_name] if self.do_train else [],
+                "val_task_list": [self.task_name] if self.do_val else [],
+                "test_task_list": [self.task_name] if self.do_test else [],
+            },
+            "metric_aggregator_config": {"metric_aggregator_type": "EqualMetricAggregator"},
+        }
+        return config_dict
+
+
+@Registry.register
+@zconf.run_config
 class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
     """Multi-task Configurator designed for SimpleAPI
+
+    Required:
+        train_batch_size
+
     (Task config) Need one of:
         task_config_base_path
         task_config_path_dict
@@ -57,15 +218,13 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
     (Computing max steps) Need one of:
         epochs
         max_steps
+        (Set to 0 if not training)
 
     (Task name list) Specify at least one of:
         train_task_name_list
         train_val_task_name_list
         val_task_name_list
         test_task_name_list
-
-    Required:
-        train_batch_size
 
     Optional:
         gradient_accumulation_steps
