@@ -118,7 +118,7 @@ class WinograndeTask(mc_template.AbstractMultipleChoiceTask):
                     guid="%s-%s" % (set_type, i),
                     prompt=option,
                     choice_list=[choice_pre + line["option1"], choice_pre + line["option2"]],
-                    label=line["answer"] if set_type != "test" else cls.CHOICE_KEYS[-1],
+                    label=int(line["answer"]) if set_type != "test" else cls.CHOICE_KEYS[-1],
                 )
             )
         return examples
