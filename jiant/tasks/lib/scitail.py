@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import torch
 from dataclasses import dataclass
 from typing import List
@@ -13,6 +12,7 @@ from jiant.tasks.core import (
     TaskTypes,
 )
 from jiant.tasks.lib.templates.shared import labels_to_bimap, double_sentence_featurize
+from jiant.utils.python.io import read_jsonl
 
 
 @dataclass
@@ -81,25 +81,24 @@ class SciTailTask(Task):
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
 
     def get_train_examples(self):
-        return self._create_examples(self.train_path, set_type="train")
+        return self._create_examples(lines=read_jsonl(self.train_path), set_type="train")
 
     def get_val_examples(self):
-        return self._create_examples(self.val_path, set_type="val")
+        return self._create_examples(lines=read_jsonl(self.val_path), set_type="val")
 
     def get_test_examples(self):
-        return self._create_examples(self.test_path, set_type="test")
+        return self._create_examples(lines=read_jsonl(self.test_path), set_type="test")
 
     @classmethod
-    def _create_examples(cls, path, set_type):
-        df = pd.read_csv(path, sep="\t", header=None, names=["premise", "hypothesis", "label"],)
+    def _create_examples(cls, lines, set_type):
         examples = []
-        for i, row in enumerate(df.itertuples()):
+        for line in lines:
             examples.append(
                 Example(
-                    guid="%s-%s" % (set_type, i),
-                    input_premise=row.premise,
-                    input_hypothesis=row.hypothesis,
-                    label=row.label if set_type != "test" else cls.LABELS[-1],
+                    guid="%s-%s" % (set_type, len(examples)),
+                    input_premise=line["premise"],
+                    input_hypothesis=line["hypothesis"],
+                    label=line["label"] if set_type != "test" else cls.LABELS[-1],
                 )
             )
         return examples
