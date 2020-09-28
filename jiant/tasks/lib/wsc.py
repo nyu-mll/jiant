@@ -174,10 +174,10 @@ class WSCTask(SuperGlueMixin, Task):
                     # NOTE: WSCTask.super_glue_format_preds() is dependent on this guid format.
                     guid="%s-%s" % (set_type, line["idx"]),
                     text=line["text"],
-                    span1_idx=line["target"]["span1_index"],
-                    span2_idx=line["target"]["span2_index"],
-                    span1_text=line["target"]["span1_text"],
-                    span2_text=line["target"]["span2_text"],
+                    span1_idx=line["span1_index"],
+                    span2_idx=line["span2_index"],
+                    span1_text=line["span1_text"],
+                    span2_text=line["span2_text"],
                     label=line["label"] if set_type != "test" else cls.LABELS[-1],
                 )
             )
