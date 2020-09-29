@@ -228,6 +228,7 @@ class JiantMetarunner(AbstractMetarunner):
                     output_dir=self.output_dir,
                     file_name="best_model",
                 )
+            del self.best_state_dict
             self.best_state_dict = copy_state_dict(
                 state_dict=get_model_for_saving(self.model).state_dict(), target_device=CPU_DEVICE,
             )
