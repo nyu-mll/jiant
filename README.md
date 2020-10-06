@@ -1,6 +1,6 @@
 <div align="center">
 
-# `jiant`
+# `jiant` is an NLP toolkit
 **The multitask and transfer learning toolkit for natural language processing research**
 
 [![Generic badge](https://img.shields.io/github/v/release/nyu-mll/jiant)](https://shields.io/)
@@ -30,6 +30,8 @@
 
 ### Quick Introduction
 The following example fine tunes a RoBERTa model on the MRPC dataset.
+
+Python version:
 ```python
 from jiant.proj.simple import runscript as run
 import jiant.scripts.download_data.runscript as downloader
@@ -50,6 +52,12 @@ args = run.RunConfiguration(
 
 # Run!
 run.run_simple(args)
+```
+
+Bash version:
+```bash
+python jiant/scripts/download_data/runscript.py download --tasks mrpc --output_path /content/data
+python jiant/proj/simple/runscript.py run --run_name=simple --exp_dir /content/data --data_dir /content/data --model_type roberta-base --tasks mrpc --train_batch_size 16 --num_train_epochs 3
 ```
 
 Examples of more complex training workflows are found [here](./examples/README.md).
@@ -74,20 +82,7 @@ The `jiant` project's contributing guidelines can be found [here](CONTRIBUTING.m
 ### Looking for `jiant v1.3.2`?
 `jiant v1.3.2` has been moved to [jiant-v1-legacy](https://github.com/nyu-mll/jiant-v1-legacy) to support ongoing research with the library. `jiant v2.x.x` is more modular and scalable than `jiant v1.3.2` and has been designed to reflect the needs of the current NLP research community. We strongly recommended any new projects use `jiant v2.x.x`.
 
-### Citation
-
-If you use `jiant` in academic work, please cite it directly:
-
-```
-@misc{phang2020jiant,
-    author = {Jason Phang and Phil Yeres and Jesse Swanson and Haokun Liu and Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Phu Mon Htut and and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Edouard Grave and Najoung Kim and Thibault F\'evry and Berlin Chen and Nikita Nangia and Anhad Mohananey and Katharina Kann and Shikha Bordia and Nicolas Patry and David Benton and Ellie Pavlick and Samuel R. Bowman},
-    title = {\texttt{jiant} 2.0: A software toolkit for research on general-purpose text understanding models},
-    howpublished = {\url{http://jiant.info/}},
-    year = {2020}
-}
-```
-
-### Papers
+#### Papers using `jiant v1.3.2`
 
 [`jiant`](https://github.com/nyu-mll/jiant-v1-legacy) has been used in these papers so far:
 
@@ -104,6 +99,28 @@ For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX) and the
 For the [function word probing paper](https://arxiv.org/abs/1904.11544), use [this branch](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper) and refer to the instructions in the [scripts/fwords/](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper/scripts/fwords) directory.
 
 For the [BERT NPI paper](https://arxiv.org/abs/1909.02597) follow the instructions in [scripts/bert_npi](https://github.com/nyu-mll/jiant/tree/blimp-and-npi/scripts/bert_npi) on the [`blimp-and-npi`](https://github.com/nyu-mll/jiant/tree/blimp-and-npi) branch.
+
+### Citation
+
+If you use `jiant ≥ v2.0.0` in academic work, please cite it directly:
+
+```
+@misc{phang2020jiant,
+    author = {Jason Phang and Phil Yeres and Jesse Swanson and Haokun Liu and Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Phu Mon Htut and and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Edouard Grave and Najoung Kim and Thibault F\'evry and Berlin Chen and Nikita Nangia and Anhad Mohananey and Katharina Kann and Shikha Bordia and Nicolas Patry and David Benton and Ellie Pavlick and Samuel R. Bowman},
+    title = {\texttt{jiant} 2.0: A software toolkit for research on general-purpose text understanding models},
+    howpublished = {\url{http://jiant.info/}},
+    year = {2020}
+}
+```
+
+If you use `jiant ≤ v1.3.2` in academic work, please use the citation found [here](https://github.com/nyu-mll/jiant-v1-legacy).
+
+### Acknowledgments
+
+- This work was made possible in part by a donation to NYU from Eric and Wendy Schmidt made
+by recommendation of the Schmidt Futures program, and by support from Intuit Inc.
+- We gratefully acknowledge the support of NVIDIA Corporation with the donation of a Titan V GPU used at NYU in this work.
+- Developer Jesse Swanson is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.
 
 ### License
 `jiant` is released under the [MIT License](https://github.com/jiant-dev/jiant/blob/master/LICENSE).
