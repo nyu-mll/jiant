@@ -106,7 +106,7 @@ If you use `jiant ≥ v2.0.0` in academic work, please cite it directly:
 
 ```
 @misc{phang2020jiant,
-    author = {Jason Phang and Phil Yeres and Jesse Swanson and Haokun Liu and Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Phu Mon Htut and and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Edouard Grave and Najoung Kim and Thibault F\'evry and Berlin Chen and Nikita Nangia and Anhad Mohananey and Katharina Kann and Shikha Bordia and Nicolas Patry and David Benton and Ellie Pavlick and Samuel R. Bowman},
+    author = {Jason Phang and Phil Yeres and Jesse Swanson and Haokun Liu and Ian F. Tenney and Phu Mon Htut and Clara Vania and Alex Wang and Samuel R. Bowman},
     title = {\texttt{jiant} 2.0: A software toolkit for research on general-purpose text understanding models},
     howpublished = {\url{http://jiant.info/}},
     year = {2020}
