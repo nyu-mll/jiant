@@ -200,6 +200,10 @@ class SingleTaskConfigurator(zconf.RunConfig):
 class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
     """Multi-task Configurator designed for SimpleAPI
 
+    For simplicity, we assume that certain properties are constant across all tasks:
+      batch sizes and eval_subset_num.
+    Any more complex, and the user is better off writing the config entirely on their own.
+
     Required:
         train_batch_size
 
