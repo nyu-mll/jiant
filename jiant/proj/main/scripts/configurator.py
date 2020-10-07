@@ -103,8 +103,7 @@ class SingleTaskConfigurator(zconf.RunConfig):
         elif self.task_config_base_path is not None:
             assert self.task_config_path is None
             task_config_path = os.path.join(
-                self.task_config_base_path,
-                f"{self.task_name}_config.json",
+                self.task_config_base_path, f"{self.task_name}_config.json",
             )
         else:
             raise RuntimeError("Require either `task_config_path` or `task_config_base_path`")
@@ -157,7 +156,7 @@ class SingleTaskConfigurator(zconf.RunConfig):
             assert self.eval_batch_multiplier is None
             eval_batch_size = self.eval_batch_size
         elif self.eval_batch_multiplier is not None:
-            assert self. eval_batch_size is None
+            assert self.eval_batch_size is None
             eval_batch_size = self.train_batch_size * self.eval_batch_multiplier
         else:
             raise RuntimeError("Require either `eval_batch_size` or `eval_batch_multiplier`")
