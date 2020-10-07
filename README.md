@@ -35,7 +35,7 @@
 ## Installation
 To install `jiant` as a user:
 ```
-pip install jiant
+Coming soon!
 ```
 To install `jiant` as a developer:
 ```
@@ -89,7 +89,7 @@ python jiant/proj/simple/runscript.py \
     --num_train_epochs 3
 ```
 
-Examples of more complex training workflows are found [here](./examples/README.md).
+Examples of more complex training workflows are found [here](./examples/).
 
 
 ## Contributing
