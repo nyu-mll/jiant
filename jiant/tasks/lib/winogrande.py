@@ -5,6 +5,20 @@ from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.utils.python.io import read_json_lines
 from typing import List
 
+from jiant.tasks.core import (
+    Task,
+    TaskTypes,
+    BaseExample,
+    BaseTokenizedExample,
+    BaseDataRow,
+    BatchMixin,
+)
+from jiant.tasks.lib.templates.shared import (
+    create_input_set_from_tokens_and_segments,
+    add_cls_token,
+)
+from jiant.tasks.utils import truncate_sequences
+
 @dataclass
 class Example(mc_template.Example):
     @property
@@ -13,7 +27,7 @@ class Example(mc_template.Example):
 
 
 @dataclass
-class TokenizedExample(mc_template.TokenizedExample):
+class TokenizedExample(BaseTokenizedExample):
     guid: str
     prompt: List
     choice_list: List[List]
