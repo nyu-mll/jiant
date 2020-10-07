@@ -14,7 +14,7 @@
 **Why should I use `jiant`?**
 - `jiant` supports [multitask learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_Multi_Task_Example.ipynb)
 - `jiant` supports [transfer learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_STILTs_Example.ipynb)
-- `jiant` supports [50+ natural language understanding tasks](./md_docs/tasks.md)
+- `jiant` supports [50+ natural language understanding tasks](./guides/tasks/supported_tasks.md)
 - `jiant` supports the following benchmarks:
     - [GLUE](./guides/benchmarks/glue.md)
     - [SuperGLUE](./guides/benchmarks/superglue.md)
@@ -31,7 +31,7 @@
 
 * Get started with some simple [Examples](./examples)
 * Learn more about `jiant` by reading our [Guides](./guides)
-* See our [list of supported tasks](./md_docs/tasks.md)
+* See our [list of supported tasks](./guides/tasks/supported_tasks.md)
 
 ## Installation
 To install `jiant` as a user:
