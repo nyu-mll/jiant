@@ -1,6 +1,13 @@
 # An In-Depth Introduction to `jiant`
 
+![jiant Pipeline](./pipeline_simplified.png "jiant Pipeline")
+
 This document provides an in-depth introduction to `jiant`. If you intend to use `jiant` for research and extend its functionality, e.g. adding a task, adding a model, or doing something much more novel (e.g. adding data augmentation, modifying the training pipeline, adversarial training), this is an excellent place to start.
+
+* [`jiant`'s models](#jiants-models)
+* [`jiant`'s tasks](#jiants-tasks)
+* [`Runner`s and `Metarunner`s](#runners-and-metarunners)
+* [Step-by-step through `jiant`'s pipeline](#step-by-step-through-jiants-pipeline)
 
 ## `jiant`'s models
 
@@ -61,6 +68,37 @@ The `Metrics` object contains the relevant metrics for a given task, and has two
 * Tasks need to define a preprocessing pipeline, going from raw data → `Example` → `TokenizedExample` → `DataRow` -> `Batch`. `Batch`es get consumed by `Taskmodel`s.
 * Tasks also need to be mapped to `EvaluationScheme`, which define how a task is scored. `EvaluationScheme`s collect gather information via `Accumulator`s during the training/validation phase, and output `Metrics`.
 
+## Runners and Metarunners 
+
+For a given experiment, `Runner`s and `Metarunner`s handle our training and evaluation loops. Why do we have two different objects? We differentiate the responsibilities as follows:
+
+* `Runner`s handle all the logic that's needed to run a training step for a `JiantModel`. This includes everything from setting up data loaders, to sampling tasks, to computing losses and updating the weights.
+* `Metarunner`s handle all the training-flow logic, such as early stopping, checkpointing, saving/loading the best models.
+
+If you are trying to experiment on a new modeling method, you are likely to want to subclass the `Runner` rather than the `Metarunner`. For instance, if you want to do some additional regularization based on entropy of the predictions, you would modify the `Runner`'s `training_step`.
+
 ## Step-by-step through `jiant`'s pipeline
 
 ![jiant Pipeline with code](./pipeline_scripts.png "jiant Pipeline with code")
+
+This is the full end-to-end pipeline for a simple experiment in `jiant`. We include examples of the corresponding bash commands for each one.
+
+Let's assume we are fine-tuning RoBERTa on MRPC. This sounds simple, so why does it require so many steps? The design philosophy behind `jiant` is that we want to support research workflows, and that means exposing as much of the internals to users as possible, for allow for maximal inspectability and tweaking. Some of these steps are combined or hidden when using other libraries, but they should all be largely intuitive.
+
+### Downloading Task Data and Model
+
+First, we need to get our task data. `jiant` provides a data download script (see: [Source](../../jiant/scripts/download_data/runscript.py)), and saves both the downloaded data as well as task-config JSONs (containing paths to the downloaded data). (**Pro-tip**: Task-config allow you to point to different training/validation sets as needed. A common use-case is training on subsets or modified version of the training data.)
+
+Next, we download our models. These largely wrap around the `.from_pretrained` methods from `Transformers` and saves the relevant model config JSONs, weights, and tokenizer files to disk.
+
+### Tokenize & Cache
+
+As described in [`jiant`'s Tasks](#jiants-tasks), we preprocess our task data from raw files to `DataRow`s and then save them to disk. We refer to this as the task cache. The cache is saved in chunks of 10,000 examples to avoid OOM issues for tasks with many examples.
+
+### Write Run Config
+
+We write a run-configuration JSON that configures many parts of our training setup, including what tasks to train and/or evaluate on, number of steps, task-sampling strategy, batch sizes, gradient accumulation steps, and so on. The script provided (see: [Source](../../jiant/proj/main/scripts/configurator.py)) helps to write the most common run-configuration formats. In this case, we're using the `SimpleAPIMultiTaskConfigurator`. However, more complex workflows can be configured by manually modifying/generating the JSON files. For instance, for zero-shot transfer on XNLI in the XTREME benchmark, we need to configure a model to train on MNLI, evaluate on XNLI in 15 languages (those are 15 different tasks), and all tasks share the same NLI model. These can all be defined in the run-configuration. 
+
+### Train & Evaluate
+
+Finally, we can run our train/evaluation script, which takes some training/evaluation-specific arguments, and paths to some of our above outputs. At the end, you will obtain model weights, validation scores, and/or predictions, depending on your options. For more, see: [My Experiment and Me](../experiments/my_experiment_and_me.md). 
