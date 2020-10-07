@@ -118,4 +118,4 @@ by recommendation of the Schmidt Futures program, and by support from Intuit Inc
 - Developer Jesse Swanson is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.
 
 ### License
-`jiant` is released under the [MIT License](https://github.com/jiant-dev/jiant/blob/master/LICENSE).
+`jiant` is released under the [MIT License](https://github.com/nyu-mll/jiant/blob/master/LICENSE).
