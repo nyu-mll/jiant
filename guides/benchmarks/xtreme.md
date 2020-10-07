@@ -1,4 +1,4 @@
-# XTREME Running / Submission Guide
+# XTREME Benchmark
 
 This guide will walk through the full process for evaluating XLM-R on all [XTREME](https://sites.research.google/xtreme/) tasks. It consists of the following steps:
 
