@@ -2,6 +2,8 @@
 
 Also check out our [Examples](../examples) to see `jiant` in action.
 
+If you don't know what to read, why not read our [In-Depth Introduction to Jiant](general/in_depth_into.md)?
+
 ## Tutorials
 
 * [Quick Start Guide — Using the command line interface](tutorials/quick_start_cli.md): A simple `jiant` training run in bash, using the "simple" API
