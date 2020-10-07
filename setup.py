@@ -57,7 +57,7 @@ setup(
         "bs4 == 0.0.1",
         "jsonnet == 0.15.0",
         "lxml == 4.5.1",
-        "nlp == 0.4.0",
+        "datasets == 1.1.2",
         "nltk >= 3.5",
         "numexpr == 2.7.1",
         "numpy == 1.18.4",

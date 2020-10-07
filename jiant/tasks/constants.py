@@ -25,7 +25,7 @@ SUPERGLUE_TASKS = {
     "superglue_winogender_diagnostics",
 }
 
-OTHER_NLP_TASKS = {
+OTHER_HF_DATASETS_TASKS = {
     "snli",
     "commonsenseqa",
     "hellaswag",
