@@ -1,4 +1,5 @@
 # Quick Start Guide — Using the command line interface
+
 In this tutorial we'll show you how to do a basic multitask training experiment using `jiant`'s command line interface. This tutorial requires your machine to have a GPU supporting CUDA.
 If you haven't already installed `jiant`, clone it and install its dependencies:
 ```
