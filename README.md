@@ -56,8 +56,19 @@ run.run_simple(args)
 
 Bash version:
 ```bash
-python jiant/scripts/download_data/runscript.py download --tasks mrpc --output_path /content/data
-python jiant/proj/simple/runscript.py run --run_name=simple --exp_dir /content/data --data_dir /content/data --model_type roberta-base --tasks mrpc --train_batch_size 16 --num_train_epochs 3
+python jiant/scripts/download_data/runscript.py \
+    download \
+    --tasks mrpc \
+    --output_path /content/data
+python jiant/proj/simple/runscript.py \
+    run \
+    --run_name simple \
+    --exp_dir /content/data \
+    --data_dir /content/data \
+    --model_type roberta-base \
+    --tasks mrpc \
+    --train_batch_size 16 \
+    --num_train_epochs 3
 ```
 
 Examples of more complex training workflows are found [here](./examples/README.md).
