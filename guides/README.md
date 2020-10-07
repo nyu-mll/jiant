@@ -19,7 +19,7 @@ If you don't know what to read, why not read our [In-Depth Introduction to Jiant
 ## Benchmarks
 
 * [GLUE Benchmark](benchmarks/glue.md): Generate GLUE Benchmark submissions
-* [SuperGLUE Benchmark](benchmarks/glue.md): Generate SuperGLUE Benchmark submissions
+* [SuperGLUE Benchmark](benchmarks/superglue.md): Generate SuperGLUE Benchmark submissions
 * [XTREME](benchmarks/xtreme.md): End-to-end guide for training and generating submission for the XTREME bernchmark
 
 ## Experiments
