@@ -36,7 +36,7 @@
 ## Installation
 To install `jiant` as a user:
 ```
-Coming soon!
+pip install jiant
 ```
 To install `jiant` as a developer:
 ```
