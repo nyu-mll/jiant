@@ -1,1 +1,0 @@
-recursive-include jiant/config/ *.conf

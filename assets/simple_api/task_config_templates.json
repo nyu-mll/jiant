@@ -1,0 +1,128 @@
+{
+  "boolq": {
+    "task": "boolq",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "boolq"
+  },
+  "ccg": {
+    "task": "ccg",
+    "rel_paths": {
+      "train": "./ccg.train",
+      "val": "./ccg.dev",
+      "test": "./ccg.test",
+      "tags_to_id": "./tags_to_id.json"
+    },
+    "name": "ccg"
+  },
+  "cola": {
+    "task": "cola",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "cola"
+  },
+  "cosmosqa": {
+    "task": "cosmosqa",
+    "rel_paths": {
+      "train": "./train.csv",
+      "val": "./valid.csv",
+      "test": "./test_no_label.csv"
+    },
+    "name": "cosmosqa"
+  },
+  "hellaswag": {
+    "task": "hellaswag",
+    "rel_paths": {
+      "train": "./hellaswag_train.jsonl",
+      "val": "./hellaswag_val.jsonl",
+      "test": "./hellaswag_test.jsonl"
+    },
+    "name": "hellaswag"
+  },
+  "mnli": {
+    "task": "mnli",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "mnli"
+  },
+  "mrpc": {
+    "task": "mrpc",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "mrpc"
+  },
+  "qnli": {
+    "task": "qnli",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "qnli"
+  },
+  "qqp": {
+    "task": "qqp",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "qqp"
+  },
+  "rte": {
+    "task": "rte",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "rte"
+  },
+  "squad_v1": {
+    "task": "squad",
+    "rel_paths": {
+      "train": "./train-v1.1.json",
+      "val": "./dev-v1.1.json"
+    },
+    "name": "squad_v1"
+  },
+  "stsb": {
+    "task": "stsb",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "stsb"
+  },
+  "wic": {
+    "task": "wic",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "wic"
+  },
+  "wnli": {
+    "task": "wnli",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "wnli"
+  }
+}

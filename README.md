@@ -1,63 +1,90 @@
-# `jiant` is an nlp toolkit
+<div align="center">
 
-[![CircleCI](https://circleci.com/gh/nyu-mll/jiant/tree/master.svg?style=svg)](https://circleci.com/gh/nyu-mll/jiant/tree/master) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
+# `jiant` is an NLP toolkit
+**The multitask and transfer learning toolkit for natural language processing research**
+
+[![Generic badge](https://img.shields.io/github/v/release/nyu-mll/jiant)](https://shields.io/)
+[![codecov](https://codecov.io/gh/nyu-mll/jiant/branch/master/graph/badge.svg)](https://codecov.io/gh/nyu-mll/jiant)
+[![CircleCI](https://circleci.com/gh/nyu-mll/jiant/tree/master.svg?style=shield)](https://circleci.com/gh/nyu-mll/jiant/tree/master)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
+</div>
+
+**Why should I use `jiant`?**
+- `jiant` supports [multitask learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_Multi_Task_Example.ipynb)
+- `jiant` supports [transfer learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_STILTs_Example.ipynb)
+- `jiant` supports [50+ natural language understanding tasks](./md_docs/tasks.md)
+- `jiant` supports the following benchmarks:
+    - [GLUE](./guides/benchmarks/glue.md)
+    - [SuperGLUE](./guides/benchmarks/superglue.md)
+    - [XTREME](./guides/benchmarks/xtreme.md)
+- `jiant` is a research library and users are encouraged to extend, change, and contribute to match their needs!
+
+**A few additional things you might want to know about `jiant`:**
+- `jiant` is configuration file driven
+- `jiant` is built with [PyTorch](https://pytorch.org)
+- `jiant` integrates with [`datasets`](https://github.com/huggingface/datasets) to manage task data
+- `jiant` integrates with [`transformers`](https://github.com/huggingface/transformers) to manage models and tokenizers.
 
 
-`jiant` is a software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks.
+### Quick Introduction
+The following example fine tunes a RoBERTa model on the MRPC dataset.
 
-A few things you might want to know about `jiant`:
+Python version:
+```python
+from jiant.proj.simple import runscript as run
+import jiant.scripts.download_data.runscript as downloader
 
-- `jiant` is configuration-driven. You can run an enormous variety of experiments by simply writing configuration files. Of course, if you need to add any major new features, you can also easily edit or extend the code.
-- `jiant` contains implementations of strong baselines for the [GLUE](https://gluebenchmark.com) and [SuperGLUE](https://super.gluebenchmark.com/) benchmarks, and it's the recommended starting point for work on these benchmarks.
-- `jiant` was developed at [the 2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by [the General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team and is maintained by [the NYU Machine Learning for Language Lab](https://wp.nyu.edu/ml2/people/), with help from [many outside collaborators](https://github.com/nyu-mll/jiant/graphs/contributors) (especially Google AI Language's [Ian Tenney](https://ai.google/research/people/IanTenney)).
-- `jiant` is built on [PyTorch](https://pytorch.org). It also uses many components from [AllenNLP](https://github.com/allenai/allennlp) and the HuggingFace Transformers [implementations](https://github.com/huggingface/transformers) for GPT, BERT and other transformer models.
+# Download the Data
+downloader.download_data([“mrpc”], "/content/data")
 
-For a full system overview of `jiant` version 1.3.0, see https://arxiv.org/abs/2003.02249.
+# Set up the arguments for the Simple API
+args = run.RunConfiguration(
+   run_name="simple",
+   exp_dir="/content/exp",
+   data_dir="/content/data",
+   model_type="roberta-base",
+   tasks="mrpc",
+   train_batch_size=16,
+   num_train_epochs=3
+)
 
-## Getting Started
-
-To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)!
-
-
-## Contributing
-Guidelines for contributing to `jiant` are available [here](CONTRIBUTING.md).
-
-
-## Official Documentation
-
-Our official documentation is here: https://jiant.info/documentation#/
-
-
-## Running
-To run an experiment, make a config file similar to `jiant/config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:
-```sh
-python main.py --config_file jiant/config/demo.conf \
-    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
+# Run!
+run.run_simple(args)
 ```
-will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
- To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)
-*  `$JIANT_PROJECT_PREFIX`: the where the outputs will be saved.
-*  `$JIANT_DATA_DIR`: location of the saved data. This is usually the location of the GLUE data in a simple default setup.
-*  `$WORD_EMBS_FILE`: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://dl.fbaipublicfiles.com/fasttext/vectors-english/crawl-300d-2M.vec.zip).
-To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh).
 
-
-## Suggested Citation
-
-If you use `jiant` in academic work, please cite it directly:
-
-```
-@misc{wang2019jiant,
-    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Phil Yeres and Jason Phang and Haokun Liu and Phu Mon Htut and and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Edouard Grave and Najoung Kim and Thibault F\'evry and Berlin Chen and Nikita Nangia and Anhad Mohananey and Katharina Kann and Shikha Bordia and Nicolas Patry and David Benton and Ellie Pavlick and Samuel R. Bowman},
-    title = {\texttt{jiant} 1.3: A software toolkit for research on general-purpose text understanding models},
-    howpublished = {\url{http://jiant.info/}},
-    year = {2019}
-}
+Bash version:
+```bash
+python jiant/scripts/download_data/runscript.py download --tasks mrpc --output_path /content/data
+python jiant/proj/simple/runscript.py run --run_name=simple --exp_dir /content/data --data_dir /content/data --model_type roberta-base --tasks mrpc --train_batch_size 16 --num_train_epochs 3
 ```
 
-## Papers
+Examples of more complex training workflows are found [here](./examples/README.md).
 
-`jiant` has been used in these four papers so far:
+### Installation
+To install `jiant` as a user:
+```
+pip install jiant
+```
+To install `jiant` as a developer:
+```
+git clone https://github.com/nyu-mll/jiant.git
+cd jiant
+pip install -e .
+```
+To check `jiant` was correctly installed, run a [simple example](./examples/notebooks/simple_api_fine_tuning.ipynb).
+
+
+### Contributing
+The `jiant` project's contributing guidelines can be found [here](CONTRIBUTING.md).
+
+### Looking for `jiant v1.3.2`?
+`jiant v1.3.2` has been moved to [jiant-v1-legacy](https://github.com/nyu-mll/jiant-v1-legacy) to support ongoing research with the library. `jiant v2.x.x` is more modular and scalable than `jiant v1.3.2` and has been designed to reflect the needs of the current NLP research community. We strongly recommended any new projects use `jiant v2.x.x`.
+
+#### Papers using `jiant v1.3.2`
+
+[`jiant`](https://github.com/nyu-mll/jiant-v1-legacy) has been used in these papers so far:
 
 - [Can You Tell Me How to Get Past Sesame Street? Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860) (formerly "Looking for ELMo's Friends")
 - [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX) ("edge probing")
@@ -67,46 +94,33 @@ If you use `jiant` in academic work, please cite it directly:
 
 To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.org/abs/1812.10860) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
 
-For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX) and the [BERT layer paper](https://arxiv.org/abs/1905.05950), see the [probing/](probing/) directory.
+For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX) and the [BERT layer paper](https://arxiv.org/abs/1905.05950), see the [probing/](https://github.com/nyu-mll/jiant-v1-legacy/tree/master/probing) directory.
 
 For the [function word probing paper](https://arxiv.org/abs/1904.11544), use [this branch](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper) and refer to the instructions in the [scripts/fwords/](https://github.com/nyu-mll/jiant/tree/naacl_probingpaper/scripts/fwords) directory.
 
 For the [BERT NPI paper](https://arxiv.org/abs/1909.02597) follow the instructions in [scripts/bert_npi](https://github.com/nyu-mll/jiant/tree/blimp-and-npi/scripts/bert_npi) on the [`blimp-and-npi`](https://github.com/nyu-mll/jiant/tree/blimp-and-npi) branch.
 
-## Getting Help
+### Citation
 
-Post an issue here on GitHub if you have any problems, and create a pull request if you make any improvements (substantial or cosmetic) to the code that you're willing to share.
+If you use `jiant ≥ v2.0.0` in academic work, please cite it directly:
 
-
-## Releases
-
-Releases are identified using git tags and distributed via PyPI for pip installation. After passing CI tests and creating a new git tag for a release, it can be uploaded to PyPI by running:
-
-```bash
-# create distribution
-python setup.py sdist bdist_wheel
-
-# upload to PyPI
-python -m twine upload dist/*
+```
+@misc{phang2020jiant,
+    author = {Jason Phang and Phil Yeres and Jesse Swanson and Haokun Liu and Ian F. Tenney and Phu Mon Htut and Clara Vania and Alex Wang and Samuel R. Bowman},
+    title = {\texttt{jiant} 2.0: A software toolkit for research on general-purpose text understanding models},
+    howpublished = {\url{http://jiant.info/}},
+    year = {2020}
+}
 ```
 
-More details can be found in [setup.py](setup.py).
+If you use `jiant ≤ v1.3.2` in academic work, please use the citation found [here](https://github.com/nyu-mll/jiant-v1-legacy).
 
+### Acknowledgments
 
-## License
-
-This package is released under the [MIT License](LICENSE.md). The material in the allennlp_mods directory is based on [AllenNLP](https://github.com/allenai/allennlp), which was originally released under the Apache 2.0 license.
-
-
-## Acknowledgments
-
-- Part of the development of `jiant` took at the 2018 Frederick Jelinek Memorial Summer Workshop on Speech and Language Technologies, and was supported by Johns Hopkins University with unrestricted gifts from Amazon, Facebook, Google, Microsoft and Mitsubishi Electric Research Laboratories.
 - This work was made possible in part by a donation to NYU from Eric and Wendy Schmidt made
 by recommendation of the Schmidt Futures program, and by support from Intuit Inc.
 - We gratefully acknowledge the support of NVIDIA Corporation with the donation of a Titan V GPU used at NYU in this work.
-- Developer Alex Wang is supported by the National Science Foundation Graduate Research Fellowship Program under Grant
-No. DGE 1342536. Any opinions, findings, and conclusions or recommendations expressed in this
-material are those of the author(s) and do not necessarily reflect the views of the National Science
-Foundation.
-- Developer Yada Pruksachatkun is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.
-- Sam Bowman's work on `jiant` during Summer 2019 took place in his capacity as a visiting researcher at Google.
+- Developer Jesse Swanson is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.
+
+### License
+`jiant` is released under the [MIT License](https://github.com/jiant-dev/jiant/blob/master/LICENSE).

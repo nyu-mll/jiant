@@ -1,65 +1,50 @@
-  # Python CircleCI 2.0 configuration file
-  version: 2.1
-  jobs:
-    test:
-      docker:
-        - image: circleci/python:3.7.4
+version: 2.1 
 
-      working_directory: ~/repo
+orbs:
+  codecov: codecov/codecov@1.0.5
 
-      environment:
-          JIANT_PROJECT_PREFIX: sample_run
-          JIANT_DATA_DIR: data
-          WORD_EMBS_FILE: none
-      steps:
-        # Step 1: obtain repo from GitHub
-        - checkout
-        # Step 2: restore pip dependencies from cache, keyed on branch and content of setup.py
-        - restore_cache:
-            key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}
-        # Step 3: style check
-        - run:
-            name: check style
-            command: |
-              pip install --user black==19.3b0
-              black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|jiant/modules/cove|venv)/"
-        # Step 4: get data needed for demo.sh
-        - run:
-            name: download demo data
-            command: |
-              python scripts/download_glue_data.py --data_dir $JIANT_DATA_DIR --tasks MRPC,STS,SST
-              python scripts/download_superglue_data.py --data_dir $JIANT_DATA_DIR --tasks CB
-        # Step 5: create virtual env and install dependencies
-        - run:
-            name: install dependencies
-            command: |
+jobs:
+  test:
+    docker:
+      - image: python:3.7
+    steps:
+      - checkout
+      - restore_cache:
+          key: -v3-{{ checksum "requirements-dev.txt" }}
+      - run:
+          name: Install dependencies
+          command: |
               python3 -m venv venv
               source venv/bin/activate
-              pip install -e ~/repo
-              pip install nose2
-        # Step 6: cache dependencies for future CI jobs
-        - save_cache:
-            key: deps1-{{ .Branch }}-{{ checksum "setup.py" }}
-            paths:
+              pip install -r requirements-dev.txt
+      - save_cache:
+          key: -v3-{{ checksum "requirements-dev.txt" }}
+          paths:
               - "venv"
-        # Step 7: demo.sh run test
-        - run:
-            name: running demo.sh
-            command: |
+      - run:
+          name: black formatting check
+          command: |
               source venv/bin/activate
-              python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
-              python -m spacy download en
-              python main.py --config_file jiant/config/demo.conf
-              python main.py --config_file jiant/config/demo.conf --overrides "do_pretrain = 0, do_target_task_training = 0, load_model = 1"
-        # Step 8: run tests
-        - run:
-            name: run tests
-            command: |
+              black --check jiant/
+      - run:
+          name: flake8
+          command: |
               source venv/bin/activate
-              mkdir ~/repo/test_output
-              nose2 -v
-  workflows:
-    version: 2
-    test:
-      jobs:
-        - test
+              flake8 --docstring-convention google jiant/
+      - run:
+          name: Unit Tests
+          command: |
+              source venv/bin/activate
+              pytest
+      - run:
+          name: Coverage Report
+          command: |
+              source venv/bin/activate
+              pytest --cov-report=xml --cov=jiant tests/
+      - codecov/upload:
+         file: coverage.xml
+
+workflows:
+  build:
+    jobs:
+      - test
