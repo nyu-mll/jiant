@@ -4,6 +4,8 @@
 
 This document provides an in-depth introduction to `jiant`. If you intend to use `jiant` for research and extend its functionality, e.g. adding a task, adding a model, or doing something much more novel (e.g. adding data augmentation, modifying the training pipeline, adversarial training), this is an excellent place to start.
 
+**Contents**: 
+
 * [`jiant`'s models](#jiants-models)
 * [`jiant`'s tasks](#jiants-tasks)
 * [`Runner`s and `Metarunner`s](#runners-and-metarunners)
@@ -83,7 +85,7 @@ If you are trying to experiment on a new modeling method, you are likely to want
 
 This is the full end-to-end pipeline for a simple experiment in `jiant`. We include examples of the corresponding bash commands for each one.
 
-Let's assume we are fine-tuning RoBERTa on MRPC. This sounds simple, so why does it require so many steps? The design philosophy behind `jiant` is that we want to support research workflows, and that means exposing as much of the internals to users as possible, for allow for maximal inspectability and tweaking. Some of these steps are combined or hidden when using other libraries, but they should all be largely intuitive.
+Let's assume we are fine-tuning RoBERTa on MRPC. This sounds simple, so why does it require so many steps? The design philosophy behind `jiant` is that we want to support research workflows, and that means exposing as much of the internals to users as possible to allow for maximal inspectability and tweaking. Some of these steps are combined or hidden when using other libraries, but here we expose all the intermediate steps in a hopefully intuitive manner.
 
 ### Downloading Task Data and Model
 
