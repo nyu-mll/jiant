@@ -40,7 +40,7 @@ extras["quality"] = ["black == 19.10b0", "flake8-docstrings == 1.5.0", "flake8 >
 extras["dev"] = extras["testing"] + extras["quality"]
 
 setup(
-    name="jiant2",
+    name="jiant",
     version="2.0.0",
     author="NYU Machine Learning for Language Group",
     author_email="bowman@nyu.edu",
@@ -51,7 +51,7 @@ setup(
     license="MIT",
     url="https://github.com/nyu-mll/jiant",
     package_dir={"": "jiant"},
-    packages=find_packages(),
+    packages=find_packages("jiant"),
     install_requires=[
         "attrs == 19.3.0",
         "bs4 == 0.0.1",
