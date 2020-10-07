@@ -1,2 +1,0 @@
-sphinx==1.8.1
-sphinx_materialdesign_theme==0.1.11

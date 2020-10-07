@@ -43,7 +43,18 @@ def copy_state_dict(state_dict, target_device=None):
     if target_device is None:
         return copied_state_dict
     else:
-        return {k: v.to(target_device) for k, v in copied_state_dict.items()}
+        # Ensures that tensors with the same data_ptrs point to the same
+        # data_ptr after copying
+        new_state_dict = {}
+        unique_dict = {}
+        for k, v in copied_state_dict.items():
+            unique_key = tuple(v.shape), v.data_ptr()
+            if unique_key not in unique_dict:
+                unique_dict[unique_key] = v.to(target_device)
+            # Create a view
+            new_state_dict[k] = unique_dict[unique_key][:]
+
+        return new_state_dict
 
 
 def get_parent_child_module_list(model):
