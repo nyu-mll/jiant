@@ -47,7 +47,7 @@ To check `jiant` was correctly installed, run a [simple example](./examples/note
 
 
 ## Quick Introduction
-The following example fine tunes a RoBERTa model on the MRPC dataset.
+The following example fine-tunes a RoBERTa model on the MRPC dataset.
 
 Python version:
 ```python
