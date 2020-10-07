@@ -27,8 +27,26 @@
 - `jiant` integrates with [`datasets`](https://github.com/huggingface/datasets) to manage task data
 - `jiant` integrates with [`transformers`](https://github.com/huggingface/transformers) to manage models and tokenizers.
 
+## Getting Started
 
-### Quick Introduction
+* Get started with some simple [Examples](./examples)
+* Learn more about `jiant` by reading our [Guides](./guides)
+
+## Installation
+To install `jiant` as a user:
+```
+pip install jiant
+```
+To install `jiant` as a developer:
+```
+git clone https://github.com/nyu-mll/jiant.git
+cd jiant
+pip install -e .
+```
+To check `jiant` was correctly installed, run a [simple example](./examples/notebooks/simple_api_fine_tuning.ipynb).
+
+
+## Quick Introduction
 The following example fine tunes a RoBERTa model on the MRPC dataset.
 
 Python version:
@@ -73,29 +91,16 @@ python jiant/proj/simple/runscript.py \
 
 Examples of more complex training workflows are found [here](./examples/README.md).
 
-### Installation
-To install `jiant` as a user:
-```
-pip install jiant
-```
-To install `jiant` as a developer:
-```
-git clone https://github.com/nyu-mll/jiant.git
-cd jiant
-pip install -e .
-```
-To check `jiant` was correctly installed, run a [simple example](./examples/notebooks/simple_api_fine_tuning.ipynb).
 
-
-### Contributing
+## Contributing
 The `jiant` project's contributing guidelines can be found [here](CONTRIBUTING.md).
 
-### Looking for `jiant v1.3.2`?
+## Looking for `jiant v1.3.2`?
 `jiant v1.3.2` has been moved to [jiant-v1-legacy](https://github.com/nyu-mll/jiant-v1-legacy) to support ongoing research with the library. `jiant v2.x.x` is more modular and scalable than `jiant v1.3.2` and has been designed to reflect the needs of the current NLP research community. We strongly recommended any new projects use `jiant v2.x.x`.
 
 `jiant 1.x` has been used in in several papers. For instructions on how to reproduce papers by `jiant` authors that refer readers to this site for documentation (including Tenney et al., Wang et al., Bowman et al., Kim et al., Warstadt et al.), refer to the [jiant-v1-legacy](https://github.com/nyu-mll/jiant-v1-legacy) README.
 
-### Citation
+## Citation
 
 If you use `jiant ≥ v2.0.0` in academic work, please cite it directly:
 
@@ -110,12 +115,12 @@ If you use `jiant ≥ v2.0.0` in academic work, please cite it directly:
 
 If you use `jiant ≤ v1.3.2` in academic work, please use the citation found [here](https://github.com/nyu-mll/jiant-v1-legacy).
 
-### Acknowledgments
+## Acknowledgments
 
 - This work was made possible in part by a donation to NYU from Eric and Wendy Schmidt made
 by recommendation of the Schmidt Futures program, and by support from Intuit Inc.
 - We gratefully acknowledge the support of NVIDIA Corporation with the donation of a Titan V GPU used at NYU in this work.
 - Developer Jesse Swanson is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.
 
-### License
+## License
 `jiant` is released under the [MIT License](https://github.com/nyu-mll/jiant/blob/master/LICENSE).
