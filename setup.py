@@ -1,7 +1,7 @@
 """
 Simple check list from huggingface/transformers repo: https://github.com/huggingface/transformers/blob/master/setup.py
 To create the package for pypi.
-1. Change the version in __init__.py, setup.py and docs (if applicable).
+1. Change the version in setup.py and docs (if applicable).
 2. Unpin specific versions from setup.py.
 2. Commit these changes with the message: "Release: VERSION"
 3. Add a tag in git to mark the release: "git tag VERSION -m'Adds tag VERSION for pypi' "
