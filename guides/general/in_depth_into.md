@@ -79,7 +79,7 @@ If you are trying to experiment on a new modeling method, you are likely to want
 
 ## Step-by-step through `jiant`'s pipeline
 
-![jiant Pipeline with code](./pipeline_scripts.png "jiant Pipeline with code")
+![jiant Pipeline with code](./pipeline_scripts.svg "jiant Pipeline with code")
 
 This is the full end-to-end pipeline for a simple experiment in `jiant`. We include examples of the corresponding bash commands for each one.
 
