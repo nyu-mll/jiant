@@ -76,7 +76,7 @@ Examples of more complex training workflows are found [here](./examples/README.m
 ### Installation
 To install `jiant` as a user:
 ```
-pip install jiant
+Coming soon!
 ```
 To install `jiant` as a developer:
 ```
