@@ -31,6 +31,7 @@
 
 * Get started with some simple [Examples](./examples)
 * Learn more about `jiant` by reading our [Guides](./guides)
+* See our [list of supported tasks](./md_docs/tasks.md)
 
 ## Installation
 To install `jiant` as a user:

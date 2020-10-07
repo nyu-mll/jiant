@@ -22,7 +22,7 @@ Also check out our [Examples](../examples) to see `jiant` in action.
 
 ## Experiments
 
-* [My Experiment and Me](experiments/my_experiment_and_me.md): More info about the a `jiant` run
+* [My Experiment and Me](experiments/my_experiment_and_me.md): More info about a `jiant` training/eval run
 * [Tips for Large-scale Experiments](experiments/large_scale_experiments.md)
 
 ## Tasks
