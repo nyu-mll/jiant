@@ -37,6 +37,7 @@ from jiant.tasks.lib.qnli import QnliTask
 from jiant.tasks.lib.quoref import QuorefTask
 from jiant.tasks.lib.record import ReCoRDTask
 from jiant.tasks.lib.rte import RteTask
+from jiant.tasks.lib.ropes import RopesTask
 from jiant.tasks.lib.scitail import SciTailTask
 from jiant.tasks.lib.senteval.tense import SentevalTenseTask
 from jiant.tasks.lib.edge_probing.semeval import SemevalTask
@@ -101,6 +102,7 @@ TASK_DICT = {
     "qqp": QqpTask,
     "quoref": QuorefTask,
     "record": ReCoRDTask,
+    "ropes": RopesTask,
     "rte": RteTask,
     "scitail": SciTailTask,
     "senteval_tense": SentevalTenseTask,

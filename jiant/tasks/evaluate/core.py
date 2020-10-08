@@ -973,6 +973,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         task,
         (
             tasks.SquadTask,
+            tasks.RopesTask,
             tasks.QuorefTask,
         )
     ):

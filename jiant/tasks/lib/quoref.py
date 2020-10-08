@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from jiant.tasks.lib.templates.squad_style import core as squad_style_template
 from jiant.shared.constants import PHASE
+from jiant.tasks.lib.templates.squad_style import core as squad_style_template
 from jiant.utils.python.io import read_jsonl
 
 
@@ -31,9 +31,6 @@ class QuorefTask(squad_style_template.BaseSquadStyleTask):
 
     def get_val_examples(self):
         return self.read_examples(path=self.val_path, set_type=PHASE.VAL)
-
-    def get_test_examples(self):
-        return self.read_examples(path=self.test_path, set_type=PHASE.TEST)
 
     @classmethod
     def read_examples(cls, path: str, set_type: str):
