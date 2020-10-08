@@ -1,4 +1,4 @@
-version: 2.1
+version: 2.1 
 
 orbs:
   codecov: codecov/codecov@1.0.5
@@ -43,70 +43,8 @@ jobs:
               pytest --cov-report=xml --cov=jiant tests/
       - codecov/upload:
          file: coverage.xml
-  # doc-build and docs-deploy job templates from:
-  # https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
-  docs-build:
-    docker:
-      - image: python:3.7
-    steps:
-      - checkout
-      - restore_cache:
-          key: -v3-{{ checksum "docs/requirements.txt" }}
-      - run:
-          name: Install dependencies
-          command: |
-              python3 -m venv venv
-              source venv/bin/activate
-              pip install -r requirements-dev.txt
-      - save_cache:
-          key: -v3-{{ checksum "docs/requirements.txt" }}
-          paths:
-              - "venv"
-      - run:
-          name: Install dependencies
-          command: |
-              source venv/bin/activate
-              pip install -r docs/requirements.txt
-      - run:
-          name: Build docs
-          command: |
-              source venv/bin/activate
-              cd docs/ && make html
-      - persist_to_workspace:
-          root: docs/_build
-          paths: html
-  docs-deploy:
-    docker:
-      - image: node:8.10.0
-    steps:
-      - checkout
-      - attach_workspace:
-          at: docs/_build
-      - run:
-          name: Disable jekyll builds
-          command: touch docs/_build/html/.nojekyll
-      - run:
-          name: Install and configure dependencies
-          command: |
-            npm install -g --silent gh-pages@2.0.1
-            git config user.email "ci-build@nyu.edu"
-            git config user.name "ci-build"
-      - add_ssh_keys:
-          fingerprints:
-            - "f9:68:3d:0f:2f:1b:41:24:30:8c:d4:b8:89:77:58:2d"
-      - run:
-          name: Deploy docs to gh-pages branch
-          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
 
 workflows:
   build:
     jobs:
       - test
-      - docs-build
-      - docs-deploy:
-          requires:
-            - test
-            - docs-build
-          filters:
-            branches:
-              only: master

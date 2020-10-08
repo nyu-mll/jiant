@@ -31,12 +31,13 @@ class Example(BaseExample):
 
     def tokenize(self, tokenizer):
         filled_query_text = self.query_text.replace("@placeholder", self.entity_str)
-
         return TokenizedExample(
             guid=self.guid,
             passage_tokens=tokenizer.tokenize(self.passage_text),
             query_tokens=tokenizer.tokenize(filled_query_text),
             label_id=ReCoRDTask.LABEL_TO_ID[self.label],
+            entity_str=self.entity_str,
+            label_set=set(self.answers_dict.values()),
         )
 
 
@@ -46,9 +47,11 @@ class TokenizedExample(BaseTokenizedExample):
     passage_tokens: List
     query_tokens: List
     label_id: int
+    entity_str: str
+    label_set: set
 
     def featurize(self, tokenizer, feat_spec):
-        return double_sentence_featurize(
+        data_row = double_sentence_featurize(
             guid=self.guid,
             input_tokens_a=self.passage_tokens,
             input_tokens_b=self.query_tokens,
@@ -57,6 +60,9 @@ class TokenizedExample(BaseTokenizedExample):
             feat_spec=feat_spec,
             data_row_class=DataRow,
         )
+        data_row.entity_str = self.entity_str
+        data_row.label_set = self.label_set
+        return data_row
 
 
 @dataclass
@@ -67,6 +73,28 @@ class DataRow(BaseDataRow):
     segment_ids: np.ndarray
     label_id: int
     tokens: list
+    entity_str: str
+    label_set: set
+
+    def __init__(
+        self,
+        guid,
+        input_ids,
+        input_mask,
+        segment_ids,
+        label_id,
+        tokens,
+        entity_str=None,
+        label_set=None,
+    ):
+        self.guid = guid
+        self.input_ids = input_ids
+        self.input_mask = input_mask
+        self.segment_ids = segment_ids
+        self.label_id = label_id
+        self.tokens = tokens
+        self.entity_str = entity_str
+        self.label_set = label_set
 
 
 @dataclass
@@ -76,6 +104,8 @@ class Batch(BatchMixin):
     segment_ids: torch.LongTensor
     label_id: torch.LongTensor
     tokens: list
+    entity_str: str
+    label_set: set
 
 
 class ReCoRDTask(SuperGlueMixin, Task):
@@ -119,9 +149,12 @@ class ReCoRDTask(SuperGlueMixin, Task):
                                 == answers_dict[entity_span]
                             )
                             label = True
+
                     examples.append(
                         Example(
-                            guid="%s-%s" % (set_type, len(examples)),
+                            # NOTE: ReCoRDTask.super_glue_format_preds() is
+                            # dependent on this guid format.
+                            guid="%s-%s-%s" % (set_type, len(examples), qas["idx"]),
                             passage_text=passage_text,
                             query_text=qas["query"],
                             entity_start_char_idx=entity_span[0],
@@ -134,3 +167,7 @@ class ReCoRDTask(SuperGlueMixin, Task):
                         )
                     )
         return examples
+
+    @staticmethod
+    def super_glue_format_preds(pred_dict):
+        return pred_dict["preds"]

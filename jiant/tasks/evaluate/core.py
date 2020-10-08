@@ -17,6 +17,7 @@ import jiant.tasks.lib.templates.squad_style.utils as squad_style_utils
 import jiant.tasks.lib.mlqa as mlqa_lib
 import jiant.tasks.lib.bucc2018 as bucc2018_lib
 import jiant.tasks.lib.tatoeba as tatoeba_lib
+from jiant.tasks.lib.templates import mlm as mlm_template
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
 from jiant.utils.python.io import read_json
 from jiant.utils.string_comparing import string_f1_score, exact_match_score
@@ -35,6 +36,9 @@ class BaseEvaluation:
 class BaseAccumulator:
     def update(self, batch_logits, batch_loss, batch, batch_metadata):
         raise NotImplementedError()
+
+    def get_guids(self):
+        return None
 
     def get_accumulated(self):
         raise NotImplementedError()
@@ -139,6 +143,44 @@ class SpanPredictionF1andEMScheme(BaseEvaluationScheme):
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
         return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels)
+
+
+class RecordAccumulator(ConcatenateLogitsAccumulator):
+    def __init__(self):
+        super().__init__()
+        self.entity_strs = []
+        self.gold_label_list = []
+
+    def update(self, batch_logits, batch_loss, batch, batch_metadata):
+        super().update(batch_logits, batch_loss, batch, batch_metadata)
+        self.entity_strs.extend(batch.entity_str)
+        self.gold_label_list.extend(batch.label_set)
+
+    def get_accumulated(self):
+        return super().get_accumulated(), self.entity_strs
+
+    def get_gold_label_list(self):
+        return self.gold_label_list
+
+
+class MLMPremaskedAccumulator(BaseAccumulator):
+    def __init__(self):
+        self.loss_list = []
+        self.logits_list = []
+
+    def update(self, batch_logits, batch_loss, batch, batch_metadata):
+        batch_size = len(batch)
+        # Select the tokens that we do MLM prediction on
+        masked_tokens_selector = (
+            batch.masked_lm_labels.cpu().numpy() != mlm_template.NON_MASKED_TOKEN_LABEL_ID
+        )
+        for i in range(batch_size):
+            # noinspection PyUnresolvedReferences
+            self.logits_list.append(batch_logits[i][masked_tokens_selector[i]])
+        self.loss_list.append(batch_loss)
+
+    def get_accumulated(self):
+        return self.loss_list, self.logits_list
 
 
 class TatoebaAccumulator(BaseAccumulator):
@@ -401,7 +443,7 @@ class RecordLabelData:
 
 class ReCordEvaluationScheme(BaseEvaluationScheme):
     def get_accumulator(self):
-        return ConcatenateLogitsAccumulator()
+        return RecordAccumulator()
 
     @classmethod
     def get_labels_from_examples(cls, examples):
@@ -409,7 +451,7 @@ class ReCordEvaluationScheme(BaseEvaluationScheme):
             RecordLabelData(
                 passage_idx=example.passage_idx,
                 question_idx=example.question_idx,
-                entity_str=example.passage_idx,
+                entity_str=example.entity_str,
                 answers_dict=example.answers_dict,
             )
             for example in examples
@@ -419,50 +461,68 @@ class ReCordEvaluationScheme(BaseEvaluationScheme):
     def get_labels_from_cache_and_examples(cls, task, cache, examples):
         return cls.get_labels_from_examples(examples=examples)
 
-    def get_preds_from_accumulator(self, task, accumulator):
-        # TODO: Revisit ReCord scoring  (Issue #51)
-        raise NotImplementedError("Currently need labels ('examples') to compute preds. Refactor.")
+    @classmethod
+    def get_preds_from_accumulator(cls, task, accumulator):
+        logits, entity_strs = accumulator.get_accumulated()
+        guid_list = accumulator.get_guids()
+
+        question_ids = []
+        for guid in guid_list:
+            question_ids.append(guid.split("-")[2])
+
+        # group logits by question id then reorder for submission
+        # need question id, logit, and entity_str
+        # for example, dict of question id to logit and entity_str
+        max_logits = {}
+        for logit, entity_str, question_id in zip(logits, entity_strs, question_ids):
+            if (question_id not in max_logits) or (max_logits[question_id]["logit"][1] < logit[1]):
+                max_logits[question_id] = {"logit": logit, "entity_str": entity_str}
+
+        # Convert labels of max_logits to prediction format
+        preds = []
+        for question_idx, logit_entity in max_logits.items():
+            preds.append({"idx": question_idx, "label": logit_entity["entity_str"]})
+
+        return preds
 
     def compute_metrics_from_accumulator(
-        self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
+        self, task, accumulator: RecordAccumulator, tokenizer, labels: List
     ) -> Metrics:
-        logits = accumulator.get_accumulated()
-        predictions_dict, metrics = self.compute_preds_and_metrics_from_logits_and_record_labels(
-            logits=logits, examples=labels,
-        )
+        predictions_dict, metrics = self.compute_preds_and_metrics(task, accumulator)
         return metrics
 
     @classmethod
-    def compute_preds_and_metrics_from_logits_and_record_labels(
-        cls, logits, examples: List[RecordLabelData]
-    ):
-        psg_qns_idx_dict = {}
-        for i, example in examples:
-            psq_qns_idx = example.passage_idx, example.question_idx
-            if psq_qns_idx not in psg_qns_idx_dict:
-                psg_qns_idx_dict[psq_qns_idx] = []
-            psg_qns_idx_dict[psq_qns_idx].append(i)
-
+    def compute_preds_and_metrics(cls, task, accumulator):
         f1_ls = []
         em_ls = []
-
         predictions_dict = {}
-        for psq_qns_idx, example_indices in psg_qns_idx_dict:
-            # answer_dict should be same across all examples with the same psq_qns_idx
-            relevant_examples = [examples[i] for i in example_indices]
-            golds = list(relevant_examples[0].answers_dict.values())
-            psg_qns_logits = logits[example_indices]
-            psg_qns_pred = int(np.argmax(psg_qns_logits[:, 1]))  # Take argmax over positive preds
-            pred_ans = relevant_examples[psg_qns_pred].entity_str
+
+        preds = cls.get_preds_from_accumulator(task, accumulator)
+        guid_list = guid_list = accumulator.get_guids()
+        gold_label_list_of_sets = accumulator.get_gold_label_list()
+
+        question_ids = []
+        for guid in guid_list:
+            question_ids.append(guid.split("-")[2])
+
+        # Reduce list of gold label sets to a gold label set per question_id
+        gold_labels = {}
+        for question_id, gold_label_set in zip(question_ids, gold_label_list_of_sets):
+            if question_id in gold_labels:
+                assert gold_label_set == gold_labels[question_id]
+            else:
+                gold_labels[question_id] = gold_label_set
+
+        for pred, gold_label_set in zip(preds, gold_labels.values()):
+            pred_ans = pred["label"]
 
             # F1
-            f1 = cls.metric_max_over_ground_truths(string_f1_score, pred_ans, golds)
+            f1 = cls.metric_max_over_ground_truths(string_f1_score, pred_ans, gold_label_set)
             f1_ls.append(f1)
 
             # EM
-            em = cls.metric_max_over_ground_truths(exact_match_score, pred_ans, golds)
+            em = cls.metric_max_over_ground_truths(exact_match_score, pred_ans, gold_label_set)
             em_ls.append(em)
-            predictions_dict[psq_qns_idx] = psg_qns_pred
 
         em = sum(em_ls) / len(em_ls)
         f1 = sum(f1_ls) / len(f1_ls)
@@ -727,6 +787,38 @@ class MLMEvaluationScheme(BaseEvaluationScheme):
         )
 
 
+class MLMPremaskedEvaluationScheme(MLMEvaluationScheme):
+    @classmethod
+    def get_accumulator(cls) -> BaseAccumulator:
+        return MLMPremaskedAccumulator()
+
+    @classmethod
+    def get_labels_from_cache_and_examples(cls, task, cache, examples):
+        labels = []
+        for datum in cache.iter_all():
+            masked_lm_labels = datum["data_row"].masked_lm_labels
+            labels.append(
+                masked_lm_labels[masked_lm_labels != mlm_template.NON_MASKED_TOKEN_LABEL_ID]
+            )
+        return labels
+
+    def get_preds_from_accumulator(self, task, accumulator):
+        _, preds = accumulator.get_accumulated()
+        return preds
+
+    def compute_metrics_from_accumulator(
+        self, task, accumulator: BaseAccumulator, tokenizer, labels
+    ) -> Metrics:
+        loss_list, _ = accumulator.get_accumulated()
+        average_loss = mean(loss_list)
+        perplexity = np.exp(average_loss)
+        return Metrics(
+            # Major = negative perplexity
+            major=-perplexity,
+            minor={"perplexity": perplexity},
+        )
+
+
 class TatoebaEvaluationScheme(BaseEvaluationScheme):
     def get_accumulator(self):
         return TatoebaAccumulator()
@@ -857,7 +949,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         ),
     ):
         return MultipleChoiceAccuracyEvaluationScheme()
-    elif isinstance(task, (tasks.MrpcTask, tasks.QqpTask, tasks.ReCoRDTask)):
+    elif isinstance(task, (tasks.MrpcTask, tasks.QqpTask)):
         return AccAndF1EvaluationScheme()
     elif isinstance(
         task,
@@ -875,6 +967,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         ),
     ):
         return MultiLabelAccAndF1EvaluationScheme()
+    elif isinstance(task, tasks.ReCoRDTask):
+        return ReCordEvaluationScheme()
     elif isinstance(task, tasks.SquadTask):
         return SQuADEvaluationScheme()
     elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask)):
@@ -887,6 +981,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return PearsonAndSpearmanEvaluationScheme()
     elif isinstance(task, tasks.MLMSimpleTask):
         return MLMEvaluationScheme()
+    elif isinstance(task, (tasks.MLMPremaskedTask, tasks.MLMPretokenizedTask)):
+        return MLMPremaskedEvaluationScheme()
     elif isinstance(task, (tasks.QAMRTask, tasks.QASRLTask)):
         return SpanPredictionF1andEMScheme()
     elif isinstance(task, (tasks.UdposTask, tasks.PanxTask)):

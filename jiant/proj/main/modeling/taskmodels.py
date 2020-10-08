@@ -9,6 +9,7 @@ import jiant.proj.main.modeling.heads as heads
 import jiant.utils.transformer_utils as transformer_utils
 from jiant.proj.main.components.outputs import LogitsOutput, LogitsAndLossOutput
 from jiant.utils.python.datastructures import take_one
+from jiant.shared.model_setup import ModelArchitectures
 
 
 class Taskmodel(nn.Module, metaclass=abc.ABCMeta):
@@ -301,14 +302,69 @@ def get_output_from_encoder(encoder, input_ids, segment_ids, input_mask) -> Enco
         EncoderOutput containing pooled and unpooled model outputs as well as any other outputs.
 
     """
-    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
-    if len(output) == 2:
-        return EncoderOutput(pooled=output[1], unpooled=output[0],)
-    elif len(output) > 2:
-        # Extend later with attention, hidden_acts, etc
-        return EncoderOutput(pooled=output[1], unpooled=output[0], other=output[2:])
+    model_arch = ModelArchitectures.from_encoder(encoder)
+    if model_arch in [
+        ModelArchitectures.BERT,
+        ModelArchitectures.ROBERTA,
+        ModelArchitectures.ALBERT,
+        ModelArchitectures.XLM_ROBERTA,
+    ]:
+        pooled, unpooled, other = get_output_from_standard_transformer_models(
+            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+        )
+    elif model_arch == ModelArchitectures.ELECTRA:
+        pooled, unpooled, other = get_output_from_electra(
+            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+        )
+    elif model_arch in [
+        ModelArchitectures.BART,
+        ModelArchitectures.MBART,
+    ]:
+        pooled, unpooled, other = get_output_from_bart_models(
+            encoder=encoder, input_ids=input_ids, input_mask=input_mask,
+        )
     else:
-        raise RuntimeError()
+        raise KeyError(model_arch)
+
+    # Extend later with attention, hidden_acts, etc
+    if other:
+        return EncoderOutput(pooled=pooled, unpooled=unpooled, other=other)
+    else:
+        return EncoderOutput(pooled=pooled, unpooled=unpooled)
+
+
+def get_output_from_standard_transformer_models(encoder, input_ids, segment_ids, input_mask):
+    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
+    pooled, unpooled, other = output[1], output[0], output[2:]
+    return pooled, unpooled, other
+
+
+def get_output_from_bart_models(encoder, input_ids, input_mask):
+    # BART and mBART and encoder-decoder architectures.
+    # As described in the BART paper and implemented in Transformers,
+    # for single input tasks, the encoder input is the sequence,
+    # the decode input is 1-shifted sequence, and the resulting
+    # sentence representation is the final decoder state.
+    # That's what we use for `unpooled` here.
+    dec_last, dec_all, enc_last, enc_all = encoder(
+        input_ids=input_ids, attention_mask=input_mask, output_hidden_states=True,
+    )
+    unpooled = dec_last
+
+    other = (enc_all + dec_all,)
+
+    bsize, slen = input_ids.shape
+    batch_idx = torch.arange(bsize).to(input_ids.device)
+    # Get last non-pad index
+    pooled = unpooled[batch_idx, slen - input_ids.eq(encoder.config.pad_token_id).sum(1) - 1]
+    return pooled, unpooled, other
+
+
+def get_output_from_electra(encoder, input_ids, segment_ids, input_mask):
+    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
+    unpooled = output[0]
+    pooled = unpooled[:, 0, :]
+    return pooled, unpooled, output
 
 
 def compute_mlm_loss(logits, masked_lm_labels):
