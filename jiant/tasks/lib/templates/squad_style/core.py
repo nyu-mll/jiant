@@ -3,7 +3,7 @@ import numpy as np
 
 import torch
 from dataclasses import dataclass
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 
 from transformers.tokenization_bert import whitespace_tokenize
 
@@ -26,18 +26,21 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Example(BaseExample):
+    # For training examples, we usually have `answer_text` and `start_position_character`
+    # For eval examples, we usually has answers, a list of dicts with keys
+    #   ["answer_start", "text"]
     qas_id: str
     question_text: str
     context_text: str
-    answer_text: str
-    start_position_character: int
+    answer_text: Optional[str]
+    start_position_character: Optional[int]
     title: str
-    answers: list
+    answers: Optional[list]
     is_impossible: bool
 
     # ===
-    doc_tokens: Union[list, None] = None
-    char_to_word_offset: Union[list, None] = None
+    doc_tokens: Optional[list] = None
+    char_to_word_offset: Optional[list] = None
     start_position: int = 0
     end_position: int = 0
 
