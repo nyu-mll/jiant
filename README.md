@@ -43,9 +43,9 @@ source venv/bin/activate
 cd jiant
 pip install -r requirements.txt
 ```
-```
-If you plan to contribute to jiant, install additional dependencies with pip install -r requirements-dev.txt.
-```
+
+If you plan to contribute to jiant, install additional dependencies with `pip install -r requirements-dev.txt`.
+
 To check `jiant` was correctly installed, run a [simple example](./examples/notebooks/simple_api_fine_tuning.ipynb).
 
 
