@@ -56,7 +56,7 @@ from jiant.proj.simple import runscript as run
 import jiant.scripts.download_data.runscript as downloader
 
 # Download the Data
-downloader.download_data([“mrpc”], "/content/data")
+downloader.download_data(["mrpc"], "/content/data")
 
 # Set up the arguments for the Simple API
 args = run.RunConfiguration(
