@@ -44,6 +44,7 @@ pip install -r requirements.txt
 # Add the following to your .bash_rc or .bash_profile 
 export PYTHONPATH=/path/to/jiant:$PYTHONPATH
 ```
+If you plan to contribute to jiant, install additional dependencies with `pip install -r requirements-dev.txt`.
 
 To install `jiant` from source (alternative for researchers):
 ```
@@ -56,8 +57,6 @@ To install `jiant` from pip (recommended if you just want to train/use a model):
 ```
 pip install jiant
 ```
-
-If you plan to contribute to jiant, install additional dependencies with `pip install -r requirements-dev.txt`.
 
 We recommended that you install `jiant` in a virtual environment or a conda environment.
 
