@@ -34,17 +34,21 @@
 * See our [list of supported tasks](./guides/tasks/supported_tasks.md)
 
 ## Installation
-To install `jiant`:
-```
-git clone https://github.com/nyu-mll/jiant.git
 
-python3 -m venv venv
-source venv/bin/activate
+To import `jiant` from source (recommended for researchers):
+```bash
+git clone https://github.com/nyu-mll/jiant.git
 cd jiant
 pip install -r requirements.txt
+
+# Add the following to your .bash_rc or .bash_profile 
+export PYTHONPATH=/path/to/jiant:$PYTHONPATH
 ```
 
+
 If you plan to contribute to jiant, install additional dependencies with `pip install -r requirements-dev.txt`.
+
+We recommended that you install `jiant` in a virtual environment or a conda environment.
 
 To check `jiant` was correctly installed, run a [simple example](./examples/notebooks/simple_api_fine_tuning.ipynb).
 
