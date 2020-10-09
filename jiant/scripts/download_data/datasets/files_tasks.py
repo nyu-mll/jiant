@@ -44,6 +44,10 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_ropes_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "newsqa":
+        download_newsqa_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     else:
         raise KeyError(task_name)
 
@@ -331,8 +335,14 @@ def download_newsqa_data_and_write_config(
 
     cnn_stories_path = os.path.join(task_data_path, 'cnn_stories.tgz')
     dataset_path = os.path.join(task_data_path, 'newsqa-data-v1', 'newsqa-data-v1.csv')
-    assert os.path.exists(cnn_stories_path)
-    assert os.path.exists(dataset_path)
+    assert os.path.exists(cnn_stories_path), (
+        "Download CNN Stories from https://cs.nyu.edu/~kcho/DMQA/ and save to "
+        + cnn_stories_path
+    )
+    assert os.path.exists(dataset_path), (
+        "Download https://www.microsoft.com/en-us/research/project/newsqa-dataset/#!download"
+        " and unzip to " + os.path.join(task_data_path, 'newsqa-data-v1')
+    )
 
     # Download auxiliary data
     os.makedirs(task_data_path, exist_ok=True)

@@ -975,6 +975,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.SquadTask,
             tasks.RopesTask,
             tasks.QuorefTask,
+            tasks.NewsQATask,
         )
     ):
         return SQuADEvaluationScheme()
