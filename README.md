@@ -12,8 +12,8 @@
 </div>
 
 **Why should I use `jiant`?**
-- `jiant` supports multitask learning  [[Colab](https://colab.research.google.com/github/nyu-mll/jiant/blob/master/examples/notebooks/jiant_Multi_Task_Example.ipynb)]
-- `jiant` supports transfer learning [[Colab](https://colab.research.google.com/github/nyu-mll/jiant/blob/master/examples/notebooks/jiant_STILTs_Example.ipynb)]
+- `jiant` supports [multitask learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_Multi_Task_Example.ipynb)
+- `jiant` supports [transfer learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_STILTs_Example.ipynb)
 - `jiant` supports [50+ natural language understanding tasks](./guides/tasks/supported_tasks.md)
 - `jiant` supports the following benchmarks:
     - [GLUE](./guides/benchmarks/glue.md)
