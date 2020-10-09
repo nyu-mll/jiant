@@ -50,8 +50,7 @@ setup(
     keywords="NLP deep learning transformer pytorch tensorflow BERT GPT GPT-2 google nyu datasets",
     license="MIT",
     url="https://github.com/nyu-mll/jiant",
-    package_dir={"": "jiant"},
-    packages=find_packages("jiant"),
+    packages=find_packages(exclude=["tests", "tests/*"]),
     install_requires=[
         "attrs == 19.3.0",
         "bs4 == 0.0.1",
