@@ -37,6 +37,7 @@ class RunConfiguration(zconf.RunConfig):
     eval_every_steps = zconf.attr(type=int, default=0)
     save_every_steps = zconf.attr(type=int, default=0)
     save_checkpoint_every_steps = zconf.attr(type=int, default=0)
+    save_model_every_logscale = zconf.attr(action="store_true")
     no_improvements_for_n_evals = zconf.attr(type=int, default=0)
     delete_checkpoint_if_done = zconf.attr(action="store_true")
     force_overwrite = zconf.attr(action="store_true")
@@ -157,6 +158,8 @@ def run_loop(args: RunConfiguration, checkpoint=None):
                 save_every_steps=args.save_every_steps,
                 eval_every_steps=args.eval_every_steps,
                 save_checkpoint_every_steps=args.save_checkpoint_every_steps,
+                save_model_every_logscale=args.save_model_every_logscale,
+                max_step=jiant_task_container.global_train_config.max_steps,
                 no_improvements_for_n_evals=args.no_improvements_for_n_evals,
                 checkpoint_saver=checkpoint_saver,
                 output_dir=args.output_dir,
@@ -206,7 +209,7 @@ def run_loop(args: RunConfiguration, checkpoint=None):
 
     if (
         args.delete_checkpoint_if_done
-        and args.save_checkpoint_every_steps
+        and (args.save_checkpoint_every_steps or args.save_model_every_logscale)
         and os.path.exists(os.path.join(args.output_dir, "checkpoint.p"))
     ):
         os.remove(os.path.join(args.output_dir, "checkpoint.p"))
