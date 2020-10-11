@@ -333,16 +333,27 @@ def download_newsqa_data_and_write_config(
             del strings[-1]
         return strings
 
+    # Require: cnn_stories.tgz
     cnn_stories_path = os.path.join(task_data_path, 'cnn_stories.tgz')
-    dataset_path = os.path.join(task_data_path, 'newsqa-data-v1', 'newsqa-data-v1.csv')
     assert os.path.exists(cnn_stories_path), (
         "Download CNN Stories from https://cs.nyu.edu/~kcho/DMQA/ and save to "
         + cnn_stories_path
     )
-    assert os.path.exists(dataset_path), (
-        "Download https://www.microsoft.com/en-us/research/project/newsqa-dataset/#!download"
-        " and unzip to " + os.path.join(task_data_path, 'newsqa-data-v1')
-    )
+    # Require: newsqa-data-v1/newsqa-data-v1.csv
+    dataset_path = os.path.join(task_data_path, 'newsqa-data-v1', 'newsqa-data-v1.csv')
+    if os.path.exists(dataset_path):
+        pass
+    elif os.path.exists(os.path.join(task_data_path, 'newsqa-data-v1.zip')):
+        download_utils.unzip_file(
+            zip_path=os.path.join(task_data_path, 'newsqa-data-v1.zip'),
+            extract_location=task_data_path,
+            delete=False,
+        )
+    else:
+        raise AssertionError(
+            "Download https://www.microsoft.com/en-us/research/project/newsqa-dataset/#!download"
+            " and save to " + os.path.join(task_data_path, 'newsqa-data-v1.zip')
+        )
 
     # Download auxiliary data
     os.makedirs(task_data_path, exist_ok=True)
@@ -571,9 +582,9 @@ def download_newsqa_data_and_write_config(
         data={
             "task": task_name,
             "paths": {
-                "train": os.path.join(task_data_path, "train.json"),
-                "val": os.path.join(task_data_path, "val.json"),
-                "test": os.path.join(task_data_path, "val.json"),
+                "train": os.path.join(task_data_path, "train.jsonl"),
+                "val": os.path.join(task_data_path, "val.jsonl"),
+                "test": os.path.join(task_data_path, "val.jsonl"),
             },
             "name": task_name,
         },
