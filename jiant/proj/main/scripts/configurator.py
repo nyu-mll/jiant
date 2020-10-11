@@ -120,7 +120,6 @@ class SingleTaskConfigurator(zconf.RunConfig):
         task_cache_config = {}
         if self.do_train:
             task_cache_config["train"] = os.path.join(task_cache_path, "train")
-            task_cache_config["train_val"] = os.path.join(task_cache_path, "train_val")
         if self.do_val:
             task_cache_config["val"] = os.path.join(task_cache_path, "val")
         if self.do_test:
