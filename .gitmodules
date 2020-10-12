@@ -1,0 +1,4 @@
+[submodule "jiant/cove"]
+	path = jiant/modules/cove
+  url = https://github.com/salesforce/cove.git
+  ignore = untracked

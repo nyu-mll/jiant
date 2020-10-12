@@ -118,11 +118,11 @@ def flat_collate_fn(batch):
     elem = batch[0]
     if isinstance(elem, (np.ndarray, int, float, str)):
         return dataloader.default_collate(batch)
-    elif isinstance(elem, (list, dict)):
+    elif isinstance(elem, (list, dict, set)):
         # Don't do anything to list of lists
         return batch
     else:
-        raise TypeError(type(batch))
+        raise TypeError(type(elem))
 
 
 class Task:

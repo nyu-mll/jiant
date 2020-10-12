@@ -182,7 +182,7 @@ def check_keys(dict1: dict, key_list, mode="equal") -> bool:
         raise KeyError(mode)
 
 
-def get_unique_list_in_order(list_of_lists: Sequence[Sequence]):
+def get_unique_list_in_order(list_of_lists: Iterable[Sequence]):
     """Gets unique items from a list of lists, in the order of the appearance
 
     Args:
@@ -214,6 +214,7 @@ def reorder_keys(dict1: dict, key_list: list) -> dict:
     """
     dict_class = dict1.__class__
     assert check_keys(dict1, key_list)
+    # noinspection PyArgumentList
     return dict_class([(k, dict1[k]) for k in key_list])
 
 
