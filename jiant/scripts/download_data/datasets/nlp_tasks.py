@@ -18,8 +18,6 @@ from jiant.tasks.retrieval import (
     WSCTask,
     SuperglueWinogenderDiagnosticsTask,
     GlueDiagnosticsTask,
-    # === Additional for IRT === #
-    WinograndeTask,
 )
 
 
@@ -128,14 +126,6 @@ NLP_CONVERSION_DICT = {
     "cosmosqa": {"path": "cosmos_qa", "phase_list": ["train", "val", "test"]},
     "socialiqa": {"path": "social_i_qa", "phase_list": ["train", "val"]},
     "scitail": {"path": "scitail", "name": "tsv_format", "phase_list": ["train", "val", "test"]},
-    # === Additional for IRT === #
-    # "winogrande":{
-    #     "path":"winogrande",
-    #     "name":"winogrande_xs",
-    #     "phase_map": {"dev": "val", "train_xs":"train"},
-    #     "phase_list": ["train", "val", "test"],
-    #     "label_map":WinograndeTask.ID_TO_CHOICE,
-    # }
 }
 
 # NLP uses "validation", we use "val"

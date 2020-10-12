@@ -122,7 +122,6 @@ TASK_DICT = {
     "wsc": WSCTask,
     "xnli": XnliTask,
     "xquad": XquadTask,
-    # === Additional for IRT === #
     "winogrande": WinograndeTask,
     "arct": ArctTask,
     "mcscript" : MCScriptTask,
