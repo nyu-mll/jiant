@@ -34,7 +34,9 @@ def get_train_dataloader_from_cache(
     # TODO: Expose buffer_size parameter  (Issue #50)
     dataset = train_cache.get_iterable_dataset(buffer_size=10000, shuffle=True)
     train_dataloader = torch_utils.DataLoaderWithLength(
-        dataset=dataset, batch_size=train_batch_size, collate_fn=task.collate_fn,
+        dataset=dataset,
+        batch_size=train_batch_size,
+        collate_fn=task.collate_fn,
     )
     return train_dataloader
 
@@ -47,10 +49,15 @@ def get_eval_dataloader_from_cache(
     explicit_subset=None,
 ):
     dataset = eval_cache.get_iterable_dataset(
-        buffer_size=10000, shuffle=False, subset_num=subset_num, explicit_subset=explicit_subset,
+        buffer_size=10000,
+        shuffle=False,
+        subset_num=subset_num,
+        explicit_subset=explicit_subset,
     )
     eval_dataloader = torch_utils.DataLoaderWithLength(
-        dataset=dataset, batch_size=eval_batch_size, collate_fn=task.collate_fn,
+        dataset=dataset,
+        batch_size=eval_batch_size,
+        collate_fn=task.collate_fn,
     )
     return eval_dataloader
 

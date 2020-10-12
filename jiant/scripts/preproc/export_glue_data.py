@@ -166,7 +166,8 @@ def convert_glue_data(input_base_path, task_data_path, task_name):
     for phase, phase_data in task_all_examples.items():
         phase_data_path = os.path.join(task_data_path, f"{phase}.jsonl")
         py_io.write_jsonl(
-            data=phase_data, path=phase_data_path,
+            data=phase_data,
+            path=phase_data_path,
         )
         paths_dict[phase] = phase_data_path
     return paths_dict
@@ -181,7 +182,9 @@ def preprocess_all_glue_data(input_base_path, output_base_path, task_name_ls=Non
     for task_name in tqdm.tqdm(task_name_ls):
         task_data_path = os.path.join(output_base_path, "data", task_name)
         paths_dict = convert_glue_data(
-            input_base_path=input_base_path, task_data_path=task_data_path, task_name=task_name,
+            input_base_path=input_base_path,
+            task_data_path=task_data_path,
+            task_name=task_name,
         )
         config = {"task": task_name, "paths": paths_dict, "name": task_name}
         py_io.write_json(

@@ -50,7 +50,13 @@ class CommonsenseQATask(mc_template.AbstractMultipleChoiceTask):
     def _create_examples(cls, lines, set_type):
         examples = []
         for i, line in enumerate(lines):
-            examples.append(cls._create_example(raw_example=line, set_type=set_type, i=i,))
+            examples.append(
+                cls._create_example(
+                    raw_example=line,
+                    set_type=set_type,
+                    i=i,
+                )
+            )
         return examples
 
     @classmethod
@@ -58,11 +64,15 @@ class CommonsenseQATask(mc_template.AbstractMultipleChoiceTask):
         # Use heuristic for determining original or NLP format
         if isinstance(raw_example["question"], dict):
             return cls._create_example_from_original_format(
-                raw_example=raw_example, set_type=set_type, i=i,
+                raw_example=raw_example,
+                set_type=set_type,
+                i=i,
             )
         elif isinstance(raw_example["question"], str):
             return cls._create_example_from_nlp_format(
-                raw_example=raw_example, set_type=set_type, i=i,
+                raw_example=raw_example,
+                set_type=set_type,
+                i=i,
             )
         else:
             raise TypeError(raw_example["question"])

@@ -85,7 +85,9 @@ def full_chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunCo
     )
     if args.smart_truncate:
         dataset, length = preprocessing.smart_truncate(
-            dataset=dataset, max_seq_length=args.max_seq_length, verbose=True,
+            dataset=dataset,
+            max_seq_length=args.max_seq_length,
+            verbose=True,
         )
         os.makedirs(os.path.join(args.output_dir, phase), exist_ok=True)
         py_io.write_json(
@@ -144,10 +146,12 @@ def iter_chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunCo
 def main(args: RunConfiguration):
     task = tasks.create_task_from_config_path(config_path=args.task_config_path, verbose=True)
     feat_spec = model_resolution.build_featurization_spec(
-        model_type=args.model_type, max_seq_length=args.max_seq_length,
+        model_type=args.model_type,
+        max_seq_length=args.max_seq_length,
     )
     tokenizer = model_setup.get_tokenizer(
-        model_type=args.model_type, tokenizer_path=args.model_tokenizer_path,
+        model_type=args.model_type,
+        tokenizer_path=args.model_tokenizer_path,
     )
     if isinstance(args.phases, str):
         phases = args.phases.split(",")

@@ -16,7 +16,8 @@ import jiant.utils.python.strings as strings
 def download_xnli_data_and_write_config(task_data_base_path: str, task_config_base_path: str):
     xnli_temp_path = py_io.create_dir(task_data_base_path, "xnli_temp")
     download_utils.download_and_unzip(
-        "https://dl.fbaipublicfiles.com/XNLI/XNLI-1.0.zip", xnli_temp_path,
+        "https://dl.fbaipublicfiles.com/XNLI/XNLI-1.0.zip",
+        xnli_temp_path,
     )
     full_val_data = py_io.read_jsonl(os.path.join(xnli_temp_path, "XNLI-1.0", "xnli.dev.jsonl"))
     val_data = datastructures.group_by(full_val_data, key_func=lambda elem: elem["language"])
@@ -45,7 +46,8 @@ def download_xnli_data_and_write_config(task_data_base_path: str, task_config_ba
 def download_pawsx_data_and_write_config(task_data_base_path: str, task_config_base_path: str):
     pawsx_temp_path = py_io.create_dir(task_data_base_path, "pawsx_temp")
     download_utils.download_and_untar(
-        "https://storage.googleapis.com/paws/pawsx/x-final.tar.gz", pawsx_temp_path,
+        "https://storage.googleapis.com/paws/pawsx/x-final.tar.gz",
+        pawsx_temp_path,
     )
     languages = sorted(os.listdir(os.path.join(pawsx_temp_path, "x-final")))
     for lang in languages:
@@ -231,7 +233,10 @@ def download_udpos_data_and_write_config(task_data_base_path: str, task_config_b
                 raise KeyError()
         all_examples = _remove_empty_space(all_examples)
         _write_files(
-            data=all_examples, output_dir=task_data_path, lang_=lang, suffix="tsv",
+            data=all_examples,
+            output_dir=task_data_path,
+            lang_=lang,
+            suffix="tsv",
         )
         paths_dict = {
             phase: os.path.join(task_data_path, f"{phase}-{lang}.tsv")
@@ -335,7 +340,8 @@ def download_xquad_data_and_write_config(task_data_base_path: str, task_config_b
 def download_mlqa_data_and_write_config(task_data_base_path: str, task_config_base_path: str):
     mlqa_temp_path = py_io.create_dir(task_data_base_path, "mlqa_temp")
     download_utils.download_and_unzip(
-        "https://dl.fbaipublicfiles.com/MLQA/MLQA_V1.zip", mlqa_temp_path,
+        "https://dl.fbaipublicfiles.com/MLQA/MLQA_V1.zip",
+        mlqa_temp_path,
     )
     languages = "ar de en es hi vi zh".split()
     for lang1, lang2 in itertools.product(languages, languages):
@@ -371,10 +377,12 @@ def download_tydiqa_data_and_write_config(task_data_base_path: str, task_config_
     tydiqa_temp_path = py_io.create_dir(task_data_base_path, "tydiqa_temp")
     full_train_path = os.path.join(tydiqa_temp_path, "tydiqa-goldp-v1.1-train.json")
     download_utils.download_file(
-        "https://storage.googleapis.com/tydiqa/v1.1/tydiqa-goldp-v1.1-train.json", full_train_path,
+        "https://storage.googleapis.com/tydiqa/v1.1/tydiqa-goldp-v1.1-train.json",
+        full_train_path,
     )
     download_utils.download_and_untar(
-        "https://storage.googleapis.com/tydiqa/v1.1/tydiqa-goldp-v1.1-dev.tgz", tydiqa_temp_path,
+        "https://storage.googleapis.com/tydiqa/v1.1/tydiqa-goldp-v1.1-dev.tgz",
+        tydiqa_temp_path,
     )
     languages_dict = {
         "arabic": "ar",
@@ -421,7 +429,8 @@ def download_tydiqa_data_and_write_config(task_data_base_path: str, task_config_
         task_data_path = py_io.create_dir(task_data_base_path, task_name)
         train_path = os.path.join(task_data_path, f"tydiqa.{lang}.train.json")
         py_io.write_json(
-            data=data, path=train_path,
+            data=data,
+            path=train_path,
         )
         val_path = os.path.join(task_data_path, f"tydiqa.{lang}.dev.json")
         os.rename(
@@ -514,7 +523,8 @@ def download_bucc2018_data_and_write_config(task_data_base_path: str, task_confi
 def download_tatoeba_data_and_write_config(task_data_base_path: str, task_config_base_path: str):
     tatoeba_temp_path = py_io.create_dir(task_data_base_path, "tatoeba_temp")
     download_utils.download_and_unzip(
-        "https://github.com/facebookresearch/LASER/archive/master.zip", tatoeba_temp_path,
+        "https://github.com/facebookresearch/LASER/archive/master.zip",
+        tatoeba_temp_path,
     )
     languages_dict = {
         "afr": "af",
@@ -600,39 +610,48 @@ def download_xtreme_data_and_write_config(
 ):
     if task_name == "xnli":
         download_xnli_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "pawsx":
         download_pawsx_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "udpos":
         download_udpos_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "panx":
         download_panx_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "xquad":
         download_xquad_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "mlqa":
         download_mlqa_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "tydiqa":
         download_tydiqa_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "bucc2018":
         download_bucc2018_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     elif task_name == "tatoeba":
         download_tatoeba_data_and_write_config(
-            task_data_base_path=task_data_base_path, task_config_base_path=task_config_base_path,
+            task_data_base_path=task_data_base_path,
+            task_config_base_path=task_config_base_path,
         )
     else:
         raise KeyError(task_name)

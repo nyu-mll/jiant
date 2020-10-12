@@ -32,7 +32,8 @@ class ClassificationModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(
-                logits.view(-1, self.classification_head.num_labels), batch.label_id.view(-1),
+                logits.view(-1, self.classification_head.num_labels),
+                batch.label_id.view(-1),
             )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -114,7 +115,8 @@ class SpanComparisonModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(
-                logits.view(-1, self.span_comparison_head.num_labels), batch.label_id.view(-1),
+                logits.view(-1, self.span_comparison_head.num_labels),
+                batch.label_id.view(-1),
             )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -139,7 +141,8 @@ class SpanPredictionModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(
-                logits.transpose(dim0=1, dim1=2).flatten(end_dim=1), batch.gt_span_idxs.flatten(),
+                logits.transpose(dim0=1, dim1=2).flatten(end_dim=1),
+                batch.gt_span_idxs.flatten(),
             )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -157,7 +160,8 @@ class MultiLabelSpanComparisonModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.BCEWithLogitsLoss()
             loss = loss_fct(
-                logits.view(-1, self.span_comparison_head.num_labels), batch.label_ids.float(),
+                logits.view(-1, self.span_comparison_head.num_labels),
+                batch.label_ids.float(),
             )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -211,7 +215,9 @@ class MLMModel(Taskmodel):
 
     def forward(self, batch, task, tokenizer, compute_loss: bool = False):
         masked_batch = batch.get_masked(
-            mlm_probability=task.mlm_probability, tokenizer=tokenizer, do_mask=task.do_mask,
+            mlm_probability=task.mlm_probability,
+            tokenizer=tokenizer,
+            do_mask=task.do_mask,
         )
         encoder_output = get_output_from_encoder(
             encoder=self.encoder,
@@ -310,18 +316,26 @@ def get_output_from_encoder(encoder, input_ids, segment_ids, input_mask) -> Enco
         ModelArchitectures.XLM_ROBERTA,
     ]:
         pooled, unpooled, other = get_output_from_standard_transformer_models(
-            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+            encoder=encoder,
+            input_ids=input_ids,
+            segment_ids=segment_ids,
+            input_mask=input_mask,
         )
     elif model_arch == ModelArchitectures.ELECTRA:
         pooled, unpooled, other = get_output_from_electra(
-            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+            encoder=encoder,
+            input_ids=input_ids,
+            segment_ids=segment_ids,
+            input_mask=input_mask,
         )
     elif model_arch in [
         ModelArchitectures.BART,
         ModelArchitectures.MBART,
     ]:
         pooled, unpooled, other = get_output_from_bart_models(
-            encoder=encoder, input_ids=input_ids, input_mask=input_mask,
+            encoder=encoder,
+            input_ids=input_ids,
+            input_mask=input_mask,
         )
     else:
         raise KeyError(model_arch)
@@ -347,7 +361,9 @@ def get_output_from_bart_models(encoder, input_ids, input_mask):
     # sentence representation is the final decoder state.
     # That's what we use for `unpooled` here.
     dec_last, dec_all, enc_last, enc_all = encoder(
-        input_ids=input_ids, attention_mask=input_mask, output_hidden_states=True,
+        input_ids=input_ids,
+        attention_mask=input_mask,
+        output_hidden_states=True,
     )
     unpooled = dec_last
 

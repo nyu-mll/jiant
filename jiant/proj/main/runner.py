@@ -102,7 +102,10 @@ class JiantRunner:
             batch, batch_metadata = train_dataloader_dict[task_name].pop()
             batch = batch.to(self.device)
             model_output = wrap_jiant_forward(
-                jiant_model=self.jiant_model, batch=batch, task=task, compute_loss=True,
+                jiant_model=self.jiant_model,
+                batch=batch,
+                task=task,
+                compute_loss=True,
             )
             loss = self.complex_backpropagate(
                 loss=model_output.loss,
@@ -172,7 +175,9 @@ class JiantRunner:
             ].train_batch_size
             train_dataloader_dict[task_name] = InfiniteYield(
                 get_train_dataloader_from_cache(
-                    train_cache=train_cache, task=task, train_batch_size=train_batch_size,
+                    train_cache=train_cache,
+                    task=task,
+                    train_batch_size=train_batch_size,
                 )
             )
         return train_dataloader_dict
@@ -193,7 +198,9 @@ class JiantRunner:
 
     def get_val_dataloader_dict(self, task_name_list, use_subset=False):
         return self._get_eval_dataloader_dict(
-            phase="val", task_name_list=task_name_list, use_subset=use_subset,
+            phase="val",
+            task_name_list=task_name_list,
+            use_subset=use_subset,
         )
 
     def get_val_labels_dict(self, task_name_list, use_subset=False):
@@ -279,7 +286,10 @@ def run_val(
 
         with torch.no_grad():
             model_output = wrap_jiant_forward(
-                jiant_model=jiant_model, batch=batch, task=task, compute_loss=True,
+                jiant_model=jiant_model,
+                batch=batch,
+                task=task,
+                compute_loss=True,
             )
         batch_logits = model_output.logits.detach().cpu().numpy()
         batch_loss = model_output.loss.mean().item()
@@ -303,12 +313,16 @@ def run_val(
         "accumulator": eval_accumulator,
         "loss": eval_loss,
         "metrics": evaluation_scheme.compute_metrics_from_accumulator(
-            task=task, accumulator=eval_accumulator, labels=val_labels, tokenizer=tokenizer,
+            task=task,
+            accumulator=eval_accumulator,
+            labels=val_labels,
+            tokenizer=tokenizer,
         ),
     }
     if return_preds:
         output["preds"] = evaluation_scheme.get_preds_from_accumulator(
-            task=task, accumulator=eval_accumulator,
+            task=task,
+            accumulator=eval_accumulator,
         )
     return output
 
@@ -335,17 +349,24 @@ def run_test(
 
         with torch.no_grad():
             model_output = wrap_jiant_forward(
-                jiant_model=jiant_model, batch=batch, task=task, compute_loss=False,
+                jiant_model=jiant_model,
+                batch=batch,
+                task=task,
+                compute_loss=False,
             )
         batch_logits = model_output.logits.detach().cpu().numpy()
         eval_accumulator.update(
-            batch_logits=batch_logits, batch_loss=0, batch=batch, batch_metadata=batch_metadata,
+            batch_logits=batch_logits,
+            batch_loss=0,
+            batch=batch,
+            batch_metadata=batch_metadata,
         )
     output = {
         "accumulator": eval_accumulator,
     }
     if return_preds:
         output["preds"] = evaluation_scheme.get_preds_from_accumulator(
-            task=task, accumulator=eval_accumulator,
+            task=task,
+            accumulator=eval_accumulator,
         )
     return output

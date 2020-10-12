@@ -5,6 +5,7 @@ from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.utils.python.io import read_json_lines
 from typing import List
 
+
 @dataclass
 class Example(mc_template.Example):
     @property
@@ -61,8 +62,12 @@ class MCScriptTask(mc_template.AbstractMultipleChoiceTask):
                     Example(
                         guid="%s-%s-%s" % (set_type, passage_id, question_id),
                         prompt=passage,
-                        choice_list=[question+' '+answer_dict["text"] for answer_dict in answer_dicts],
-                        label=answer_dicts[1]["label"] == 'True' if set_type != "test" else cls.CHOICE_KEYS[-1],
+                        choice_list=[
+                            question + " " + answer_dict["text"] for answer_dict in answer_dicts
+                        ],
+                        label=answer_dicts[1]["label"] == "True"
+                        if set_type != "test"
+                        else cls.CHOICE_KEYS[-1],
                     )
                 )
 

@@ -33,7 +33,10 @@ def quick_init(args, verbose=True) -> QuickInitContainer:
         print_args(args)
     init_server_logging(server_ip=args.server_ip, server_port=args.server_port, verbose=verbose)
     device, n_gpu = init_cuda_from_args(
-        no_cuda=args.no_cuda, local_rank=args.local_rank, fp16=args.fp16, verbose=verbose,
+        no_cuda=args.no_cuda,
+        local_rank=args.local_rank,
+        fp16=args.fp16,
+        verbose=verbose,
     )
     args.seed = init_seed(given_seed=args.seed, n_gpu=n_gpu, verbose=verbose)
     init_output_dir(output_dir=args.output_dir, force_overwrite=args.force_overwrite)

@@ -49,7 +49,10 @@ class JiantModel(nn.Module):
         taskmodel_key = self.task_to_taskmodel_map[task_name]
         taskmodel = self.taskmodels_dict[taskmodel_key]
         return taskmodel(
-            batch=batch, task=task, tokenizer=self.tokenizer, compute_loss=compute_loss,
+            batch=batch,
+            task=task,
+            tokenizer=self.tokenizer,
+            compute_loss=compute_loss,
         ).to_dict()
 
 
@@ -79,7 +82,9 @@ def wrap_jiant_forward(
     is_multi_gpu = isinstance(jiant_model, nn.DataParallel)
     model_output = construct_output_from_dict(
         jiant_model(
-            batch=batch.to_dict() if is_multi_gpu else batch, task=task, compute_loss=compute_loss,
+            batch=batch.to_dict() if is_multi_gpu else batch,
+            task=task,
+            compute_loss=compute_loss,
         )
     )
     if is_multi_gpu:

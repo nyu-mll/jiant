@@ -20,7 +20,8 @@ def write_configs(config_dict, base_path):
             assert os.path.exists(path)
     for config_key in config_keys:
         py_io.write_json(
-            config_dict[config_key], os.path.join(base_path, f"{config_key}.json"),
+            config_dict[config_key],
+            os.path.join(base_path, f"{config_key}.json"),
         )
     py_io.write_json(config_dict, os.path.join(base_path, "full.json"))
     py_io.write_json(

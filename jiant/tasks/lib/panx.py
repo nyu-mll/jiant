@@ -48,7 +48,10 @@ class Example(BaseExample):
             label_mask += [1] + [0] * padding_length
 
         return TokenizedExample(
-            guid=self.guid, tokens=all_tokenized_tokens, labels=labels, label_mask=label_mask,
+            guid=self.guid,
+            tokens=all_tokenized_tokens,
+            labels=labels,
+            label_mask=label_mask,
         )
 
 
@@ -61,7 +64,9 @@ class TokenizedExample(BaseTokenizedExample):
 
     def featurize(self, tokenizer, feat_spec):
         unpadded_inputs = construct_single_input_tokens_and_segment_ids(
-            input_tokens=self.tokens, tokenizer=tokenizer, feat_spec=feat_spec,
+            input_tokens=self.tokens,
+            tokenizer=tokenizer,
+            feat_spec=feat_spec,
         )
         input_set = create_input_set_from_tokens_and_segments(
             unpadded_tokens=unpadded_inputs.unpadded_tokens,
@@ -88,10 +93,14 @@ class TokenizedExample(BaseTokenizedExample):
         )
 
         padded_labels = pad_single_with_feat_spec(
-            ls=unpadded_labels, feat_spec=feat_spec, pad_idx=-1,
+            ls=unpadded_labels,
+            feat_spec=feat_spec,
+            pad_idx=-1,
         )
         padded_label_mask = pad_single_with_feat_spec(
-            ls=unpadded_label_mask, feat_spec=feat_spec, pad_idx=0,
+            ls=unpadded_label_mask,
+            feat_spec=feat_spec,
+            pad_idx=0,
         )
 
         return DataRow(

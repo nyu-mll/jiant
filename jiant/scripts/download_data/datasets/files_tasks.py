@@ -67,7 +67,8 @@ def download_squad_data_and_write_config(
         file_path=train_path,
     )
     download_utils.download_file(
-        url=f"https://rajpurkar.github.io/SQuAD-explorer/dataset/{dev_file}", file_path=val_path,
+        url=f"https://rajpurkar.github.io/SQuAD-explorer/dataset/{dev_file}",
+        file_path=val_path,
     )
     py_io.write_json(
         data={
@@ -149,7 +150,8 @@ def download_abductive_nli_data_and_write_config(
 def download_swag_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://github.com/rowanz/swagaf/archive/master.zip", task_data_path,
+        "https://github.com/rowanz/swagaf/archive/master.zip",
+        task_data_path,
     )
     for phase in ["train", "val", "test"]:
         os.rename(
@@ -174,7 +176,8 @@ def download_swag_data_and_write_config(task_name: str, task_data_path: str, tas
 def download_qamr_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://github.com/uwnlp/qamr/archive/master.zip", task_data_path,
+        "https://github.com/uwnlp/qamr/archive/master.zip",
+        task_data_path,
     )
     data_phase_list = ["train", "dev", "test"]
     jiant_phase_list = ["train", "val", "test"]
@@ -208,7 +211,8 @@ def download_qasrl_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_untar(
-        "http://qasrl.org/data/qasrl-v2.tar", task_data_path,
+        "http://qasrl.org/data/qasrl-v2.tar",
+        task_data_path,
     )
     data_phase_list = ["train", "dev", "test"]
     jiant_phase_list = ["train", "val", "test"]
@@ -230,6 +234,7 @@ def download_qasrl_data_and_write_config(
         },
         path=task_config_path,
     )
+
 
 def download_winogrande_data_and_write_config(
     task_name: str, task_data_path: str, task_config_path: str

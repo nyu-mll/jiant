@@ -25,7 +25,9 @@ class ValState(ExtendedDataClassMixin):
     def new(self):
         # noinspection PyArgumentList
         return self.__class__(
-            score=self.score, metrics=self.metrics, train_state=self.train_state.new(),
+            score=self.score,
+            metrics=self.metrics,
+            train_state=self.train_state.new(),
         )
 
     def to_dict(self):
@@ -102,7 +104,8 @@ class JiantMetarunner(AbstractMetarunner):
             train_iterator = self.runner.run_train_context(verbose=self.verbose)
         else:
             train_iterator = self.runner.resume_train_context(
-                train_state=self.train_state, verbose=self.verbose,
+                train_state=self.train_state,
+                verbose=self.verbose,
             )
         for train_state in train_iterator:
             self.train_state = train_state
@@ -230,7 +233,8 @@ class JiantMetarunner(AbstractMetarunner):
                 )
             del self.best_state_dict
             self.best_state_dict = copy_state_dict(
-                state_dict=get_model_for_saving(self.model).state_dict(), target_device=CPU_DEVICE,
+                state_dict=get_model_for_saving(self.model).state_dict(),
+                target_device=CPU_DEVICE,
             )
             self.num_evals_since_improvement = 0
         self.log_writer.write_entry(

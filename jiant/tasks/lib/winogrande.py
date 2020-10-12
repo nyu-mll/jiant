@@ -19,6 +19,7 @@ from jiant.tasks.lib.templates.shared import (
 )
 from jiant.tasks.utils import truncate_sequences
 
+
 @dataclass
 class Example(mc_template.Example):
     @property
@@ -54,19 +55,19 @@ class TokenizedExample(BaseTokenizedExample):
             unpadded_inputs = add_cls_token(
                 unpadded_tokens=(
                     # choice
-                        choice
-                        + [tokenizer.sep_token]
-                        + maybe_extra_sep
-                        # prompt
-                        + prompt
-                        + [tokenizer.sep_token]
+                    choice
+                    + [tokenizer.sep_token]
+                    + maybe_extra_sep
+                    # prompt
+                    + prompt
+                    + [tokenizer.sep_token]
                 ),
                 unpadded_segment_ids=(
                     # choice
-                        [feat_spec.sequence_a_segment_id] * (len(choice) + 1)
-                        + maybe_extra_sep_segment_id
-                        # prompt + sep
-                        + [feat_spec.sequence_b_segment_id] * (len(prompt) + 1)
+                    [feat_spec.sequence_a_segment_id] * (len(choice) + 1)
+                    + maybe_extra_sep_segment_id
+                    # prompt + sep
+                    + [feat_spec.sequence_b_segment_id] * (len(prompt) + 1)
                 ),
                 tokenizer=tokenizer,
                 feat_spec=feat_spec,

@@ -58,6 +58,7 @@ from jiant.tasks.lib.wnli import WnliTask
 from jiant.tasks.lib.wsc import WSCTask
 from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
+
 # === Additional for IRT === #
 from jiant.tasks.lib.winogrande import WinograndeTask
 from jiant.tasks.lib.arct import ArctTask
@@ -128,7 +129,7 @@ TASK_DICT = {
     "xquad": XquadTask,
     "winogrande": WinograndeTask,
     "arct": ArctTask,
-    "mcscript" : MCScriptTask,
+    "mcscript": MCScriptTask,
 }
 
 
@@ -178,5 +179,7 @@ def create_task_from_config_path(config_path: str, verbose: bool = False):
 
     """
     return create_task_from_config(
-        read_json(config_path), base_path=os.path.split(config_path)[0], verbose=verbose,
+        read_json(config_path),
+        base_path=os.path.split(config_path)[0],
+        verbose=verbose,
     )

@@ -3,7 +3,12 @@ from tqdm import auto as tqdm_lib
 
 
 def tqdm(iterable=None, desc=None, total=None, initial=0):
-    return tqdm_lib.tqdm(iterable=iterable, desc=desc, total=total, initial=initial,)
+    return tqdm_lib.tqdm(
+        iterable=iterable,
+        desc=desc,
+        total=total,
+        initial=initial,
+    )
 
 
 def trange(*args, desc=None, total=None):

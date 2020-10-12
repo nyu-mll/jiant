@@ -197,7 +197,8 @@ def create_jiant_task_container(
     task_run_config = TaskRunConfig.from_dict(task_run_config)
 
     num_train_examples_dict = get_num_train_examples(
-        task_cache_dict=task_cache_dict, train_task_list=task_run_config.train_task_list,
+        task_cache_dict=task_cache_dict,
+        train_task_list=task_run_config.train_task_list,
     )
     task_sampler = jiant_task_sampler.create_task_sampler(
         sampler_config=sampler_config,

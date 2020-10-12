@@ -88,12 +88,16 @@ class XnliTask(Task):
 
     def get_val_examples(self):
         return self._create_examples(
-            lines=read_jsonl(self.val_path), set_type="val", language=self.language,
+            lines=read_jsonl(self.val_path),
+            set_type="val",
+            language=self.language,
         )
 
     def get_test_examples(self):
         return self._create_examples(
-            lines=read_jsonl(self.test_path), set_type="test", language=self.language,
+            lines=read_jsonl(self.test_path),
+            set_type="test",
+            language=self.language,
         )
 
     @classmethod

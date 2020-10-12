@@ -40,7 +40,8 @@ def setup_jiant_model(
     transformers_class_spec = TRANSFORMERS_CLASS_SPEC_DICT[model_arch]
     tokenizer = model_setup.get_tokenizer(model_type=model_type, tokenizer_path=tokenizer_path)
     ancestor_model = get_ancestor_model(
-        transformers_class_spec=transformers_class_spec, model_config_path=model_config_path,
+        transformers_class_spec=transformers_class_spec,
+        model_config_path=model_config_path,
     )
     encoder = get_encoder(model_arch=model_arch, ancestor_model=ancestor_model)
     taskmodels_dict = {
@@ -93,25 +94,33 @@ def delegate_load(jiant_model, weights_dict: dict, load_mode: str):
     """
     if load_mode == "from_transformers":
         return load_encoder_from_transformers_weights(
-            encoder=jiant_model.encoder, weights_dict=weights_dict,
+            encoder=jiant_model.encoder,
+            weights_dict=weights_dict,
         )
     elif load_mode == "from_transformers_with_mlm":
         remainder = load_encoder_from_transformers_weights(
-            encoder=jiant_model.encoder, weights_dict=weights_dict, return_remainder=True,
+            encoder=jiant_model.encoder,
+            weights_dict=weights_dict,
+            return_remainder=True,
         )
         load_lm_heads_from_transformers_weights(
-            jiant_model=jiant_model, weights_dict=remainder,
+            jiant_model=jiant_model,
+            weights_dict=remainder,
         )
         return
     elif load_mode == "all":
         jiant_model.load_state_dict(weights_dict)
     elif load_mode == "partial_weights":
         return load_partial_heads(
-            jiant_model=jiant_model, weights_dict=weights_dict, allow_missing_head_weights=True,
+            jiant_model=jiant_model,
+            weights_dict=weights_dict,
+            allow_missing_head_weights=True,
         )
     elif load_mode == "partial_heads":
         return load_partial_heads(
-            jiant_model=jiant_model, weights_dict=weights_dict, allow_missing_head_model=True,
+            jiant_model=jiant_model,
+            weights_dict=weights_dict,
+            allow_missing_head_model=True,
         )
     elif load_mode == "partial":
         return load_partial_heads(
@@ -266,21 +275,26 @@ def create_taskmodel(
             num_labels=len(task.LABELS),
         )
         taskmodel = taskmodels.ClassificationModel(
-            encoder=encoder, classification_head=classification_head,
+            encoder=encoder,
+            classification_head=classification_head,
         )
     elif task.TASK_TYPE == TaskTypes.REGRESSION:
         assert taskmodel_kwargs is None
         regression_head = heads.RegressionHead(
-            hidden_size=hidden_size, hidden_dropout_prob=hidden_dropout_prob,
+            hidden_size=hidden_size,
+            hidden_dropout_prob=hidden_dropout_prob,
         )
         taskmodel = taskmodels.RegressionModel(encoder=encoder, regression_head=regression_head)
     elif task.TASK_TYPE == TaskTypes.MULTIPLE_CHOICE:
         assert taskmodel_kwargs is None
         choice_scoring_head = heads.RegressionHead(
-            hidden_size=hidden_size, hidden_dropout_prob=hidden_dropout_prob,
+            hidden_size=hidden_size,
+            hidden_dropout_prob=hidden_dropout_prob,
         )
         taskmodel = taskmodels.MultipleChoiceModel(
-            encoder=encoder, num_choices=task.NUM_CHOICES, choice_scoring_head=choice_scoring_head,
+            encoder=encoder,
+            num_choices=task.NUM_CHOICES,
+            choice_scoring_head=choice_scoring_head,
         )
     elif task.TASK_TYPE == TaskTypes.SPAN_PREDICTION:
         assert taskmodel_kwargs is None
@@ -290,7 +304,8 @@ def create_taskmodel(
             num_labels=2,
         )
         taskmodel = taskmodels.SpanPredictionModel(
-            encoder=encoder, span_prediction_head=span_prediction_head,
+            encoder=encoder,
+            span_prediction_head=span_prediction_head,
         )
     elif task.TASK_TYPE == TaskTypes.SPAN_COMPARISON_CLASSIFICATION:
         assert taskmodel_kwargs is None
@@ -301,7 +316,8 @@ def create_taskmodel(
             num_labels=len(task.LABELS),
         )
         taskmodel = taskmodels.SpanComparisonModel(
-            encoder=encoder, span_comparison_head=span_comparison_head,
+            encoder=encoder,
+            span_comparison_head=span_comparison_head,
         )
     elif task.TASK_TYPE == TaskTypes.MULTI_LABEL_SPAN_CLASSIFICATION:
         assert taskmodel_kwargs is None
@@ -312,7 +328,8 @@ def create_taskmodel(
             num_labels=len(task.LABELS),
         )
         taskmodel = taskmodels.MultiLabelSpanComparisonModel(
-            encoder=encoder, span_comparison_head=span_comparison_head,
+            encoder=encoder,
+            span_comparison_head=span_comparison_head,
         )
     elif task.TASK_TYPE == TaskTypes.TAGGING:
         assert taskmodel_kwargs is None
@@ -322,7 +339,8 @@ def create_taskmodel(
             num_labels=len(task.LABELS),
         )
         taskmodel = taskmodels.TokenClassificationModel(
-            encoder=encoder, token_classification_head=token_classification_head,
+            encoder=encoder,
+            token_classification_head=token_classification_head,
         )
     elif task.TASK_TYPE == TaskTypes.SQUAD_STYLE_QA:
         assert taskmodel_kwargs is None
@@ -373,7 +391,9 @@ def create_taskmodel(
         else:
             raise KeyError(taskmodel_kwargs["pooler_type"])
         taskmodel = taskmodels.EmbeddingModel(
-            encoder=encoder, pooler_head=pooler_head, layer=taskmodel_kwargs["layer"],
+            encoder=encoder,
+            pooler_head=pooler_head,
+            layer=taskmodel_kwargs["layer"],
         )
     else:
         raise KeyError(task.TASK_TYPE)

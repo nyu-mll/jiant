@@ -143,7 +143,8 @@ def download_data_and_write_config(task_name: str, task_data_path: str, task_con
         phase_list=nlp_conversion_metadata.get("phase_list"),
     )
     paths_dict = download_utils.write_examples_to_jsonls(
-        examples_dict=examples_dict, task_data_path=task_data_path,
+        examples_dict=examples_dict,
+        task_data_path=task_data_path,
     )
     jiant_task_name = nlp_conversion_metadata.get("jiant_task_name", task_name)
     py_io.write_json(
