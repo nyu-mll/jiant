@@ -1,0 +1,24 @@
+[flake8]
+max-line-length = 100
+
+ignore =
+    # "these rules don't play well with black", from AllenNLP
+    E203  # whitespace before :
+    W503  # line break before binary operatori
+    # these are docstring-related ignores:
+    D100  # Missing docstring in public module
+    D101  # Missing docstring in public class
+    D102  # Missing docstring in public method
+    D103  # Missing docstring in public function
+    D104  # Missing docstring in public package
+    D105  # Missing docstring in magic method
+    D107  # Missing docstring in __init__
+    D400  # First line should end with a period
+    D401  # First line should be in imperative mood; try rephrasing
+    D415  # First line should end with a period, question mark, or exclamation point 
+    D205  # 1 blank line required between summary line and description
+
+exclude = 
+    examples/**
+    tests/**
+    jiant/ext/allennlp.py #  excluded to avoid modifying code copied from AllenNLP.
