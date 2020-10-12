@@ -920,6 +920,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.MnliTask,
             tasks.PawsXTask,
             tasks.QnliTask,
+            tasks.RaceTask,
             tasks.RteTask,
             tasks.SciTailTask,
             tasks.SentevalTenseTask,
