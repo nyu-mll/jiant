@@ -122,6 +122,7 @@ class SingleTaskConfigurator(zconf.RunConfig):
             task_cache_config["train"] = os.path.join(task_cache_path, "train")
         if self.do_val:
             task_cache_config["val"] = os.path.join(task_cache_path, "val")
+            task_cache_config["val_labels"] = os.path.join(task_cache_path, "val_labels")
         if self.do_test:
             task_cache_config["test"] = os.path.join(task_cache_path, "test")
         for v in task_cache_config.values():
