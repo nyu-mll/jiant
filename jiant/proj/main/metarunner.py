@@ -120,7 +120,7 @@ class JiantMetarunner(AbstractMetarunner):
         if self.save_model_every_logscale:
             save_steps = [0.01,0.10,0.25,0.50]
             for s in save_steps:
-                return self.train_state.global_steps == int(self.max_step *  save_steps)
+                return self.train_state.global_steps == int(self.max_step *  s)
         return (self.train_state.global_steps + 1) % self.save_every_steps == 0
 
     def save_model(self):
