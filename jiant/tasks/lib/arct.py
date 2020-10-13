@@ -7,6 +7,7 @@ from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.utils.python.io import read_json_lines
 from typing import List
 
+
 @dataclass
 class Example(mc_template.Example):
     @property
@@ -70,9 +71,11 @@ class ArctTask(mc_template.AbstractMultipleChoiceTask):
             examples.append(
                 Example(
                     guid="%s-%s" % (set_type, i),
-                    prompt=row.reason+' ',
-                    choice_list=[choice_pre + row.warrant0 + ', ' + row.claim,
-                                 choice_pre + row.warrant1 + ', ' + row.claim],
+                    prompt=row.reason + " ",
+                    choice_list=[
+                        choice_pre + row.warrant0 + ", " + row.claim,
+                        choice_pre + row.warrant1 + ", " + row.claim,
+                    ],
                     label=row.gold_label if set_type != "test" else cls.CHOICE_KEYS[-1],
                 )
             )
