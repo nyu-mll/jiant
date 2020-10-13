@@ -122,7 +122,7 @@ TASK_DICT = {
     "wsc": WSCTask,
     "xnli": XnliTask,
     "xquad": XquadTask,
-    "mcscript" : MCScriptTask,
+    "mcscript": MCScriptTask,
 }
 
 

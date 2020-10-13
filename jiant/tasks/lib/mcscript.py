@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from jiant.tasks.lib.templates.shared import labels_to_bimap
 from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.utils.python.io import read_json_lines
-from typing import List
+
 
 @dataclass
 class Example(mc_template.Example):
@@ -49,7 +49,6 @@ class MCScriptTask(mc_template.AbstractMultipleChoiceTask):
     @classmethod
     def _create_examples(cls, lines, set_type):
         examples = []
-        idx = 0
         for line in lines:
             passage = line["passage"]["text"]
             passage_id = line["idx"]
@@ -61,8 +60,12 @@ class MCScriptTask(mc_template.AbstractMultipleChoiceTask):
                     Example(
                         guid="%s-%s-%s" % (set_type, passage_id, question_id),
                         prompt=passage,
-                        choice_list=[question+' '+answer_dict["text"] for answer_dict in answer_dicts],
-                        label=answer_dicts[1]["label"] == 'True' if set_type != "test" else cls.CHOICE_KEYS[-1],
+                        choice_list=[
+                            question + " " + answer_dict["text"] for answer_dict in answer_dicts
+                        ],
+                        label=answer_dicts[1]["label"] == "True"
+                        if set_type != "test"
+                        else cls.CHOICE_KEYS[-1],
                     )
                 )
 
