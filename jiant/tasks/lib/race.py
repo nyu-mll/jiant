@@ -58,7 +58,7 @@ class RaceTask(mc_template.AbstractMultipleChoiceTask):
                 examples.append(
                     Example(
                         guid="%s-%s" % (set_type, i),
-                        prompt=raw_example["article"],
+                        prompt=raw_example["article"] + " " + question,
                         choice_list=raw_example["options"][qn_i],
                         label=raw_example["answers"][qn_i]
                         if set_type != "test"
