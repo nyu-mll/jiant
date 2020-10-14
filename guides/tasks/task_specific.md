@@ -2,7 +2,9 @@
 
 ### Adversarial NLI
 
-[Adversarial NLI](https://arxiv.org/pdf/1910.14599.pdf) has 3 rounds of adversarial data creation. A1/A2/A3 are expanding supersets of the previous round.
+[Adversarial NLI](https://arxiv.org/pdf/1910.14599.pdf) has 3 rounds of adversarial data creation. A1, A2 and A3 are different rounds of data creation. When downloading, you can use the task names `adversarial_nli_r1`, `adversarial_nli_r2`, `adversarial_nli_r3` to point the the different rounds. 
+
+When doing training on the full ANLI dataset, which is SNLI+MNLI+A1+A2+A3, perform training in a multi-task manner with proportional sampling, and be sure to set the `task_to_taskmodel_map` to have all tasks point to the same NLI head.
 
 
 ### Masked Language Modeling (MLM)

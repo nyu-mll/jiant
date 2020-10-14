@@ -77,8 +77,8 @@ downloader.download_data(["mrpc"], "/content/data")
 # Set up the arguments for the Simple API
 args = run.RunConfiguration(
    run_name="simple",
-   exp_dir="/content/exp",
-   data_dir="/content/data",
+   exp_dir="/path/to/exp",
+   data_dir="/path/to/exp/tasks",
    model_type="roberta-base",
    tasks="mrpc",
    train_batch_size=16,
@@ -91,15 +91,16 @@ run.run_simple(args)
 
 Bash version:
 ```bash
+BASE_PATH=/path/to/exp
 python jiant/scripts/download_data/runscript.py \
     download \
     --tasks mrpc \
-    --output_path /content/data
+    --output_path /path/to/exp/tasks
 python jiant/proj/simple/runscript.py \
     run \
     --run_name simple \
-    --exp_dir /content/data \
-    --data_dir /content/data \
+    --exp_dir /path/to/exp \
+    --data_dir /path/to/exp/tasks \
     --model_type roberta-base \
     --tasks mrpc \
     --train_batch_size 16 \
