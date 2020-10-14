@@ -29,7 +29,7 @@
 | MultiRC | multirc | ✅ | ✅ | multirc | SuperGLUE |
 | MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
 | QAMR | qamr | ✅ | ✅ | qamr |  |
-| QA-SRL | qa-srl | ✅ | ✅ | qa-srl |  |
+| QA-SRL | qasrl | ✅ | ✅ | qasrl |  |
 | EP-NER | ner | ✅ |  | ner | Edge-Probing |
 | PAWS-X | `pawsx_{lang}` | ✅ | ✅ | pawsx | XTREME, multi-lang |
 | WikiAnn | `panx_{lang}` | ✅ | ✅ | panx | XTREME, multi-lang |
