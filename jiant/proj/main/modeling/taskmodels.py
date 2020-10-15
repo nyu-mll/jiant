@@ -46,7 +46,7 @@ class RegressionModel(Taskmodel):
 
     def forward(self, batch, task, tokenizer, compute_loss: bool = False):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
-        # TODO: Abuse of notation - these aren't really logits  (Issue #45)
+        # TODO: Abuse of notation - these aren't really logits  (issue #1187)
         logits = self.regression_head(pooled=encoder_output.pooled)
         if compute_loss:
             loss_fct = nn.MSELoss()
@@ -247,9 +247,9 @@ class EmbeddingModel(Taskmodel):
         else:
             raise TypeError(type(self.pooler_head))
 
-        # TODO: Abuse of notation - these aren't really logits  (Issue #45)
+        # TODO: Abuse of notation - these aren't really logits  (issue #1187)
         if compute_loss:
-            # TODO: make this optional?   (Issue #45)
+            # TODO: make this optional?   (issue #1187)
             return LogitsAndLossOutput(
                 logits=logits,
                 loss=torch.tensor([0.0]),  # This is a horrible hack
