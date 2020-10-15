@@ -129,7 +129,7 @@ NLP_CONVERSION_DICT = {
     "quoref": {
         "path": "quoref",
         "phase_list": ["train", "val"],
-    }
+    },
     "adversarial_nli_r1": {
         "path": "anli",
         "field_map": {"premise": "context"},
