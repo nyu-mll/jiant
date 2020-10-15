@@ -63,6 +63,7 @@ from jiant.tasks.lib.wnli import WnliTask
 from jiant.tasks.lib.wsc import WSCTask
 from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
+from jiant.tasks.lib.arct import ArctTask
 
 from jiant.tasks.core import Task
 from jiant.utils.python.io import read_json
@@ -131,6 +132,7 @@ TASK_DICT = {
     "wsc": WSCTask,
     "xnli": XnliTask,
     "xquad": XquadTask,
+    "arct": ArctTask,
 }
 
 

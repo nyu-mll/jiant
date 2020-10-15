@@ -12,8 +12,8 @@
 </div>
 
 **Why should I use `jiant`?**
-- `jiant` supports [multitask learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_Multi_Task_Example.ipynb)
-- `jiant` supports [transfer learning](https://colab.research.google.com/github/nyu-mll/jiant/examples/notebooks/jiant_STILTs_Example.ipynb)
+- `jiant` supports [multitask learning](https://colab.research.google.com/github/nyu-mll/jiant/blob/master/examples/notebooks/jiant_Multi_Task_Example.ipynb)
+- `jiant` supports [transfer learning](https://colab.research.google.com/github/nyu-mll/jiant/blob/master/examples/notebooks/jiant_STILTs_Example.ipynb)
 - `jiant` supports [50+ natural language understanding tasks](./guides/tasks/supported_tasks.md)
 - `jiant` supports the following benchmarks:
     - [GLUE](./guides/benchmarks/glue.md)
@@ -34,16 +34,32 @@
 * See our [list of supported tasks](./guides/tasks/supported_tasks.md)
 
 ## Installation
-To install `jiant` as a user:
+
+To import `jiant` from source (recommended for researchers):
+```bash
+git clone https://github.com/nyu-mll/jiant.git
+cd jiant
+pip install -r requirements.txt
+
+# Add the following to your .bash_rc or .bash_profile 
+export PYTHONPATH=/path/to/jiant:$PYTHONPATH
 ```
-pip install jiant
-```
-To install `jiant` as a developer:
+If you plan to contribute to jiant, install additional dependencies with `pip install -r requirements-dev.txt`.
+
+To install `jiant` from source (alternative for researchers):
 ```
 git clone https://github.com/nyu-mll/jiant.git
 cd jiant
-pip install -e .
+pip install . -e
 ```
+
+To install `jiant` from pip (recommended if you just want to train/use a model):
+```
+pip install jiant
+```
+
+We recommended that you install `jiant` in a virtual environment or a conda environment.
+
 To check `jiant` was correctly installed, run a [simple example](./examples/notebooks/simple_api_fine_tuning.ipynb).
 
 
@@ -56,13 +72,13 @@ from jiant.proj.simple import runscript as run
 import jiant.scripts.download_data.runscript as downloader
 
 # Download the Data
-downloader.download_data([“mrpc”], "/content/data")
+downloader.download_data(["mrpc"], "/content/data")
 
 # Set up the arguments for the Simple API
 args = run.RunConfiguration(
    run_name="simple",
-   exp_dir="/content/exp",
-   data_dir="/content/data",
+   exp_dir="/path/to/exp",
+   data_dir="/path/to/exp/tasks",
    model_type="roberta-base",
    tasks="mrpc",
    train_batch_size=16,
@@ -78,12 +94,12 @@ Bash version:
 python jiant/scripts/download_data/runscript.py \
     download \
     --tasks mrpc \
-    --output_path /content/data
+    --output_path /path/to/exp/tasks
 python jiant/proj/simple/runscript.py \
     run \
     --run_name simple \
-    --exp_dir /content/data \
-    --data_dir /content/data \
+    --exp_dir /path/to/exp \
+    --data_dir /path/to/exp/tasks \
     --model_type roberta-base \
     --tasks mrpc \
     --train_batch_size 16 \

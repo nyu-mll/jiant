@@ -129,6 +129,30 @@ NLP_CONVERSION_DICT = {
     "quoref": {
         "path": "quoref",
         "phase_list": ["train", "val"],
+    }
+    "adversarial_nli_r1": {
+        "path": "anli",
+        "field_map": {"premise": "context"},
+        "label_map": {0: "e", 1: "n", 2: "c"},
+        "phase_map": {"train_r1": "train", "dev_r1": "val", "test_r1": "test"},
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "adversarial_nli",
+    },
+    "adversarial_nli_r2": {
+        "path": "anli",
+        "field_map": {"premise": "context"},
+        "label_map": {0: "e", 1: "n", 2: "c"},
+        "phase_map": {"train_r2": "train", "dev_r2": "val", "test_r2": "test"},
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "adversarial_nli",
+    },
+    "adversarial_nli_r3": {
+        "path": "anli",
+        "field_map": {"premise": "context"},
+        "label_map": {0: "e", 1: "n", 2: "c"},
+        "phase_map": {"train_r3": "train", "dev_r3": "val", "test_r3": "test"},
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "adversarial_nli",
     },
 }
 

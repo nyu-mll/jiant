@@ -33,6 +33,9 @@ OTHER_NLP_TASKS = {
     "socialiqa",
     "scitail",
     "quoref",
+    "adversarial_nli_r1",
+    "adversarial_nli_r2",
+    "adversarial_nli_r3",
 }
 
 XTREME_TASKS = {
