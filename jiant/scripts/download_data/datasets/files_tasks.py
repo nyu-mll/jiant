@@ -48,6 +48,10 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_newsqa_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "mrqa_natural_questions":
+        download_mrqa_natural_questions_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     else:
         raise KeyError(task_name)
 
@@ -592,3 +596,29 @@ def download_newsqa_data_and_write_config(
     )
     for file_name in file_name_list:
         os.remove(os.path.join(task_data_path, file_name))
+
+
+def download_mrqa_natural_questions_data_and_write_config(
+        task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    download_utils.download_file(
+        "https://s3.us-east-2.amazonaws.com/mrqa/release/v2/train/NaturalQuestionsShort.jsonl.gz",
+        os.path.join(task_data_path, "train.jsonl.gz"),
+    )
+    download_utils.download_file(
+        "https://s3.us-east-2.amazonaws.com/mrqa/release/v2/dev/NaturalQuestionsShort.jsonl.gz",
+        os.path.join(task_data_path, "val.jsonl.gz"),
+    )
+    jiant_phase_list = ["train", "val"]
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "train.jsonl.gz"),
+                "val": os.path.join(task_data_path, "val.jsonl.gz"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )

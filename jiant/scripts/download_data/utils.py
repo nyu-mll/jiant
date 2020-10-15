@@ -1,3 +1,4 @@
+import gzip
 import nlp
 import os
 import tarfile

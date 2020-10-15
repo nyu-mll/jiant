@@ -25,6 +25,7 @@ from jiant.tasks.lib.mlqa import MlqaTask
 from jiant.tasks.lib.mnli import MnliTask
 from jiant.tasks.lib.mnli_mismatched import MnliMismatchedTask
 from jiant.tasks.lib.mrpc import MrpcTask
+from jiant.tasks.lib.mrqa_natural_questions import MrqaNaturalQuestionsTask
 from jiant.tasks.lib.multirc import MultiRCTask
 from jiant.tasks.lib.edge_probing.ner import NerTask
 from jiant.tasks.lib.newsqa import NewsQATask
@@ -94,6 +95,7 @@ TASK_DICT = {
     "mnli_mismatched": MnliMismatchedTask,
     "multirc": MultiRCTask,
     "mrpc": MrpcTask,
+    "mrqa_natural_questions": MrqaNaturalQuestionsTask,
     "ner": NerTask,
     "newsqa": NewsQATask,
     "pawsx": PawsXTask,
