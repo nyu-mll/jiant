@@ -91,7 +91,6 @@ run.run_simple(args)
 
 Bash version:
 ```bash
-BASE_PATH=/path/to/exp
 python jiant/scripts/download_data/runscript.py \
     download \
     --tasks mrpc \
