@@ -41,7 +41,7 @@ with
 ```bash
         --ZZoverrides model_load_path \
         --model_load_mode partial \
-        --model_load_path /path/to/my/model.p
+        --model_load_path /path/to/my/model.p \
 ```
 
 This ensures that your encoder is loaded from the model tuned on the intermediate task.
