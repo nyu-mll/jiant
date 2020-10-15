@@ -71,7 +71,10 @@ class MrqaNaturalQuestionsTask(squad_style_template.BaseSquadStyleTask):
                     answers = []
                     for answer in elem["detected_answers"]:
                         for answer_span in answer["char_spans"]:
-                            answers.append(line["context"][answer_span[0]: answer_span[1]+1])
+                            answers.append({
+                                "answer_start": answer_span[0],
+                                "text": line["context"][answer_span[0]: answer_span[1]+1],
+                            })
                     examples.append(Example(
                         qas_id=f"{set_type}-{i}",
                         question_text=elem["question"],
