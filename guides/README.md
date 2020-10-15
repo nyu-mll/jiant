@@ -4,11 +4,27 @@ Also check out our [Examples](../examples) to see `jiant` in action.
 
 If you don't know what to read, why not read our [In-Depth Introduction to Jiant](general/in_depth_into.md)?
 
+Contents:
+
+* [Tutorials](#tutorials)
+* [General](#general)
+* [Benchmarks](#benchmarks)
+* [Experiments](#experiments)
+* [Tasks](#tasks)
+* [Papers / Projects](#papers--projects)
+
+---
+
 ## Tutorials
 
-* [Quick Start Guide — Using the command line interface](tutorials/quick_start_cli.md): A simple `jiant` training run in bash, using the "simple" API
+These are quick tutorials that demonstrate `jiant` usage. 
+
+* [Quick Start Guide — Using the "Simple" CLI](tutorials/quick_start_simple.md): A simple `jiant` training run in bash, using the "Simple" CLI
+* [Quick Start Guide — Using the "Main" CLI](tutorials/quick_start_main.md): A simple `jiant` training run in bash, using the "Main" CLI
 
 ## General
+
+There are general guides to `jiant`'s design and components. Refer to these if you have questions about parts of `jiant`
 
 * [In-Depth Introduction to Jiant](general/in_depth_into.md): Learn about `jiant` in greater detail
     * [`jiant`'s models](general/in_depth_into.md#jiants-models)
@@ -18,17 +34,27 @@ If you don't know what to read, why not read our [In-Depth Introduction to Jiant
     
 ## Benchmarks
 
+These are guides to running the common NLP benchmarks using `jiant`. 
+
 * [GLUE Benchmark](benchmarks/glue.md): Generate GLUE Benchmark submissions
 * [SuperGLUE Benchmark](benchmarks/superglue.md): Generate SuperGLUE Benchmark submissions
 * [XTREME](benchmarks/xtreme.md): End-to-end guide for training and generating submission for the XTREME bernchmark
 
 ## Experiments
 
+These are more specific guides about running experiments in `jiant`.
+
 * [My Experiment and Me](experiments/my_experiment_and_me.md): More info about a `jiant` training/eval run
 * [Tips for Large-scale Experiments](experiments/large_scale_experiments.md)
 
 ## Tasks
 
+These are notes on the tasks supported in `jiant`.
+
 * [List of supported tasks in `jiant`](tasks/supported_tasks.md)
 * [Task-specific notes](tasks/task_specific.md): Learn about quirks/caveats about specific tasks
 * [Adding Tasks](tasks/adding_tasks.md): Guide on adding a task to `jiant` 
+
+## Papers / Projects
+
+* [English Intermediate-Task Training Improves Zero-Shot Cross-Lingual Transfer Too (X-STILTs)](projects/xstilts.md)
