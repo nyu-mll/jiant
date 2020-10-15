@@ -15,7 +15,7 @@ In the second step, this entails tuning the checkpoint from (1) on the English t
 
 ### Single/Multiple Intermediate Task
 
-For tuning on a single or multiple intermediate tasks, you can use the [Quick Start guide](../tutorials/quick_start_main.md) as a reference. You should follow the same steps for downloading the data. Be sure to use the relevant tasks and XLM-R models. For instance, the training command should look something like:
+For tuning on a single or multiple intermediate tasks, you can use the [Quick Start guide](../tutorials/quick_start_simple.md) as a reference. You should follow the same steps for downloading the data. Be sure to use the relevant tasks and XLM-R models. For instance, the training command should look something like:
 
 ```bash
 python jiant/jiant/proj/simple/runscript.py \
