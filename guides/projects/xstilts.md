@@ -53,10 +53,10 @@ If you would like to cite our work:
 Jason Phang, Iacer Calixto, Phu Mon Htut, Yada Pruksachatkun, Haokun Liu, Clara Vania, Katharina Kann, and Samuel R. Bowman  **"English Intermediate-Task Training Improves Zero-Shot Cross-Lingual Transfer Too."** *Proceedings of AACL, 2020*
 
 ```
-@article{phang2020english,
+@inproceedings{phang2020english,
     author = {Jason Phang and Iacer Calixto and Phu Mon Htut and Yada Pruksachatkun and Haokun Liu and Clara Vania and Katharina Kann and Samuel R. Bowman},
     title = {English Intermediate-Task Training Improves Zero-Shot Cross-Lingual Transfer Too},
-    journal = {Proceedings of AACL, 2020},
+    booktitle = {Proceedings of AACL},
     year = {2020}
 }
 ```
