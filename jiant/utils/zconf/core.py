@@ -58,7 +58,7 @@ def argparse_attr(
 
 
 def update_parser(parser, class_with_attributes: Any):
-    # TODO: Write more checks/tests for the parser creation in general  (Issue #57)
+    # TODO: Write more checks/tests for the parser creation in general  (issue #1177)
     for attribute in class_with_attributes.__attrs_attrs__:
         if "argparse_kwargs" in attribute.metadata:
             argparse_kwargs = attribute.metadata["argparse_kwargs"]

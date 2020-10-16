@@ -225,7 +225,7 @@ class JiantRunner:
         )
 
     def get_runner_state(self):
-        # TODO: Add fp16  (Issue #46)
+        # TODO: Add fp16  (issue #1186)
         state = {
             "model": torch_utils.get_model_for_saving(self.jiant_model).state_dict(),
             "optimizer": self.optimizer_scheduler.optimizer.state_dict(),
