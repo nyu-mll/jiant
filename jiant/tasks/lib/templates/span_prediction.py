@@ -32,7 +32,9 @@ class Example(BaseExample):
     answer_char_span: (int, int)
 
     def tokenize(self, tokenizer):
-        passage = self.passage.lower() if resolve_is_lower_case(tokenizer=tokenizer) else self.passage
+        passage = (
+            self.passage.lower() if resolve_is_lower_case(tokenizer=tokenizer) else self.passage
+        )
         passage_tokens = tokenizer.tokenize(passage)
         token_aligner = TokenAligner(source=passage, target=passage_tokens)
         answer_token_span = token_aligner.project_char_to_token_span(
