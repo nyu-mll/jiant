@@ -32,8 +32,6 @@ class Example(mc_template.Example):
 @dataclass
 class TokenizedExample(mc_template.TokenizedExample):
     def featurize(self, tokenizer, feat_spec):
-        print("hi")
-
         if feat_spec.sep_token_extra:
             maybe_extra_sep = [tokenizer.sep_token]
             maybe_extra_sep_segment_id = [feat_spec.sequence_a_segment_id]
