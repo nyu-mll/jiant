@@ -157,7 +157,7 @@ def create_task_from_config(config: dict, base_path: Optional[str] = None, verbo
     task_class = get_task_class(config["task"])
     for k in config["paths"].keys():
         path = config["paths"][k]
-        # TODO: Refactor paths  (Issue #54)
+        # TODO: Refactor paths  (issue #1180)
         if isinstance(path, str) and not os.path.isabs(path):
             assert base_path
             config["paths"][k] = os.path.join(base_path, path)

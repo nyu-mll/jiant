@@ -908,7 +908,7 @@ class Bucc2018EvaluationScheme(BaseEvaluationScheme):
 
 
 def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
-    # TODO: move logic to task?  (Issue #52)
+    # TODO: move logic to task?  (issue #1182)
     if isinstance(
         task,
         (
