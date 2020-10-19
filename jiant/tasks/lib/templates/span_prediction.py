@@ -5,6 +5,7 @@ import torch
 from dataclasses import dataclass
 from typing import List, Tuple
 
+from jiant.shared.model_resolution import resolve_is_lower_case
 from jiant.tasks.core import (
     Task,
     TaskTypes,
@@ -31,9 +32,11 @@ class Example(BaseExample):
     answer_char_span: (int, int)
 
     def tokenize(self, tokenizer):
-
-        passage_tokens = tokenizer.tokenize(self.passage)
-        token_aligner = TokenAligner(source=self.passage, target=passage_tokens)
+        passage = (
+            self.passage.lower() if resolve_is_lower_case(tokenizer=tokenizer) else self.passage
+        )
+        passage_tokens = tokenizer.tokenize(passage)
+        token_aligner = TokenAligner(source=passage, target=passage_tokens)
         answer_token_span = token_aligner.project_char_to_token_span(
             self.answer_char_span[0], self.answer_char_span[1], inclusive=True
         )
@@ -43,7 +46,7 @@ class Example(BaseExample):
             passage=passage_tokens,
             question=tokenizer.tokenize(self.question),
             answer_str=self.answer,
-            passage_str=self.passage,
+            passage_str=passage,
             answer_token_span=answer_token_span,
             token_idx_to_char_idx_map=token_aligner.source_char_idx_to_target_token_idx.T,
         )
