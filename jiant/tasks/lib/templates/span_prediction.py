@@ -5,7 +5,7 @@ import torch
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from jiant.shared.model_resolution import resolve_is_lower_case
+import jiant.shared.model_resolution
 from jiant.tasks.core import (
     Task,
     TaskTypes,
@@ -33,7 +33,7 @@ class Example(BaseExample):
 
     def tokenize(self, tokenizer):
         passage = (
-            self.passage.lower() if resolve_is_lower_case(tokenizer=tokenizer) else self.passage
+            self.passage.lower() if model_resolution.resolve_is_lower_case(tokenizer=tokenizer) else self.passage
         )
         passage_tokens = tokenizer.tokenize(passage)
         token_aligner = TokenAligner(source=passage, target=passage_tokens)
