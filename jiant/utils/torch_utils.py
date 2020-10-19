@@ -94,7 +94,7 @@ def get_only_requires_grad(parameters, requires_grad=True):
     elif isinstance(parameters, dict):
         return {n: p for n, p in parameters if p.requires_grad == requires_grad}
     else:
-        # TODO: Support generators  (Issue #56)
+        # TODO: Support generators  (issue #1178)
         raise RuntimeError("generators not yet supported")
 
 
@@ -111,7 +111,7 @@ class ListDataset(Dataset):
 
 class DataLoaderWithLength(DataLoader):
     def __len__(self):
-        # TODO: Revert after https://github.com/pytorch/pytorch/issues/36176 addressed  (Issue #55)
+        # TODO: Revert after https://github.com/pytorch/pytorch/issues/36176 addressed (issue #1179)
         # try:
         #     return super().__len__()
         # except TypeError as e:
