@@ -5,7 +5,7 @@ import torch
 from dataclasses import dataclass
 from typing import List, Tuple
 
-import jiant.shared.model_resolution
+import jiant.shared.model_resolution as model_resolution
 from jiant.tasks.core import (
     Task,
     TaskTypes,
