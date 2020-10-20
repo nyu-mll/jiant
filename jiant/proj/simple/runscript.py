@@ -36,7 +36,6 @@ class RunConfiguration(zconf.RunConfig):
     max_seq_length = zconf.attr(type=int, default=256)
     num_train_epochs = zconf.attr(type=float, default=3)
     train_examples_cap = zconf.attr(type=int, default=None)
-    dry_run = zconf.attr(action="store_true")
     create_config = zconf.attr(action="store_true")
 
     # === Running Setup === #
@@ -248,137 +247,6 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
     py_io.write_file(args.to_json(), os.path.join(run_output_dir, "simple_run_config.json"))
 
 
-def dry_run(args: RunConfiguration):
-
-    model_cache_path = replace_none(
-        args.model_cache_path, default=os.path.join(args.exp_dir, "models")
-    )
-
-    print("\n# === Step 1: Write task configs based on templates === #")
-    full_task_name_list = sorted(list(set(args.train_tasks + args.val_tasks + args.test_tasks)))
-    for task_name in full_task_name_list:
-        print(
-            f"""
-python jiant/proj/main/write_configs.py \\
-    --task_name {task_name} \\
-    --task_data_dir {os.path.join(args.data_dir, task_name)} \\
-    --task_config_path {os.path.join(args.data_dir, "configs", f"{task_name}_config.json")}
-""".strip()
-        )
-
-    print("\n# === Step 2: Download models === #")
-    print(
-        f"""
-python jiant/proj/main/export_model.py \\
-    --model_type {args.model_type} \\
-    --output_base_path {os.path.join(model_cache_path, args.model_type)}
-""".strip()
-    )
-
-    print("\n# === Step 3: Tokenize and cache === #")
-    phase_task_dict = {
-        "train": args.train_tasks,
-        "val": args.val_tasks,
-        "test": args.test_tasks,
-    }
-    for task_name in full_task_name_list:
-        phases_to_do = []
-        for phase, phase_task_list in phase_task_dict.items():
-            if task_name in phase_task_list:
-                phases_to_do.append(phase)
-        print(
-            f"""
-python jiant/proj/main/tokenize_and_cache.py \\
-    --task_config_path {os.path.join(args.data_dir, "configs", f"{task_name}_config.json")} \\
-    --model_type {args.model_type} \\
-    --model_tokenizer_path {os.path.join(model_cache_path, args.model_type, "tokenizer")} \\
-    --output_dir {os.path.join(args.exp_dir, "cache", task_name)} \\
-    --phases {",".join(phases_to_do)} \\
-    --max_seq_length {args.max_seq_length} \\
-    --smart_truncate \\
-    --do_iter
-""".strip()
-        )
-
-    print("\n# === Step 4: Generate jiant_task_container_config === #")
-    s = f"""
-python jiant/proj/main/scripts/configurator.py \\
-    SimpleAPIMultiTaskConfigurator \\
-    {os.path.join(args.exp_dir, "run_configs", f"{args.run_name}_config.json")} \\
-    --task_config_base_path {os.path.join(args.data_dir, "configs")} \\
-    --task_cache_base_path {os.path.join(args.exp_dir, "cache")} \\
-    --train_task_name_list {",".join(args.train_tasks)} \\
-    --val_task_name_list {",".join(args.val_tasks)} \\
-    --test_task_name_list {",".join(args.test_tasks)} \\
-    --train_batch_size {args.train_batch_size} \\
-    --eval_batch_multiplier 2 \\
-    --epochs {args.num_train_epochs} \\
-    --num_gpus {torch.cuda.device_count()}
-""".strip()
-    if args.train_examples_cap:
-        s += f" \\\n    --train_examples_cap {args.train_examples_cap}"
-    print(s.strip())
-
-    print("\n# === Step 5: Train/Eval! === #")
-    if args.model_weights_path:
-        model_load_mode = "partial"
-        model_weights_path = args.model_weights_path
-    else:
-        # From Transformers
-        if any(task_name.startswith("mlm_") for task_name in full_task_name_list):
-            model_load_mode = "from_transformers_with_mlm"
-        else:
-            model_load_mode = "from_transformers"
-        model_weights_path = os.path.join(
-            model_cache_path, args.model_type, "model", f"{args.model_type}.p"
-        )
-    s = f"""
-python jiant/proj/main/runscript.py \\
-    run \\
-    --jiant_task_container_config_path \
-{os.path.join(args.exp_dir, "run_configs", f"{args.run_name}_config.json")} \\
-    --output_dir {os.path.join(args.exp_dir, "runs", args.run_name)} \\
-    --model_type {args.model_type} \\
-    --model_path {model_weights_path} \\
-    --model_config_path \
-    {os.path.join(model_cache_path, args.model_type, "model", f"{args.model_type}.json")} \\
-    --model_tokenizer_path {os.path.join(model_cache_path, args.model_type, "tokenizer")} \\
-    --model_load_mode {model_load_mode}
-""".strip()
-    if args.train_tasks:
-        s += " \\\n    --do_train"
-    if args.val_tasks:
-        s += " \\\n    --do_val"
-    covered_attrs = [
-        "jiant_task_container_config_path",
-        "output_dir",
-        "model_type",
-        "model_path",
-        "model_config_path",
-        "model_tokenizer_path",
-        "model_load_mode",
-    ]
-    for attr in runscript.RunConfiguration.__attrs_attrs__:
-        if attr.name in covered_attrs:
-            continue
-        if not hasattr(args, attr.name):
-            continue
-        args_attr = getattr(args, attr.name)
-        if attr.default == args_attr:
-            continue
-        if attr.default is None and args_attr is None:
-            continue
-        if (
-            "argparse_kwargs" in attr.metadata
-            and "action" in attr.metadata["argparse_kwargs"]
-            and attr.metadata["argparse_kwargs"]["action"] == "store_true"
-        ):
-            s += f" \\\n    --{attr.name}"
-        else:
-            s += f" \\\n    --{attr.name} {args_attr}"
-    print(s.strip())
-
-
 def main():
     mode, cl_args = zconf.get_mode_and_cl_args()
     args = RunConfiguration.default_run_cli(cl_args=cl_args)
@@ -386,8 +254,6 @@ def main():
         run_simple(args, with_continue=False)
     if mode == "run_with_continue":
         run_simple(args, with_continue=True)
-    elif mode == "dry_run":
-        dry_run(args)
     else:
         raise zconf.ModeLookupError(mode)
 
