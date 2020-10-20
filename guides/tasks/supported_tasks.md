@@ -4,6 +4,7 @@
 
 | Name | `task_name` | `jiant` | Downloader | `jiant_task_name` | Misc |
 |---|---|:---:|:---:|---|---|
+| [Argument Reasoning Comprehension](https://arxiv.org/abs/1708.01425) | arct | ✅ |  | arct | [Github](https://github.com/UKPLab/argument-reasoning-comprehension-task) |
 | Abductive NLI | abductive_nli | ✅ | ✅ | abductive_nli |  |
 | SuperGLUE Winogender Diagnostic | superglue_axg | ✅ | ✅ | superglue_axg | SuperGLUE |
 | Acceptability Definiteness | acceptability_definiteness | ✅ |  | acceptability_definiteness | Function Words |
@@ -29,7 +30,7 @@
 | MultiRC | multirc | ✅ | ✅ | multirc | SuperGLUE |
 | MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
 | QAMR | qamr | ✅ | ✅ | qamr |  |
-| QA-SRL | qa-srl | ✅ | ✅ | qa-srl |  |
+| QA-SRL | qasrl | ✅ | ✅ | qasrl |  |
 | EP-NER | ner | ✅ |  | ner | Edge-Probing |
 | PAWS-X | `pawsx_{lang}` | ✅ | ✅ | pawsx | XTREME, multi-lang |
 | WikiAnn | `panx_{lang}` | ✅ | ✅ | panx | XTREME, multi-lang |

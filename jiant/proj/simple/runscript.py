@@ -153,7 +153,7 @@ def run_simple(args: RunConfiguration):
                     ),
                     output_dir=os.path.join(args.exp_dir, "cache", task_name),
                     phases=phases_to_do,
-                    # TODO: Need a strategy for task-specific max_seq_length issues (Issue #66)
+                    # TODO: Need a strategy for task-specific max_seq_length issues (issue #1176)
                     max_seq_length=args.max_seq_length,
                     smart_truncate=True,
                     do_iter=True,

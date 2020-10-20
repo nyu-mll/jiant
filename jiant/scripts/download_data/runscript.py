@@ -2,22 +2,22 @@ import os
 import argparse
 
 import jiant.utils.python.io as py_io
-import jiant.scripts.download_data.datasets.nlp_tasks as nlp_tasks_download
+import jiant.scripts.download_data.datasets.hf_datasets_tasks as hf_datasets_tasks_download
 import jiant.scripts.download_data.datasets.xtreme as xtreme_download
 import jiant.scripts.download_data.datasets.files_tasks as files_tasks_download
 from jiant.tasks.constants import (
     GLUE_TASKS,
     SUPERGLUE_TASKS,
-    OTHER_NLP_TASKS,
+    OTHER_HF_DATASETS_TASKS,
     XTREME_TASKS,
     BENCHMARKS,
 )
 from jiant.scripts.download_data.constants import SQUAD_TASKS, DIRECT_DOWNLOAD_TASKS
 
-# DIRECT_DOWNLOAD_TASKS need to be directly downloaded because the nlp
+# DIRECT_DOWNLOAD_TASKS need to be directly downloaded because the HF Datasets
 # implementation differs from the original dataset format
-NLP_DOWNLOADER_TASKS = GLUE_TASKS | SUPERGLUE_TASKS | OTHER_NLP_TASKS - DIRECT_DOWNLOAD_TASKS
-SUPPORTED_TASKS = NLP_DOWNLOADER_TASKS | XTREME_TASKS | SQUAD_TASKS | DIRECT_DOWNLOAD_TASKS
+HF_DATASETS_TASKS = (GLUE_TASKS | SUPERGLUE_TASKS | OTHER_HF_DATASETS_TASKS) - DIRECT_DOWNLOAD_TASKS
+SUPPORTED_TASKS = HF_DATASETS_TASKS | XTREME_TASKS | SQUAD_TASKS | DIRECT_DOWNLOAD_TASKS
 
 
 # noinspection PyUnusedLocal
@@ -50,8 +50,8 @@ def download_data(task_names, output_base_path):
     for i, task_name in enumerate(task_names):
         task_data_path = os.path.join(task_data_base_path, task_name)
 
-        if task_name in NLP_DOWNLOADER_TASKS:
-            nlp_tasks_download.download_data_and_write_config(
+        if task_name in HF_DATASETS_TASKS:
+            hf_datasets_tasks_download.download_data_and_write_config(
                 task_name=task_name,
                 task_data_path=task_data_path,
                 task_config_path=os.path.join(task_config_base_path, f"{task_name}_config.json"),
@@ -74,7 +74,7 @@ def download_data(task_names, output_base_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download NLP datasets and generate task configs")
+    parser = argparse.ArgumentParser(description="Download datasets and generate task configs")
     subparsers = parser.add_subparsers()
     sp_list = subparsers.add_parser("list", help="list supported tasks in downloader")
     sp_download = subparsers.add_parser("download", help="download data command")

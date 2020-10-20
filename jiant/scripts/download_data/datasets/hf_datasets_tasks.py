@@ -1,4 +1,4 @@
-"""Use this for tasks that can be obtained from NLP without further/special processing"""
+"""Use this for tasks that can be obtained from HF-Datasets without further/special processing"""
 
 import jiant.scripts.download_data.utils as download_utils
 import jiant.utils.python.io as py_io
@@ -21,7 +21,7 @@ from jiant.tasks.retrieval import (
 )
 
 
-NLP_CONVERSION_DICT = {
+HF_DATASETS_CONVERSION_DICT = {
     # === GLUE === #
     "cola": {
         "path": "glue",
@@ -126,26 +126,50 @@ NLP_CONVERSION_DICT = {
     "cosmosqa": {"path": "cosmos_qa", "phase_list": ["train", "val", "test"]},
     "socialiqa": {"path": "social_i_qa", "phase_list": ["train", "val"]},
     "scitail": {"path": "scitail", "name": "tsv_format", "phase_list": ["train", "val", "test"]},
+    "adversarial_nli_r1": {
+        "path": "anli",
+        "field_map": {"premise": "context"},
+        "label_map": {0: "e", 1: "n", 2: "c"},
+        "phase_map": {"train_r1": "train", "dev_r1": "val", "test_r1": "test"},
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "adversarial_nli",
+    },
+    "adversarial_nli_r2": {
+        "path": "anli",
+        "field_map": {"premise": "context"},
+        "label_map": {0: "e", 1: "n", 2: "c"},
+        "phase_map": {"train_r2": "train", "dev_r2": "val", "test_r2": "test"},
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "adversarial_nli",
+    },
+    "adversarial_nli_r3": {
+        "path": "anli",
+        "field_map": {"premise": "context"},
+        "label_map": {0: "e", 1: "n", 2: "c"},
+        "phase_map": {"train_r3": "train", "dev_r3": "val", "test_r3": "test"},
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "adversarial_nli",
+    },
 }
 
-# NLP uses "validation", we use "val"
+# HF-Datasets uses "validation", we use "val"
 DEFAULT_PHASE_MAP = {"validation": "val"}
 
 
 def download_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
-    nlp_conversion_metadata = NLP_CONVERSION_DICT[task_name]
-    examples_dict = download_utils.convert_nlp_dataset_to_examples(
-        path=nlp_conversion_metadata["path"],
-        name=nlp_conversion_metadata.get("name"),
-        field_map=nlp_conversion_metadata.get("field_map"),
-        label_map=nlp_conversion_metadata.get("label_map"),
-        phase_map=nlp_conversion_metadata.get("phase_map", DEFAULT_PHASE_MAP),
-        phase_list=nlp_conversion_metadata.get("phase_list"),
+    hf_datasets_conversion_metadata = HF_DATASETS_CONVERSION_DICT[task_name]
+    examples_dict = download_utils.convert_hf_dataset_to_examples(
+        path=hf_datasets_conversion_metadata["path"],
+        name=hf_datasets_conversion_metadata.get("name"),
+        field_map=hf_datasets_conversion_metadata.get("field_map"),
+        label_map=hf_datasets_conversion_metadata.get("label_map"),
+        phase_map=hf_datasets_conversion_metadata.get("phase_map", DEFAULT_PHASE_MAP),
+        phase_list=hf_datasets_conversion_metadata.get("phase_list"),
     )
     paths_dict = download_utils.write_examples_to_jsonls(
         examples_dict=examples_dict, task_data_path=task_data_path,
     )
-    jiant_task_name = nlp_conversion_metadata.get("jiant_task_name", task_name)
+    jiant_task_name = hf_datasets_conversion_metadata.get("jiant_task_name", task_name)
     py_io.write_json(
         data={"task": jiant_task_name, "paths": paths_dict, "name": task_name},
         path=task_config_path,
