@@ -52,7 +52,7 @@ python jiant/proj/main/scripts/configurator.py \
     --task_config_base_path ${EXP_DIR}/tasks/configs \
     --task_cache_base_path ${EXP_DIR}/cache/${MODEL_TYPE} \
     --epochs 3 \
-    --train_batch_size 4 \
+    --train_batch_size 16 \
     --eval_batch_multiplier 2 \
     --do_train --do_val
 ```
@@ -60,16 +60,58 @@ python jiant/proj/main/scripts/configurator.py \
 5. Finally, we train our model.
 ```bash
 python jiant/proj/main/runscript.py \
-    run_with_continue \
+    run \
     --ZZsrc ${EXP_DIR}/models/${MODEL_TYPE}/config.json \
     --jiant_task_container_config_path ${EXP_DIR}/runconfigs/${MODEL_TYPE}/${TASK}.json \
     --model_load_mode from_transformers \
     --learning_rate 1e-5 \
-    --eval_every_steps 1000 \
-    --no_improvements_for_n_evals 30 \
-    --save_checkpoint_every_steps 1000 \
-    --delete_checkpoint_if_done \
-    --do_save --do_train --do_val \
-    --force_overwrite \
+    --do_train --do_val \
+    --do_save --force_overwrite \
     --output_dir ${EXP_DIR}/runs/${MODEL_TYPE}/${TASK}
 ```
+
+
+## Additional Options
+
+### Checkpointing
+
+To allow checkpointing (allowing you to resume runs that get interrupted), use the `run_with_continue` mode and set the `save_checkpoint_every_steps` argument. For example:
+
+```bash
+python jiant/proj/main/runscript.py \
+    run_with_continue \
+        ...
+        ...
+    --save_checkpoint_every_steps 500 \
+    --delete_checkpoint_if_done
+```
+
+This will save a checkpoint to disk every 500 training steps. The checkpoint will be saved to a `checkpoint.p` file. If the process gets killed, you can rerun the exact same command and it will continue training from the latest checkpoint.
+
+Note that checkpoints are for resuming training, not for saving snapshots of model weights at different points in training. Checkpoints also include additional run metadata, as well as the optimizer states. To save regular snapshots of model weights, see [Model Snapshots](#model-snapshots)
+
+We also set the `delete_checkpoint_if_done` flag to delete the checkpoint after training is complete. 
+
+### Model Snapshots
+
+To save snapshots of model weights at regular intervals, use the `--save_every_steps` argument. For example:
+
+```
+    --save_every_steps 500
+```
+
+will save a pickle of model weights every 500 training steps.
+
+### Early Stopping
+
+To do early stopping, we can perform validation evaluation at regular intervals over the course of training, and select the best model weights based on validation performance. For expedience, we often do not want to evaluate on the whole validaiton set, but only a subset. To do early stopping, use the following arguments as an example: 
+
+```
+    --eval_every_steps 1000
+    --no_improvements_for_n_evals 30
+    --eval_subset_num 500
+```
+
+* `--eval_every_steps 1000` indicates that we will evaluate the model on a validation subset every 1000 training steps.
+* `--no_improvements_for_n_evals 30` indicates that if the validation performance does not improve for 30 consecutive validation evaluations, we will end the training phase
+* `--eval_subset_num 500` indicates that we will evaluate on the first 500 validation examples for early stopping. This value is `500` by default.
