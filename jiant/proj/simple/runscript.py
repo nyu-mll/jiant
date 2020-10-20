@@ -98,7 +98,7 @@ def create_and_write_task_configs(task_name_list, data_dir, task_config_base_pat
     return task_config_path_dict
 
 
-def run_simple(args: RunConfiguration):
+def run_simple(args: RunConfiguration, with_continue: bool = False):
 
     model_cache_path = replace_none(
         args.model_cache_path, default=os.path.join(args.exp_dir, "models")
@@ -195,8 +195,16 @@ def run_simple(args: RunConfiguration):
             model_cache_path, args.model_type, "model", f"{args.model_type}.p"
         )
     run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
-    runscript.run_loop(
-        runscript.RunConfiguration(
+
+    if args.save_checkpoint_every_steps and os.path.exists(
+        os.path.join(run_output_dir, "checkpoint.p")
+    ) and with_continue:
+        print("Resuming")
+        checkpoint = torch.load(os.path.join(run_output_dir, "checkpoint.p"))
+        run_args = runscript.RunConfiguration.from_dict(checkpoint["metadata"]["args"])
+    else:
+        print("Running from start")
+        run_args = runscript.RunConfiguration(
             # === Required parameters === #
             jiant_task_container_config_path=jiant_task_container_config_path,
             output_dir=run_output_dir,
@@ -234,7 +242,9 @@ def run_simple(args: RunConfiguration):
             server_ip=args.server_ip,
             server_port=args.server_port,
         )
-    )
+        checkpoint = None
+
+    runscript.run_loop(args=run_args, checkpoint=checkpoint)
     py_io.write_file(args.to_json(), os.path.join(run_output_dir, "simple_run_config.json"))
 
 
@@ -373,7 +383,9 @@ def main():
     mode, cl_args = zconf.get_mode_and_cl_args()
     args = RunConfiguration.default_run_cli(cl_args=cl_args)
     if mode == "run":
-        run_simple(args)
+        run_simple(args, with_continue=False)
+    if mode == "run_with_continue":
+        run_simple(args, with_continue=True)
     elif mode == "dry_run":
         dry_run(args)
     else:
