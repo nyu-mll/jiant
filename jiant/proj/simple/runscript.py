@@ -195,9 +195,11 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         )
     run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
 
-    if args.save_checkpoint_every_steps and os.path.exists(
-        os.path.join(run_output_dir, "checkpoint.p")
-    ) and with_continue:
+    if (
+        args.save_checkpoint_every_steps
+        and os.path.exists(os.path.join(run_output_dir, "checkpoint.p"))
+        and with_continue
+    ):
         print("Resuming")
         checkpoint = torch.load(os.path.join(run_output_dir, "checkpoint.p"))
         run_args = runscript.RunConfiguration.from_dict(checkpoint["metadata"]["args"])
