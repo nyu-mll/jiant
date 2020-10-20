@@ -62,7 +62,7 @@ class ArcEasyTask(mc_template.AbstractMultipleChoiceTask):
             if label in potential_label_map:
                 label = potential_label_map[label]
             choice_list = [d["text"] for d in line["question"]["choices"]]
-            filler_choice_list = ['.' for i in range(NUM_CHOICES - len(choice_list))]
+            filler_choice_list = ["." for i in range(NUM_CHOICES - len(choice_list))]
             choice_list = choice_list + filler_choice_list
             assert len(choice_list) == NUM_CHOICES
 
