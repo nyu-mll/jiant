@@ -107,7 +107,6 @@ class MCTACOTask(Task):
                 last_question = question
             examples.append(
                 Example(
-                    # NOTE: get_glue_preds() is dependent on this guid format.
                     guid="%s-q%s-%s" % (set_type, question_count, i),
                     sentence_question=sentence + question,
                     answer=answer,
