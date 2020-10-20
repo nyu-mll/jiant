@@ -72,7 +72,7 @@ will save a pickle of model weights every 500 training steps.
 
 ### Early Stopping
 
-To do early stopping, we can perform validation evaluation at regular intervals over the course of training, and select the best model weights based on validation performance. For expedience, we often do not want to evaluate on the whole validaiton set, but only a subset. To do early stopping, use the following arguments as an example: 
+To do early stopping, we can perform validation evaluation at regular intervals over the course of training, and select the best model weights based on validation performance. For expedience, we often do not want to evaluate on the whole validation set, but only a subset. To do early stopping, use the following arguments as an example: 
 
 ```
     --eval_every_steps 1000
