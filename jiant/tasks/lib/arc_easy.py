@@ -70,7 +70,7 @@ class ArcEasyTask(mc_template.AbstractMultipleChoiceTask):
                 Example(
                     guid="%s-%s" % (set_type, i),
                     prompt=line["question"]["stem"],
-                    choice_list=choice_list,  # make sure choices are ordered from A to D
+                    choice_list=choice_list,
                     label=label,
                 )
             )
