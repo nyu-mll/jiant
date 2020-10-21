@@ -39,7 +39,7 @@ def smart_truncate(dataset: torch_utils.ListDataset, max_seq_length: int, verbos
     range_idx = np.arange(max_seq_length)
     for datum in dataset.data:
         # TODO: document why reshape and max happen here (for cola this isn't necessary).
-        #       (Issue #47)
+        #       (issue #1185)
         indexer = datum["data_row"].input_mask.reshape(-1, max_seq_length).max(-2)
         valid_length_ls.append(range_idx[indexer.astype(bool)].max() + 1)
     max_valid_length = max(valid_length_ls)
@@ -107,7 +107,7 @@ def convert_examples_to_dataset(
     Args:
         task (Task): Task object
         examples (list[Example]): list of task Examples.
-        tokenizer: TODO  (Issue #44)
+        tokenizer: TODO  (issue #1188)
         feat_spec (FeaturizationSpec): Tokenization-related metadata.
         phase (str): string identifying the data subset (e.g., train, val or test).
         verbose: If True, display progress bar.
@@ -157,7 +157,7 @@ def tokenize_and_featurize(
     Args:
         task (Task): Task object
         examples (list[Example]): list of task Examples.
-        tokenizer: TODO  (Issue #44)
+        tokenizer: TODO  (issue #1188)
         feat_spec (FeaturizationSpec): Tokenization-related metadata.
         phase (str): string identifying the data subset (e.g., train, val or test).
         verbose: If True, display progress bar.
@@ -166,7 +166,7 @@ def tokenize_and_featurize(
         List DataRows containing tokenized and featurized examples.
 
     """
-    # TODO: Better solution  (Issue #48)
+    # TODO: Better solution  (issue #1184)
     if task.TASK_TYPE == TaskTypes.SQUAD_STYLE_QA:
         data_rows = []
         for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose):
@@ -193,7 +193,7 @@ def iter_chunk_tokenize_and_featurize(
     Args:
         task (Task): Task object
         examples (list[Example]): list of task Examples.
-        tokenizer: TODO  (Issue #44)
+        tokenizer: TODO  (issue #1188)
         feat_spec (FeaturizationSpec): Tokenization-related metadata.
         phase (str): string identifying the data subset (e.g., train, val or test).
         verbose: If True, display progress bar.
@@ -203,7 +203,7 @@ def iter_chunk_tokenize_and_featurize(
 
     """
     for example in maybe_tqdm(examples, desc="Tokenizing", verbose=verbose):
-        # TODO: Better solution  (Issue #48)
+        # TODO: Better solution  (issue #1184)
         if task.TASK_TYPE == TaskTypes.SQUAD_STYLE_QA:
             yield from example.to_feature_list(
                 tokenizer=tokenizer,

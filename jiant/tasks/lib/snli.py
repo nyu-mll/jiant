@@ -105,7 +105,7 @@ class SnliTask(Task):
                     )
                 )
             else:
-                # Loading from NLP data
+                # Loading from HF Datasets data
                 if line["label"] == -1:
                     continue
                 examples.append(
