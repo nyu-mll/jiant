@@ -150,6 +150,18 @@ HF_DATASETS_CONVERSION_DICT = {
         "phase_list": ["train", "val", "test"],
         "jiant_task_name": "adversarial_nli",
     },
+    "arc_easy": {
+        "path": "ai2_arc",
+        "name": "ARC-Easy",
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "arc_easy",
+    },
+    "arc_challenge": {
+        "path": "ai2_arc",
+        "name": "ARC-Challenge",
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "arc_challenge",
+    },
 }
 
 # HF-Datasets uses "validation", we use "val"

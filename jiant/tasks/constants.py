@@ -35,6 +35,8 @@ OTHER_HF_DATASETS_TASKS = {
     "adversarial_nli_r1",
     "adversarial_nli_r2",
     "adversarial_nli_r3",
+    "arc_easy",
+    "arc_challenge",
 }
 
 XTREME_TASKS = {
