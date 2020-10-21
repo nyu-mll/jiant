@@ -1,4 +1,5 @@
-# Directly download tasks when nlp format is different than original dataset
+# Directly download tasks when not available in HF Datasets, or HF Datasets version
+#   is not suitable
 SQUAD_TASKS = {"squad_v1", "squad_v2"}
 DIRECT_SUPERGLUE_TASKS_TO_DATA_URLS = {
     "wsc": f"https://dl.fbaipublicfiles.com/glue/superglue/data/v2/WSC.zip",
