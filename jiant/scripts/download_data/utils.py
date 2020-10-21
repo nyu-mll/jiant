@@ -1,4 +1,3 @@
-import gzip
 import datasets
 import os
 import tarfile
