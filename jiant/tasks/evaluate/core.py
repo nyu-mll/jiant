@@ -929,6 +929,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.WnliTask,
             tasks.WSCTask,
             tasks.XnliTask,
+            tasks.MCScriptTask,
             tasks.ArctTask,
         ),
     ):
