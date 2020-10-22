@@ -40,10 +40,6 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_qasrl_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
-    elif task_name == "ropes":
-        download_ropes_data_and_write_config(
-            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
-        )
     elif task_name == "newsqa":
         download_newsqa_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
