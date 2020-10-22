@@ -23,6 +23,7 @@
 | EP-DPR | dpr | ✅ |  | dpr | Edge-Probing |
 | GLUE Diagnostic | glue_diagnostics | ✅ | ✅ | glue_diagnostics | GLUE |
 | HellaSwag | hellaswag | ✅ | ✅ | hellaswag |  |
+| [MCScript2.0](https://arxiv.org/pdf/1905.09531.pdf) | mcscript | ✅ |  | mcscript | [Data](https://my.hidrive.com/share/wdnind8pp5#$/) |
 | MLM | * | ✅ | * | mlm_simple | See task-specific notes. |
 | MLQA | `mlqa_{lang1}_{lang2}` | ✅ | ✅ | mlqa | XTREME, multi-lang |
 | MNLI | mnli | ✅ | ✅ | mnli | GLUE, MNLI-matched |

@@ -929,6 +929,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.WnliTask,
             tasks.WSCTask,
             tasks.XnliTask,
+            tasks.MCScriptTask,
             tasks.ArctTask,
         ),
     ):
@@ -942,10 +943,14 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
     elif isinstance(
         task,
         (
+            tasks.ArcEasyTask,
+            tasks.ArcChallengeTask,
             tasks.CommonsenseQATask,
             tasks.CosmosQATask,
             tasks.SWAGTask,
             tasks.HellaSwagTask,
+            tasks.MutualTask,
+            tasks.MutualPlusTask,
             tasks.SocialIQATask,
         ),
     ):
