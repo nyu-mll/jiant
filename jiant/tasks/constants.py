@@ -32,6 +32,7 @@ OTHER_HF_DATASETS_TASKS = {
     "cosmosqa",
     "socialiqa",
     "scitail",
+    "quoref",
     "adversarial_nli_r1",
     "adversarial_nli_r2",
     "adversarial_nli_r3",
