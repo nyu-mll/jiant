@@ -37,32 +37,38 @@ class QuorefTask(squad_style_template.BaseSquadStyleTask):
         examples = []
         for i, line in enumerate(read_jsonl(path)):
             if set_type == PHASE.TRAIN:
-                for j, (answer_start, answer_text) in enumerate(zip(
-                        line["answers"]["answer_start"], line["answers"]["text"])):
-                    examples.append(Example(
-                        qas_id=f"{set_type}-{i}",
-                        question_text=line["question"],
-                        context_text=line["context"],
-                        answer_text=answer_text,
-                        start_position_character=answer_start,
-                        title=line["title"],
-                        is_impossible=False,
-                        answers=[],
-                    ))
+                for j, (answer_start, answer_text) in enumerate(
+                    zip(line["answers"]["answer_start"], line["answers"]["text"])
+                ):
+                    examples.append(
+                        Example(
+                            qas_id=f"{set_type}-{i}",
+                            question_text=line["question"],
+                            context_text=line["context"],
+                            answer_text=answer_text,
+                            start_position_character=answer_start,
+                            title=line["title"],
+                            is_impossible=False,
+                            answers=[],
+                        )
+                    )
             else:
                 answers = [
                     {"answer_start": answer_start, "text": answer_text}
-                    for answer_start, answer_text in
-                    zip(line["answers"]["answer_start"], line["answers"]["text"])
+                    for answer_start, answer_text in zip(
+                        line["answers"]["answer_start"], line["answers"]["text"]
+                    )
                 ]
-                examples.append(Example(
-                    qas_id=f"{set_type}-{i}",
-                    question_text=line["question"],
-                    context_text=line["context"],
-                    answer_text=None,
-                    start_position_character=None,
-                    title=line["title"],
-                    is_impossible=False,
-                    answers=answers,
-                ))
+                examples.append(
+                    Example(
+                        qas_id=f"{set_type}-{i}",
+                        question_text=line["question"],
+                        context_text=line["context"],
+                        answer_text=None,
+                        start_position_character=None,
+                        title=line["title"],
+                        is_impossible=False,
+                        answers=answers,
+                    )
+                )
         return examples
