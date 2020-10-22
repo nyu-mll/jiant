@@ -13,18 +13,18 @@ def write_file(data, path, mode="w", **kwargs):
         f.write(data)
 
 
-def read_json(path):
-    return json.loads(read_file(path))
+def read_json(path, mode="r", **kwargs):
+    return json.loads(read_file(path, mode=mode, **kwargs))
 
 
 def write_json(data, path):
     return write_file(json.dumps(data, indent=2), path)
 
 
-def read_jsonl(path):
+def read_jsonl(path, mode="r", **kwargs):
     # Manually open because .splitlines is different from iterating over lines
     ls = []
-    with open(path, "r") as f:
+    with open(path, mode, **kwargs) as f:
         for line in f:
             ls.append(json.loads(line))
     return ls

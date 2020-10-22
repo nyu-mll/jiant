@@ -975,7 +975,9 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return MultiLabelAccAndF1EvaluationScheme()
     elif isinstance(task, tasks.ReCoRDTask):
         return ReCordEvaluationScheme()
-    elif isinstance(task, tasks.SquadTask):
+    elif isinstance(
+        task, (tasks.SquadTask, tasks.QuorefTask, tasks.NewsQATask, tasks.MrqaNaturalQuestionsTask,)
+    ):
         return SQuADEvaluationScheme()
     elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask)):
         return XlingQAEvaluationScheme()
