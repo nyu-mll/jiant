@@ -248,7 +248,8 @@ def download_ropes_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_untar(
-        "https://ropes-dataset.s3-us-west-2.amazonaws.com/train_and_dev/ropes-train-dev-v1.0.tar.gz",
+        "https://ropes-dataset.s3-us-west-2.amazonaws.com/train_and_dev/"
+        "ropes-train-dev-v1.0.tar.gz",
         task_data_path,
     )
     data_phase_list = ["train", "dev"]
@@ -612,7 +613,6 @@ def download_mrqa_natural_questions_data_and_write_config(
         "https://s3.us-east-2.amazonaws.com/mrqa/release/v2/dev/NaturalQuestionsShort.jsonl.gz",
         os.path.join(task_data_path, "val.jsonl.gz"),
     )
-    jiant_phase_list = ["train", "val"]
     py_io.write_json(
         data={
             "task": task_name,
