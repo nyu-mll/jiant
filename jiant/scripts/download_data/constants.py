@@ -11,7 +11,6 @@ OTHER_DOWNLOAD_TASKS = {
     "swag",
     "qamr",
     "qasrl",
-    "ropes",
     "newsqa",
     "mrqa_natural_questions",
 }
