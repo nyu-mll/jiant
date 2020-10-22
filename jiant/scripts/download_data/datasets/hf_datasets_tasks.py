@@ -126,7 +126,7 @@ HF_DATASETS_CONVERSION_DICT = {
     "cosmosqa": {"path": "cosmos_qa", "phase_list": ["train", "val", "test"]},
     "socialiqa": {"path": "social_i_qa", "phase_list": ["train", "val"]},
     "scitail": {"path": "scitail", "name": "tsv_format", "phase_list": ["train", "val", "test"]},
-    "quoref": {"path": "quoref", "phase_list": ["train", "val"],},
+    "quoref": {"path": "quoref", "phase_list": ["train", "val"]},
     "adversarial_nli_r1": {
         "path": "anli",
         "field_map": {"premise": "context"},
