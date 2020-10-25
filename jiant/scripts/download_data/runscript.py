@@ -2,9 +2,9 @@ import os
 import argparse
 
 import jiant.utils.python.io as py_io
-import jiant.scripts.download_data.datasets.hf_datasets_tasks as hf_datasets_tasks_download
-import jiant.scripts.download_data.datasets.xtreme as xtreme_download
-import jiant.scripts.download_data.datasets.files_tasks as files_tasks_download
+import jiant.scripts.download_data.dl_datasets.hf_datasets_tasks as hf_datasets_tasks_download
+import jiant.scripts.download_data.dl_datasets.xtreme as xtreme_download
+import jiant.scripts.download_data.dl_datasets.files_tasks as files_tasks_download
 from jiant.tasks.constants import (
     GLUE_TASKS,
     SUPERGLUE_TASKS,
