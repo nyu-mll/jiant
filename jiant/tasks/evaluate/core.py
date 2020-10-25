@@ -908,7 +908,7 @@ class Bucc2018EvaluationScheme(BaseEvaluationScheme):
 
 
 def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
-    # TODO: move logic to task?  (Issue #52)
+    # TODO: move logic to task?  (issue #1182)
     if isinstance(
         task,
         (
@@ -930,6 +930,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.WnliTask,
             tasks.WSCTask,
             tasks.XnliTask,
+            tasks.MCScriptTask,
+            tasks.ArctTask,
         ),
     ):
         return SimpleAccuracyEvaluationScheme()
@@ -942,10 +944,14 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
     elif isinstance(
         task,
         (
+            tasks.ArcEasyTask,
+            tasks.ArcChallengeTask,
             tasks.CommonsenseQATask,
             tasks.CosmosQATask,
             tasks.SWAGTask,
             tasks.HellaSwagTask,
+            tasks.MutualTask,
+            tasks.MutualPlusTask,
             tasks.SocialIQATask,
         ),
     ):
@@ -970,7 +976,9 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return MultiLabelAccAndF1EvaluationScheme()
     elif isinstance(task, tasks.ReCoRDTask):
         return ReCordEvaluationScheme()
-    elif isinstance(task, tasks.SquadTask):
+    elif isinstance(
+        task, (tasks.SquadTask, tasks.QuorefTask, tasks.NewsQATask, tasks.MrqaNaturalQuestionsTask,)
+    ):
         return SQuADEvaluationScheme()
     elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask)):
         return XlingQAEvaluationScheme()
