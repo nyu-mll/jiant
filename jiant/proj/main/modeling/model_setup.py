@@ -285,7 +285,7 @@ def create_taskmodel(
     elif task.TASK_TYPE == TaskTypes.SPAN_PREDICTION:
         assert taskmodel_kwargs is None
         span_prediction_head = heads.TokenClassificationHead(
-            hidden_size=encoder.config.hidden_size,
+            hidden_size=hidden_size,
             hidden_dropout_prob=encoder.config.hidden_dropout_prob,
             num_labels=2,
         )
@@ -326,33 +326,33 @@ def create_taskmodel(
         )
     elif task.TASK_TYPE == TaskTypes.SQUAD_STYLE_QA:
         assert taskmodel_kwargs is None
-        qa_head = heads.QAHead(hidden_size=encoder.config.hidden_size)
+        qa_head = heads.QAHead(hidden_size=hidden_size)
         taskmodel = taskmodels.QAModel(encoder=encoder, qa_head=qa_head)
     elif task.TASK_TYPE == TaskTypes.MASKED_LANGUAGE_MODELING:
         assert taskmodel_kwargs is None
         if model_arch == ModelArchitectures.BERT:
             mlm_head = heads.BertMLMHead(
-                hidden_size=encoder.config.hidden_size,
+                hidden_size=hidden_size,
                 vocab_size=encoder.config.vocab_size,
                 layer_norm_eps=encoder.config.layer_norm_eps,
                 hidden_act=encoder.config.hidden_act,
             )
         elif model_arch == ModelArchitectures.ROBERTA:
             mlm_head = heads.RobertaMLMHead(
-                hidden_size=encoder.config.hidden_size,
+                hidden_size=hidden_size,
                 vocab_size=encoder.config.vocab_size,
                 layer_norm_eps=encoder.config.layer_norm_eps,
             )
         elif model_arch == ModelArchitectures.ALBERT:
             mlm_head = heads.AlbertMLMHead(
-                hidden_size=encoder.config.hidden_size,
+                hidden_size=hidden_size,
                 embedding_size=encoder.config.embedding_size,
                 vocab_size=encoder.config.vocab_size,
                 hidden_act=encoder.config.hidden_act,
             )
         elif model_arch == ModelArchitectures.XLM_ROBERTA:
             mlm_head = heads.RobertaMLMHead(
-                hidden_size=encoder.config.hidden_size,
+                hidden_size=hidden_size,
                 vocab_size=encoder.config.vocab_size,
                 layer_norm_eps=encoder.config.layer_norm_eps,
             )

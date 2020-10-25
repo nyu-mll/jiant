@@ -22,10 +22,6 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_abductive_nli_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
-    elif task_name == "fever_nli":
-        download_fever_nli_data_and_write_config(
-            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
-        )
     elif task_name == "swag":
         download_swag_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
@@ -136,65 +132,6 @@ def download_abductive_nli_data_and_write_config(
                 "train_labels": os.path.join(task_data_path, "train-labels.lst"),
                 "val_inputs": os.path.join(task_data_path, "dev.jsonl"),
                 "val_labels": os.path.join(task_data_path, "dev-labels.lst"),
-            },
-            "name": task_name,
-        },
-        path=task_config_path,
-    )
-
-
-def download_fever_nli_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
-    os.makedirs(task_data_path, exist_ok=True)
-    download_utils.download_and_unzip(
-        ("https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1"),
-        task_data_path,
-    )
-    # Since the FEVER NLI dataset doesn't have labels for the dev set, we also download the original
-    # FEVER dev set and match example CIDs to obtain labels.
-    orig_dev_path = os.path.join(task_data_path, "fever-dev-temp.jsonl")
-    download_utils.download_file("https://s3-eu-west-1.amazonaws.com/fever.public/shared_task_dev.jsonl",
-                                 orig_dev_path,
-                                 )
-    id_to_label = {}
-    for line in py_io.read_jsonl(orig_dev_path):
-        if "id" not in line:
-            logging.warning("FEVER dev dataset is missing ID.")
-            continue
-        if "label" not in line:
-            logging.warning("FEVER dev dataset is missing label.")
-            continue
-        id_to_label[line["id"]] = line["label"]
-    os.remove(orig_dev_path)
-
-    dev_path = os.path.join(task_data_path, "nli_fever", "dev_fitems.jsonl")
-    dev_examples = []
-    for line in py_io.read_jsonl(dev_path):
-        if "cid" not in line:
-            logging.warning("Data in {} is missing CID.".format(dev_path))
-            continue
-        if int(line["cid"]) not in id_to_label:
-            logging.warning("Could not match CID {} to dev data.".format(line['cid']))
-            continue
-        dev_example = line
-        dev_example["label"] = id_to_label[int(line["cid"])]
-        dev_examples.append(dev_example)
-    py_io.write_jsonl(dev_examples, os.path.join(task_data_path, "val.jsonl"))
-    os.remove(dev_path)
-
-    for phase in ["train", "test"]:
-        os.rename(
-            os.path.join(task_data_path, "nli_fever", f"{phase}_fitems.jsonl"),
-            os.path.join(task_data_path, f"{phase}.jsonl"),
-        )
-    shutil.rmtree(os.path.join(task_data_path, "nli_fever"))
-
-    py_io.write_json(
-        data={
-            "task": task_name,
-            "paths": {
-                "train": os.path.join(task_data_path, "train.jsonl"),
-                "val": os.path.join(task_data_path, "val.jsonl"),
-                "test": os.path.join(task_data_path, "test.jsonl"),
             },
             "name": task_name,
         },
