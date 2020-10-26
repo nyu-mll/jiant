@@ -30,10 +30,10 @@
 | MLQA | `mlqa_{lang1}_{lang2}` | ✅ | ✅ | mlqa | XTREME, multi-lang |
 | MNLI | mnli | ✅ | ✅ | mnli | GLUE, MNLI-matched |
 | MNLI-mismatched | mnli_mismatched | ✅ | ✅ | mnli_mismatched | GLUE |
+| MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
 | MultiRC | multirc | ✅ | ✅ | multirc | SuperGLUE |
 | Mutual (standard version) | mutual | ✅ |  | mutual | [site](https://github.com/Nealcly/MuTual) |
 | Mutual ("challenge" version) | mutual_plus | ✅ |  | mutual_plus | [site](https://github.com/Nealcly/MuTual) |
-| MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
 | Natural Questions | mrqa_natural_questions | ✅ | ✅ | mrqa_natural_questions | [MRQA](https://mrqa.github.io/) version of task |
 | NewsQA | newsqa | ✅ | ✅ | newsqa |  |
 | QAMR | qamr | ✅ | ✅ | qamr |  |
