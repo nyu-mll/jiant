@@ -158,18 +158,19 @@ def download_abductive_nli_data_and_write_config(
     )
 
 
-def download_fever_nli_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
+def download_fever_nli_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        ("https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1"),
-        task_data_path,
+        ("https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1"), task_data_path,
     )
     # Since the FEVER NLI dataset doesn't have labels for the dev set, we also download the original
     # FEVER dev set and match example CIDs to obtain labels.
     orig_dev_path = os.path.join(task_data_path, "fever-dev-temp.jsonl")
-    download_utils.download_file("https://s3-eu-west-1.amazonaws.com/fever.public/shared_task_dev.jsonl",
-                                 orig_dev_path,
-                                 )
+    download_utils.download_file(
+        "https://s3-eu-west-1.amazonaws.com/fever.public/shared_task_dev.jsonl", orig_dev_path,
+    )
     id_to_label = {}
     for line in py_io.read_jsonl(orig_dev_path):
         if "id" not in line:
@@ -188,7 +189,7 @@ def download_fever_nli_data_and_write_config(task_name: str, task_data_path: str
             logging.warning("Data in {} is missing CID.".format(dev_path))
             continue
         if int(line["cid"]) not in id_to_label:
-            logging.warning("Could not match CID {} to dev data.".format(line['cid']))
+            logging.warning("Could not match CID {} to dev data.".format(line["cid"]))
             continue
         dev_example = line
         dev_example["label"] = id_to_label[int(line["cid"])]
