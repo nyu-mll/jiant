@@ -13,6 +13,7 @@ OTHER_DOWNLOAD_TASKS = {
     "qasrl",
     "newsqa",
     "mrqa_natural_questions",
+    "piqa",
 }
 DIRECT_DOWNLOAD_TASKS = set(
     list(SQUAD_TASKS) + list(DIRECT_SUPERGLUE_TASKS_TO_DATA_URLS) + list(OTHER_DOWNLOAD_TASKS)
