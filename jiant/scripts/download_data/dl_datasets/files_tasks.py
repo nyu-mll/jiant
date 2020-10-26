@@ -48,6 +48,10 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_mrqa_natural_questions_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "piqa":
+        download_piqa_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     else:
         raise KeyError(task_name)
 
@@ -585,6 +589,45 @@ def download_mrqa_natural_questions_data_and_write_config(
             "paths": {
                 "train": os.path.join(task_data_path, "train.jsonl.gz"),
                 "val": os.path.join(task_data_path, "val.jsonl.gz"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_piqa_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
+    os.makedirs(task_data_path, exist_ok=True)
+    download_utils.download_file(
+        "https://yonatanbisk.com/piqa/data/train.jsonl",
+        os.path.join(task_data_path, "train.jsonl"),
+    )
+    download_utils.download_file(
+        "https://yonatanbisk.com/piqa/data/train-labels.lst",
+        os.path.join(task_data_path, "train-labels.lst"),
+    )
+    download_utils.download_file(
+        "https://yonatanbisk.com/piqa/data/valid.jsonl",
+        os.path.join(task_data_path, "valid.jsonl"),
+    )
+    download_utils.download_file(
+        "https://yonatanbisk.com/piqa/data/valid-labels.lst",
+        os.path.join(task_data_path, "valid-labels.lst"),
+    )
+    download_utils.download_file(
+        "https://yonatanbisk.com/piqa/data/tests.jsonl",
+        os.path.join(task_data_path, "tests.jsonl"),
+    )
+
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "train.jsonl"),
+                "train_labels": os.path.join(task_data_path, "train-labels.lst"),
+                "val": os.path.join(task_data_path, "valid.jsonl"),
+                "val_labels": os.path.join(task_data_path, "valid-labels.lst"),
+                "test": os.path.join(task_data_path, "tests.jsonl"),
             },
             "name": task_name,
         },
