@@ -33,6 +33,7 @@
 | MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
 | Natural Questions | mrqa_natural_questions | ✅ | ✅ | mrqa_natural_questions | [MRQA](https://mrqa.github.io/) version of task |
 | NewsQA | newsqa | ✅ | ✅ | newsqa |  |
+| PIQA | piqa | ✅ | ✅ | piqa | [PIQA](https://yonatanbisk.com/piqa/) |
 | QAMR | qamr | ✅ | ✅ | qamr |  |
 | QA-SRL | qasrl | ✅ | ✅ | qasrl |  |
 | Quoref | quoref | ✅ | ✅ | quoref |  |
