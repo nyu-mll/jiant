@@ -27,10 +27,12 @@ from jiant.tasks.lib.mlqa import MlqaTask
 from jiant.tasks.lib.mnli import MnliTask
 from jiant.tasks.lib.mnli_mismatched import MnliMismatchedTask
 from jiant.tasks.lib.mrpc import MrpcTask
+from jiant.tasks.lib.mrqa_natural_questions import MrqaNaturalQuestionsTask
 from jiant.tasks.lib.multirc import MultiRCTask
 from jiant.tasks.lib.mutual import MutualTask
 from jiant.tasks.lib.mutual_plus import MutualPlusTask
 from jiant.tasks.lib.edge_probing.ner import NerTask
+from jiant.tasks.lib.newsqa import NewsQATask
 from jiant.tasks.lib.panx import PanxTask
 from jiant.tasks.lib.pawsx import PawsXTask
 from jiant.tasks.lib.edge_probing.pos import PosTask
@@ -38,6 +40,7 @@ from jiant.tasks.lib.qamr import QAMRTask
 from jiant.tasks.lib.qasrl import QASRLTask
 from jiant.tasks.lib.qqp import QqpTask
 from jiant.tasks.lib.qnli import QnliTask
+from jiant.tasks.lib.quoref import QuorefTask
 from jiant.tasks.lib.record import ReCoRDTask
 from jiant.tasks.lib.rte import RteTask
 from jiant.tasks.lib.scitail import SciTailTask
@@ -64,6 +67,7 @@ from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
 from jiant.tasks.lib.mcscript import MCScriptTask
 from jiant.tasks.lib.arct import ArctTask
+from jiant.tasks.lib.piqa import PiqaTask
 
 from jiant.tasks.core import Task
 from jiant.utils.python.io import read_json
@@ -100,7 +104,9 @@ TASK_DICT = {
     "mutual": MutualTask,
     "mutual_plus": MutualPlusTask,
     "mrpc": MrpcTask,
+    "mrqa_natural_questions": MrqaNaturalQuestionsTask,
     "ner": NerTask,
+    "newsqa": NewsQATask,
     "pawsx": PawsXTask,
     "panx": PanxTask,
     "pos": PosTask,
@@ -108,6 +114,7 @@ TASK_DICT = {
     "qasrl": QASRLTask,
     "qnli": QnliTask,
     "qqp": QqpTask,
+    "quoref": QuorefTask,
     "record": ReCoRDTask,
     "rte": RteTask,
     "scitail": SciTailTask,
@@ -133,6 +140,7 @@ TASK_DICT = {
     "xquad": XquadTask,
     "mcscript": MCScriptTask,
     "arct": ArctTask,
+    "piqa": PiqaTask,
 }
 
 

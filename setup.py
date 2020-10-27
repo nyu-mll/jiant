@@ -41,7 +41,7 @@ extras["dev"] = extras["testing"] + extras["quality"]
 
 setup(
     name="jiant",
-    version="2.0.1",
+    version="2.1.0",
     author="NYU Machine Learning for Language Group",
     author_email="bowman@nyu.edu",
     description="State-of-the-art Natural Language Processing toolkit for multi-task and transfer learning built on PyTorch.",
@@ -68,9 +68,9 @@ setup(
         "scipy == 1.4.1",
         "sentencepiece == 0.1.86",
         "tokenizers == 0.8.1.rc2",
-        "torch == 1.5.0",
+        "torch >= 1.5.0",
         "tqdm == 4.46.0",
-        "transformers == 3.0.2",
+        "transformers == 3.1.0",
         "torchvision == 0.6.0",
     ],
     extras_require=extras,
