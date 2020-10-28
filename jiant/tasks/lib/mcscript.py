@@ -7,7 +7,9 @@ from jiant.utils.python.io import read_json_lines
 
 @dataclass
 class Example(mc_template.Example):
-    pass
+    @property
+    def task(self):
+        return MCScriptTask
 
 
 @dataclass
