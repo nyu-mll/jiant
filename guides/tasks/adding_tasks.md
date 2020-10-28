@@ -4,12 +4,12 @@ In this tutorial we’ll show you how to add a new task to `jiant`.
 
 We’ll use a real task for this example: Senteval’s Tense task. Senteval’s tense task is a single sentence classification task with labels “PAST” or “PRES”, and it uses accuracy as its evaluation metric.
 
-Adding Senteval’s Tense task will require touching three files: 
+Adding Senteval’s Tense task will require touching three files:
 1. A (new) task file: `jiant/tasks/lib/senteval/tense.py`
 2. The task retrieval library: `jiant/tasks/retrieval.py`
 3. The evaluation library: `jiant/tasks/evaluate/core.py`
 
-We’ll talk about these files in the following sections. 
+We’ll talk about these files in the following sections.
 
 ## 1. The Task file
 
@@ -21,7 +21,7 @@ Tasks files have 5 core components:
 4. `DataRow` dataclass
 5. `Batch` dataclass
 
-In the following sections we’ll explain these components (and build up a working example in code blocks). 
+In the following sections we’ll explain these components (and build up a working example in code blocks).
 
 #### 1. `Task` class
 
@@ -130,7 +130,7 @@ class Batch(BatchMixin):
     segment_ids: torch.LongTensor
     label_id: torch.LongTensor
     tokens: list
-``` 
+```
 
 Now that we've implemented required components of our SentevalTenseTask, we're ready to add it to the task retrieval library.
 
@@ -162,6 +162,10 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         return SimpleAccuracyEvaluationScheme()
 ```
 
+## 4. Update the supported tasks documentation
+Add your task to [`guides/tasks/supported_tasks.md`](../../guides/tasks/supported_tasks.md).
+
+## Congratulations!
 And that’s it. You’ve made all the core code changes required to include the `SentevalTenseTask` in your `jiant` experiments.
 
 What's next? To tokenize and cache your `SentevalTenseTask` (which you shortnamed `senteval_tense`) for an experiement, you'll need to provide a task config `json` file pointing to your task's data:
