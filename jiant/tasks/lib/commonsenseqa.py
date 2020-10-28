@@ -55,13 +55,13 @@ class CommonsenseQATask(mc_template.AbstractMultipleChoiceTask):
 
     @classmethod
     def _create_example(cls, raw_example, set_type, i):
-        # Use heuristic for determining original or NLP format
+        # Use heuristic for determining original or HF Datasets format
         if isinstance(raw_example["question"], dict):
             return cls._create_example_from_original_format(
                 raw_example=raw_example, set_type=set_type, i=i,
             )
         elif isinstance(raw_example["question"], str):
-            return cls._create_example_from_nlp_format(
+            return cls._create_example_from_hf_datasets_format(
                 raw_example=raw_example, set_type=set_type, i=i,
             )
         else:
@@ -80,8 +80,8 @@ class CommonsenseQATask(mc_template.AbstractMultipleChoiceTask):
         )
 
     @classmethod
-    def _create_example_from_nlp_format(cls, raw_example, set_type, i):
-        """Return question and choices from NLP example format"""
+    def _create_example_from_hf_datasets_format(cls, raw_example, set_type, i):
+        """Return question and choices from HF Datasets example format"""
         return Example(
             guid="%s-%s" % (set_type, i),
             prompt=raw_example["question"],

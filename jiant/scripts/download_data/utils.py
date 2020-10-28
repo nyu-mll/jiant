@@ -1,4 +1,4 @@
-import nlp
+import datasets
 import os
 import tarfile
 import urllib
@@ -8,15 +8,15 @@ import jiant.utils.python.io as py_io
 from jiant.utils.python.datastructures import replace_key
 
 
-def convert_nlp_dataset_to_examples(
+def convert_hf_dataset_to_examples(
     path, name=None, version=None, field_map=None, label_map=None, phase_map=None, phase_list=None
 ):
-    """Helper function for reading from nlp.load_dataset and converting to examples
+    """Helper function for reading from datasets.load_dataset and converting to examples
 
     Args:
-        path: path argument (from nlp.load_dataset)
-        name: name argument (from nlp.load_dataset)
-        version: version argument (from nlp.load_dataset)
+        path: path argument (from datasets.load_dataset)
+        name: name argument (from datasets.load_dataset)
+        version: version argument (from datasets.load_dataset)
         field_map: dictionary for renaming fields, non-exhaustive
         label_map: dictionary for replacing labels, non-exhaustive
         phase_map: dictionary for replacing phase names, non-exhaustive
@@ -25,7 +25,7 @@ def convert_nlp_dataset_to_examples(
     Returns:
         Dict[phase] -> list[examples]
     """
-    dataset = nlp.load_dataset(path=path, name=name, version=version)
+    dataset = datasets.load_dataset(path=path, name=name, version=version)
     if phase_map:
         for old_phase_name, new_phase_name in phase_map.items():
             replace_key(dataset, old_key=old_phase_name, new_key=new_phase_name)

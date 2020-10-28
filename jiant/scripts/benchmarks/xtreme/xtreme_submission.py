@@ -45,7 +45,7 @@ class RunConfiguration(zconf.RunConfig):
 
     # === Nuisance Parameters === #
     # Required for quickly setting up runner
-    # Remove/refactor with config refactor (Issue #66)
+    # Remove/refactor with config refactor (issue #1176)
     learning_rate = zconf.attr(default=1e-5, type=float)
     adam_epsilon = zconf.attr(default=1e-8, type=float)
     max_grad_norm = zconf.attr(default=1.0, type=float)
