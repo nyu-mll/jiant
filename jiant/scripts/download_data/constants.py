@@ -15,7 +15,7 @@ OTHER_DOWNLOAD_TASKS = {
     "newsqa",
     "mrqa_natural_questions",
     "piqa",
-    "winogrande"
+    "winogrande",
 }
 
 DIRECT_DOWNLOAD_TASKS = set(
