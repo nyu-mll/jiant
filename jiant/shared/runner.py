@@ -64,7 +64,9 @@ def save_model_with_metadata(model: nn.Module, metadata: dict, output_dir: str, 
     )
 
 
-def save_state_dict_with_metadata(state_dict: dict, metadata: dict, output_dir: str, file_name="model"):
+def save_state_dict_with_metadata(
+    state_dict: dict, metadata: dict, output_dir: str, file_name="model"
+):
     torch.save(state_dict, os.path.join(output_dir, f"{file_name}.p"))
     py_io.write_json(metadata, os.path.join(output_dir, f"{file_name}.metadata.json"))
 

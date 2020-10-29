@@ -128,9 +128,7 @@ class JiantMetarunner(AbstractMetarunner):
     def save_last_model_with_metadata(self):
         save_model_with_metadata(
             model=self.model,
-            metadata={
-                "train_state": self.train_state.to_dict(),
-            },
+            metadata={"train_state": self.train_state.to_dict()},
             output_dir=self.output_dir,
             file_name="last_model",
         )
