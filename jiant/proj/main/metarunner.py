@@ -7,7 +7,6 @@ import jiant.proj.main.runner as jiant_runner
 import jiant.proj.main.components.task_sampler as jiant_task_sampler
 from jiant.shared.runner import (
     save_model_with_metadata,
-    save_state_dict_with_metadata,
     compare_steps_max_steps,
 )
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
@@ -119,29 +118,28 @@ class JiantMetarunner(AbstractMetarunner):
 
     def save_model(self):
         save_model_with_metadata(
-            model=self.model,
-            metadata={},
+            model_or_state_dict=self.model,
             output_dir=self.output_dir,
             file_name=f"model__{self.train_state.global_steps:09d}",
         )
 
     def save_last_model_with_metadata(self):
         save_model_with_metadata(
-            model=self.model,
-            metadata={"train_state": self.train_state.to_dict()},
+            model_or_state_dict=self.model,
             output_dir=self.output_dir,
             file_name="last_model",
+            metadata={"train_state": self.train_state.to_dict()},
         )
 
     def save_best_model_with_metadata(self, val_metrics_dict):
-        save_state_dict_with_metadata(
-            state_dict=self.best_state_dict,
+        save_model_with_metadata(
+            model_or_state_dict=self.best_state_dict,
+            output_dir=self.output_dir,
+            file_name="best_model",
             metadata={
                 "val_state": self.best_val_state.to_dict(),
                 "val_metrics": self.best_val_state.metrics,
             },
-            output_dir=self.output_dir,
-            file_name="best_model",
         )
 
     def should_save_checkpoint(self) -> bool:
