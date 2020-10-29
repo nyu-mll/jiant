@@ -126,10 +126,7 @@ HF_DATASETS_CONVERSION_DICT = {
     "cosmosqa": {"path": "cosmos_qa", "phase_list": ["train", "val", "test"]},
     "socialiqa": {"path": "social_i_qa", "phase_list": ["train", "val"]},
     "scitail": {"path": "scitail", "name": "tsv_format", "phase_list": ["train", "val", "test"]},
-    "quoref": {
-        "path": "quoref",
-        "phase_list": ["train", "val"],
-    },
+    "quoref": {"path": "quoref", "phase_list": ["train", "val"]},
     "adversarial_nli_r1": {
         "path": "anli",
         "field_map": {"premise": "context"},
@@ -153,6 +150,18 @@ HF_DATASETS_CONVERSION_DICT = {
         "phase_map": {"train_r3": "train", "dev_r3": "val", "test_r3": "test"},
         "phase_list": ["train", "val", "test"],
         "jiant_task_name": "adversarial_nli",
+    },
+    "arc_easy": {
+        "path": "ai2_arc",
+        "name": "ARC-Easy",
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "arc_easy",
+    },
+    "arc_challenge": {
+        "path": "ai2_arc",
+        "name": "ARC-Challenge",
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "arc_challenge",
     },
 }
 

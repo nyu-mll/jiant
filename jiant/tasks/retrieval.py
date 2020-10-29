@@ -4,6 +4,8 @@ from typing import Optional
 from jiant.tasks.lib.abductive_nli import AbductiveNliTask
 from jiant.tasks.lib.acceptability_judgement.definiteness import AcceptabilityDefinitenessTask
 from jiant.tasks.lib.adversarial_nli import AdversarialNliTask
+from jiant.tasks.lib.arc_easy import ArcEasyTask
+from jiant.tasks.lib.arc_challenge import ArcChallengeTask
 from jiant.tasks.lib.boolq import BoolQTask
 from jiant.tasks.lib.bucc2018 import Bucc2018Task
 from jiant.tasks.lib.ccg import CCGTask
@@ -27,6 +29,8 @@ from jiant.tasks.lib.mnli_mismatched import MnliMismatchedTask
 from jiant.tasks.lib.mrpc import MrpcTask
 from jiant.tasks.lib.mrqa_natural_questions import MrqaNaturalQuestionsTask
 from jiant.tasks.lib.multirc import MultiRCTask
+from jiant.tasks.lib.mutual import MutualTask
+from jiant.tasks.lib.mutual_plus import MutualPlusTask
 from jiant.tasks.lib.edge_probing.ner import NerTask
 from jiant.tasks.lib.newsqa import NewsQATask
 from jiant.tasks.lib.panx import PanxTask
@@ -63,7 +67,9 @@ from jiant.tasks.lib.wnli import WnliTask
 from jiant.tasks.lib.wsc import WSCTask
 from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
+from jiant.tasks.lib.mcscript import MCScriptTask
 from jiant.tasks.lib.arct import ArctTask
+from jiant.tasks.lib.piqa import PiqaTask
 
 from jiant.tasks.core import Task
 from jiant.utils.python.io import read_json
@@ -71,6 +77,8 @@ from jiant.utils.python.io import read_json
 
 TASK_DICT = {
     "abductive_nli": AbductiveNliTask,
+    "arc_easy": ArcEasyTask,
+    "arc_challenge": ArcChallengeTask,
     "superglue_axg": SuperglueWinogenderDiagnosticsTask,
     "acceptability_definiteness": AcceptabilityDefinitenessTask,
     "adversarial_nli": AdversarialNliTask,
@@ -95,6 +103,8 @@ TASK_DICT = {
     "mnli": MnliTask,
     "mnli_mismatched": MnliMismatchedTask,
     "multirc": MultiRCTask,
+    "mutual": MutualTask,
+    "mutual_plus": MutualPlusTask,
     "mrpc": MrpcTask,
     "mrqa_natural_questions": MrqaNaturalQuestionsTask,
     "ner": NerTask,
@@ -132,7 +142,9 @@ TASK_DICT = {
     "wsc": WSCTask,
     "xnli": XnliTask,
     "xquad": XquadTask,
+    "mcscript": MCScriptTask,
     "arct": ArctTask,
+    "piqa": PiqaTask,
 }
 
 

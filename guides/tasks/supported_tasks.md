@@ -23,14 +23,19 @@
 | EP-DPR | dpr | ✅ |  | dpr | Edge-Probing |
 | GLUE Diagnostic | glue_diagnostics | ✅ | ✅ | glue_diagnostics | GLUE |
 | HellaSwag | hellaswag | ✅ | ✅ | hellaswag |  |
+| [MCScript2.0](https://arxiv.org/pdf/1905.09531.pdf) | mcscript | ✅ |  | mcscript | [Data](https://my.hidrive.com/share/wdnind8pp5#$/) |
 | MLM | * | ✅ | * | mlm_simple | See task-specific notes. |
 | MLQA | `mlqa_{lang1}_{lang2}` | ✅ | ✅ | mlqa | XTREME, multi-lang |
 | MNLI | mnli | ✅ | ✅ | mnli | GLUE, MNLI-matched |
 | MNLI-mismatched | mnli_mismatched | ✅ | ✅ | mnli_mismatched | GLUE |
 | MultiRC | multirc | ✅ | ✅ | multirc | SuperGLUE |
 | MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
+| Natural Questions | mrqa_natural_questions | ✅ | ✅ | mrqa_natural_questions | [MRQA](https://mrqa.github.io/) version of task |
+| NewsQA | newsqa | ✅ | ✅ | newsqa |  |
+| PIQA | piqa | ✅ | ✅ | piqa | [PIQA](https://yonatanbisk.com/piqa/) |
 | QAMR | qamr | ✅ | ✅ | qamr |  |
 | QA-SRL | qasrl | ✅ | ✅ | qasrl |  |
+| Quoref | quoref | ✅ | ✅ | quoref |  |
 | EP-NER | ner | ✅ |  | ner | Edge-Probing |
 | PAWS-X | `pawsx_{lang}` | ✅ | ✅ | pawsx | XTREME, multi-lang |
 | WikiAnn | `panx_{lang}` | ✅ | ✅ | panx | XTREME, multi-lang |

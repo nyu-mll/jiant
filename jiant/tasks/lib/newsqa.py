@@ -37,15 +37,17 @@ class NewsQATask(squad_style_template.BaseSquadStyleTask):
         examples = []
         for entry in read_jsonl(path):
             for qa in entry["qas"]:
-                answer_text = entry["text"][qa["answer"]["s"]:qa["answer"]["e"]]
-                examples.append(Example(
-                    qas_id=f"{set_type}-{len(examples)}",
-                    question_text=qa["question"],
-                    context_text=entry["text"],
-                    answer_text=answer_text,
-                    start_position_character=qa["answer"]["s"],
-                    title="",
-                    is_impossible=False,
-                    answers=[{"answer_start": qa["answer"]["s"], "text": answer_text}],
-                ))
+                answer_text = entry["text"][qa["answer"]["s"] : qa["answer"]["e"]]
+                examples.append(
+                    Example(
+                        qas_id=f"{set_type}-{len(examples)}",
+                        question_text=qa["question"],
+                        context_text=entry["text"],
+                        answer_text=answer_text,
+                        start_position_character=qa["answer"]["s"],
+                        title="",
+                        is_impossible=False,
+                        answers=[{"answer_start": qa["answer"]["s"], "text": answer_text}],
+                    )
+                )
         return examples

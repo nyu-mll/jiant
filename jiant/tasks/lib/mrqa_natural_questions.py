@@ -55,34 +55,40 @@ class MrqaNaturalQuestionsTask(squad_style_template.BaseSquadStyleTask):
                     answer = elem["detected_answers"][0]
                     # Just use first occurrence of answer for training ("Every car is a car.")
                     answer_span = answer["char_spans"][0]
-                    answer_text = line["context"][answer_span[0]: answer_span[1]+1]
+                    answer_text = line["context"][answer_span[0] : answer_span[1] + 1]
                     # assert len(elem["detected_answers"][0]["char_spans"]) == 1
-                    examples.append(Example(
-                        qas_id=f"{set_type}-{i}",
-                        question_text=elem["question"],
-                        context_text=line["context"],
-                        answer_text=answer_text,
-                        start_position_character=answer_span[0],
-                        title="",
-                        is_impossible=False,
-                        answers=[],
-                    ))
+                    examples.append(
+                        Example(
+                            qas_id=f"{set_type}-{i}",
+                            question_text=elem["question"],
+                            context_text=line["context"],
+                            answer_text=answer_text,
+                            start_position_character=answer_span[0],
+                            title="",
+                            is_impossible=False,
+                            answers=[],
+                        )
+                    )
                 else:
                     answers = []
                     for answer in elem["detected_answers"]:
                         for answer_span in answer["char_spans"]:
-                            answers.append({
-                                "answer_start": answer_span[0],
-                                "text": line["context"][answer_span[0]: answer_span[1]+1],
-                            })
-                    examples.append(Example(
-                        qas_id=f"{set_type}-{i}",
-                        question_text=elem["question"],
-                        context_text=line["context"],
-                        answer_text=None,
-                        start_position_character=None,
-                        title="",
-                        is_impossible=False,
-                        answers=answers,
-                    ))
+                            answers.append(
+                                {
+                                    "answer_start": answer_span[0],
+                                    "text": line["context"][answer_span[0] : answer_span[1] + 1],
+                                }
+                            )
+                    examples.append(
+                        Example(
+                            qas_id=f"{set_type}-{i}",
+                            question_text=elem["question"],
+                            context_text=line["context"],
+                            answer_text=None,
+                            start_position_character=None,
+                            title="",
+                            is_impossible=False,
+                            answers=answers,
+                        )
+                    )
         return examples
