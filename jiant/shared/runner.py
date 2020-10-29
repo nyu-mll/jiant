@@ -56,8 +56,12 @@ def get_eval_dataloader_from_cache(
     return eval_dataloader
 
 
-def save_model_with_metadata(model_or_state_dict: Union[nn.Module, dict], output_dir: str,
-                             file_name="model", metadata: Optional[dict] = None):
+def save_model_with_metadata(
+    model_or_state_dict: Union[nn.Module, dict],
+    output_dir: str,
+    file_name="model",
+    metadata: Optional[dict] = None,
+):
     if isinstance(model_or_state_dict, dict):
         state_dict = model_or_state_dict
     else:
