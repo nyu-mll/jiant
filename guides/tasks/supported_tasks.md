@@ -4,6 +4,8 @@
 
 | Name | `task_name` | `jiant` | Downloader | `jiant_task_name` | Misc |
 |---|---|:---:|:---:|---|---|
+| MCTACO | mctaco | ✅ |  | mctaco |  |
+| MCTest | mctest160 or mctest500 | ✅ |  | mctest |  |
 | [Argument Reasoning Comprehension](https://arxiv.org/abs/1708.01425) | arct | ✅ |  | arct | [Github](https://github.com/UKPLab/argument-reasoning-comprehension-task) |
 | Abductive NLI | abductive_nli | ✅ | ✅ | abductive_nli |  |
 | SuperGLUE Winogender Diagnostic | superglue_axg | ✅ | ✅ | superglue_axg | SuperGLUE |
