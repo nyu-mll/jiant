@@ -56,10 +56,16 @@ def get_eval_dataloader_from_cache(
 
 
 def save_model_with_metadata(model: nn.Module, metadata: dict, output_dir: str, file_name="model"):
-    torch.save(
-        torch_utils.get_model_for_saving(model).state_dict(),
-        os.path.join(output_dir, f"{file_name}.p"),
+    save_state_dict_with_metadata(
+        state_dict=torch_utils.get_model_for_saving(model).state_dict(),
+        metadata=metadata,
+        output_dir=output_dir,
+        file_name=file_name,
     )
+
+
+def save_state_dict_with_metadata(state_dict: dict, metadata: dict, output_dir: str, file_name="model"):
+    torch.save(state_dict, os.path.join(output_dir, f"{file_name}.p"))
     py_io.write_json(metadata, os.path.join(output_dir, f"{file_name}.metadata.json"))
 
 
