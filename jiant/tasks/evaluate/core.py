@@ -73,7 +73,7 @@ class ConcatenateLogitsAccumulator(BaseAccumulator):
         self.logits_list.append(batch_logits)
         batch_guid = batch_metadata.get("guid")
         if batch_guid is not None:
-            self.guid_list.append(batch_guid)
+            self.guid_list.extend(batch_guid)
 
     def get_guids(self):
         if self.guid_list:
@@ -259,6 +259,48 @@ class SimpleAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
         # noinspection PyUnresolvedReferences
         acc = float((preds == labels).mean())
         return Metrics(major=acc, minor={"acc": acc})
+
+
+class MCTACOEvaluationScheme(BaseLogitsEvaluationScheme):
+    @classmethod
+    def get_preds_from_accumulator(self, task, accumulator):
+        logits = accumulator.get_accumulated()
+        pred = np.argmax(logits, axis=1)
+        guid = accumulator.guid_list
+        return guid, pred
+
+    @classmethod
+    def compute_metrics_from_accumulator(self, task, accumulator, tokenizer, labels) -> Metrics:
+        guid, pred = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        em_ls = []
+        f1_ls = []
+        label_pred_by_question = {}
+
+        for one_guid, one_pred, one_label in zip(guid, pred, labels):
+            split, question_id, example_id = one_guid.split("-")
+            if question_id not in label_pred_by_question:
+                label_pred_by_question[question_id] = [], []
+            label_pred_by_question[question_id][0].append(one_label)
+            label_pred_by_question[question_id][1].append(one_pred)
+
+        em_ls = [
+            float(group_label == group_pred)
+            for group_label, group_pred in label_pred_by_question.values()
+        ]
+        f1_ls = [
+            f1_score(y_true=group_label, y_pred=group_pred)
+            for group_label, group_pred in label_pred_by_question.values()
+        ]
+
+        em = sum(em_ls) / len(em_ls)
+        f1 = sum(f1_ls) / len(f1_ls)
+        minor = {
+            "em": em,
+            "f1": f1,
+            "f1_em": (f1 + em) / 2,
+        }
+        metrics = Metrics(major=minor["f1_em"], minor=minor,)
+        return metrics
 
 
 class MultiLabelAccAndF1EvaluationScheme(BaseLogitsEvaluationScheme):
@@ -936,6 +978,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
         ),
     ):
         return SimpleAccuracyEvaluationScheme()
+    elif isinstance(task, tasks.MCTACOTask):
+        return MCTACOEvaluationScheme()
     elif isinstance(task, tasks.CCGTask):
         return CCGEvaluationScheme()
     elif isinstance(task, tasks.CommitmentBankTask):
@@ -954,6 +998,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.MutualTask,
             tasks.MutualPlusTask,
             tasks.SocialIQATask,
+            tasks.MCTestTask,
         ),
     ):
         return MultipleChoiceAccuracyEvaluationScheme()
