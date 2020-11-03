@@ -20,6 +20,8 @@ from jiant.tasks.lib.edge_probing.dep import DepTask
 from jiant.tasks.lib.edge_probing.dpr import DprTask
 from jiant.tasks.lib.glue_diagnostics import GlueDiagnosticsTask
 from jiant.tasks.lib.hellaswag import HellaSwagTask
+from jiant.tasks.lib.mctaco import MCTACOTask
+from jiant.tasks.lib.mctest import MCTestTask
 from jiant.tasks.lib.mlm_simple import MLMSimpleTask
 from jiant.tasks.lib.mlm_premasked import MLMPremaskedTask
 from jiant.tasks.lib.mlm_pretokenized import MLMPretokenizedTask
@@ -68,6 +70,7 @@ from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
 from jiant.tasks.lib.mcscript import MCScriptTask
 from jiant.tasks.lib.arct import ArctTask
+from jiant.tasks.lib.piqa import PiqaTask
 
 from jiant.tasks.core import Task
 from jiant.utils.python.io import read_json
@@ -94,6 +97,8 @@ TASK_DICT = {
     "dpr": DprTask,
     "glue_diagnostics": GlueDiagnosticsTask,
     "hellaswag": HellaSwagTask,
+    "mctaco": MCTACOTask,
+    "mctest": MCTestTask,
     "mlm_simple": MLMSimpleTask,
     "mlm_premasked": MLMPremaskedTask,
     "mlm_pretokenized": MLMPretokenizedTask,
@@ -141,6 +146,7 @@ TASK_DICT = {
     "xquad": XquadTask,
     "mcscript": MCScriptTask,
     "arct": ArctTask,
+    "piqa": PiqaTask,
 }
 
 
