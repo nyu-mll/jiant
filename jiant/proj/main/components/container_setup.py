@@ -1,6 +1,6 @@
+import warnings
 from dataclasses import dataclass
 from typing import Dict, List, Optional
-
 
 import jiant.proj.main.components.task_sampler as jiant_task_sampler
 import jiant.shared.caching as caching
@@ -69,10 +69,17 @@ def create_task_dict(task_config_dict: dict, verbose: bool = True) -> Dict[str, 
         Dict mapping from task name to task instance.
 
     """
-    task_dict = {
-        task_name: tasks.create_task_from_config_path(config_path=task_config_path, verbose=False)
-        for task_name, task_config_path in task_config_dict.items()
-    }
+    task_dict = {}
+    for task_name, task_config_path in task_config_dict.items():
+        task = tasks.create_task_from_config_path(config_path=task_config_path, verbose=False)
+        if not task.name == task_name:
+            warnings.warn(
+                "task {} from {} has conflicting names: {}/{}. Using {}".format(
+                    task_name, task_config_path, task_name, task.name, task_name,
+                )
+            )
+            task.name = task_name
+        task_dict[task_name] = task
     if verbose:
         print("Creating Tasks:")
         for task_name, task_config_path in task_config_dict.items():

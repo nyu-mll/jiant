@@ -9,6 +9,7 @@ DIRECT_SUPERGLUE_TASKS_TO_DATA_URLS = {
 
 OTHER_DOWNLOAD_TASKS = {
     "abductive_nli",
+    "fever_nli",
     "swag",
     "qamr",
     "qasrl",
