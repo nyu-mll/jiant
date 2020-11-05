@@ -10,7 +10,6 @@ import jiant.proj.main.components.evaluate as jiant_evaluate
 import jiant.shared.initialization as initialization
 import jiant.shared.distributed as distributed
 import jiant.shared.model_setup as model_setup
-import jiant.utils.torch_utils as torch_utils
 import jiant.utils.python.io as py_io
 import jiant.utils.zconf as zconf
 
@@ -32,6 +31,8 @@ class RunConfiguration(zconf.RunConfig):
     do_train = zconf.attr(action="store_true")
     do_val = zconf.attr(action="store_true")
     do_save = zconf.attr(action="store_true")
+    do_save_last = zconf.attr(action="store_true")
+    do_save_best = zconf.attr(action="store_true")
     write_val_preds = zconf.attr(action="store_true")
     write_test_preds = zconf.attr(action="store_true")
     eval_every_steps = zconf.attr(type=int, default=0)
@@ -161,7 +162,8 @@ def run_loop(args: RunConfiguration, checkpoint=None):
                 checkpoint_saver=checkpoint_saver,
                 output_dir=args.output_dir,
                 verbose=True,
-                save_best_model=args.do_save,
+                save_best_model=args.do_save or args.do_save_best,
+                save_last_model=args.do_save or args.do_save_last,
                 load_best_model=True,
                 log_writer=quick_init_out.log_writer,
             )
@@ -169,12 +171,6 @@ def run_loop(args: RunConfiguration, checkpoint=None):
                 metarunner.load_state(checkpoint["metarunner_state"])
                 del checkpoint["metarunner_state"]
             metarunner.run_train_loop()
-
-        if args.do_save:
-            torch.save(
-                torch_utils.get_model_for_saving(runner.jiant_model).state_dict(),
-                os.path.join(args.output_dir, "model.p"),
-            )
 
         if args.do_val:
             val_results_dict = runner.run_val(

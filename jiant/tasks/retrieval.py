@@ -18,8 +18,11 @@ from jiant.tasks.lib.edge_probing.coref import CorefTask
 from jiant.tasks.lib.cosmosqa import CosmosQATask
 from jiant.tasks.lib.edge_probing.dep import DepTask
 from jiant.tasks.lib.edge_probing.dpr import DprTask
+from jiant.tasks.lib.fever_nli import FeverNliTask
 from jiant.tasks.lib.glue_diagnostics import GlueDiagnosticsTask
 from jiant.tasks.lib.hellaswag import HellaSwagTask
+from jiant.tasks.lib.mctaco import MCTACOTask
+from jiant.tasks.lib.mctest import MCTestTask
 from jiant.tasks.lib.mlm_simple import MLMSimpleTask
 from jiant.tasks.lib.mlm_premasked import MLMPremaskedTask
 from jiant.tasks.lib.mlm_pretokenized import MLMPretokenizedTask
@@ -40,6 +43,7 @@ from jiant.tasks.lib.qamr import QAMRTask
 from jiant.tasks.lib.qasrl import QASRLTask
 from jiant.tasks.lib.qqp import QqpTask
 from jiant.tasks.lib.qnli import QnliTask
+from jiant.tasks.lib.quail import QuailTask
 from jiant.tasks.lib.quoref import QuorefTask
 from jiant.tasks.lib.record import ReCoRDTask
 from jiant.tasks.lib.rte import RteTask
@@ -92,8 +96,11 @@ TASK_DICT = {
     "cosmosqa": CosmosQATask,
     "dep": DepTask,
     "dpr": DprTask,
+    "fever_nli": FeverNliTask,
     "glue_diagnostics": GlueDiagnosticsTask,
     "hellaswag": HellaSwagTask,
+    "mctaco": MCTACOTask,
+    "mctest": MCTestTask,
     "mlm_simple": MLMSimpleTask,
     "mlm_premasked": MLMPremaskedTask,
     "mlm_pretokenized": MLMPretokenizedTask,
@@ -114,6 +121,7 @@ TASK_DICT = {
     "qasrl": QASRLTask,
     "qnli": QnliTask,
     "qqp": QqpTask,
+    "quail": QuailTask,
     "quoref": QuorefTask,
     "record": ReCoRDTask,
     "rte": RteTask,
