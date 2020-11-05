@@ -18,6 +18,7 @@ from jiant.tasks.lib.edge_probing.coref import CorefTask
 from jiant.tasks.lib.cosmosqa import CosmosQATask
 from jiant.tasks.lib.edge_probing.dep import DepTask
 from jiant.tasks.lib.edge_probing.dpr import DprTask
+from jiant.tasks.lib.fever_nli import FeverNliTask
 from jiant.tasks.lib.glue_diagnostics import GlueDiagnosticsTask
 from jiant.tasks.lib.hellaswag import HellaSwagTask
 from jiant.tasks.lib.mctaco import MCTACOTask
@@ -95,6 +96,7 @@ TASK_DICT = {
     "cosmosqa": CosmosQATask,
     "dep": DepTask,
     "dpr": DprTask,
+    "fever_nli": FeverNliTask,
     "glue_diagnostics": GlueDiagnosticsTask,
     "hellaswag": HellaSwagTask,
     "mctaco": MCTACOTask,

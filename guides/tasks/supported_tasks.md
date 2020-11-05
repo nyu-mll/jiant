@@ -25,6 +25,7 @@
 | Cosmos QA | cosmosqa | ✅ | ✅ | cosmosqa |  |
 | EP-UD | dep | ✅ |  | dep | Edge-Probing |
 | EP-DPR | dpr | ✅ |  | dpr | Edge-Probing |
+| Fever NLI | fever_nli | ✅ | ✅ | fever_nli |  |
 | GLUE Diagnostic | glue_diagnostics | ✅ | ✅ | glue_diagnostics | GLUE |
 | HellaSwag | hellaswag | ✅ | ✅ | hellaswag |  |
 | [MCScript2.0](https://arxiv.org/pdf/1905.09531.pdf) | mcscript | ✅ |  | mcscript | [data](https://my.hidrive.com/share/wdnind8pp5#$/) |
