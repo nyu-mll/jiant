@@ -57,6 +57,10 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_piqa_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "winogrande":
+        download_winogrande_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     else:
         raise KeyError(task_name)
 
@@ -693,6 +697,43 @@ def download_piqa_data_and_write_config(task_name: str, task_data_path: str, tas
                 "val": os.path.join(task_data_path, "valid.jsonl"),
                 "val_labels": os.path.join(task_data_path, "valid-labels.lst"),
                 "test": os.path.join(task_data_path, "tests.jsonl"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_winogrande_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    download_utils.download_and_unzip(
+        "https://storage.googleapis.com/ai2-mosaic/public/winogrande/winogrande_1.1.zip",
+        task_data_path,
+    )
+
+    task_data_path = os.path.join(task_data_path, "winogrande_1.1")
+
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "train_xl.jsonl"),
+                "train_labels": os.path.join(task_data_path, "train_xl-labels.lst"),
+                "train_xs": os.path.join(task_data_path, "train_xs.jsonl"),
+                "train_xs_labels": os.path.join(task_data_path, "train_xs-labels.lst"),
+                "train_s": os.path.join(task_data_path, "train_s.jsonl"),
+                "train_s_labels": os.path.join(task_data_path, "train_s-labels.lst"),
+                "train_m": os.path.join(task_data_path, "train_m.jsonl"),
+                "train_m_labels": os.path.join(task_data_path, "train_m-labels.lst"),
+                "train_l": os.path.join(task_data_path, "train_l.jsonl"),
+                "train_l_labels": os.path.join(task_data_path, "train_l-labels.lst"),
+                "train_xl": os.path.join(task_data_path, "train_xl.jsonl"),
+                "train_xl_labels": os.path.join(task_data_path, "train_xl-labels.lst"),
+                "val": os.path.join(task_data_path, "dev.jsonl"),
+                "val_labels": os.path.join(task_data_path, "dev-labels.lst"),
+                "test": os.path.join(task_data_path, "test.jsonl"),
             },
             "name": task_name,
         },
