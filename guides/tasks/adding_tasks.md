@@ -168,7 +168,7 @@ If the new task is publicly available, add the new task to the data downloader i
 1) If the new task is supported by Hugging Face's [Datasets](https://huggingface.co/nlp/viewer/):
     - Add the task to `OTHER_HF_DATASETS_TASKS` in [`jiant/scripts/download_data/constants.py`](../../jiant/scripts/download_data/constants.py). Also add the task to `HF_DATASETS_CONVERSION_DICT` in [`jiant/scripts/download_data/dl_datasets/hf_datasets_tasks.py`](../../jiant/scripts/download_data/dl_datasets/hf_datasets_tasks.py). `HF_DATASETS_CONVERSION_DICT` is used to map field changes in Dataset's to the original dataset.
 
-2) If the new task is not supported by Hugging Face's Datasets, and the dataset is publicly available for download:
+2) If the task is not supported by Hugging Face's Datasets, and the dataset is publicly available for download (i.e. downloadable directly via wget, and not behind an authentication wall such as Google Drive):
     - Add a function to directly download the task here: [`jiant/scripts/download_data/dl_datasets/files_tasks.py`](../../jiant/scripts/download_data/dl_datasets/files_tasks.py). The function signature should be similar to:
 
 ```python
@@ -198,7 +198,7 @@ py_io.write_json(
 Add your task to [`guides/tasks/supported_tasks.md`](../../guides/tasks/supported_tasks.md).
 
 
-## 6. Tag the creator in the pull request
+## 6. (Recommended) Tag the creator in the pull request
 Please @ the creator of the task in your PR to let them know it is part of `jiant`! This also gives them a chance to review the task.
 
 
