@@ -163,32 +163,32 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
 ```
 
 ## 4. Add a data downloader
-If your task is publicly available, add the task to the data downloader in [`jiant/scripts/download_data/runscript.py`](../../jiant/scripts/download_data/runscript.py). There are two flavors of downloading tasks:
+If the new task is publicly available, add the new task to the data downloader in [`jiant/scripts/download_data/runscript.py`](../../jiant/scripts/download_data/runscript.py). There are two flavors of supported task downloaders:
 
-1) If the task is supported by Hugging Face's [Datasets](https://huggingface.co/nlp/viewer/):
+1) If the new task is supported by Hugging Face's [Datasets](https://huggingface.co/nlp/viewer/):
     - Add the task to `OTHER_HF_DATASETS_TASKS` in [`jiant/scripts/download_data/constants.py`](../../jiant/scripts/download_data/constants.py). Also add the task to `HF_DATASETS_CONVERSION_DICT` in [`jiant/scripts/download_data/dl_datasets/hf_datasets_tasks.py`](../../jiant/scripts/download_data/dl_datasets/hf_datasets_tasks.py). `HF_DATASETS_CONVERSION_DICT` is used to map field changes in Dataset's to the original dataset.
 
-2) If the task is not supported by Hugging Face's Datasets, and the dataset is publicly available for download:
+2) If the new task is not supported by Hugging Face's Datasets, and the dataset is publicly available for download:
     - Add a function to directly download the task here: [`jiant/scripts/download_data/dl_datasets/files_tasks.py`](../../jiant/scripts/download_data/dl_datasets/files_tasks.py). The function signature should be similar to:
 
 ```python
-def download_your_task_data_and_write_config(
+def download_senteval_data_and_write_config(
     task_name: str, task_data_path: str, task_config_path: str
 )
 ```
 
-The direct download function for your task should generate output a config object to `task_config_path` based on the data required to complete the task. Depending on the requirements of your task, this looks something like:
+The direct download function for your task should generate output a config object to `task_config_path` based on the data required to complete the task. For Senteval, the task config object is:
 
 ```python
 py_io.write_json(
     data={
-        "task": task_name,
+        "task": "senteval",
         "paths": {
             "train": os.path.join(task_data_path, "train.jsonl"),
             "val": os.path.join(task_data_path, "valid.jsonl"),
             "test": os.path.join(task_data_path, "tests.jsonl"),
         },
-        "name": task_name,
+        "name": "senteval",
     },
     path=task_config_path,
 )
