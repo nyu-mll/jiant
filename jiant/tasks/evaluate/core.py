@@ -997,6 +997,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.HellaSwagTask,
             tasks.MutualTask,
             tasks.MutualPlusTask,
+            tasks.QuailTask,
             tasks.SocialIQATask,
             tasks.MCTestTask,
         ),
