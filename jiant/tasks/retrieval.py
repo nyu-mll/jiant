@@ -18,6 +18,7 @@ from jiant.tasks.lib.edge_probing.coref import CorefTask
 from jiant.tasks.lib.cosmosqa import CosmosQATask
 from jiant.tasks.lib.edge_probing.dep import DepTask
 from jiant.tasks.lib.edge_probing.dpr import DprTask
+from jiant.tasks.lib.fever_nli import FeverNliTask
 from jiant.tasks.lib.glue_diagnostics import GlueDiagnosticsTask
 from jiant.tasks.lib.hellaswag import HellaSwagTask
 from jiant.tasks.lib.mctaco import MCTACOTask
@@ -42,6 +43,7 @@ from jiant.tasks.lib.qamr import QAMRTask
 from jiant.tasks.lib.qasrl import QASRLTask
 from jiant.tasks.lib.qqp import QqpTask
 from jiant.tasks.lib.qnli import QnliTask
+from jiant.tasks.lib.quail import QuailTask
 from jiant.tasks.lib.quoref import QuorefTask
 from jiant.tasks.lib.race import RaceTask
 from jiant.tasks.lib.record import ReCoRDTask
@@ -71,6 +73,7 @@ from jiant.tasks.lib.xnli import XnliTask
 from jiant.tasks.lib.xquad import XquadTask
 from jiant.tasks.lib.mcscript import MCScriptTask
 from jiant.tasks.lib.arct import ArctTask
+from jiant.tasks.lib.winogrande import WinograndeTask
 from jiant.tasks.lib.piqa import PiqaTask
 
 from jiant.tasks.core import Task
@@ -96,6 +99,7 @@ TASK_DICT = {
     "cosmosqa": CosmosQATask,
     "dep": DepTask,
     "dpr": DprTask,
+    "fever_nli": FeverNliTask,
     "glue_diagnostics": GlueDiagnosticsTask,
     "hellaswag": HellaSwagTask,
     "mctaco": MCTACOTask,
@@ -120,6 +124,7 @@ TASK_DICT = {
     "qasrl": QASRLTask,
     "qnli": QnliTask,
     "qqp": QqpTask,
+    "quail": QuailTask,
     "quoref": QuorefTask,
     "race": RaceTask,
     "record": ReCoRDTask,
@@ -148,6 +153,7 @@ TASK_DICT = {
     "xquad": XquadTask,
     "mcscript": MCScriptTask,
     "arct": ArctTask,
+    "winogrande": WinograndeTask,
     "piqa": PiqaTask,
 }
 
