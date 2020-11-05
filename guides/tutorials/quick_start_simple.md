@@ -41,6 +41,18 @@ The "Simple" CLI subsumes several steps under the hood, including downloading th
 
 ## Additional Options
 
+### Saving model weights
+
+To save the model weights, use the `--do_save` flag:
+
+```bash
+python jiant/proj/simple/runscript.py \
+    ...
+    --do_save
+```
+
+This will save two sets of model weights: `last_model.p` will the the model weights at the end of training, while `best_model.p` will be the weights which achieves the best validation score on the evaluation subset (see: [Early Stopping](#early-stopping)). If you only one to save one or the other, use `--do_save_last` or `--do_save_best`. 
+
 ### Checkpointing
 
 To allow checkpointing (allowing you to resume runs that get interrupted), use the `run_with_continue` mode and set the `save_checkpoint_every_steps` argument. For example:
