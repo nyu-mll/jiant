@@ -15,6 +15,7 @@ jobs:
         python-version: 3.7
 
     - name: Install 
+      if: startsWith(github.ref, 'refs/tags')
       run: >-
         python3 -m 
         pip install 
@@ -22,6 +23,7 @@ jobs:
         --upgrade setuptools wheel
   
     - name: Build a binary wheel and a source tarball
+      if: startsWith(github.ref, 'refs/tags')
       run: >-
         python3 setup.py 
         sdist 
