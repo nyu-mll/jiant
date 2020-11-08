@@ -17,6 +17,7 @@ OTHER_DOWNLOAD_TASKS = {
     "mrqa_natural_questions",
     "piqa",
     "winogrande",
+    "ropes",
 }
 
 DIRECT_DOWNLOAD_TASKS = set(

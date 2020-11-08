@@ -61,6 +61,10 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_winogrande_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "ropes":
+        download_ropes_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     else:
         raise KeyError(task_name)
 
@@ -171,7 +175,7 @@ def download_fever_nli_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        ("https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1"), task_data_path,
+        "https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1", task_data_path,
     )
     # Since the FEVER NLI dataset doesn't have labels for the dev set, we also download the original
     # FEVER dev set and match example CIDs to obtain labels.
@@ -736,6 +740,36 @@ def download_winogrande_data_and_write_config(
                 "test": os.path.join(task_data_path, "test.jsonl"),
             },
             "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_ropes_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    download_utils.download_and_untar(
+        "https://ropes-dataset.s3-us-west-2.amazonaws.com/train_and_dev/ropes-train-dev-v1.0.tar.gz",
+        task_data_path,
+    )
+    data_phase_list = ["train", "dev"]
+    jiant_phase_list = ["train", "val"]
+    for data_phase, jiant_phase in zip(data_phase_list, jiant_phase_list):
+        os.rename(
+            os.path.join(task_data_path, "ropes-train-dev-v1.0", f"{data_phase}-v1.0.json"),
+            os.path.join(task_data_path, f"{jiant_phase}.json"),
+        )
+    shutil.rmtree(os.path.join(task_data_path, "ropes-train-dev-v1.0"))
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "train.json"),
+                "val": os.path.join(task_data_path, "val.json"),
+            },
+            "name": task_name,
+            "kwargs": {"include_background": True},
         },
         path=task_config_path,
     )
