@@ -45,7 +45,17 @@ class Example(squad_style_template.Example):
         all_doc_tokens = []
         for (i, token) in enumerate(self.doc_tokens):
             orig_to_tok_index.append(len(all_doc_tokens))
-            sub_tokens = tokenizer.tokenize(token)
+            if tokenizer.__class__.__name__ in [
+                "RobertaTokenizer",
+                "LongformerTokenizer",
+                "BartTokenizer",
+                "RobertaTokenizerFast",
+                "LongformerTokenizerFast",
+                "BartTokenizerFast",
+            ]:
+                sub_tokens = tokenizer.tokenize(token, add_prefix_space=True)
+            else:
+                sub_tokens = tokenizer.tokenize(token)
             for sub_token in sub_tokens:
                 tok_to_orig_index.append(i)
                 all_doc_tokens.append(sub_token)
@@ -64,7 +74,18 @@ class Example(squad_style_template.Example):
 
         spans = []
 
-        sequence_added_tokens = tokenizer.max_len - tokenizer.max_len_single_sentence + 1
+        # Usually, SQuAD needs to adjust for document offset with the number of added tokens, before the context.
+        # For BERT-likes, that's
+        #    [cls] question [sep] context [sep]
+        #    so that's 2 extra tokens before the context.
+        # For RoBERTa-likes, that's
+        #    <s> question </s> </s> context </s> </s>
+        #    so that's 3.
+        # In our case however, we have no question, so we have
+        #    [cls] context ...
+        # so sequence_added_tokens always = 1.
+        # (This may not apply for future added models that don't start with a CLS token, such as XLNet/GPT-2)
+        sequence_added_tokens = 1
         sequence_pair_added_tokens = tokenizer.max_len - tokenizer.max_len_sentences_pair
 
         span_doc_tokens = all_doc_tokens
