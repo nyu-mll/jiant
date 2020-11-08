@@ -21,6 +21,9 @@ from jiant.utils.display import maybe_tqdm
 
 import logging
 
+# Store the tokenizers which insert 2 separators tokens
+MULTI_SEP_TOKENS_TOKENIZERS_SET = {"roberta", "camembert", "bart"}
+
 logger = logging.getLogger(__name__)
 
 
@@ -135,9 +138,13 @@ class Example(BaseExample):
             truncation=True,
             max_length=max_query_length,
         )
+
+        # Tokenizers who insert 2 SEP tokens in-between <context> & <question> need to have special handling
+        # in the way they compute mask of added tokens.
+        tokenizer_type = type(tokenizer).__name__.replace("Tokenizer", "").lower()
         sequence_added_tokens = (
             tokenizer.max_len - tokenizer.max_len_single_sentence + 1
-            if "roberta" in str(type(tokenizer)) or "camembert" in str(type(tokenizer))
+            if tokenizer_type in MULTI_SEP_TOKENS_TOKENIZERS_SET
             else tokenizer.max_len - tokenizer.max_len_single_sentence
         )
         sequence_pair_added_tokens = tokenizer.max_len - tokenizer.max_len_sentences_pair
