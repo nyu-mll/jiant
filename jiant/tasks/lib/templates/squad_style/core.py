@@ -101,7 +101,17 @@ class Example(BaseExample):
         all_doc_tokens = []
         for (i, token) in enumerate(self.doc_tokens):
             orig_to_tok_index.append(len(all_doc_tokens))
-            sub_tokens = tokenizer.tokenize(token)
+            if tokenizer.__class__.__name__ in [
+                "RobertaTokenizer",
+                "LongformerTokenizer",
+                "BartTokenizer",
+                "RobertaTokenizerFast",
+                "LongformerTokenizerFast",
+                "BartTokenizerFast",
+            ]:
+                sub_tokens = tokenizer.tokenize(token, add_prefix_space=True)
+            else:
+                sub_tokens = tokenizer.tokenize(token)
             for sub_token in sub_tokens:
                 tok_to_orig_index.append(i)
                 all_doc_tokens.append(sub_token)
