@@ -25,21 +25,6 @@ SUPERGLUE_TASKS = {
     "superglue_winogender_diagnostics",
 }
 
-OTHER_HF_DATASETS_TASKS = {
-    "snli",
-    "commonsenseqa",
-    "hellaswag",
-    "cosmosqa",
-    "socialiqa",
-    "scitail",
-    "quoref",
-    "adversarial_nli_r1",
-    "adversarial_nli_r2",
-    "adversarial_nli_r3",
-    "arc_easy",
-    "arc_challenge",
-}
-
 XTREME_TASKS = {
     "xnli",
     "pawsx",

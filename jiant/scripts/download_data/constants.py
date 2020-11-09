@@ -23,3 +23,17 @@ OTHER_DOWNLOAD_TASKS = {
 DIRECT_DOWNLOAD_TASKS = set(
     list(SQUAD_TASKS) + list(DIRECT_SUPERGLUE_TASKS_TO_DATA_URLS) + list(OTHER_DOWNLOAD_TASKS)
 )
+OTHER_HF_DATASETS_TASKS = {
+    "snli",
+    "commonsenseqa",
+    "hellaswag",
+    "cosmosqa",
+    "socialiqa",
+    "scitail",
+    "quoref",
+    "adversarial_nli_r1",
+    "adversarial_nli_r2",
+    "adversarial_nli_r3",
+    "arc_easy",
+    "arc_challenge",
+}
