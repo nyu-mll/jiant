@@ -70,6 +70,7 @@
 | TyDiQA | `tydiqa_{lang}` | ✅ | ✅ | tydiqa | XTREME, multi-lang |
 | UDPOS | `udpos_{lang}` | ✅ | ✅ | udpos | XTREME, multi-lang |
 | WiC | wic | ✅ | ✅ | wic | SuperGLUE |
+| Winogrande | winogrande | ✅ | ✅ | winogrande | |
 | WNLI | wnli | ✅ | ✅ | wnli | GLUE |
 | WSC | wsc | ✅ | ✅ | wsc | SuperGLUE |
 | XNLI | `xnli_{lang}` | ✅ | ✅ | xnli | XTREME, multi-lang |
