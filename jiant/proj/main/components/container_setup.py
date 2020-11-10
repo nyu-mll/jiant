@@ -105,7 +105,7 @@ def create_task_cache_dict(task_cache_config_dict: Dict) -> Dict:
     task_cache_dict = {}
     for task_name, task_cache_config in task_cache_config_dict.items():
         single_task_cache_dict = {}
-        for phase in ["train", "val", "val_labels", "test"]:
+        for phase in ["train", "val", "val_labels", "test", "test_labels"]:
             if phase in task_cache_config:
                 single_task_cache_dict[phase] = caching.ChunkedFilesDataCache(
                     task_cache_config[phase],

@@ -63,6 +63,8 @@ class BaseEvaluationScheme:
     ) -> Metrics:
         raise NotImplementedError()
 
+    def get_responder_accuracy(self, task, accumulator: BaseAccumulator, labels: list):
+        raise NotImplementedError()
 
 class ConcatenateLogitsAccumulator(BaseAccumulator):
     def __init__(self):
@@ -137,6 +139,11 @@ class SpanPredictionF1andEMScheme(BaseEvaluationScheme):
         f1 = sum([string_f1_score(s1, s2) for s1, s2 in zip(preds, labels)]) / len(labels)
         scores = {"f1": f1, "em": em, "avg": (f1 + em) / 2}
         return Metrics(major=scores["avg"], minor=scores)
+
+    def get_responder_accuracy(self, task, accumulator: ConcatenateStringListAccumulator, labels: list):
+        preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        responder_accuracies = [int(exact_match_score(s1, s2)) for s1, s2 in zip(preds, labels)]
+        return responder_accuracies
 
     def compute_metrics_from_accumulator(
         self, task, accumulator: ConcatenateStringListAccumulator, tokenizer, labels: list
@@ -259,6 +266,7 @@ class SimpleAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
         # noinspection PyUnresolvedReferences
         acc = float((preds == labels).mean())
         return Metrics(major=acc, minor={"acc": acc})
+
 
 
 class MCTACOEvaluationScheme(BaseLogitsEvaluationScheme):
@@ -394,6 +402,11 @@ class MultipleChoiceAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
         return SimpleAccuracyEvaluationScheme.compute_metrics_from_preds_and_labels(
             preds=preds, labels=labels
         )
+
+    def get_responder_accuracy(self, task, accumulator, labels):
+        preds = SimpleAccuracyEvaluationScheme.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        responder_accuracies = [int(s1 == s2) for s1, s2 in zip(preds, labels)]
+        return responder_accuracies
 
 
 class CommitmentBankEvaluationScheme(BaseLogitsEvaluationScheme):

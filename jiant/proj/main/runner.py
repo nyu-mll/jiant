@@ -149,10 +149,14 @@ class JiantRunner:
     def run_test(self, task_name_list, verbose=True):
         evaluate_dict = {}
         test_dataloader_dict = self.get_test_dataloader_dict()
+        test_labels_dict = self.get_test_labels_dict(
+            task_name_list=task_name_list, use_subset=None
+        )
         for task_name in task_name_list:
             task = self.jiant_task_container.task_dict[task_name]
             evaluate_dict[task_name] = run_test(
                 test_dataloader=test_dataloader_dict[task_name],
+                test_labels=test_labels_dict[task_name],
                 jiant_model=self.jiant_model,
                 task=task,
                 device=self.device,
@@ -207,6 +211,15 @@ class JiantRunner:
             val_labels_dict[task_name] = val_labels
         return val_labels_dict
 
+    def get_test_labels_dict(self, task_name_list, use_subset=False):
+        test_labels_dict = {}
+        for task_name in task_name_list:
+            task_specific_config = self.jiant_task_container.task_specific_configs[task_name]
+            test_labels_cache = self.jiant_task_container.task_cache_dict[task_name]["test_labels"]
+            test_labels = test_labels_cache.get_all()
+            test_labels_dict[task_name] = test_labels
+        return test_labels_dict
+   
     def get_test_dataloader_dict(self):
         return self._get_eval_dataloader_dict(
             task_name_list=self.jiant_task_container.task_run_config.test_task_list,
@@ -315,6 +328,7 @@ def run_val(
 
 def run_test(
     test_dataloader,
+    test_labels,
     jiant_model: JiantModel,
     task,
     device,
@@ -345,6 +359,9 @@ def run_test(
         "accumulator": eval_accumulator,
     }
     if return_preds:
+        output["responder_accuracies"]=evaluation_scheme.get_responder_accuracy(
+            task=task, accumulator=eval_accumulator, labels=test_labels,
+        )
         output["preds"] = evaluation_scheme.get_preds_from_accumulator(
             task=task, accumulator=eval_accumulator,
         )

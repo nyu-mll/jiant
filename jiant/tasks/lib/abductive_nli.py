@@ -190,7 +190,11 @@ class AbductiveNliTask(Task):
         )
 
     def get_test_examples(self):
-        raise NotImplementedError()
+        return self._create_examples(
+            lines=read_json_lines(self.path_dict["test_inputs"]),
+            labels=self._read_labels(self.path_dict["test_labels"]),
+            set_type="test",
+        )
 
     @classmethod
     def _create_examples(cls, lines, labels, set_type):

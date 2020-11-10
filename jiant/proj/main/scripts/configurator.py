@@ -125,6 +125,7 @@ class SingleTaskConfigurator(zconf.RunConfig):
             task_cache_config["val_labels"] = os.path.join(task_cache_path, "val_labels")
         if self.do_test:
             task_cache_config["test"] = os.path.join(task_cache_path, "test")
+            task_cache_config["test_labels"] = os.path.join(task_cache_path, "test_labels")
         for v in task_cache_config.values():
             assert os.path.exists(v)
 
@@ -331,6 +332,9 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
                 if task_name in task_name_list_dict["test"]:
                     task_cache_config_dict[task_name]["test"] = os.path.join(
                         self.task_cache_base_path, task_name, "test",
+                    )
+                    task_cache_config_dict[task_name]["test_labels"] = os.path.join(
+                        self.task_cache_base_path, task_name, "test_labels",
                     )
         elif isinstance(self.task_cache_config_dict, str):
             assert self.task_cache_base_path is None

@@ -32,6 +32,9 @@ class NewsQATask(squad_style_template.BaseSquadStyleTask):
     def get_val_examples(self):
         return self.read_examples(path=self.val_path, set_type=PHASE.VAL)
 
+    def get_test_examples(self):
+        return self.read_examples(path=self.test_path, set_type=PHASE.TEST)
+
     @classmethod
     def read_examples(cls, path: str, set_type: str):
         examples = []
