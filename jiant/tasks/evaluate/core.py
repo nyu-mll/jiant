@@ -79,7 +79,10 @@ class ConcatenateLogitsAccumulator(BaseAccumulator):
 
     def get_guids(self):
         if self.guid_list:
-            return np.concatenate(self.guid_list)
+            try:
+                return np.concatenate(self.guid_list)
+            except:
+                return None
         else:
             return None
 
@@ -267,7 +270,10 @@ class SimpleAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
         acc = float((preds == labels).mean())
         return Metrics(major=acc, minor={"acc": acc})
 
-
+    def get_responder_accuracy(self, task, accumulator, labels):
+        preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        responder_accuracies = [int(s1 == s2) for s1, s2 in zip(preds, labels)]
+        return responder_accuracies
 
 class MCTACOEvaluationScheme(BaseLogitsEvaluationScheme):
     @classmethod

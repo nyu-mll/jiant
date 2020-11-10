@@ -35,4 +35,6 @@ def write_preds(eval_results_dict, path):
             "preds": task_results_dict["preds"],
             "guids": task_results_dict["accumulator"].get_guids(),
         }
+        if "responder_accuracies" in task_results_dict:
+            preds_dict[task_name]["responder_accuracies"] = task_results_dict["responder_accuracies"]
     torch.save(preds_dict, path)

@@ -359,9 +359,12 @@ def run_test(
         "accumulator": eval_accumulator,
     }
     if return_preds:
-        output["responder_accuracies"]=evaluation_scheme.get_responder_accuracy(
-            task=task, accumulator=eval_accumulator, labels=test_labels,
-        )
+        try:
+            output["responder_accuracies"]=evaluation_scheme.get_responder_accuracy(
+                task=task, accumulator=eval_accumulator, labels=test_labels,
+            )
+        except:
+            print("responder accuracy not implemented")
         output["preds"] = evaluation_scheme.get_preds_from_accumulator(
             task=task, accumulator=eval_accumulator,
         )
