@@ -11,6 +11,8 @@
 | SuperGLUE Winogender Diagnostic | superglue_axg | ✅ | ✅ | superglue_axg | SuperGLUE |
 | Acceptability Definiteness | acceptability_definiteness | ✅ |  | acceptability_definiteness | Function Words |
 | Adversarial NLI | `adversarial_nli_{round}` | ✅ |  | adversarial_nli | 3 rounds |
+| ARC ("easy" version) | arc_easy | ✅ | ✅ | arc_easy | [site](https://allenai.org/data/arc) |
+| ARC ("challenge" version) | arc_challenge | ✅ | ✅ | arc_challenge | [site](https://allenai.org/data/arc) |
 | BoolQ | boolq | ✅ | ✅ | boolq | SuperGLUE |
 | BUCC2018 | `bucc2018_{lang}` | ✅ | ✅ | bucc2018 | XTREME, multi-lang |
 | CommitmentBank | cb | ✅ | ✅ | cb | SuperGLUE |
@@ -23,20 +25,24 @@
 | Cosmos QA | cosmosqa | ✅ | ✅ | cosmosqa |  |
 | EP-UD | dep | ✅ |  | dep | Edge-Probing |
 | EP-DPR | dpr | ✅ |  | dpr | Edge-Probing |
+| Fever NLI | fever_nli | ✅ | ✅ | fever_nli |  |
 | GLUE Diagnostic | glue_diagnostics | ✅ | ✅ | glue_diagnostics | GLUE |
 | HellaSwag | hellaswag | ✅ | ✅ | hellaswag |  |
-| [MCScript2.0](https://arxiv.org/pdf/1905.09531.pdf) | mcscript | ✅ |  | mcscript | [Data](https://my.hidrive.com/share/wdnind8pp5#$/) |
+| [MCScript2.0](https://arxiv.org/pdf/1905.09531.pdf) | mcscript | ✅ |  | mcscript | [data](https://my.hidrive.com/share/wdnind8pp5#$/) |
 | MLM | * | ✅ | * | mlm_simple | See task-specific notes. |
 | MLQA | `mlqa_{lang1}_{lang2}` | ✅ | ✅ | mlqa | XTREME, multi-lang |
 | MNLI | mnli | ✅ | ✅ | mnli | GLUE, MNLI-matched |
 | MNLI-mismatched | mnli_mismatched | ✅ | ✅ | mnli_mismatched | GLUE |
-| MultiRC | multirc | ✅ | ✅ | multirc | SuperGLUE |
 | MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
+| MultiRC | multirc | ✅ | ✅ | multirc | SuperGLUE |
+| Mutual (standard version) | mutual | ✅ |  | mutual | [site](https://github.com/Nealcly/MuTual) |
+| Mutual ("challenge" version) | mutual_plus | ✅ |  | mutual_plus | [site](https://github.com/Nealcly/MuTual) |
 | Natural Questions | mrqa_natural_questions | ✅ | ✅ | mrqa_natural_questions | [MRQA](https://mrqa.github.io/) version of task |
 | NewsQA | newsqa | ✅ | ✅ | newsqa |  |
 | PIQA | piqa | ✅ | ✅ | piqa | [PIQA](https://yonatanbisk.com/piqa/) |
 | QAMR | qamr | ✅ | ✅ | qamr |  |
 | QA-SRL | qasrl | ✅ | ✅ | qasrl |  |
+| Quail | quail | ✅ | | quail | [site](http://text-machine.cs.uml.edu/lab2/projects/quail/) |
 | Quoref | quoref | ✅ | ✅ | quoref |  |
 | EP-NER | ner | ✅ |  | ner | Edge-Probing |
 | PAWS-X | `pawsx_{lang}` | ✅ | ✅ | pawsx | XTREME, multi-lang |
@@ -64,6 +70,7 @@
 | TyDiQA | `tydiqa_{lang}` | ✅ | ✅ | tydiqa | XTREME, multi-lang |
 | UDPOS | `udpos_{lang}` | ✅ | ✅ | udpos | XTREME, multi-lang |
 | WiC | wic | ✅ | ✅ | wic | SuperGLUE |
+| Winogrande | winogrande | ✅ | ✅ | winogrande | |
 | WNLI | wnli | ✅ | ✅ | wnli | GLUE |
 | WSC | wsc | ✅ | ✅ | wsc | SuperGLUE |
 | XNLI | `xnli_{lang}` | ✅ | ✅ | xnli | XTREME, multi-lang |
