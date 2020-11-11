@@ -139,7 +139,8 @@ class Example(BaseExample):
             max_length=max_query_length,
         )
 
-        # Tokenizers who insert 2 SEP tokens in-between <context> & <question> need to have special handling
+        # Tokenizers who insert 2 SEP tokens in-between <context> & <question>
+        #   need to have special handling
         # in the way they compute mask of added tokens.
         tokenizer_type = type(tokenizer).__name__.replace("Tokenizer", "").lower()
         sequence_added_tokens = (
