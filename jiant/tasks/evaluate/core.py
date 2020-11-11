@@ -63,7 +63,7 @@ class BaseEvaluationScheme:
     ) -> Metrics:
         raise NotImplementedError()
 
-    def get_responder_accuracy(self, task, accumulator: BaseAccumulator, labels: list):
+    def get_responder_accuracy(self, task, accumulator: BaseAccumulator, labels: list, tokenizer):
         raise NotImplementedError()
 
 class ConcatenateLogitsAccumulator(BaseAccumulator):
@@ -143,7 +143,7 @@ class SpanPredictionF1andEMScheme(BaseEvaluationScheme):
         scores = {"f1": f1, "em": em, "avg": (f1 + em) / 2}
         return Metrics(major=scores["avg"], minor=scores)
 
-    def get_responder_accuracy(self, task, accumulator: ConcatenateStringListAccumulator, labels: list):
+    def get_responder_accuracy(self, task, accumulator: ConcatenateStringListAccumulator, labels: list, tokenizer=None):
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
         responder_accuracies = [int(exact_match_score(s1, s2)) for s1, s2 in zip(preds, labels)]
         return responder_accuracies
@@ -270,7 +270,7 @@ class SimpleAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
         acc = float((preds == labels).mean())
         return Metrics(major=acc, minor={"acc": acc})
 
-    def get_responder_accuracy(self, task, accumulator, labels):
+    def get_responder_accuracy(self, task, accumulator, labels, tokenizer=None):
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
         responder_accuracies = [int(s1 == s2) for s1, s2 in zip(preds, labels)]
         return responder_accuracies
@@ -282,6 +282,26 @@ class MCTACOEvaluationScheme(BaseLogitsEvaluationScheme):
         pred = np.argmax(logits, axis=1)
         guid = accumulator.guid_list
         return guid, pred
+
+    def get_responder_accuracy(self, task, accumulator, labels, tokenizer=None):
+        guid, pred = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        em_ls = []
+        label_pred_by_question = {}
+
+        for one_guid, one_pred, one_label in zip(guid, pred, labels):
+            split, question_id, example_id = one_guid.split("-")
+            if question_id not in label_pred_by_question:
+                label_pred_by_question[question_id] = [], []
+            label_pred_by_question[question_id][0].append(one_label)
+            label_pred_by_question[question_id][1].append(one_pred)
+
+        em_ls = [
+            float(group_label == group_pred)
+            for group_label, group_pred in label_pred_by_question.values()
+        ]
+        responder_accuracies = em_ls
+        #responder_accuracies = [int(s1 == s2) for s1, s2 in zip(preds, labels)]
+        return responder_accuracies
 
     @classmethod
     def compute_metrics_from_accumulator(self, task, accumulator, tokenizer, labels) -> Metrics:
@@ -409,7 +429,7 @@ class MultipleChoiceAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
             preds=preds, labels=labels
         )
 
-    def get_responder_accuracy(self, task, accumulator, labels):
+    def get_responder_accuracy(self, task, accumulator, labels, tokenizer=None):
         preds = SimpleAccuracyEvaluationScheme.get_preds_from_accumulator(task=task, accumulator=accumulator)
         responder_accuracies = [int(s1 == s2) for s1, s2 in zip(preds, labels)]
         return responder_accuracies
@@ -750,6 +770,21 @@ class SQuADEvaluationScheme(BaseEvaluationScheme):
     def get_label_from_data_row(cls, data_row):
         return squad_style.PartialDataRow.from_data_row(data_row)
 
+    def get_responder_accuracy(self, task, accumulator: BaseAccumulator, labels, tokenizer):
+        logits = accumulator.get_accumulated()
+        results, predictions = squad_style.compute_predictions_logits_v3(
+            data_rows=labels,
+            logits=logits,
+            n_best_size=task.n_best_size,
+            max_answer_length=task.max_answer_length,
+            do_lower_case=model_resolution.resolve_is_lower_case(tokenizer),
+            version_2_with_negative=task.version_2_with_negative,
+            null_score_diff_threshold=task.null_score_diff_threshold,
+            tokenizer=tokenizer,
+        )
+        responder_accuracies = list(results["responder_accuracies"].values())
+        return responder_accuracies
+   
 
 class XlingQAEvaluationScheme(BaseEvaluationScheme):
     @classmethod

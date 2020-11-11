@@ -585,7 +585,7 @@ def squad_evaluate(examples, preds, no_answer_probs=None, no_answer_probability_
     )
 
     evaluation = make_eval_dict(exact_threshold, f1_threshold)
-
+   
     if has_answer_qids:
         has_ans_eval = make_eval_dict(exact_threshold, f1_threshold, qid_list=has_answer_qids)
         merge_eval(evaluation, has_ans_eval, "HasAns")
@@ -597,6 +597,7 @@ def squad_evaluate(examples, preds, no_answer_probs=None, no_answer_probability_
     if no_answer_probs:
         find_all_best_thresh(evaluation, preds, exact, f1, no_answer_probs, qas_id_to_has_answer)
 
+    evaluation['responder_accuracies']=exact_threshold
     return evaluation
 
 
