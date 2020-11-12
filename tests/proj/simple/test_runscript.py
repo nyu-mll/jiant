@@ -5,17 +5,7 @@ import torch
 import jiant.utils.python.io as py_io
 from jiant.proj.simple import runscript as run
 import jiant.scripts.download_data.runscript as downloader
-
-
-def eq_state_dicts(model_1, model_2):
-    models_differ = 0
-    for key_item_1, key_item_2 in zip(model_1.items(), model_2.items()):
-        if torch.equal(key_item_1[1], key_item_2[1]):
-            pass
-        else:
-            return False
-    return True
-
+import jiant.utils.torch_utils as torch_utils
 
 @pytest.mark.parametrize("task_name", ["copa"])
 @pytest.mark.parametrize("model_type", ["bert-base-cased"])
@@ -80,7 +70,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
     last_model_weights = torch.load(
         os.path.join(exp_dir, "runs", run_name, "last_model.p"), map_location=torch.device("cpu")
     )
-    assert not eq_state_dicts(best_model_weights, last_model_weights)
+    assert not torch_utils.eq_state_dicts(best_model_weights, last_model_weights)
 
     run_name = f"{test_simple_runscript.__name__}_{task_name}_{model_type}_save_best"
     args = run.RunConfiguration(
