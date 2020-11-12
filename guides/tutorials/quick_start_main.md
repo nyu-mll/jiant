@@ -95,14 +95,11 @@ python jiant/proj/main/runscript.py \
         ...
         ...
     --save_checkpoint_every_steps 500 \
-    --delete_checkpoint_if_done
 ```
 
 This will save a checkpoint to disk every 500 training steps. The checkpoint will be saved to a `checkpoint.p` file. If the process gets killed, you can rerun the exact same command and it will continue training from the latest checkpoint.
 
 Note that checkpoints are for resuming training, not for saving snapshots of model weights at different points in training. Checkpoints also include additional run metadata, as well as the optimizer states. To save regular snapshots of model weights, see [Model Snapshots](#model-snapshots)
-
-We also set the `delete_checkpoint_if_done` flag to delete the checkpoint after training is complete. 
 
 ### Model Snapshots
 
