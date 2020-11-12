@@ -76,7 +76,8 @@ class Example(squad_style_template.Example):
 
         spans = []
 
-        # Usually, SQuAD needs to adjust for document offset with the number of added tokens, before the context.
+        # Usually, SQuAD needs to adjust for document offset with the number of added tokens,
+        #   before the context.
         # For BERT-likes, that's
         #    [cls] question [sep] context [sep]
         #    so that's 2 extra tokens before the context.
@@ -86,7 +87,8 @@ class Example(squad_style_template.Example):
         # In our case however, we have no question, so we have
         #    [cls] context ...
         # so sequence_added_tokens always = 1.
-        # (This may not apply for future added models that don't start with a CLS token, such as XLNet/GPT-2)
+        # (This may not apply for future added models that don't start with a CLS token,
+        #   such as XLNet/GPT-2)
         sequence_added_tokens = 1
         sequence_pair_added_tokens = tokenizer.max_len - tokenizer.max_len_sentences_pair
 
@@ -315,7 +317,7 @@ class RopesTask(squad_style_template.BaseSquadStyleTask):
                     start_position_character = None
                     answer_text = None
                     answers = [
-                        {"text": answer["text"], "answer_start": full_context.find(answer["text"]),}
+                        {"text": answer["text"], "answer_start": full_context.find(answer["text"])}
                         for answer in qa["answers"]
                     ]
 

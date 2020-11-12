@@ -750,7 +750,8 @@ def download_ropes_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_untar(
-        "https://ropes-dataset.s3-us-west-2.amazonaws.com/train_and_dev/ropes-train-dev-v1.0.tar.gz",
+        "https://ropes-dataset.s3-us-west-2.amazonaws.com/train_and_dev/"
+        "ropes-train-dev-v1.0.tar.gz",
         task_data_path,
     )
     data_phase_list = ["train", "dev"]
