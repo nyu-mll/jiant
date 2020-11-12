@@ -14,7 +14,9 @@ from jiant.tasks.utils import truncate_sequences
 
 @dataclass
 class Example(mc_template.Example):
-    pass
+    @property
+    def task(self):
+        return WinograndeTask
 
 
 @dataclass

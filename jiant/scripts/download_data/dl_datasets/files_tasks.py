@@ -97,7 +97,7 @@ def download_squad_data_and_write_config(
         data={
             "task": "squad",
             "paths": {"train": train_path, "val": val_path},
-            "version_2_with_negative": version_2_with_negative,
+            "kwargs": {"version_2_with_negative": version_2_with_negative},
             "name": task_name,
         },
         path=task_config_path,
