@@ -33,7 +33,9 @@ class Example(squad_style_template.Example):
 
             # If the answer cannot be found in the text, then skip this example.
             actual_text = " ".join(self.doc_tokens[start_position : (end_position + 1)])
-            cleaned_answer_text = " ".join(squad_style_template.whitespace_tokenize(self.answer_text))
+            cleaned_answer_text = " ".join(
+                squad_style_template.whitespace_tokenize(self.answer_text)
+            )
             if actual_text.find(cleaned_answer_text) == -1:
                 logger.warning(
                     "Could not find answer: '%s' vs. '%s'", actual_text, cleaned_answer_text
@@ -97,9 +99,7 @@ class Example(squad_style_template.Example):
                 pad_to_max_length=True,
                 max_length=max_seq_length,
                 return_overflowing_tokens=True,
-                stride=max_seq_length
-                - doc_stride
-                - sequence_pair_added_tokens,
+                stride=max_seq_length - doc_stride - sequence_pair_added_tokens,
                 return_token_type_ids=True,
             )
 
@@ -128,11 +128,7 @@ class Example(squad_style_template.Example):
 
             token_to_orig_map = {}
             for i in range(paragraph_len):
-                index = (
-                    sequence_added_tokens + i
-                    if tokenizer.padding_side == "right"
-                    else i
-                )
+                index = sequence_added_tokens + i if tokenizer.padding_side == "right" else i
                 token_to_orig_map[index] = tok_to_orig_index[len(spans) * doc_stride + i]
 
             encoded_dict["paragraph_len"] = paragraph_len
@@ -174,7 +170,7 @@ class Example(squad_style_template.Example):
             # Original TF implem also keep the classification token (set to 0) (not sure why...)
             p_mask = np.ones_like(span["token_type_ids"])
             if tokenizer.padding_side == "right":
-                p_mask[sequence_added_tokens :] = 0
+                p_mask[sequence_added_tokens:] = 0
             else:
                 p_mask[-len(span["tokens"]) : -sequence_added_tokens] = 0
 
@@ -301,7 +297,11 @@ class RopesTask(squad_style_template.BaseSquadStyleTask):
                 #   and leave nothing for the "question"
                 question_text = " "
                 if self.include_background:
-                    context_segments = [paragraph["background"], paragraph["situation"], qa["question"]]
+                    context_segments = [
+                        paragraph["background"],
+                        paragraph["situation"],
+                        qa["question"],
+                    ]
                 else:
                     context_segments = [paragraph["situation"], qa["question"]]
                 full_context = " ".join(segment.strip() for segment in context_segments)
@@ -315,10 +315,7 @@ class RopesTask(squad_style_template.BaseSquadStyleTask):
                     start_position_character = None
                     answer_text = None
                     answers = [
-                        {
-                            "text": answer["text"],
-                            "answer_start": full_context.find(answer["text"]),
-                        }
+                        {"text": answer["text"], "answer_start": full_context.find(answer["text"]),}
                         for answer in qa["answers"]
                     ]
 

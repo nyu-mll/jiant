@@ -1033,7 +1033,7 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.QuorefTask,
             tasks.NewsQATask,
             tasks.MrqaNaturalQuestionsTask,
-        )
+        ),
     ):
         return SQuADEvaluationScheme()
     elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask)):
