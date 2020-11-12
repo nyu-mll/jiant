@@ -145,6 +145,7 @@ def get_model_for_saving(model: nn.Module) -> nn.Module:
     else:
         return model
 
+
 def eq_state_dicts(state_dict_1, state_dict_2):
     """Checks if the model weights in state_dict_1 and state_dict_2 are equal.
 
