@@ -99,7 +99,7 @@ class BoolQTask(SuperGlueMixin, Task):
                     guid="%s-%s" % (set_type, line["idx"]),
                     input_question=line["question"],
                     input_passage=line["passage"],
-                    label=line["label"] if set_type != "test" else cls.LABELS[-1],
+                    label=line["label"],
                 )
             )
         return examples

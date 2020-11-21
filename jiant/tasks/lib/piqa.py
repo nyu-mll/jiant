@@ -71,7 +71,7 @@ class PiqaTask(mc_template.AbstractMultipleChoiceTask):
                     guid="%s-%s" % (set_type, i),
                     prompt=ex["goal"],
                     choice_list=[ex["sol1"], ex["sol2"]],
-                    label=int(label_string) if set_type != "test" else cls.CHOICE_KEYS[-1],
+                    label=int(label_string),
                 )
             )
 

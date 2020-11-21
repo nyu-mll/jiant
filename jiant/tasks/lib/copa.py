@@ -63,7 +63,7 @@ class CopaTask(SuperGlueMixin, mc_template.AbstractMultipleChoiceTask):
                     guid="%s-%s" % (set_type, line["idx"]),
                     prompt=line["premise"] + " " + question,
                     choice_list=[line["choice1"], line["choice2"]],
-                    label=line["label"] if set_type != "test" else cls.CHOICE_KEYS[-1],
+                    label=line["label"],
                 )
             )
         return examples

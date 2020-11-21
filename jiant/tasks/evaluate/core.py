@@ -454,6 +454,10 @@ class CommitmentBankEvaluationScheme(BaseLogitsEvaluationScheme):
             minor={"acc": acc, "avg_f1": avg_f1, "f11": f11, "f12": f12, "f13": f13},
         )
 
+    def get_responder_accuracy(self, task, accumulator, labels, tokenizer=None):
+        preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
+        responder_accuracies = [int(s1 == s2) for s1, s2 in zip(preds, labels)]
+        return responder_accuracies
 
 class MultiRCEvaluationScheme(BaseEvaluationScheme):
     def get_accumulator(self):

@@ -55,7 +55,7 @@ class HellaSwagTask(mc_template.AbstractMultipleChoiceTask):
                     guid="%s-%s" % (set_type, i),
                     prompt=line["ctx_a"],
                     choice_list=[line["ctx_b"] + " " + ending for ending in line["endings"]],
-                    label=line["label"] if set_type != "test" else cls.CHOICE_KEYS[-1],
+                    label=line["label"],
                 )
             )
         return examples

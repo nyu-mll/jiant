@@ -101,7 +101,7 @@ class SnliTask(Task):
                         guid="%s-%s" % (set_type, i),
                         input_premise=line["sentence1"],
                         input_hypothesis=line["sentence2"],
-                        label=line["gold_label"] if set_type != "test" else cls.LABELS[-1],
+                        label=line["gold_label"],
                     )
                 )
             else:
@@ -113,7 +113,7 @@ class SnliTask(Task):
                         guid="%s-%s" % (set_type, i),
                         input_premise=line["premise"],
                         input_hypothesis=line["hypothesis"],
-                        label=line["label"] if set_type != "test" else cls.LABELS[-1],
+                        label=line["label"],
                     )
                 )
         return examples

@@ -178,7 +178,7 @@ class WSCTask(SuperGlueMixin, Task):
                     span2_idx=line["span2_index"],
                     span1_text=line["span1_text"],
                     span2_text=line["span2_text"],
-                    label=line["label"] if set_type != "test" else cls.LABELS[-1],
+                    label=line["label"],
                 )
             )
         return examples

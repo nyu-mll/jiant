@@ -375,6 +375,7 @@ def run_test(
             output["preds"] = evaluation_scheme.get_preds_from_accumulator(
                 task=task, accumulator=eval_accumulator,
             )
+            
         except:
             output["preds"] = []
             print("Preds not implemented")

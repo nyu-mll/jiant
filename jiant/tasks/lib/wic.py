@@ -256,7 +256,7 @@ class WiCTask(SuperGlueMixin, Task):
                     word=line["word"],
                     span1=span1,
                     span2=span2,
-                    label=line["label"] if set_type != "test" else cls.LABELS[-1],
+                    label=line["label"],
                 )
             )
         return examples

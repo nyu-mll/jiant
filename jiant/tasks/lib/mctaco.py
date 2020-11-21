@@ -110,7 +110,7 @@ class MCTACOTask(Task):
                     guid="%s-q%s-%s" % (set_type, question_count, i),
                     sentence_question=sentence + question,
                     answer=answer,
-                    label=label if set_type != "test" else cls.LABELS[-1],
+                    label=label,
                 )
             )
         return examples

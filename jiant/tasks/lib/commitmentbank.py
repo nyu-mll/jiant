@@ -100,7 +100,7 @@ class CommitmentBankTask(SuperGlueMixin, Task):
                     guid="%s-%s" % (set_type, line["idx"]),
                     input_premise=line["premise"],
                     input_hypothesis=line["hypothesis"],
-                    label=line["label"] if set_type != "test" else cls.LABELS[-1],
+                    label=line["label"] 
                 )
             )
         return examples

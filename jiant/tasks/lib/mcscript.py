@@ -63,9 +63,7 @@ class MCScriptTask(mc_template.AbstractMultipleChoiceTask):
                         choice_list=[
                             question + " " + answer_dict["text"] for answer_dict in answer_dicts
                         ],
-                        label=answer_dicts[1]["label"] == "True"
-                        if set_type != "test"
-                        else cls.CHOICE_KEYS[-1],
+                        label=answer_dicts[1]["label"] == "True",
                     )
                 )
 
