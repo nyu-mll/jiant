@@ -105,6 +105,8 @@ def delegate_load(jiant_model, weights_dict: dict, load_mode: str):
         return
     elif load_mode == "all":
         jiant_model.load_state_dict(weights_dict)
+    elif load_mode == "encoder_only":
+        return load_encoder_only(jiant_model=jiant_model, weights_dict=weights_dict)
     elif load_mode == "partial_weights":
         return load_partial_heads(
             jiant_model=jiant_model, weights_dict=weights_dict, allow_missing_head_weights=True,
@@ -188,6 +190,35 @@ def load_lm_heads_from_transformers_weights(jiant_model, weights_dict):
         missed.update(mismatch.unexpected_keys)
         taskmodel.mlm_head.decoder.weight = jiant_model.encoder.embeddings.word_embeddings.weight
     return list(missed)
+
+
+def load_encoder_only(jiant_model, weights_dict):
+    """Loads only encoder weights
+
+    Args:
+        jiant_model (JiantModel): jiant model (encoder and task models are core components).
+        weights_dict (Dict): model weights.
+
+    Returns:
+        Dict[str, List] containing lists of missing head weights or missing heads if any.
+
+    """
+    new_weights_dict = {}
+    encoder_keys = [n for n, p in jiant_model.encoder.named_parameters()]
+
+    # 1. Handle core encoder
+    for encoder_key in encoder_keys:
+        new_key = f"encoder.{encoder_key}"
+        new_weights_dict[new_key] = weights_dict[new_key]
+
+    # 2. Handle taskmodel encoders:
+    for taskmodel_key in jiant_model.task_to_taskmodel_map:
+        for encoder_key in encoder_keys:
+            new_key = f"taskmodels.{taskmodel_key}.encoder.{encoder_key}"
+            new_weights_dict[new_key] = weights_dict[new_key]
+
+    jiant_model.load_state_dict(new_weights_dict, strict=False)
+    return
 
 
 def load_partial_heads(
