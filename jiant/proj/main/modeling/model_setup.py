@@ -200,7 +200,7 @@ def load_encoder_only(jiant_model, weights_dict):
         weights_dict (Dict): model weights.
 
     Returns:
-        Dict[str, List] containing lists of missing head weights or missing heads if any.
+        Dict[str, List] containing dropped keys
 
     """
     new_weights_dict = {}
@@ -218,7 +218,10 @@ def load_encoder_only(jiant_model, weights_dict):
             new_weights_dict[new_key] = weights_dict[new_key]
 
     mismatch = jiant_model.load_state_dict(new_weights_dict, strict=False)
-    return
+    assert not mismatch.unexpected_keys
+    return {
+        "dropped_keys": mismatch.missing_keys,
+    }
 
 
 def load_partial_heads(
