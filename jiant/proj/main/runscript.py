@@ -223,8 +223,8 @@ def resume(checkpoint_path):
 def run_with_continue(cl_args):
     run_args = RunConfiguration.default_run_cli(cl_args=cl_args)
     if not run_args.force_overwrite and (
-            os.path.exists(os.path.join(run_args.output_dir, "done_file"))
-            or os.path.exists(os.path.join(run_args.output_dir, "val_metrics.json"))
+        os.path.exists(os.path.join(run_args.output_dir, "done_file"))
+        or os.path.exists(os.path.join(run_args.output_dir, "val_metrics.json"))
     ):
         print("Already Done")
         return
