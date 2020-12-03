@@ -215,7 +215,7 @@ def load_encoder_only(jiant_model, weights_dict):
     for taskmodel_key in jiant_model.task_to_taskmodel_map:
         for encoder_key in encoder_keys:
             new_key = f"taskmodels_dict.{taskmodel_key}.encoder.{encoder_key}"
-            new_weights_dict[new_key] = weights_dict[new_key]
+            new_weights_dict[new_key] = weights_dict[f"encoder.{encoder_key}"]
 
     mismatch = jiant_model.load_state_dict(new_weights_dict, strict=False)
     assert not mismatch.unexpected_keys
