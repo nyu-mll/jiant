@@ -40,7 +40,7 @@ class RunConfiguration(zconf.RunConfig):
     save_checkpoint_every_steps = zconf.attr(type=int, default=0)
     save_model_every_logscale = zconf.attr(action="store_true")
     no_improvements_for_n_evals = zconf.attr(type=int, default=0)
-    delete_checkpoint_if_done = zconf.attr(action="store_true")
+    keep_checkpoint_when_done = zconf.attr(action="store_true")
     force_overwrite = zconf.attr(action="store_true")
     seed = zconf.attr(type=int, default=-1)
 
@@ -225,8 +225,9 @@ def resume(checkpoint_path):
 
 def run_with_continue(cl_args):
     run_args = RunConfiguration.default_run_cli(cl_args=cl_args)
-    if os.path.exists(os.path.join(run_args.output_dir, "done_file")) or os.path.exists(
-        os.path.join(run_args.output_dir, "val_metrics.json")
+    if not run_args.force_overwrite and (
+        os.path.exists(os.path.join(run_args.output_dir, "done_file"))
+        or os.path.exists(os.path.join(run_args.output_dir, "val_metrics.json"))
     ):
         print("Already Done")
         return

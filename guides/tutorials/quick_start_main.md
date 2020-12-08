@@ -14,7 +14,7 @@ TASK=rte
 ```
 
 Neither of these environment variables are read directly in Python, but simply used to make our bash commands more succinct. This also writes the intermediate and output files in our recommended folder organization.
- 
+
 1. We'll get the data using `jiant`'s download script
 ```bash
 python jiant/scripts/download_data/runscript.py \
@@ -41,9 +41,9 @@ python jiant/proj/main/tokenize_and_cache.py \
     --phases train,val \
     --max_seq_length 256 \
     --smart_truncate
-```  
+```
 
-4. Next, we write a [run-config](../general/in_depth_into.md#write-run-config). This writes a JSON file that specifies some configuration for our run - it's pretty simple now, but will be much more meaningful when running more complex multitasking experiments. 
+4. Next, we write a [run-config](../general/in_depth_intro.md#write-run-config). This writes a JSON file that specifies some configuration for our run - it's pretty simple now, but will be much more meaningful when running more complex multitasking experiments.
 ```bash
 python jiant/proj/main/scripts/configurator.py \
     SingleTaskConfigurator \
@@ -102,7 +102,7 @@ This will save a checkpoint to disk every 500 training steps. The checkpoint wil
 
 Note that checkpoints are for resuming training, not for saving snapshots of model weights at different points in training. Checkpoints also include additional run metadata, as well as the optimizer states. To save regular snapshots of model weights, see [Model Snapshots](#model-snapshots)
 
-We also set the `delete_checkpoint_if_done` flag to delete the checkpoint after training is complete. 
+We also set the `delete_checkpoint_if_done` flag to delete the checkpoint after training is complete.
 
 ### Model Snapshots
 
@@ -116,7 +116,7 @@ will save a pickle of model weights every 500 training steps.
 
 ### Early Stopping
 
-To do early stopping, we can perform validation evaluation at regular intervals over the course of training, and select the best model weights based on validation performance. For expedience, we often do not want to evaluate on the whole validation set, but only a subset. To do early stopping, use the following arguments as an example: 
+To do early stopping, we can perform validation evaluation at regular intervals over the course of training, and select the best model weights based on validation performance. For expedience, we often do not want to evaluate on the whole validation set, but only a subset. To do early stopping, use the following arguments as an example:
 
 ```
     --eval_every_steps 1000
