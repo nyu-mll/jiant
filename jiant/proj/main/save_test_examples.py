@@ -169,7 +169,6 @@ def main(args: RunConfiguration):
                 test_ex_dict[guid] = []
             test_ex_dict[guid].append(example.__dict__)
 
-    import pdb; pdb.set_trace()
     if not args.skip_write_output_paths:
         fname = task_type+ "_" +"raw_test_examples.json"
         py_io.write_json(data=test_ex_dict, path=os.path.join('/scratch/pmh330/nyu-mll-jiant/raw_examples',fname)) 
