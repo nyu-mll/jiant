@@ -124,5 +124,14 @@
       "test": "./test.jsonl"
     },
     "name": "wnli"
-  }
+  },
+  "race": {
+    "task": "race",
+    "rel_paths": {
+      "train": "./train.jsonl",
+      "val": "./val.jsonl",
+      "test": "./test.jsonl"
+    },
+    "name": "race"
+  },
 }
