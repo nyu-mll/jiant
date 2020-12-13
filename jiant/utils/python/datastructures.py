@@ -1,5 +1,6 @@
 import math
 import itertools
+import collections
 from dataclasses import replace
 from typing import Mapping, Any, Sequence, Iterable, Iterator, Union, Tuple, Dict, Set
 
@@ -99,6 +100,20 @@ def combine_dicts(dict_ls: Sequence[dict], strict=True, dict_class=dict):
                     raise RuntimeError(f"repeated key {k} seen in dict {i}")
             new_dict[k] = v
     return new_dict
+
+
+def nested_override(source: Dict, overrides: Dict):
+    """
+    Update a nested dictionary or similar mapping.
+    Modify ``source`` in place.
+    """
+    for key, value in overrides.items():
+        if isinstance(value, collections.Mapping) and value:
+            returned = nested_override(source.get(key, {}), value)
+            source[key] = returned
+        else:
+            source[key] = overrides[key]
+    return source
 
 
 def sort_dict(d: dict):

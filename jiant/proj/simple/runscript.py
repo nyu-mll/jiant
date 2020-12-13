@@ -1,4 +1,5 @@
 import os
+import json
 
 import torch
 
@@ -11,6 +12,7 @@ import jiant.shared.distributed as distributed
 import jiant.utils.zconf as zconf
 import jiant.utils.python.io as py_io
 from jiant.utils.python.logic import replace_none
+from jiant.utils.python.datastructures import nested_override
 
 
 @zconf.run_config
@@ -66,6 +68,9 @@ class RunConfiguration(zconf.RunConfig):
     local_rank = zconf.attr(default=-1, type=int)
     server_ip = zconf.attr(default="", type=str)
     server_port = zconf.attr(default="", type=str)
+
+    # override jiant container config
+    jiant_config_overrides = zconf.attr(default="", type=str)
 
     def _post_init(self):
         assert self.tasks or (
@@ -177,6 +182,11 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         num_gpus=torch.cuda.device_count(),
         train_examples_cap=args.train_examples_cap,
     ).create_config()
+
+    if args.jiant_config_overrides:
+        jiant_config_overrides = json.loads(args.jiant_config_overrides)
+        nested_override(jiant_task_container_config, jiant_config_overrides)
+
     os.makedirs(os.path.join(args.exp_dir, "run_configs"), exist_ok=True)
     jiant_task_container_config_path = os.path.join(
         args.exp_dir, "run_configs", f"{args.run_name}_config.json"
