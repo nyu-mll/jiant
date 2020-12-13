@@ -47,6 +47,7 @@ class RunConfiguration(zconf.RunConfig):
     eval_every_steps = zconf.attr(type=int, default=0)
     save_every_steps = zconf.attr(type=int, default=0)
     save_checkpoint_every_steps = zconf.attr(type=int, default=0)
+    save_model_every_logscale = zconf.attr(action="store_true")
     no_improvements_for_n_evals = zconf.attr(type=int, default=0)
     keep_checkpoint_when_done = zconf.attr(action="store_true")
     force_overwrite = zconf.attr(action="store_true")
@@ -230,6 +231,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             eval_every_steps=args.eval_every_steps,
             save_every_steps=args.save_every_steps,
             save_checkpoint_every_steps=args.save_checkpoint_every_steps,
+            save_model_every_logscale=args.save_model_every_logscale,
             no_improvements_for_n_evals=args.no_improvements_for_n_evals,
             keep_checkpoint_when_done=args.keep_checkpoint_when_done,
             force_overwrite=args.force_overwrite,
