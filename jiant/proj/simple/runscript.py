@@ -35,6 +35,7 @@ class RunConfiguration(zconf.RunConfig):
 
     # === Misc parameters === #
     train_batch_size = zconf.attr(type=int, default=32)
+    gradient_accumulation_steps = zconf.attr(type=int, default=1)
     max_seq_length = zconf.attr(type=int, default=256)
     num_train_epochs = zconf.attr(type=float, default=3)
     train_examples_cap = zconf.attr(type=int, default=None)
@@ -177,6 +178,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         val_task_name_list=args.val_tasks,
         test_task_name_list=args.test_tasks,
         train_batch_size=args.train_batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         eval_batch_multiplier=2,
         epochs=args.num_train_epochs,
         num_gpus=torch.cuda.device_count(),
