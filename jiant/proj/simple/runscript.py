@@ -52,6 +52,7 @@ class RunConfiguration(zconf.RunConfig):
     save_checkpoint_every_steps = zconf.attr(type=int, default=0)
     save_model_every_logscale = zconf.attr(action="store_true")
     no_improvements_for_n_evals = zconf.attr(type=int, default=0)
+    delete_checkpoint_if_done = zconf.attr(action="store_true")
     keep_checkpoint_when_done = zconf.attr(action="store_true")
     force_overwrite = zconf.attr(action="store_true")
     seed = zconf.attr(type=int, default=-1)
@@ -87,9 +88,9 @@ class RunConfiguration(zconf.RunConfig):
             self.train_tasks = self.tasks
             self.val_tasks = self.tasks
             self.test_tasks = self.tasks
-        self.train_tasks = self.train_tasks.split(",")
-        self.val_tasks = self.val_tasks.split(",")
-        self.test_tasks = self.test_tasks.split(",")
+        self.train_tasks = self.train_tasks.split(",") if self.train_tasks else []
+        self.val_tasks = self.val_tasks.split(",") if self.val_tasks else []
+        self.test_tasks = self.test_tasks.split(",") if self.test_tasks else []
 
 
 def create_and_write_task_configs(task_name_list, data_dir, task_config_base_path):
