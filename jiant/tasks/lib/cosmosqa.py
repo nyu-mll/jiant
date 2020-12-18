@@ -61,7 +61,7 @@ class CosmosQATask(mc_template.AbstractMultipleChoiceTask):
                     guid="%s-%s" % (set_type, i),
                     prompt=row.context + " " + row.question,
                     choice_list=[row.answer0, row.answer1, row.answer2, row.answer3],
-                    label=row.label
+                    label=row.label if set_type != "test" else cls.CHOICE_KEYS[-1],
                 )
             )
         return examples
