@@ -53,7 +53,7 @@ class QuailTask(mc_template.AbstractMultipleChoiceTask):
             examples.append(
                 Example(
                     guid="%s-%s" % (set_type, i),
-                    prompt=line["context"],
+                    prompt=line["context"] + " " + line["question"],
                     choice_list=[d for d in line["answers"]],
                     label=line["label"] if set_type != "test" else cls.CHOICE_KEYS[-1],
                 )
