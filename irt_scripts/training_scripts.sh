@@ -53,7 +53,7 @@ declare -A TRAIN_SIZE=(
 BIG_TASKS=(adversarial_nli_r1 mnli mnli_mismatched squad_v2 record cosmosqa hellaswag abductive_nli arc_easy arc_challenge quoref newsqa mrqa_natural_questions mcscript mutual_plus mutual piqa quail)
 
 
-function run_all_configs() {
+function tune_hyperparameters() {
     MODEL_TYPE=$1
     TASK_NAME=$2
     echo "$OUTPUT_DIR"
