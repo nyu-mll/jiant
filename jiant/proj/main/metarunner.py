@@ -190,7 +190,8 @@ class JiantMetarunner(AbstractMetarunner):
         return False
 
     def done_training(self):
-        self.save_last_model_with_metadata()
+        if self.save_last_model:
+            self.save_last_model_with_metadata()
         self.eval_save()
         if self.load_best_model and self.best_state_dict is not None:
             if self.verbose:
