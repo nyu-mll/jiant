@@ -168,6 +168,12 @@ HF_DATASETS_CONVERSION_DICT = {
         "name": "all",
         "phase_list": ["train", "val", "test"],
         "jiant_task_name": "race",
+    },
+    "quail": {
+        "path": "quail",
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "quail",
+        "phase_map": {"validation": "val", "challenge": "test"},
     }
 }
 

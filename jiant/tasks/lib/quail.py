@@ -33,7 +33,7 @@ class QuailTask(mc_template.AbstractMultipleChoiceTask):
     DataRow = DataRow
     Batch = Batch
 
-    CHOICE_KEYS = ["0", "1", "2", "3"]
+    CHOICE_KEYS = [0, 1, 2, 3]
     CHOICE_TO_ID, ID_TO_CHOICE = labels_to_bimap(CHOICE_KEYS)
     NUM_CHOICES = len(CHOICE_KEYS)
 
@@ -54,8 +54,8 @@ class QuailTask(mc_template.AbstractMultipleChoiceTask):
                 Example(
                     guid="%s-%s" % (set_type, i),
                     prompt=line["context"] + " " + line["question"],
-                    choice_list=[d for d in line["answers"]],
-                    label=line["label"] if set_type != "test" else cls.CHOICE_KEYS[-1],
+                    choice_list=line["answers"],
+                    label=line["correct_answer_id"],
                 )
             )
         return examples

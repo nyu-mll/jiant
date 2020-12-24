@@ -35,5 +35,6 @@ OTHER_HF_DATASETS_TASKS = {
     "adversarial_nli_r3",
     "arc_easy",
     "arc_challenge",
-    "race"
+    "race",
+    "quail"
 }
