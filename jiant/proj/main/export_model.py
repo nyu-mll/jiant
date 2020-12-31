@@ -55,6 +55,7 @@ def export_model(
     os.makedirs(tokenizer_fol_path, exist_ok=True)
     os.makedirs(model_fol_path, exist_ok=True)
 
+    model_type = model_type.split("/")[-1]
     model_path = os.path.join(model_fol_path, f"{model_type}.p")
     model_config_path = os.path.join(model_fol_path, f"{model_type}.json")
     model = model_class.from_pretrained(hf_model_name)
@@ -84,6 +85,7 @@ def get_model_and_tokenizer_classes(
         "mbart": (transformers.BartForConditionalGeneration, transformers.MBartTokenizer),
         "electra": (transformers.ElectraForPreTraining, transformers.ElectraTokenizer),
     }
+    model_type = model_type.split("/")[-1]
     if model_type.split("-")[0] in class_lookup:
         return class_lookup[model_type.split("-")[0]]
     elif model_type.startswith("xlm-mlm-") or model_type.startswith("xlm-clm-"):

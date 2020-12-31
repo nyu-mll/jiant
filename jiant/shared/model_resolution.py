@@ -27,6 +27,7 @@ class ModelArchitectures(Enum):
             Model architecture associated with the provided shortcut name.
 
         """
+        model_type = model_type.split("/")[-1]
         if model_type.startswith("bert-"):
             return cls.BERT
         elif model_type.startswith("xlm-") and not model_type.startswith("xlm-roberta"):
