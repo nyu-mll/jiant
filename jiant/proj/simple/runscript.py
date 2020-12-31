@@ -207,7 +207,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         else:
             model_load_mode = "from_transformers"
         model_weights_path = os.path.join(
-            model_cache_path, args.model_type, "model", f"{args.model_type}.p"
+            model_cache_path, args.model_type, "model", f"{args.model_type.split('/')[-1]}.p"
         )
     run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
 
