@@ -1,5 +1,3 @@
-import glob
-import os
 import numpy as np
 
 from dataclasses import dataclass
@@ -11,7 +9,7 @@ from jiant.tasks.lib.templates.shared import (
 )
 from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.tasks.utils import truncate_sequences
-from jiant.utils.python.io import read_json
+from jiant.utils.python.io import read_jsonl
 
 
 @dataclass
@@ -109,28 +107,26 @@ class RaceTask(mc_template.AbstractMultipleChoiceTask):
     NUM_CHOICES = len(CHOICE_KEYS)
 
     def get_train_examples(self):
-        return self._create_examples(self.train_path, set_type="train")
+        return self._create_examples(lines=read_jsonl(self.train_path), set_type="train")
 
     def get_val_examples(self):
-        return self._create_examples(self.val_path, set_type="val")
+        return self._create_examples(lines=read_jsonl(self.val_path), set_type="val")
 
     def get_test_examples(self):
-        return self._create_examples(self.test_path, set_type="test")
+        return self._create_examples(lines=read_jsonl(self.test_path), set_type="test")
 
     @classmethod
-    def _create_examples(cls, path, set_type):
+    def _create_examples(cls, lines, set_type):
         examples = []
-        for i, path in enumerate(sorted(glob.glob(os.path.join(path, "*.txt")))):
-            raw_example = read_json(path)
-            for qn_i, question in enumerate(raw_example["questions"]):
-                examples.append(
-                    Example(
-                        guid="%s-%s" % (set_type, i),
-                        prompt=raw_example["article"] + " " + question,
-                        choice_list=raw_example["options"][qn_i],
-                        label=raw_example["answers"][qn_i]
-                        if set_type != "test"
-                        else cls.CHOICE_KEYS[-1],
-                    )
+        for (i, line) in enumerate(lines):
+            examples.append(
+                Example(
+                    guid="%s-%s" % (set_type, i),
+                    prompt=line["article"] + " " + line["question"],
+                    choice_list=line["options"],
+                    label=line["answer"]
+                    if set_type != "test"
+                    else cls.CHOICE_KEYS[-1],
                 )
+            )
         return examples
