@@ -139,7 +139,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             phases_to_do = []
             for phase, phase_task_list in phase_task_dict.items():
                 if task_name in phase_task_list and not os.path.exists(
-                    os.path.join(args.exp_dir, "cache", task_name, phase)
+                    os.path.join(args.exp_dir, "cache", args.model_type, task_name, phase)
                 ):
                     phases_to_do.append(phase)
             if not phases_to_do:
@@ -152,7 +152,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
                     model_tokenizer_path=os.path.join(
                         model_cache_path, args.model_type, "tokenizer"
                     ),
-                    output_dir=os.path.join(args.exp_dir, "cache", task_name),
+                    output_dir=os.path.join(args.exp_dir, "cache", args.model_type, task_name),
                     phases=phases_to_do,
                     # TODO: Need a strategy for task-specific max_seq_length issues (issue #1176)
                     max_seq_length=args.max_seq_length,
@@ -166,7 +166,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
     # number of moving parts.
     jiant_task_container_config = configurator.SimpleAPIMultiTaskConfigurator(
         task_config_base_path=os.path.join(args.data_dir, "configs"),
-        task_cache_base_path=os.path.join(args.exp_dir, "cache"),
+        task_cache_base_path=os.path.join(args.exp_dir, "cache", args.model_type),
         train_task_name_list=args.train_tasks,
         val_task_name_list=args.val_tasks,
         test_task_name_list=args.test_tasks,
