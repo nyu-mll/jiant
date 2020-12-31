@@ -124,9 +124,7 @@ class RaceTask(mc_template.AbstractMultipleChoiceTask):
                     guid="%s-%s" % (set_type, i),
                     prompt=line["article"] + " " + line["question"],
                     choice_list=line["options"],
-                    label=line["answer"]
-                    if set_type != "test"
-                    else cls.CHOICE_KEYS[-1],
+                    label=line["answer"] if set_type != "test" else cls.CHOICE_KEYS[-1],
                 )
             )
         return examples
