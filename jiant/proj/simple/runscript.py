@@ -229,7 +229,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             model_type=args.model_type,
             model_path=model_weights_path,
             model_config_path=os.path.join(
-                model_cache_path, args.model_type, "model", f"{args.model_type}.json"
+                model_cache_path, args.model_type, "model", f"{args.model_type.split('/')[-1]}.json"
             ),
             model_tokenizer_path=os.path.join(model_cache_path, args.model_type, "tokenizer"),
             model_load_mode=model_load_mode,
