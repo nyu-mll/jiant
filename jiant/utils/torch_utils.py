@@ -144,3 +144,24 @@ def get_model_for_saving(model: nn.Module) -> nn.Module:
         return model.module
     else:
         return model
+
+
+def eq_state_dicts(state_dict_1, state_dict_2):
+    """Checks if the model weights in state_dict_1 and state_dict_2 are equal.
+
+    Args:
+        state_dict_1 (dict): state_dict of a PyTorch model
+        state_dict_2 (dict): state_dict of a PyTorch model
+
+    Requires:
+        state_dict_1 and state_dict_2 to be from the same model
+
+    Returns:
+        bool: Returns True if all model weights are equal in state_dict_1 and state_dict_2
+    """
+    for key_item_1, key_item_2 in zip(state_dict_1.items(), state_dict_2.items()):
+        if torch.equal(key_item_1[1], key_item_2[1]):
+            pass
+        else:
+            return False
+    return True
