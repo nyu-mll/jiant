@@ -17,7 +17,9 @@ class Taskmodel(nn.Module, metaclass=abc.ABCMeta):
         super().__init__()
         self.encoder = encoder
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         raise NotImplementedError
 
 
@@ -26,11 +28,14 @@ class ClassificationModel(Taskmodel):
         super().__init__(encoder=encoder)
         self.classification_head = classification_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         logits = self.classification_head(pooled=encoder_output.pooled)
         if compute_loss:
-            loss_fct = nn.CrossEntropyLoss()
+            reduction = "none" if unreduced_loss else "mean"
+            loss_fct = nn.CrossEntropyLoss(reduction=reduction)
             loss = loss_fct(
                 logits.view(-1, self.classification_head.num_labels), batch.label_id.view(-1),
             )
@@ -44,12 +49,15 @@ class RegressionModel(Taskmodel):
         super().__init__(encoder=encoder)
         self.regression_head = regression_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         # TODO: Abuse of notation - these aren't really logits  (issue #1187)
         logits = self.regression_head(pooled=encoder_output.pooled)
         if compute_loss:
-            loss_fct = nn.MSELoss()
+            reduction = "none" if unreduced_loss else "mean"
+            loss_fct = nn.MSELoss(reduction=reduction)
             loss = loss_fct(logits.view(-1), batch.label.view(-1))
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -62,7 +70,9 @@ class MultipleChoiceModel(Taskmodel):
         self.num_choices = num_choices
         self.choice_scoring_head = choice_scoring_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         input_ids = batch.input_ids
         segment_ids = batch.segment_ids
         input_mask = batch.input_mask
@@ -96,7 +106,8 @@ class MultipleChoiceModel(Taskmodel):
         )
 
         if compute_loss:
-            loss_fct = nn.CrossEntropyLoss()
+            reduction = "none" if unreduced_loss else "mean"
+            loss_fct = nn.CrossEntropyLoss(reduction=reduction)
             loss = loss_fct(logits.view(-1, self.num_choices), batch.label_id.view(-1))
             return LogitsAndLossOutput(logits=logits, loss=loss, other=reshaped_outputs)
         else:
@@ -108,11 +119,14 @@ class SpanComparisonModel(Taskmodel):
         super().__init__(encoder=encoder)
         self.span_comparison_head = span_comparison_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         logits = self.span_comparison_head(unpooled=encoder_output.unpooled, spans=batch.spans)
         if compute_loss:
-            loss_fct = nn.CrossEntropyLoss()
+            reduction = "none" if unreduced_loss else "mean"
+            loss_fct = nn.CrossEntropyLoss(reduction=reduction)
             loss = loss_fct(
                 logits.view(-1, self.span_comparison_head.num_labels), batch.label_id.view(-1),
             )
@@ -130,14 +144,17 @@ class SpanPredictionModel(Taskmodel):
         # we can guarantee the output distribution will only be non-zero at those dimensions.
         self.span_prediction_head = span_prediction_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         logits = self.span_prediction_head(unpooled=encoder_output.unpooled)
         # Ensure logits in valid range is at least self.offset_margin higher than others
         logits_offset = logits.max() - logits.min() + self.offset_margin
         logits = logits + logits_offset * batch.selection_token_mask.unsqueeze(dim=2)
         if compute_loss:
-            loss_fct = nn.CrossEntropyLoss()
+            reduction = "none" if unreduced_loss else "mean"
+            loss_fct = nn.CrossEntropyLoss(reduction=reduction)
             loss = loss_fct(
                 logits.transpose(dim0=1, dim1=2).flatten(end_dim=1), batch.gt_span_idxs.flatten(),
             )
@@ -151,11 +168,14 @@ class MultiLabelSpanComparisonModel(Taskmodel):
         super().__init__(encoder=encoder)
         self.span_comparison_head = span_comparison_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         logits = self.span_comparison_head(unpooled=encoder_output.unpooled, spans=batch.spans)
         if compute_loss:
-            loss_fct = nn.BCEWithLogitsLoss()
+            reduction = "none" if unreduced_loss else "mean"
+            loss_fct = nn.BCEWithLogitsLoss(reduction=reduction)
             loss = loss_fct(
                 logits.view(-1, self.span_comparison_head.num_labels), batch.label_ids.float(),
             )
@@ -171,15 +191,32 @@ class TokenClassificationModel(Taskmodel):
         super().__init__(encoder=encoder)
         self.token_classification_head = token_classification_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         logits = self.token_classification_head(unpooled=encoder_output.unpooled)
         if compute_loss:
-            loss_fct = nn.CrossEntropyLoss()
-            active_loss = batch.label_mask.view(-1) == 1
-            active_logits = logits.view(-1, self.token_classification_head.num_labels)[active_loss]
-            active_labels = batch.label_ids.view(-1)[active_loss]
-            loss = loss_fct(active_logits, active_labels)
+            if unreduced_loss:
+                loss_fct = nn.CrossEntropyLoss(reduction="none")
+                batch.label_ids[~batch.label_mask] = -100
+                batch.label_ids[batch.label_ids == -1] = -100
+                loss = loss_fct(
+                    logits.view((-1, self.token_classification_head.num_labels)),
+                    batch.label_ids.view(-1),
+                )
+                loss = loss.view(len(batch), -1).sum(dim=-1)
+                counts = (batch.label_ids != -100).sum(dim=-1)
+                division = loss / counts
+                loss[counts != 0] = division[counts != 0]
+            else:
+                loss_fct = nn.CrossEntropyLoss()
+                active_loss = batch.label_mask.view(-1) == 1
+                active_logits = logits.view(-1, self.token_classification_head.num_labels)[
+                    active_loss
+                ]
+                active_labels = batch.label_ids.view(-1)[active_loss]
+                loss = loss_fct(active_logits, active_labels)
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
@@ -190,7 +227,9 @@ class QAModel(Taskmodel):
         super().__init__(encoder=encoder)
         self.qa_head = qa_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         logits = self.qa_head(unpooled=encoder_output.unpooled)
         if compute_loss:
@@ -198,6 +237,7 @@ class QAModel(Taskmodel):
                 logits=logits,
                 start_positions=batch.start_position,
                 end_positions=batch.end_position,
+                unreduced_loss=unreduced_loss,
             )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -209,7 +249,9 @@ class MLMModel(Taskmodel):
         super().__init__(encoder=encoder)
         self.mlm_head = mlm_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         masked_batch = batch.get_masked(
             mlm_probability=task.mlm_probability, tokenizer=tokenizer, do_mask=task.do_mask,
         )
@@ -221,6 +263,8 @@ class MLMModel(Taskmodel):
         )
         logits = self.mlm_head(unpooled=encoder_output.unpooled)
         if compute_loss:
+            if unreduced_loss:
+                raise NotImplementedError
             loss = compute_mlm_loss(logits=logits, masked_lm_labels=masked_batch.masked_lm_labels)
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -233,7 +277,9 @@ class EmbeddingModel(Taskmodel):
         self.pooler_head = pooler_head
         self.layer = layer
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(
+        self, batch, task, tokenizer, compute_loss: bool = False, unreduced_loss: bool = False
+    ):
         with transformer_utils.output_hidden_states_context(self.encoder):
             encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         # A tuple of layers of hidden states
@@ -249,6 +295,8 @@ class EmbeddingModel(Taskmodel):
 
         # TODO: Abuse of notation - these aren't really logits  (issue #1187)
         if compute_loss:
+            if unreduced_loss:
+                raise NotImplementedError
             # TODO: make this optional?   (issue #1187)
             return LogitsAndLossOutput(
                 logits=logits,
@@ -373,7 +421,7 @@ def compute_mlm_loss(logits, masked_lm_labels):
     return loss_fct(logits.view(-1, vocab_size), masked_lm_labels.view(-1))
 
 
-def compute_qa_loss(logits, start_positions, end_positions):
+def compute_qa_loss(logits, start_positions, end_positions, unreduced_loss: bool = False):
     # Do we want to keep them as 1 tensor, or multiple?
     # bs x 2 x seq_len x 1
 
@@ -389,7 +437,8 @@ def compute_qa_loss(logits, start_positions, end_positions):
     start_positions.clamp_(0, ignored_index)
     end_positions.clamp_(0, ignored_index)
 
-    loss_fct = nn.CrossEntropyLoss(ignore_index=ignored_index)
+    reduction = "none" if unreduced_loss else "mean"
+    loss_fct = nn.CrossEntropyLoss(ignore_index=ignored_index, reduction=reduction)
     start_loss = loss_fct(start_logits, start_positions)
     end_loss = loss_fct(end_logits, end_positions)
     total_loss = (start_loss + end_loss) / 2
