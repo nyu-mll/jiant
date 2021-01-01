@@ -50,6 +50,8 @@
 | EP-POS | pos | ✅ |  | pos | Edge-Probing |
 | QNLI | qnli | ✅ | ✅ | qnli | GLUE |
 | QQP | qqp | ✅ | ✅ | qqp | GLUE |
+| ROPES | ropes | ✅ | ✅ | ropes |  |
+| RACE | race | ✅ | ✅ | race | `race`, `race_middle`, `race_high` |
 | ReCord | record | ✅ | ✅ | record | SuperGLUE |
 | RTE | rte | ✅ | ✅ | rte | GLUE, SuperGLUE |
 | SciTail | scitail | ✅ | ✅ | scitail |  |
