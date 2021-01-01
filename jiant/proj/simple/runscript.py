@@ -48,7 +48,7 @@ class RunConfiguration(zconf.RunConfig):
     save_every_steps = zconf.attr(type=int, default=0)
     save_checkpoint_every_steps = zconf.attr(type=int, default=0)
     no_improvements_for_n_evals = zconf.attr(type=int, default=0)
-    delete_checkpoint_if_done = zconf.attr(action="store_true")
+    keep_checkpoint_when_done = zconf.attr(action="store_true")
     force_overwrite = zconf.attr(action="store_true")
     seed = zconf.attr(type=int, default=-1)
 
@@ -139,7 +139,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             phases_to_do = []
             for phase, phase_task_list in phase_task_dict.items():
                 if task_name in phase_task_list and not os.path.exists(
-                    os.path.join(args.exp_dir, "cache", task_name, phase)
+                    os.path.join(args.exp_dir, "cache", args.model_type, task_name, phase)
                 ):
                     phases_to_do.append(phase)
             if not phases_to_do:
@@ -152,7 +152,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
                     model_tokenizer_path=os.path.join(
                         model_cache_path, args.model_type, "tokenizer"
                     ),
-                    output_dir=os.path.join(args.exp_dir, "cache", task_name),
+                    output_dir=os.path.join(args.exp_dir, "cache", args.model_type, task_name),
                     phases=phases_to_do,
                     # TODO: Need a strategy for task-specific max_seq_length issues (issue #1176)
                     max_seq_length=args.max_seq_length,
@@ -166,7 +166,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
     # number of moving parts.
     jiant_task_container_config = configurator.SimpleAPIMultiTaskConfigurator(
         task_config_base_path=os.path.join(args.data_dir, "configs"),
-        task_cache_base_path=os.path.join(args.exp_dir, "cache"),
+        task_cache_base_path=os.path.join(args.exp_dir, "cache", args.model_type),
         train_task_name_list=args.train_tasks,
         val_task_name_list=args.val_tasks,
         test_task_name_list=args.test_tasks,
@@ -231,7 +231,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             save_every_steps=args.save_every_steps,
             save_checkpoint_every_steps=args.save_checkpoint_every_steps,
             no_improvements_for_n_evals=args.no_improvements_for_n_evals,
-            delete_checkpoint_if_done=args.delete_checkpoint_if_done,
+            keep_checkpoint_when_done=args.keep_checkpoint_when_done,
             force_overwrite=args.force_overwrite,
             seed=args.seed,
             # === Training Learning Parameters === #

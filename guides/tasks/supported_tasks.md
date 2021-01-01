@@ -50,6 +50,8 @@
 | EP-POS | pos | ✅ |  | pos | Edge-Probing |
 | QNLI | qnli | ✅ | ✅ | qnli | GLUE |
 | QQP | qqp | ✅ | ✅ | qqp | GLUE |
+| ROPES | ropes | ✅ | ✅ | ropes |  |
+| RACE | race | ✅ | ✅ | race | `race`, `race_middle`, `race_high` |
 | ReCord | record | ✅ | ✅ | record | SuperGLUE |
 | RTE | rte | ✅ | ✅ | rte | GLUE, SuperGLUE |
 | SciTail | scitail | ✅ | ✅ | scitail |  |
@@ -70,6 +72,7 @@
 | TyDiQA | `tydiqa_{lang}` | ✅ | ✅ | tydiqa | XTREME, multi-lang |
 | UDPOS | `udpos_{lang}` | ✅ | ✅ | udpos | XTREME, multi-lang |
 | WiC | wic | ✅ | ✅ | wic | SuperGLUE |
+| Winogrande | winogrande | ✅ | ✅ | winogrande | |
 | WNLI | wnli | ✅ | ✅ | wnli | GLUE |
 | WSC | wsc | ✅ | ✅ | wsc | SuperGLUE |
 | XNLI | `xnli_{lang}` | ✅ | ✅ | xnli | XTREME, multi-lang |

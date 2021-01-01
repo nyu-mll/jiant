@@ -13,7 +13,7 @@ This document provides an in-depth introduction to `jiant`. If you intend to use
 
 ## `jiant`'s models
 
-`jiant` is designed from the ground up to support multi-task training. As such, most models consist of an **encoder** e.g. BERT, and task-specific heads, such as 3-class classifiation for MNLI, span-prediction for SQuAD, and so on. The original pretraining head for the encoder (e.g. BERT's MLM head) is also often available.
+`jiant` is designed from the ground up to support multi-task training. As such, most models consist of an **encoder** e.g. BERT, and task-specific heads, such as 3-class classification for MNLI, span-prediction for SQuAD, and so on. The original pretraining head for the encoder (e.g. BERT's MLM head) is also often available.
 
 During training, the main model you will interact with is a `JiantModel` (see: [Source](../../jiant/proj/main/modeling/primary.py)). The `JiantModel`'s `.forward()` method takes as input a batch object and the task - the task tells the model which head to use.
 
@@ -45,7 +45,7 @@ The task preprocessing pipeline is define in the task object. For instance, let'
 
 1. Raw data → `Example`: The Task object defines how to read in examples from a raw text-based format (often `.jsonl`), and returns a list or iterable of `Example`. `Example`s contain the information we need to ultimately form batches.
 2. `Example` → `TokenizedExample`: The `Example` class defines how to go from `Example`s to `TokenizedExample`s. This handles the tokenization of inputs, as well as any tokenization-related processing (e.g. mapping of span indices).
-3. `TokenizedExample` → `DataRow`: The `TokenizedExample` class defines how to go from `TokenizedExample`s to `DataRow`s. `DataRow` contain the arrays (e.g. input IDs, input masks) that will ultimately be used to form the batches to be consumed by the `Taskmodel`'s forward method. This is where we handle all the input formatting, such as adding special tokens like `[ClS]` or `<s>`, padding, and concatenating inputs (e.g. concatenating premise and hypothesis, for MNLI). 
+3. `TokenizedExample` → `DataRow`: The `TokenizedExample` class defines how to go from `TokenizedExample`s to `DataRow`s. `DataRow` contain the arrays (e.g. input IDs, input masks) that will ultimately be used to form the batches to be consumed by the `Taskmodel`'s forward method. This is where we handle all the input formatting, such as adding special tokens like `[CLS]` or `<s>`, padding, and concatenating inputs (e.g. concatenating premise and hypothesis, for MNLI). 
 4. `DataRow` -> `Batch`: The conversion of `DataRow`s (which consist of NumPy Arrays) to `Batch`es (which consist of PyTorch Tensors) actually happens during the data loading stage. For those more familiar with PyTorch, we handle this via a custom `collate_fn` in `Task.collate_fn` (see: [Source](../../jiant/tasks/core.py)).
 
 Hence, when implementing a task, steps 1-3 need to be implemented, as well as class definition for each of the mentioned data structures: `Task`, `Example`, `TokenizedExample`, `DataRow` and `Batch`. See [Adding Tasks](../tasks/adding_tasks.md) for more details. Steps 1-3 happen in our "Tokenize & Cache" phase, while step 4 happens only during training.
