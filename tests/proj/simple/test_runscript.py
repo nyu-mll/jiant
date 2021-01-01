@@ -49,7 +49,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         model_type=model_type,
         tasks=task_name,
-        train_examples_cap=128,
+        max_steps=1,
         train_batch_size=32,
         do_save=True,
         eval_every_steps=10,
@@ -80,7 +80,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         model_type=model_type,
         tasks=task_name,
-        train_examples_cap=16,
+        max_steps=1,
         train_batch_size=16,
         do_save_best=True,
     )
@@ -100,7 +100,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         model_type=model_type,
         tasks=task_name,
-        train_examples_cap=16,
+        max_steps=1,
         train_batch_size=16,
         do_save_last=True,
     )
