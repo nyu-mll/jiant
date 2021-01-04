@@ -29,6 +29,10 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_abductive_nli_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "arct":
+        download_arct_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     elif task_name == "fever_nli":
         download_fever_nli_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
@@ -47,6 +51,10 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         )
     elif task_name == "newsqa":
         download_newsqa_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
+    elif task_name == "mctaco":
+        download_mctaco_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
     elif task_name == "mrqa_natural_questions":
@@ -163,6 +171,63 @@ def download_abductive_nli_data_and_write_config(
                 "train_labels": os.path.join(task_data_path, "train-labels.lst"),
                 "val_inputs": os.path.join(task_data_path, "dev.jsonl"),
                 "val_labels": os.path.join(task_data_path, "dev-labels.lst"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_arct_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
+    os.makedirs(task_data_path, exist_ok=True)
+    file_name_list = [
+        "train-doubled.tsv",
+        "train-w-swap-doubled.tsv",
+        "train-w-swap.tsv",
+        "train.tsv",
+        "dev.tsv",
+        "test.tsv",
+    ]
+    for file_name in file_name_list:
+        print(file_name)
+        download_utils.download_file(
+            f"https://raw.githubusercontent.com/UKPLab/argument-reasoning-comprehension-task/master/experiments/src/main/python/data/{file_name}",
+            os.path.join(task_data_path, file_name),
+        )
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "train.tsv"),
+                "val": os.path.join(task_data_path, "val.tsv"),
+                "test": os.path.join(task_data_path, "test.tsv"),
+                "train_doubled": os.path.join(task_data_path, "train-doubled.tsv"),
+                "train_w_swap": os.path.join(task_data_path, "train-w-swap.tsv"),
+                "train_w_swap_doubled": os.path.join(task_data_path, "train-w-swap-doubled.tsv"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_mctaco_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    file_name_list = ["dev_3783.tsv", "test_9442.tsv"]
+    for file_name in file_name_list:
+        print(file_name)
+        download_utils.download_file(
+            f"https://raw.githubusercontent.com/CogComp/MCTACO/master/dataset/{file_name}",
+            os.path.join(task_data_path, file_name),
+        )
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "val": os.path.join(task_data_path, "dev_3783.tsv"),
+                "test": os.path.join(task_data_path, "test_9442.tsv"),
             },
             "name": task_name,
         },

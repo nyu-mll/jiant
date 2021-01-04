@@ -9,11 +9,13 @@ DIRECT_SUPERGLUE_TASKS_TO_DATA_URLS = {
 
 OTHER_DOWNLOAD_TASKS = {
     "abductive_nli",
+    "arct",
     "fever_nli",
     "swag",
     "qamr",
     "qasrl",
     "newsqa",
+    "mctaco",
     "mrqa_natural_questions",
     "piqa",
     "winogrande",
