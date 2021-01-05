@@ -28,7 +28,7 @@
 | HellaSwag | hellaswag | ✅ | ✅ | hellaswag |  |
 | [MCScript2.0](https://arxiv.org/pdf/1905.09531.pdf) | mcscript | ✅ |  | mcscript | [data](https://my.hidrive.com/share/wdnind8pp5#$/) |
 | MCTACO | mctaco | ✅ | ✅ | mctaco |  |
-| MCTest | mctest160 or mctest500 | ✅ | ✅ | mctest | [data](https://mattr1.github.io/mctest/data.html) |
+| MCTest | mctest160 or mctest500 | ✅ | ✅ | mctest160 or mctest600 | [data](https://mattr1.github.io/mctest/data.html) |
 | MLM | * | ✅ | * | mlm_simple | See task-specific notes. |
 | MLQA | `mlqa_{lang1}_{lang2}` | ✅ | ✅ | mlqa | XTREME, multi-lang |
 | MNLI | mnli | ✅ | ✅ | mnli | GLUE, MNLI-matched |
