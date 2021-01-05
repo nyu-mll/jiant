@@ -116,7 +116,7 @@ class JiantMetarunner(AbstractMetarunner):
             yield
 
     def should_save_model(self) -> bool:
-        if self.save_every_steps == 0 or not self.save_model_every_logscale:
+        if self.save_every_steps == 0 and not self.save_model_every_logscale:
             return False
 
         if self.save_model_every_logscale:
