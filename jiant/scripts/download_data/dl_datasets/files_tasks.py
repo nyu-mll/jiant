@@ -206,7 +206,8 @@ def download_arct_data_and_write_config(task_name: str, task_data_path: str, tas
     ]
     for file_name in file_name_list:
         download_utils.download_file(
-            f"https://raw.githubusercontent.com/UKPLab/argument-reasoning-comprehension-task/master/experiments/src/main/python/data/{file_name}",
+            f"https://raw.githubusercontent.com/UKPLab/argument-reasoning-comprehension-task/"
+            + f"master/experiments/src/main/python/data/{file_name}",
             os.path.join(task_data_path, file_name),
         )
     py_io.write_json(
@@ -344,12 +345,12 @@ def download_mutual_data_and_write_config(
     os.makedirs(task_data_path + "/test", exist_ok=True)
     num_files = {"train": 7088, "dev": 886, "test": 886}
     for phase in num_files:
-        file_name_list = []
         examples = []
         for i in range(num_files[phase]):
             file_name = phase + "_" + str(i + 1) + ".txt"
             download_utils.download_file(
-                f"https://raw.githubusercontent.com/Nealcly/MuTual/master/data/mutual/{phase}/{file_name}",
+                f"https://raw.githubusercontent.com/Nealcly/MuTual/"
+                + f"master/data/mutual/{phase}/{file_name}",
                 os.path.join(task_data_path, phase, file_name),
             )
             for line in py_io.read_file_lines(os.path.join(task_data_path, phase, file_name)):
@@ -380,12 +381,12 @@ def download_mutual_plus_data_and_write_config(
     os.makedirs(task_data_path + "/test", exist_ok=True)
     num_files = {"train": 7088, "dev": 886, "test": 886}
     for phase in num_files:
-        file_name_list = []
         examples = []
         for i in range(num_files[phase]):
             file_name = phase + "_" + str(i + 1) + ".txt"
             download_utils.download_file(
-                f"https://raw.githubusercontent.com/Nealcly/MuTual/master/data/mutual_plus/{phase}/{file_name}",
+                f"https://raw.githubusercontent.com/Nealcly/MuTual/"
+                + f"master/data/mutual_plus/{phase}/{file_name}",
                 os.path.join(task_data_path, phase, file_name),
             )
             for line in py_io.read_file_lines(os.path.join(task_data_path, phase, file_name)):
