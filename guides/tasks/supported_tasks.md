@@ -4,9 +4,9 @@
 
 | Name | `task_name` | `jiant` | Downloader | `jiant_task_name` | Misc |
 |---|---|:---:|:---:|---|---|
-| MCTACO | mctaco | ✅ |  | mctaco |  |
+| MCTACO | mctaco | ✅ | ✅ | mctaco |  |
 | MCTest | mctest160 or mctest500 | ✅ |  | mctest |  |
-| [Argument Reasoning Comprehension](https://arxiv.org/abs/1708.01425) | arct | ✅ |  | arct | [Github](https://github.com/UKPLab/argument-reasoning-comprehension-task) |
+| [Argument Reasoning Comprehension](https://arxiv.org/abs/1708.01425) | arct | ✅ | ✅ | arct | [Github](https://github.com/UKPLab/argument-reasoning-comprehension-task) |
 | Abductive NLI | abductive_nli | ✅ | ✅ | abductive_nli |  |
 | SuperGLUE Winogender Diagnostic | superglue_axg | ✅ | ✅ | superglue_axg | SuperGLUE |
 | Acceptability Definiteness | acceptability_definiteness | ✅ |  | acceptability_definiteness | Function Words |
@@ -35,14 +35,14 @@
 | MNLI-mismatched | mnli_mismatched | ✅ | ✅ | mnli_mismatched | GLUE |
 | MRPC | mrpc | ✅ | ✅ | mrpc | GLUE |
 | MultiRC | multirc | ✅ | ✅ | multirc | SuperGLUE |
-| Mutual (standard version) | mutual | ✅ |  | mutual | [site](https://github.com/Nealcly/MuTual) |
-| Mutual ("challenge" version) | mutual_plus | ✅ |  | mutual_plus | [site](https://github.com/Nealcly/MuTual) |
+| Mutual (standard version) | mutual | ✅ | ✅ | mutual | [site](https://github.com/Nealcly/MuTual) |
+| Mutual ("challenge" version) | mutual_plus | ✅ | ✅ | mutual_plus | [site](https://github.com/Nealcly/MuTual) |
 | Natural Questions | mrqa_natural_questions | ✅ | ✅ | mrqa_natural_questions | [MRQA](https://mrqa.github.io/) version of task |
 | NewsQA | newsqa | ✅ | ✅ | newsqa |  |
 | PIQA | piqa | ✅ | ✅ | piqa | [PIQA](https://yonatanbisk.com/piqa/) |
 | QAMR | qamr | ✅ | ✅ | qamr |  |
 | QA-SRL | qasrl | ✅ | ✅ | qasrl |  |
-| Quail | quail | ✅ | | quail | [site](http://text-machine.cs.uml.edu/lab2/projects/quail/) |
+| QuAIL | quail | ✅ | ✅ | quail | [site](http://text-machine.cs.uml.edu/lab2/projects/quail/) |
 | Quoref | quoref | ✅ | ✅ | quoref |  |
 | EP-NER | ner | ✅ |  | ner | Edge-Probing |
 | PAWS-X | `pawsx_{lang}` | ✅ | ✅ | pawsx | XTREME, multi-lang |
