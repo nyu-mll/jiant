@@ -322,6 +322,7 @@ def create_jiant_task_container_from_args(args) -> JiantTaskContainer:
             "cola": 16,
             "boolq": 16,
             "wic": 16,
+            "mrpc": 16,
         }
     }
     max_steps = 0

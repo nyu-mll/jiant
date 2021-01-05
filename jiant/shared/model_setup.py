@@ -527,7 +527,7 @@ def create_optimizer_from_params(
     else:
         raise KeyError(scheduler_type)
 
-    if args.runner_type in ["default", "distill"]:
+    if args.runner_type in ["default", "distill", "adapterfusion"]:
         optimizer_scheduler = OptimizerScheduler(optimizer=optimizer, scheduler=scheduler)
     elif args.runner_type in ["multidds", "dds", "grad_sim"]:
         optimizer_scheduler = OptimizerSchedulerWithGradOps(

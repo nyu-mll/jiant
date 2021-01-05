@@ -13,6 +13,9 @@ import jiant.shared.model_setup as model_setup
 import jiant.utils.python.io as py_io
 import jiant.utils.zconf as zconf
 
+import jiant.proj.adapterfusion.model_setup as adapterfusion_model_setup
+import jiant.proj.adapterfusion.runner as adapterfusion_runner
+
 
 @zconf.run_config
 class RunConfiguration(zconf.RunConfig):
@@ -42,7 +45,7 @@ class RunConfiguration(zconf.RunConfig):
 
     # === Model parameters === #
     model_type = zconf.attr(type=str, required=True)
-    model_path = zconf.attr(type=str, required=True)
+    model_path = zconf.attr(type=str, default=None)
     model_config_path = zconf.attr(default=None, type=str)
     model_tokenizer_path = zconf.attr(default=None, type=str)
     model_load_mode = zconf.attr(default="from_transformers", type=str)
@@ -115,6 +118,10 @@ class RunConfiguration(zconf.RunConfig):
     dds_square_rewards = zconf.attr(action="store_true")
     dds_aprx_eps = zconf.attr(default=1e-4, type=float)
 
+    adapter_tuning_mode = zconf.attr(default="single", type=str)  # (single|fusion)
+    adapter_config = zconf.attr(default="pfeiffer", type=str)
+    adapter_path_list = zconf.attr(default=None, type=str)  # required for fusion
+
 
 @zconf.run_config
 class ResumeConfiguration(zconf.RunConfig):
@@ -142,20 +149,36 @@ def setup_runner(
     # TODO document why the distributed.only_first_process() context manager is being used here.
     with distributed.only_first_process(local_rank=args.local_rank):
         # load the model
-        jiant_model = jiant_model_setup.setup_jiant_model(
-            model_type=args.model_type,
-            model_config_path=args.model_config_path,
-            tokenizer_path=args.model_tokenizer_path,
-            task_dict=jiant_task_container.task_dict,
-            taskmodels_config=jiant_task_container.taskmodels_config,
-            args=args,
-        )
-        jiant_model_setup.delegate_load_from_path(
-            jiant_model=jiant_model, weights_path=args.model_path, load_mode=args.model_load_mode
-        )
+        if args.runner_type == "adapterfusion":
+            # Note: AdapterFusion will not load the encoder from regular model weights
+            #       but directly via .from_pretrained
+            jiant_model = adapterfusion_model_setup.setup_adapterfusion_jiant_model(
+                args=args,
+                model_type=args.model_type,
+                raw_adapter_config=args.adapter_config,
+                adapter_tuning_mode=args.adapter_tuning_mode,
+                adapter_path_list=args.adapter_path_list,
+                tokenizer_path=args.model_tokenizer_path,
+                task_dict=jiant_task_container.task_dict,
+                taskmodels_config=jiant_task_container.taskmodels_config,
+            )
+        elif args.runner_type in ("default", "reptile", "multidds", "dds", "gradsim", "distill", "l2tww"):
+            jiant_model = jiant_model_setup.setup_jiant_model(
+                model_type=args.model_type,
+                model_config_path=args.model_config_path,
+                tokenizer_path=args.model_tokenizer_path,
+                task_dict=jiant_task_container.task_dict,
+                taskmodels_config=jiant_task_container.taskmodels_config,
+                args=args,
+            )
+            jiant_model_setup.delegate_load_from_path(
+                jiant_model=jiant_model, weights_path=args.model_path, load_mode=args.model_load_mode
+            )
 
-        if hasattr(jiant_model, "dds_model"):
-            jiant_model.dds_model.encoder.load_state_dict(jiant_model.encoder.state_dict())
+            if hasattr(jiant_model, "dds_model"):
+                jiant_model.dds_model.encoder.load_state_dict(jiant_model.encoder.state_dict())
+        else:
+            raise KeyError(args.runner_type)
 
         jiant_model.to(quick_init_out.device)
 
@@ -243,10 +266,21 @@ def setup_runner(
             smoothing=args.grad_sim_smoothing,
             target_task=args.target_task,
         )
+    elif args.runner_type == "adapterfusion":
+        runner = adapterfusion_runner.AdapterFusionRunner(
+            jiant_task_container=jiant_task_container,
+            jiant_model=jiant_model,
+            optimizer_scheduler=optimizer_scheduler,
+            device=quick_init_out.device,
+            rparams=rparams,
+            log_writer=quick_init_out.log_writer,
+        )
     elif args.runner_type == "distill":
         raise NotImplementedError
     elif args.runner_type == "l2tww":
         raise NotImplementedError
+    else:
+        raise KeyError(args.runner_type)
     return runner
 
 
@@ -272,6 +306,7 @@ def run_loop(args: RunConfiguration, checkpoint=None):
         )
         if args.do_train:
             metarunner = jiant_metarunner.JiantMetarunner(
+                runner_type=args.runner_type,
                 runner=runner,
                 save_every_steps=args.save_every_steps,
                 eval_every_steps=args.eval_every_steps,
@@ -284,6 +319,7 @@ def run_loop(args: RunConfiguration, checkpoint=None):
                 save_last_model=args.do_save or args.do_save_last,
                 load_best_model=True,
                 log_writer=quick_init_out.log_writer,
+                adapter_tuning_mode=args.adapter_tuning_mode,
             )
             if is_resumed:
                 metarunner.load_state(checkpoint["metarunner_state"])

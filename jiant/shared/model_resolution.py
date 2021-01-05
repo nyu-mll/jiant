@@ -1,9 +1,13 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import List, Type, Tuple
 
 import transformers
 
 from jiant.tasks.core import FeaturizationSpec
+
+
+FROM_ENCODER_ADDITIONAL_REGISTRY: List[Tuple[Type, "ModelArchitectures"]] = []
 
 
 class ModelArchitectures(Enum):
@@ -49,31 +53,6 @@ class ModelArchitectures(Enum):
             raise KeyError(model_type)
 
     @classmethod
-    def from_transformers_model(cls, transformers_model):
-        if isinstance(
-            transformers_model, transformers.BertPreTrainedModel
-        ) and transformers_model.__class__.__name__.startswith("Bert"):
-            return cls.BERT
-        elif isinstance(transformers_model, transformers.XLMPreTrainedModel):
-            return cls.XLM
-        elif isinstance(
-            transformers_model, transformers.BertPreTrainedModel
-        ) and transformers_model.__class__.__name__.startswith("Robert"):
-            return cls.ROBERTA
-        elif isinstance(
-            transformers_model, transformers.BertPreTrainedModel
-        ) and transformers_model.__class__.__name__.startswith("XLMRoberta"):
-            return cls.XLM_ROBERTA
-        elif isinstance(transformers_model, transformers.modeling_albert.AlbertPreTrainedModel):
-            return cls.ALBERT
-        elif isinstance(transformers_model, transformers.modeling_bart.PretrainedBartModel):
-            return bart_or_mbart_model_heuristic(model_config=transformers_model.config)
-        elif isinstance(transformers_model, transformers.modeling_electra.ElectraPreTrainedModel):
-            return cls.ELECTRA
-        else:
-            raise KeyError(str(transformers_model))
-
-    @classmethod
     def from_tokenizer_class(cls, tokenizer_class):
         if isinstance(tokenizer_class, transformers.BertTokenizer):
             return cls.BERT
@@ -109,6 +88,9 @@ class ModelArchitectures(Enum):
 
     @classmethod
     def from_encoder(cls, encoder):
+        for encoder_class_obj, model_arch in FROM_ENCODER_ADDITIONAL_REGISTRY:
+            if isinstance(encoder, encoder_class_obj):
+                return model_arch
         if (
             isinstance(encoder, transformers.BertModel)
             and encoder.__class__.__name__ == "BertModel"
@@ -145,6 +127,10 @@ class ModelArchitectures(Enum):
             return cls.ELECTRA
         else:
             raise KeyError(type(encoder))
+
+
+def register_from_encoder(encoder_class_obj: Type, model_arch: ModelArchitectures):
+    FROM_ENCODER_ADDITIONAL_REGISTRY.append((encoder_class_obj, model_arch))
 
 
 @dataclass

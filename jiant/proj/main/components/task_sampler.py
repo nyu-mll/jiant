@@ -263,10 +263,10 @@ def create_task_sampler(
 
     """
     sampler_type = sampler_config["sampler_type"]
-    if sampler_type == "UniformMultiTaskSampler":
+    if sampler_type == "UniformMultiTaskSampler" or sampler_type == "uniform_sampler":
         assert len(sampler_config) == 1
         return UniformMultiTaskSampler(task_dict=task_dict, rng=rng)
-    elif sampler_type == "ProportionalMultiTaskSampler":
+    elif sampler_type == "ProportionalMultiTaskSampler" or sampler_type == "proportional_sampler":
         assert len(sampler_config) == 1
         return ProportionalMultiTaskSampler(
             task_dict=task_dict, rng=rng, task_to_num_examples_dict=task_to_num_examples_dict,

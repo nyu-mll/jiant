@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 import torch.nn as nn
 
 
@@ -14,6 +14,7 @@ from jiant.utils.python.functional import always_false
 from jiant.utils.torch_utils import copy_state_dict, CPU_DEVICE, get_model_for_saving
 from jiant.utils.zlog import BaseZLogger, PRINT_LOGGER
 from jiant.shared.metarunner import AbstractMetarunner
+import jiant.proj.adapterfusion.runner as adapterfusion_runner
 
 
 @dataclass
@@ -56,6 +57,7 @@ def get_should_early_stop_func(eval_every_steps: int, no_improvements_for_n_eval
 class JiantMetarunner(AbstractMetarunner):
     def __init__(
         self,
+        runner_type,
         runner: jiant_runner.JiantRunner,
         save_every_steps,
         eval_every_steps,
@@ -68,7 +70,9 @@ class JiantMetarunner(AbstractMetarunner):
         load_best_model: bool = True,
         save_last_model: bool = True,
         log_writer: BaseZLogger = PRINT_LOGGER,
+        adapter_tuning_mode: Optional[str] = None,
     ):
+        self.runner_type = runner_type
         self.runner = runner
         self.save_every_steps = save_every_steps
         self.eval_every_steps = eval_every_steps
@@ -94,6 +98,8 @@ class JiantMetarunner(AbstractMetarunner):
         self.device = self.runner.device
         self.global_train_config = self.runner.jiant_task_container.global_train_config
 
+        self.adapter_tuning_mode = adapter_tuning_mode
+
     def begin_training(self):
         assert not self.single_use_check
         self.single_use_check = True
@@ -117,30 +123,65 @@ class JiantMetarunner(AbstractMetarunner):
         return (self.train_state.global_steps + 1) % self.save_every_steps == 0
 
     def save_model(self):
-        save_model_with_metadata(
-            model_or_state_dict=self.model,
-            output_dir=self.output_dir,
-            file_name=f"model__{self.train_state.global_steps:09d}",
-        )
+        file_name = f"model__{self.train_state.global_steps:09d}"
+        if self.runner_type == "adapterfusion":
+            adapterfusion_runner.save_model_with_metadata(
+                model=self.model,
+                adapter_tuning_mode=self.adapter_tuning_mode,
+                output_dir=self.output_dir,
+                file_name=file_name,
+            )
+        else:
+            save_model_with_metadata(
+                model_or_state_dict=self.model,
+                output_dir=self.output_dir,
+                file_name=file_name,
+            )
 
     def save_last_model_with_metadata(self):
-        save_model_with_metadata(
-            model_or_state_dict=self.model,
-            output_dir=self.output_dir,
-            file_name="last_model",
-            metadata={"train_state": self.train_state.to_dict()},
-        )
+        metadata = {"train_state": self.train_state.to_dict()}
+        file_name = "last_model"
+        if self.runner_type == "adapterfusion":
+            adapterfusion_runner.save_model_with_metadata(
+                model=self.model,
+                adapter_tuning_mode=self.adapter_tuning_mode,
+                output_dir=self.output_dir,
+                file_name=file_name,
+                metadata=metadata,
+            )
+        else:
+            save_model_with_metadata(
+                model_or_state_dict=self.model,
+                output_dir=self.output_dir,
+                file_name=file_name,
+                metadata=metadata,
+            )
 
     def save_best_model_with_metadata(self, val_metrics_dict):
-        save_model_with_metadata(
-            model_or_state_dict=self.best_state_dict,
-            output_dir=self.output_dir,
-            file_name="best_model",
-            metadata={
-                "val_state": self.best_val_state.to_dict(),
-                "val_metrics": self.best_val_state.metrics,
-            },
-        )
+        file_name = "best_model"
+        metadata = {
+            "val_state": self.best_val_state.to_dict(),
+            "val_metrics": self.best_val_state.metrics,
+        }
+        if self.runner_type == "adapterfusion":
+            # Adapterfusion requires saving from the model object
+            # The running assumption here is that save_best_model_with_metadata is only called
+            #   when self.model is the best_model
+            adapterfusion_runner.save_model_with_metadata(
+                model=self.model,
+                adapter_tuning_mode=self.adapter_tuning_mode,
+                output_dir=self.output_dir,
+                file_name=file_name,
+                metadata=metadata,
+            )
+        else:
+            save_model_with_metadata(
+                model_or_state_dict=self.best_state_dict,
+                output_dir=self.output_dir,
+                file_name=file_name,
+                metadata=metadata,
+            )
+
 
     def should_save_checkpoint(self) -> bool:
         if self.save_checkpoint_every_steps == 0:
