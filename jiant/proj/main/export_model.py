@@ -1,7 +1,7 @@
 import os
 
 import torch
-from transformers import AutoModelForPreTraining, AutoTokenizer, AutoConfig
+from transformers import AutoModelForPreTraining, AutoTokenizer
 
 import jiant.utils.python.io as py_io
 import jiant.utils.zconf as zconf
@@ -23,10 +23,11 @@ def export_model(
     - Tokenizer data
     - JSON file pointing to paths for the above
     Args:
-        pretrained_model_name (:obj:`str`): A string, the `model id` of a pretrained model hosted inside a model repo on huggingface.co.
-                      Valid model ids can be located at the root-level, like ``bert-base-uncased``, or namespaced under
-                      a user or organization name, like ``dbmdz/bert-base-german-cased``.
-
+        pretrained_model_name (:obj:`str`): A string, the `model id` of a pretrained model hosted
+                                            inside a model repo on huggingface.co. Valid model
+                                            ids can be located at the root-level, like
+                                            ``bert-base-uncased``, or namespaced under a user or
+                                            organization name, like ``dbmdz/bert-base-german-cased``
         output_base_path: Base path to save output to
         model_class: Model class
         tokenizer_class: Tokenizer class
