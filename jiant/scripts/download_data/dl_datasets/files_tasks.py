@@ -61,6 +61,14 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_mrqa_natural_questions_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "mutual":
+        download_mutual_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
+    elif task_name == "mutual_plus":
+        download_mutual_plus_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     elif task_name == "piqa":
         download_piqa_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
@@ -189,7 +197,6 @@ def download_arct_data_and_write_config(task_name: str, task_data_path: str, tas
         "test.tsv",
     ]
     for file_name in file_name_list:
-        print(file_name)
         download_utils.download_file(
             f"https://raw.githubusercontent.com/UKPLab/argument-reasoning-comprehension-task/master/experiments/src/main/python/data/{file_name}",
             os.path.join(task_data_path, file_name),
@@ -217,7 +224,6 @@ def download_mctaco_data_and_write_config(
     os.makedirs(task_data_path, exist_ok=True)
     file_name_list = ["dev_3783.tsv", "test_9442.tsv"]
     for file_name in file_name_list:
-        print(file_name)
         download_utils.download_file(
             f"https://raw.githubusercontent.com/CogComp/MCTACO/master/dataset/{file_name}",
             os.path.join(task_data_path, file_name),
@@ -228,6 +234,78 @@ def download_mctaco_data_and_write_config(
             "paths": {
                 "val": os.path.join(task_data_path, "dev_3783.tsv"),
                 "test": os.path.join(task_data_path, "test_9442.tsv"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_mutual_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    os.makedirs(task_data_path + "/train", exist_ok=True)
+    os.makedirs(task_data_path + "/dev", exist_ok=True)
+    os.makedirs(task_data_path + "/test", exist_ok=True)
+    num_files = {"train": 7088, "dev": 886, "test": 886}
+    for phase in num_files:
+        file_name_list = []
+        examples = []
+        for i in range(num_files[phase]):
+            file_name = phase + "_" + str(i+1) + ".txt"
+            download_utils.download_file(
+                f"https://raw.githubusercontent.com/Nealcly/MuTual/master/data/mutual/{phase}/{file_name}",
+                os.path.join(task_data_path, phase, file_name),
+            )
+            for line in py_io.read_file_lines(os.path.join(task_data_path, phase, file_name)):
+                examples.append(line)
+        py_io.write_jsonl(examples, os.path.join(task_data_path, phase + ".jsonl"))
+        shutil.rmtree(os.path.join(task_data_path, phase))
+
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "train.jsonl"),
+                "val": os.path.join(task_data_path, "dev.jsonl"),
+                "test": os.path.join(task_data_path, "test.jsonl"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_mutual_plus_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    os.makedirs(task_data_path + "/train", exist_ok=True)
+    os.makedirs(task_data_path + "/dev", exist_ok=True)
+    os.makedirs(task_data_path + "/test", exist_ok=True)
+    num_files = {"train": 7088, "dev": 886, "test": 886}
+    for phase in num_files:
+        file_name_list = []
+        examples = []
+        for i in range(num_files[phase]):
+            file_name = phase + "_" + str(i+1) + ".txt"
+            download_utils.download_file(
+                f"https://raw.githubusercontent.com/Nealcly/MuTual/master/data/mutual_plus/{phase}/{file_name}",
+                os.path.join(task_data_path, phase, file_name),
+            )
+            for line in py_io.read_file_lines(os.path.join(task_data_path, phase, file_name)):
+                examples.append(line)
+        py_io.write_jsonl(examples, os.path.join(task_data_path, phase + ".jsonl"))
+        shutil.rmtree(os.path.join(task_data_path, phase))
+
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "train.jsonl"),
+                "val": os.path.join(task_data_path, "dev.jsonl"),
+                "test": os.path.join(task_data_path, "test.jsonl"),
             },
             "name": task_name,
         },

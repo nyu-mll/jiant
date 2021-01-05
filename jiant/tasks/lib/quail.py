@@ -54,8 +54,8 @@ class QuailTask(mc_template.AbstractMultipleChoiceTask):
                 Example(
                     guid="%s-%s" % (set_type, i),
                     prompt=line["context"] + " " + line["question"],
-                    choice_list=[d for d in line["answers"]],
-                    label=line["label"],
+                    choice_list=["answers"],
+                    label=line["correct_answer_id"],
                 )
             )
         return examples

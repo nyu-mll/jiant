@@ -17,6 +17,8 @@ OTHER_DOWNLOAD_TASKS = {
     "newsqa",
     "mctaco",
     "mrqa_natural_questions",
+    "mutual",
+    "mutual_plus",
     "piqa",
     "winogrande",
     "ropes",
@@ -41,4 +43,5 @@ OTHER_HF_DATASETS_TASKS = {
     "race",
     "race_middle",
     "race_high",
+    "quail",
 }
