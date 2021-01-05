@@ -65,7 +65,7 @@ class TokenizedExample(BaseTokenizedExample):
             prompt, choice = truncate_sequences(
                 tokens_ls=[self.prompt, choice],
                 max_length=feat_spec.max_seq_length - special_tokens_count,
-                truncate_end=False
+                truncate_end=False,
             )
             unpadded_inputs = add_cls_token(
                 unpadded_tokens=(
