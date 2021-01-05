@@ -254,12 +254,10 @@ def download_mctest160_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTest.zip",
-        task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTest.zip", task_data_path,
     )
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip",
-        task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip", task_data_path,
     )
     os.rename(
         os.path.join(task_data_path, "MCTestAnswers", f"mc160.test.ans"),
@@ -293,17 +291,16 @@ def download_mctest160_data_and_write_config(
         path=task_config_path,
     )
 
+
 def download_mctest500_data_and_write_config(
     task_name: str, task_data_path: str, task_config_path: str
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTest.zip",
-        task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTest.zip", task_data_path,
     )
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip",
-        task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip", task_data_path,
     )
     os.rename(
         os.path.join(task_data_path, "MCTestAnswers", f"mc500.test.ans"),
@@ -350,7 +347,7 @@ def download_mutual_data_and_write_config(
         file_name_list = []
         examples = []
         for i in range(num_files[phase]):
-            file_name = phase + "_" + str(i+1) + ".txt"
+            file_name = phase + "_" + str(i + 1) + ".txt"
             download_utils.download_file(
                 f"https://raw.githubusercontent.com/Nealcly/MuTual/master/data/mutual/{phase}/{file_name}",
                 os.path.join(task_data_path, phase, file_name),
@@ -386,7 +383,7 @@ def download_mutual_plus_data_and_write_config(
         file_name_list = []
         examples = []
         for i in range(num_files[phase]):
-            file_name = phase + "_" + str(i+1) + ".txt"
+            file_name = phase + "_" + str(i + 1) + ".txt"
             download_utils.download_file(
                 f"https://raw.githubusercontent.com/Nealcly/MuTual/master/data/mutual_plus/{phase}/{file_name}",
                 os.path.join(task_data_path, phase, file_name),
