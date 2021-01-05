@@ -1,4 +1,4 @@
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, Any
 import jiant.proj.main.components.container_setup as container_setup
 import jiant.shared.model_setup as model_setup
 from jiant.shared.model_resolution import ModelArchitectures, register_from_encoder
@@ -33,6 +33,7 @@ register_from_encoder(modeling_xlm_roberta.XLMRobertaModel, ModelArchitectures.X
 
 
 def setup_adapterfusion_jiant_model(
+    args: Any,
     model_type: str,
     tokenizer_path: str,
     task_dict: Dict[str, Task],
@@ -82,6 +83,7 @@ def setup_adapterfusion_jiant_model(
         ).items()
     }
     return primary.JiantModel(
+        args=args,
         task_dict=task_dict,
         encoder=encoder,
         taskmodels_dict=taskmodels_dict,

@@ -53,9 +53,15 @@ class RunConfiguration(zconf.RunConfig):
     server_port = zconf.attr(default="", type=str)
 
     # ===
+    adapter_tuning_mode = zconf.attr(default="single", type=str, required=True)  # <-- require this
     adapter_config = zconf.attr(default="pfeiffer", type=str)
-    adapter_tuning_mode = zconf.attr(default="single", type=str)  # <-- require this
     adapter_path_list = zconf.attr(default=None, type=str)
+
+    # === Compatibility
+    runner_type = zconf.attr(default="default", type=str)
+    multiple_checkpoints = zconf.attr(action="store_true")
+    weight_regularization_type = zconf.attr(default="", type=str)
+    weight_regularization_coef = zconf.attr(default=0.0, type=float)
 
 
 @zconf.run_config
@@ -70,6 +76,7 @@ def setup_runner(
     verbose: bool = True,
 ) -> jiant_runner.JiantRunner:
     jiant_model = adapterfusion_model_setup.setup_adapterfusion_jiant_model(
+        args=args,
         model_type=args.model_type,
         raw_adapter_config=args.adapter_config,
         adapter_tuning_mode=args.adapter_tuning_mode,
@@ -81,6 +88,7 @@ def setup_runner(
     jiant_model.to(quick_init_out.device)
 
     optimizer_scheduler = model_setup.create_optimizer(
+        args=args,
         model=jiant_model,
         learning_rate=args.learning_rate,
         t_total=jiant_task_container.global_train_config.max_steps,
@@ -134,7 +142,8 @@ def run_loop(args: RunConfiguration, checkpoint=None):
             del checkpoint["runner_state"]
         checkpoint_saver = jiant_runner.CheckpointSaver(
             metadata={"args": args.to_dict()},
-            save_path=os.path.join(args.output_dir, "checkpoint.p"),
+            output_dir=args.output_dir,
+            multiple_checkpoints=args.multiple_checkpoints,
         )
         if args.do_train:
             metarunner = adapterfusion_metarunner.AdapterFusionMetarunner(

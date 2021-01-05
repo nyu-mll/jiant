@@ -6,7 +6,7 @@ import jiant.utils.python.io as py_io
 import jiant.utils.torch_utils as torch_utils
 import jiant.proj.main.runner as runner
 from jiant.proj.main.modeling.primary import wrap_jiant_forward
-from jiant.proj.adapterfusion.ext.adapter_bert import get_fusion_regularization_loss
+from jiant.ext.adapterfusion.adapter_bert import get_fusion_regularization_loss
 
 
 class AdapterFusionRunner(runner.JiantRunner):
