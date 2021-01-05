@@ -57,6 +57,14 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_mctaco_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name == "mctest160":
+        download_mctest160_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
+    elif task_name == "mctest500":
+        download_mctest500_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     elif task_name == "mrqa_natural_questions":
         download_mrqa_natural_questions_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
@@ -234,6 +242,95 @@ def download_mctaco_data_and_write_config(
             "paths": {
                 "val": os.path.join(task_data_path, "dev_3783.tsv"),
                 "test": os.path.join(task_data_path, "test_9442.tsv"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+
+def download_mctest160_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    download_utils.download_and_unzip(
+        "https://mattr1.github.io/mctest/data/MCTest.zip",
+        task_data_path,
+    )
+    download_utils.download_and_unzip(
+        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip",
+        task_data_path,
+    )
+    os.rename(
+        os.path.join(task_data_path, "MCTestAnswers", f"mc160.test.ans"),
+        os.path.join(task_data_path, "MCTest", f"mc160.test.ans"),
+    )
+    shutil.rmtree(os.path.join(task_data_path, "MCTestAnswers"))
+    for phase in ["train", "dev", "test"]:
+        os.rename(
+            os.path.join(task_data_path, "MCTest", f"mc160.{phase}.tsv"),
+            os.path.join(task_data_path, f"mc160.{phase}.tsv"),
+        )
+        os.rename(
+            os.path.join(task_data_path, "MCTest", f"mc160.{phase}.ans"),
+            os.path.join(task_data_path, f"mc160.{phase}.ans"),
+        )
+    shutil.rmtree(os.path.join(task_data_path, "MCTest"))
+
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "mc160.train.tsv"),
+                "train_ans": os.path.join(task_data_path, "mc160.train.ans"),
+                "val": os.path.join(task_data_path, "mc160.dev.tsv"),
+                "val_ans": os.path.join(task_data_path, "mc160.dev.ans"),
+                "test": os.path.join(task_data_path, "mc160.test.tsv"),
+                "test_ans": os.path.join(task_data_path, "mc160.test.ans"),
+            },
+            "name": task_name,
+        },
+        path=task_config_path,
+    )
+
+def download_mctest500_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    os.makedirs(task_data_path, exist_ok=True)
+    download_utils.download_and_unzip(
+        "https://mattr1.github.io/mctest/data/MCTest.zip",
+        task_data_path,
+    )
+    download_utils.download_and_unzip(
+        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip",
+        task_data_path,
+    )
+    os.rename(
+        os.path.join(task_data_path, "MCTestAnswers", f"mc500.test.ans"),
+        os.path.join(task_data_path, "MCTest", f"mc500.test.ans"),
+    )
+    shutil.rmtree(os.path.join(task_data_path, "MCTestAnswers"))
+    for phase in ["train", "dev", "test"]:
+        os.rename(
+            os.path.join(task_data_path, "MCTest", f"mc500.{phase}.tsv"),
+            os.path.join(task_data_path, f"mc500.{phase}.tsv"),
+        )
+        os.rename(
+            os.path.join(task_data_path, "MCTest", f"mc500.{phase}.ans"),
+            os.path.join(task_data_path, f"mc500.{phase}.ans"),
+        )
+    shutil.rmtree(os.path.join(task_data_path, "MCTest"))
+
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "train": os.path.join(task_data_path, "mc500.train.tsv"),
+                "train_ans": os.path.join(task_data_path, "mc500.train.ans"),
+                "val": os.path.join(task_data_path, "mc500.dev.tsv"),
+                "val_ans": os.path.join(task_data_path, "mc500.dev.ans"),
+                "test": os.path.join(task_data_path, "mc500.test.tsv"),
+                "test_ans": os.path.join(task_data_path, "mc500.test.ans"),
             },
             "name": task_name,
         },

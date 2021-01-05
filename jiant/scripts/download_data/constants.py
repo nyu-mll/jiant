@@ -16,6 +16,8 @@ OTHER_DOWNLOAD_TASKS = {
     "qasrl",
     "newsqa",
     "mctaco",
+    "mctest160",
+    "mctest500",
     "mrqa_natural_questions",
     "mutual",
     "mutual_plus",

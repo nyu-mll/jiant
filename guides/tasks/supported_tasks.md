@@ -4,8 +4,6 @@
 
 | Name | `task_name` | `jiant` | Downloader | `jiant_task_name` | Misc |
 |---|---|:---:|:---:|---|---|
-| MCTACO | mctaco | ✅ | ✅ | mctaco |  |
-| MCTest | mctest160 or mctest500 | ✅ |  | mctest |  |
 | [Argument Reasoning Comprehension](https://arxiv.org/abs/1708.01425) | arct | ✅ | ✅ | arct | [Github](https://github.com/UKPLab/argument-reasoning-comprehension-task) |
 | Abductive NLI | abductive_nli | ✅ | ✅ | abductive_nli |  |
 | SuperGLUE Winogender Diagnostic | superglue_axg | ✅ | ✅ | superglue_axg | SuperGLUE |
@@ -29,6 +27,8 @@
 | GLUE Diagnostic | glue_diagnostics | ✅ | ✅ | glue_diagnostics | GLUE |
 | HellaSwag | hellaswag | ✅ | ✅ | hellaswag |  |
 | [MCScript2.0](https://arxiv.org/pdf/1905.09531.pdf) | mcscript | ✅ |  | mcscript | [data](https://my.hidrive.com/share/wdnind8pp5#$/) |
+| MCTACO | mctaco | ✅ | ✅ | mctaco |  |
+| MCTest | mctest160 or mctest500 | ✅ | ✅ | mctest | [data](https://mattr1.github.io/mctest/data.html) |
 | MLM | * | ✅ | * | mlm_simple | See task-specific notes. |
 | MLQA | `mlqa_{lang1}_{lang2}` | ✅ | ✅ | mlqa | XTREME, multi-lang |
 | MNLI | mnli | ✅ | ✅ | mnli | GLUE, MNLI-matched |
