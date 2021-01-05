@@ -124,8 +124,8 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         # === Step 2: Download models === #
         if not os.path.exists(os.path.join(model_cache_path, args.model_type)):
             print("Downloading model")
-            export_model.lookup_and_export_model(
-                model_type=args.model_type,
+            export_model.export_model(
+                pretrained_model_name=args.model_type,
                 output_base_path=os.path.join(model_cache_path, args.model_type),
             )
 
