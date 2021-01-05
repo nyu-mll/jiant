@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.nn as nn
+from typing import Optional
 
 import jiant.utils.python.io as py_io
 import jiant.utils.torch_utils as torch_utils
@@ -54,8 +55,8 @@ class AdapterFusionRunner(runner.JiantRunner):
         )
 
 
-def save_model_with_metadata(model: nn.Module, metadata: dict, output_dir: str, adapter_tuning_mode: str,
-                             file_name="model"):
+def save_model_with_metadata(model: nn.Module, output_dir: str, adapter_tuning_mode: str,
+                             file_name="model", metadata: Optional[dict] = None,):
     save_model(
         model=model,
         output_dir=output_dir,
