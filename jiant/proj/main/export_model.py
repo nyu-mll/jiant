@@ -14,8 +14,7 @@ class RunConfiguration(zconf.RunConfig):
 
 
 def export_model(
-    pretrained_model_name: str,
-    output_base_path: str,
+    pretrained_model_name: str, output_base_path: str,
 ):
     """Retrieve model and tokenizer from Transformers and save all necessary data
     Things saved:
@@ -47,18 +46,18 @@ def export_model(
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
     tokenizer.save_pretrained(tokenizer_fol_path)
     config = {
-        "model_type": pretrained_model_name.split('/')[-1],
+        "model_type": pretrained_model_name.split("/")[-1],
         "model_path": model_path,
         "model_config_path": model_config_path,
         "model_tokenizer_path": tokenizer_fol_path,
     }
     py_io.write_json(config, os.path.join(output_base_path, f"config.json"))
 
+
 def main():
     args = RunConfiguration.default_run_cli()
     export_model(
-        pretrained_model_name=args.pretrained_model_name,
-        output_base_path=args.output_base_path,
+        pretrained_model_name=args.pretrained_model_name, output_base_path=args.output_base_path,
     )
 
 
