@@ -36,7 +36,12 @@ from setuptools import find_packages, setup
 extras = {}
 extras["testing"] = ["pytest", "pytest-cov", "pre-commit"]
 extras["docs"] = ["sphinx"]
-extras["quality"] = ["black == 19.10b0", "flake8-docstrings == 1.5.0", "flake8 >= 3.7.9", "mypy == 0.770"]
+extras["quality"] = [
+    "black == 19.10b0",
+    "flake8-docstrings == 1.5.0",
+    "flake8 >= 3.7.9",
+    "mypy == 0.770",
+]
 extras["dev"] = extras["testing"] + extras["quality"]
 
 setup(
@@ -80,7 +85,7 @@ setup(
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
-        'License :: OSI Approved :: MIT License',
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
