@@ -7,24 +7,21 @@ from jiant.proj.main.export_model import export_model
 
 
 @pytest.mark.parametrize(
-    "model_type, model_class, tokenizer_class, hf_model_name",
+    "model_type, model_class, tokenizer_class, hf_pretrained_model_name",
     [
-        ("bert-base-cased", BertPreTrainedModel, BertTokenizer, "bert-base-cased"),
+        ("bert", BertPreTrainedModel, BertTokenizer, "bert-base-cased"),
         (
-            "roberta-med-small-1M-1",
+            "roberta",
             RobertaForMaskedLM,
             RobertaTokenizer,
             "nyu-mll/roberta-med-small-1M-1",
         ),
     ],
 )
-def test_export_model(tmp_path, model_type, model_class, tokenizer_class, hf_model_name):
+def test_export_model(tmp_path, model_type, model_class, tokenizer_class, hf_pretrained_model_name):
     export_model(
-        model_type=model_type,
+        hf_pretrained_model_name=hf_pretrained_model_name,
         output_base_path=tmp_path,
-        model_class=model_class,
-        tokenizer_class=tokenizer_class,
-        hf_model_name=hf_model_name,
     )
     read_config = py_io.read_json(os.path.join(tmp_path, f"config.json"))
     assert read_config["model_type"] == model_type

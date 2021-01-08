@@ -17,7 +17,8 @@ from jiant.tasks import Task, TaskTypes
 
 
 def setup_jiant_model(
-    model_type: str,
+    model_type,
+    hf_pretrained_model_name: str,
     model_config_path: str,
     tokenizer_path: str,
     task_dict: Dict[str, Task],
@@ -38,7 +39,7 @@ def setup_jiant_model(
     """
     model_arch = ModelArchitectures.from_model_type(model_type)
     transformers_class_spec = TRANSFORMERS_CLASS_SPEC_DICT[model_arch]
-    tokenizer = model_setup.get_tokenizer(model_type=model_type, tokenizer_path=tokenizer_path)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(hf_pretrained_model_name)
     ancestor_model = get_ancestor_model(
         transformers_class_spec=transformers_class_spec, model_config_path=model_config_path,
     )

@@ -27,23 +27,23 @@ class ModelArchitectures(Enum):
             Model architecture associated with the provided shortcut name.
 
         """
-        if model_type.startswith("bert-"):
+        if model_type.startswith("bert"):
             return cls.BERT
-        elif model_type.startswith("xlm-") and not model_type.startswith("xlm-roberta"):
+        elif model_type.startswith("xlm") and not model_type.startswith("xlm-roberta"):
             return cls.XLM
-        elif model_type.startswith("roberta-"):
+        elif model_type.startswith("roberta"):
             return cls.ROBERTA
-        elif model_type.startswith("albert-"):
+        elif model_type.startswith("albert"):
             return cls.ALBERT
         elif model_type == "glove_lstm":
             return cls.GLOVE_LSTM
-        elif model_type.startswith("xlm-roberta-"):
+        elif model_type.startswith("xlm-roberta"):
             return cls.XLM_ROBERTA
-        elif model_type.startswith("bart-"):
+        elif model_type.startswith("bart"):
             return cls.BART
-        elif model_type.startswith("mbart-"):
+        elif model_type.startswith("mbart"):
             return cls.MBART
-        elif model_type.startswith("electra-"):
+        elif model_type.startswith("electra"):
             return cls.ELECTRA
         else:
             raise KeyError(model_type)

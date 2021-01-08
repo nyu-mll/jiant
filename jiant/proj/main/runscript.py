@@ -21,6 +21,7 @@ class RunConfiguration(zconf.RunConfig):
     output_dir = zconf.attr(type=str, required=True)
 
     # === Model parameters === #
+    hf_pretrained_model_name = zconf.attr(type=str, required=True)
     model_type = zconf.attr(type=str, required=True)
     model_path = zconf.attr(type=str, required=True)
     model_config_path = zconf.attr(default=None, type=str)
@@ -86,6 +87,7 @@ def setup_runner(
         # load the model
         jiant_model = jiant_model_setup.setup_jiant_model(
             model_type=args.model_type,
+            hf_pretrained_model_name=args.hf_pretrained_model_name,
             model_config_path=args.model_config_path,
             tokenizer_path=args.model_tokenizer_path,
             task_dict=jiant_task_container.task_dict,

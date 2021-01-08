@@ -2,6 +2,8 @@ import os
 
 import torch
 
+from transformers import AutoConfig
+
 import jiant.proj.main.write_task_configs as write_task_configs
 import jiant.proj.main.export_model as export_model
 import jiant.proj.main.tokenize_and_cache as tokenize_and_cache
@@ -21,7 +23,7 @@ class RunConfiguration(zconf.RunConfig):
     data_dir = zconf.attr(type=str, required=True)
 
     # === Model parameters === #
-    model_type = zconf.attr(type=str, required=True)
+    hf_pretrained_model_name = zconf.attr(type=str, required=True)
     model_weights_path = zconf.attr(type=str, default=None)
     model_cache_path = zconf.attr(type=str, default=None)
 
@@ -100,6 +102,7 @@ def create_and_write_task_configs(task_name_list, data_dir, task_config_base_pat
 
 
 def run_simple(args: RunConfiguration, with_continue: bool = False):
+    hf_config = AutoConfig.from_pretrained(args.hf_pretrained_model_name)
 
     model_cache_path = replace_none(
         args.model_cache_path, default=os.path.join(args.exp_dir, "models")
@@ -122,11 +125,11 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
                 )
 
         # === Step 2: Download models === #
-        if not os.path.exists(os.path.join(model_cache_path, args.model_type)):
+        if not os.path.exists(os.path.join(model_cache_path, hf_config.model_type)):
             print("Downloading model")
             export_model.export_model(
-                pretrained_model_name=args.model_type,
-                output_base_path=os.path.join(model_cache_path, args.model_type),
+                hf_pretrained_model_name=args.hf_pretrained_model_name,
+                output_base_path=os.path.join(model_cache_path, hf_config.model_type),
             )
 
         # === Step 3: Tokenize and cache === #
@@ -139,7 +142,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             phases_to_do = []
             for phase, phase_task_list in phase_task_dict.items():
                 if task_name in phase_task_list and not os.path.exists(
-                    os.path.join(args.exp_dir, "cache", args.model_type, task_name, phase)
+                    os.path.join(args.exp_dir, "cache", hf_config.model_type, task_name, phase)
                 ):
                     phases_to_do.append(phase)
             if not phases_to_do:
@@ -148,11 +151,11 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             tokenize_and_cache.main(
                 tokenize_and_cache.RunConfiguration(
                     task_config_path=task_config_path_dict[task_name],
-                    model_type=args.model_type,
+                    hf_pretrained_model_name=args.hf_pretrained_model_name,
                     model_tokenizer_path=os.path.join(
-                        model_cache_path, args.model_type, "tokenizer"
+                        model_cache_path, hf_config.model_type, "tokenizer"
                     ),
-                    output_dir=os.path.join(args.exp_dir, "cache", args.model_type, task_name),
+                    output_dir=os.path.join(args.exp_dir, "cache", hf_config.model_type, task_name),
                     phases=phases_to_do,
                     # TODO: Need a strategy for task-specific max_seq_length issues (issue #1176)
                     max_seq_length=args.max_seq_length,
@@ -166,7 +169,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
     # number of moving parts.
     jiant_task_container_config = configurator.SimpleAPIMultiTaskConfigurator(
         task_config_base_path=os.path.join(args.data_dir, "configs"),
-        task_cache_base_path=os.path.join(args.exp_dir, "cache", args.model_type),
+        task_cache_base_path=os.path.join(args.exp_dir, "cache", hf_config.model_type),
         train_task_name_list=args.train_tasks,
         val_task_name_list=args.val_tasks,
         test_task_name_list=args.test_tasks,
@@ -193,7 +196,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         else:
             model_load_mode = "from_transformers"
         model_weights_path = os.path.join(
-            model_cache_path, args.model_type, "model", f"{args.model_type}.p"
+            model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.p"
         )
     run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
 
@@ -212,12 +215,13 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             jiant_task_container_config_path=jiant_task_container_config_path,
             output_dir=run_output_dir,
             # === Model parameters === #
-            model_type=args.model_type,
+            hf_pretrained_model_name=args.hf_pretrained_model_name,
+            model_type=hf_config.model_type,
             model_path=model_weights_path,
             model_config_path=os.path.join(
-                model_cache_path, args.model_type, "model", f"{args.model_type}.json"
+                model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.json"
             ),
-            model_tokenizer_path=os.path.join(model_cache_path, args.model_type, "tokenizer"),
+            model_tokenizer_path=os.path.join(model_cache_path, hf_config.model_type, "tokenizer"),
             model_load_mode=model_load_mode,
             # === Running Setup === #
             do_train=bool(args.train_tasks),
