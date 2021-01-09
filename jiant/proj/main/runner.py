@@ -323,6 +323,19 @@ def run_val(
         output["preds"] = evaluation_scheme.get_preds_from_accumulator(
             task=task, accumulator=eval_accumulator,
         )
+
+        try:
+            tokenizer = (
+                jiant_model.tokenizer
+                if not torch_utils.is_data_parallel(jiant_model)
+                else jiant_model.module.tokenizer
+            )
+            output["responder_accuracies"] = evaluation_scheme.get_responder_accuracy(
+                task=task, accumulator=eval_accumulator, labels=val_labels, tokenizer=tokenizer,
+            )
+        except:
+            print("responder accuracy not implemented")
+
     return output
 
 
