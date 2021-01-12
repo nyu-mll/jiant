@@ -17,19 +17,27 @@ from jiant.tasks import Task, TaskTypes
 
 
 def setup_jiant_model(
-    model_type,
-    hf_pretrained_model_name: str,
+    hf_pretrained_model_name_or_path: str,
     model_config_path: str,
-    tokenizer_path: str,
     task_dict: Dict[str, Task],
     taskmodels_config: container_setup.TaskmodelsConfig,
 ):
     """Sets up tokenizer, encoder, and task models, and instantiates and returns a JiantModel.
 
     Args:
-        model_type (str): model shortcut name.
+        hf_pretrained_model_name_or_path (:obj:`str` or :obj:`os.PathLike`):
+            Can be either:
+
+                - A string, the `model id` of a predefined tokenizer hosted inside a model repo on huggingface.co.
+                  Valid model ids can be located at the root-level, like ``bert-base-uncased``, or namespaced under
+                  a user or organization name, like ``dbmdz/bert-base-german-cased``.
+                - A path to a `directory` containing vocabulary files required by the tokenizer, for instance saved
+                  using the :func:`~transformers.PreTrainedTokenizer.save_pretrained` method, e.g.,
+                  ``./my_model_directory/``.
+                - A path or url to a single saved vocabulary file if and only if the tokenizer only requires a
+                  single vocabulary file (like Bert or XLNet), e.g.: ``./my_model_directory/vocab.txt``. (Not
+                  applicable to all derived classes)
         model_config_path (str): Path to the JSON file containing the configuration parameters.
-        tokenizer_path (str): path to tokenizer directory.
         task_dict (Dict[str, tasks.Task]): map from task name to task instance.
         taskmodels_config: maps mapping from tasks to models, and specifying task-model configs.
 
@@ -37,9 +45,10 @@ def setup_jiant_model(
         JiantModel nn.Module.
 
     """
-    model_arch = ModelArchitectures.from_model_type(model_type)
+    model = transformers.AutoModel.from_pretrained(hf_pretrained_model_name_or_path)
+    model_arch = ModelArchitectures.from_model_type(model.base_model_prefix)
     transformers_class_spec = TRANSFORMERS_CLASS_SPEC_DICT[model_arch]
-    tokenizer = transformers.AutoTokenizer.from_pretrained(hf_pretrained_model_name)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(hf_pretrained_model_name_or_path)
     ancestor_model = get_ancestor_model(
         transformers_class_spec=transformers_class_spec, model_config_path=model_config_path,
     )

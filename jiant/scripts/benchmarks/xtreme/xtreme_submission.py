@@ -40,7 +40,6 @@ class RunConfiguration(zconf.RunConfig):
     model_type = zconf.attr(type=str, required=True)
     model_path = zconf.attr(type=str, required=True)
     model_config_path = zconf.attr(default=None, type=str)
-    model_tokenizer_path = zconf.attr(default=None, type=str)
     model_load_mode = zconf.attr(default="from_ptt", type=str)
 
     # === Nuisance Parameters === #

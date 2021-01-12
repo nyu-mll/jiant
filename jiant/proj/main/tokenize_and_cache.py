@@ -17,8 +17,7 @@ from jiant.shared.constants import PHASE
 class RunConfiguration(zconf.RunConfig):
     # === Required parameters === #
     task_config_path = zconf.attr(type=str, required=True)
-    hf_pretrained_model_name = zconf.attr(type=str, required=True)
-    model_tokenizer_path = zconf.attr(type=str, required=True)
+    hf_pretrained_model_name_or_path = zconf.attr(type=str, required=True)
     output_dir = zconf.attr(type=str, required=True)
 
     # === Optional parameters === #
@@ -144,14 +143,14 @@ def iter_chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunCo
 
 
 def main(args: RunConfiguration):
-    config = AutoConfig.from_pretrained(args.hf_pretrained_model_name)
+    config = AutoConfig.from_pretrained(args.hf_pretrained_model_name_or_path)
     model_type = config.model_type
 
     task = tasks.create_task_from_config_path(config_path=args.task_config_path, verbose=True)
     feat_spec = model_resolution.build_featurization_spec(
         model_type=model_type, max_seq_length=args.max_seq_length,
     )
-    tokenizer = AutoTokenizer.from_pretrained(args.hf_pretrained_model_name)
+    tokenizer = AutoTokenizer.from_pretrained(args.hf_pretrained_model_name_or_path)
     if isinstance(args.phases, str):
         phases = args.phases.split(",")
     else:

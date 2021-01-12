@@ -26,7 +26,7 @@ python jiant/scripts/download_data/runscript.py \
 2. Next, we download our RoBERTa-base model
 ```bash
 python jiant/proj/main/export_model.py \
-    --model_type ${MODEL_TYPE} \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_base_path ${EXP_DIR}/models/${MODEL_TYPE}
 ```
 
@@ -34,9 +34,7 @@ python jiant/proj/main/export_model.py \
 ```bash
 python jiant/proj/main/tokenize_and_cache.py \
     --task_config_path ${EXP_DIR}/tasks/configs/${TASK}_config.json \
-    --model_type ${MODEL_TYPE} \
-    --model_tokenizer_path \
-    ${EXP_DIR}/models/${MODEL_TYPE}/tokenizer \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_dir ${EXP_DIR}/cache/${MODEL_TYPE}/${TASK} \
     --phases train,val \
     --max_seq_length 256 \

@@ -23,7 +23,7 @@ class RunConfiguration(zconf.RunConfig):
     data_dir = zconf.attr(type=str, required=True)
 
     # === Model parameters === #
-    hf_pretrained_model_name = zconf.attr(type=str, required=True)
+    hf_pretrained_model_name_or_path = zconf.attr(type=str, required=True)
     model_weights_path = zconf.attr(type=str, default=None)
     model_cache_path = zconf.attr(type=str, default=None)
 
@@ -102,7 +102,7 @@ def create_and_write_task_configs(task_name_list, data_dir, task_config_base_pat
 
 
 def run_simple(args: RunConfiguration, with_continue: bool = False):
-    hf_config = AutoConfig.from_pretrained(args.hf_pretrained_model_name)
+    hf_config = AutoConfig.from_pretrained(args.hf_pretrained_model_name_or_path)
 
     model_cache_path = replace_none(
         args.model_cache_path, default=os.path.join(args.exp_dir, "models")
@@ -128,7 +128,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         if not os.path.exists(os.path.join(model_cache_path, hf_config.model_type)):
             print("Downloading model")
             export_model.export_model(
-                hf_pretrained_model_name=args.hf_pretrained_model_name,
+                hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
                 output_base_path=os.path.join(model_cache_path, hf_config.model_type),
             )
 
@@ -151,10 +151,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             tokenize_and_cache.main(
                 tokenize_and_cache.RunConfiguration(
                     task_config_path=task_config_path_dict[task_name],
-                    hf_pretrained_model_name=args.hf_pretrained_model_name,
-                    model_tokenizer_path=os.path.join(
-                        model_cache_path, hf_config.model_type, "tokenizer"
-                    ),
+                    hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
                     output_dir=os.path.join(args.exp_dir, "cache", hf_config.model_type, task_name),
                     phases=phases_to_do,
                     # TODO: Need a strategy for task-specific max_seq_length issues (issue #1176)
@@ -215,13 +212,12 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             jiant_task_container_config_path=jiant_task_container_config_path,
             output_dir=run_output_dir,
             # === Model parameters === #
-            hf_pretrained_model_name=args.hf_pretrained_model_name,
+            hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
             model_type=hf_config.model_type,
             model_path=model_weights_path,
             model_config_path=os.path.join(
                 model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.json"
             ),
-            model_tokenizer_path=os.path.join(model_cache_path, hf_config.model_type, "tokenizer"),
             model_load_mode=model_load_mode,
             # === Running Setup === #
             do_train=bool(args.train_tasks),
