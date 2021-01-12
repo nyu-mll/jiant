@@ -1,7 +1,7 @@
 import os
 
 import torch
-from transformers import AutoModelForPreTraining, AutoTokenizer, AutoConfig
+from transformers import AutoModelForPreTraining, AutoTokenizer
 
 import jiant.utils.python.io as py_io
 import jiant.utils.zconf as zconf
@@ -26,12 +26,16 @@ def export_model(
         pretrained_model_name_or_path (:obj:`str` or :obj:`os.PathLike`):
                         Can be either:
 
-                            - A string, the `model id` of a pretrained model configuration hosted inside a model repo on
-                              okhuggingface.co. Valid model ids can be located at the root-level, like ``bert-base-uncased``, or
-                              namespaced under a user or organization name, like ``dbmdz/bert-base-german-cased``.
-                            - A path to a `directory` containing a configuration file saved using the
-                              :meth:`~transformers.PretrainedConfig.save_pretrained` method, or the
-                              :meth:`~transformers.PreTrainedModel.save_pretrained` method, e.g., ``./my_model_directory/``.
+                            - A string, the `model id` of a pretrained model configuration
+                              hosted inside a model repo on okhuggingface.co.
+                              Valid model ids can be located at the root-level, like
+                              ``bert-base-uncased``, or namespaced under a user
+                              or organization name, like ``dbmdz/bert-base-german-cased``.
+                            - A path to a `directory` containing a configuration file saved using
+                              the :meth:`~transformers.PretrainedConfig.save_pretrained` method,
+                              or the
+                              :meth:`~transformers.PreTrainedModel.save_pretrained` method,
+                              e.g., ``./my_model_directory/``.
                             - A path or url to a saved configuration JSON `file`, e.g.,
                               ``./my_model_directory/configuration.json``.
         output_base_path: Base path to save output to
@@ -56,7 +60,7 @@ def export_model(
         "model_path": model_path,
         "model_config_path": model_config_path,
     }
-    py_io.write_json(config, os.path.join(output_base_path, f"config.json"))
+    py_io.write_json(config, os.path.join(output_base_path, "config.json"))
 
 
 def main():

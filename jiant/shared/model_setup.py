@@ -2,7 +2,6 @@ import transformers
 import torch
 
 from jiant.ext.radam import RAdam
-from jiant.shared.model_resolution import ModelArchitectures, resolve_tokenizer_class
 
 
 class OptimizerScheduler:

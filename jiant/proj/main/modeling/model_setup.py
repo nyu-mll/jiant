@@ -1,5 +1,8 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -7,13 +10,14 @@ import transformers
 
 
 import jiant.proj.main.components.container_setup as container_setup
+import jiant.proj.main.modeling.heads as heads
 import jiant.proj.main.modeling.primary as primary
 import jiant.proj.main.modeling.taskmodels as taskmodels
-import jiant.proj.main.modeling.heads as heads
-import jiant.shared.model_setup as model_setup
 import jiant.utils.python.strings as strings
-from jiant.shared.model_setup import ModelArchitectures
-from jiant.tasks import Task, TaskTypes
+
+from jiant.shared.model_resolution import ModelArchitectures
+from jiant.tasks import Task
+from jiant.tasks import TaskTypes
 
 
 def setup_jiant_model(
@@ -28,14 +32,17 @@ def setup_jiant_model(
         hf_pretrained_model_name_or_path (:obj:`str` or :obj:`os.PathLike`):
             Can be either:
 
-                - A string, the `model id` of a predefined tokenizer hosted inside a model repo on huggingface.co.
-                  Valid model ids can be located at the root-level, like ``bert-base-uncased``, or namespaced under
+                - A string, the `model id` of a predefined tokenizer hosted inside a model
+                  repo on huggingface.co. Valid model ids can be located at the root-level,
+                  like ``bert-base-uncased``, or namespaced under
                   a user or organization name, like ``dbmdz/bert-base-german-cased``.
-                - A path to a `directory` containing vocabulary files required by the tokenizer, for instance saved
-                  using the :func:`~transformers.PreTrainedTokenizer.save_pretrained` method, e.g.,
+                - A path to a `directory` containing vocabulary files required by the
+                  tokenizer, for instance saved using the
+                  :func:`~transformers.PreTrainedTokenizer.save_pretrained` method, e.g.,
                   ``./my_model_directory/``.
-                - A path or url to a single saved vocabulary file if and only if the tokenizer only requires a
-                  single vocabulary file (like Bert or XLNet), e.g.: ``./my_model_directory/vocab.txt``. (Not
+                - A path or url to a single saved vocabulary file if and only if
+                  the tokenizer only requires a single vocabulary file (like Bert or XLNet),
+                  e.g.: ``./my_model_directory/vocab.txt``. (Not
                   applicable to all derived classes)
         model_config_path (str): Path to the JSON file containing the configuration parameters.
         task_dict (Dict[str, tasks.Task]): map from task name to task instance.

@@ -5,7 +5,6 @@ from transformers import AutoConfig, AutoTokenizer
 import jiant.proj.main.preprocessing as preprocessing
 import jiant.shared.caching as shared_caching
 import jiant.shared.model_resolution as model_resolution
-import jiant.shared.model_setup as model_setup
 import jiant.tasks as tasks
 import jiant.tasks.evaluate as evaluate
 import jiant.utils.zconf as zconf
