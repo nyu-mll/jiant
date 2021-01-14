@@ -5,7 +5,7 @@ import torch
 from dataclasses import dataclass
 from typing import Union, List, Dict, Optional
 
-from transformers.tokenization_bert import whitespace_tokenize
+from transformers.models.bert.tokenization_bert import whitespace_tokenize
 
 from jiant.tasks.lib.templates.squad_style import utils as squad_utils
 from jiant.shared.constants import PHASE
@@ -144,11 +144,13 @@ class Example(BaseExample):
         # in the way they compute mask of added tokens.
         tokenizer_type = type(tokenizer).__name__.replace("Tokenizer", "").lower()
         sequence_added_tokens = (
-            tokenizer.max_len - tokenizer.max_len_single_sentence + 1
+            tokenizer.model_max_length - tokenizer.model_max_length_single_sentence + 1
             if tokenizer_type in MULTI_SEP_TOKENS_TOKENIZERS_SET
-            else tokenizer.max_len - tokenizer.max_len_single_sentence
+            else tokenizer.model_max_length - tokenizer.model_max_length_single_sentence
         )
-        sequence_pair_added_tokens = tokenizer.max_len - tokenizer.max_len_sentences_pair
+        sequence_pair_added_tokens = (
+            tokenizer.model_max_length - tokenizer.model_max_length_sentences_pair
+        )
 
         span_doc_tokens = all_doc_tokens
         while len(spans) * doc_stride < len(all_doc_tokens):

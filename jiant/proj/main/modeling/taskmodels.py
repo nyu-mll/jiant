@@ -334,7 +334,12 @@ def get_output_from_encoder(encoder, input_ids, segment_ids, input_mask) -> Enco
 
 
 def get_output_from_standard_transformer_models(encoder, input_ids, segment_ids, input_mask):
-    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
+    output = encoder(
+        input_ids=input_ids,
+        token_type_ids=segment_ids,
+        attention_mask=input_mask,
+        return_dict=False,
+    )
     pooled, unpooled, other = output[1], output[0], output[2:]
     return pooled, unpooled, other
 
@@ -347,7 +352,7 @@ def get_output_from_bart_models(encoder, input_ids, input_mask):
     # sentence representation is the final decoder state.
     # That's what we use for `unpooled` here.
     dec_last, dec_all, enc_last, enc_all = encoder(
-        input_ids=input_ids, attention_mask=input_mask, output_hidden_states=True,
+        input_ids=input_ids, attention_mask=input_mask, output_hidden_states=True, return_dict=False
     )
     unpooled = dec_last
 
@@ -361,7 +366,12 @@ def get_output_from_bart_models(encoder, input_ids, input_mask):
 
 
 def get_output_from_electra(encoder, input_ids, segment_ids, input_mask):
-    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
+    output = encoder(
+        input_ids=input_ids,
+        token_type_ids=segment_ids,
+        attention_mask=input_mask,
+        return_dict=False,
+    )
     unpooled = output[0]
     pooled = unpooled[:, 0, :]
     return pooled, unpooled, output
