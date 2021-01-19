@@ -6,5 +6,5 @@
 #     This downloads a model (e.g. xlm-roberta-large)
 
 python jiant/proj/main/export_model.py \
-    --model_type ${MODEL_TYPE} \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_base_path ${BASE_PATH}/models/${MODEL_TYPE}

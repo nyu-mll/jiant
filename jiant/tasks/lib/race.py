@@ -1,36 +1,22 @@
-from abc import ABC
-
 import numpy as np
-import torch
-from dataclasses import dataclass
-from typing import List
 
-from jiant.tasks.core import (
-    Task,
-    TaskTypes,
-    BaseExample,
-    BaseTokenizedExample,
-    BaseDataRow,
-    BatchMixin,
-)
+from dataclasses import dataclass
+
 from jiant.tasks.lib.templates.shared import (
+    labels_to_bimap,
     create_input_set_from_tokens_and_segments,
     add_cls_token,
 )
+from jiant.tasks.lib.templates import multiple_choice as mc_template
 from jiant.tasks.utils import truncate_sequences
+from jiant.utils.python.io import read_jsonl
 
 
 @dataclass
-class Example(BaseExample):
-
-    guid: str
-    prompt: str
-    choice_list: List[str]
-    label: int
-
+class Example(mc_template.Example):
     @property
     def task(self):
-        raise NotImplementedError()
+        return RaceTask
 
     def tokenize(self, tokenizer):
         return TokenizedExample(
@@ -42,14 +28,8 @@ class Example(BaseExample):
 
 
 @dataclass
-class TokenizedExample(BaseTokenizedExample):
-    guid: str
-    prompt: List
-    choice_list: List[List]
-    label_id: int
-
+class TokenizedExample(mc_template.TokenizedExample):
     def featurize(self, tokenizer, feat_spec):
-
         if feat_spec.sep_token_extra:
             maybe_extra_sep = [tokenizer.sep_token]
             maybe_extra_sep_segment_id = [feat_spec.sequence_a_segment_id]
@@ -107,28 +87,44 @@ class TokenizedExample(BaseTokenizedExample):
 
 
 @dataclass
-class DataRow(BaseDataRow):
-    guid: str
-    input_ids: np.ndarray  # Multiple
-    input_mask: np.ndarray  # Multiple
-    segment_ids: np.ndarray  # Multiple
-    label_id: int
-    tokens_list: List[List]  # Multiple
+class DataRow(mc_template.DataRow):
+    pass
 
 
 @dataclass
-class Batch(BatchMixin):
-    input_ids: torch.LongTensor
-    input_mask: torch.LongTensor
-    segment_ids: torch.LongTensor
-    label_id: torch.LongTensor
-    tokens_list: List
+class Batch(mc_template.Batch):
+    pass
 
 
-class AbstractMultipleChoiceTask(Task, ABC):
+class RaceTask(mc_template.AbstractMultipleChoiceTask):
+    Example = Example
+    TokenizedExample = TokenizedExample
+    DataRow = DataRow
+    Batch = Batch
 
-    TASK_TYPE = TaskTypes.MULTIPLE_CHOICE
+    CHOICE_KEYS = ["A", "B", "C", "D"]
+    CHOICE_TO_ID, ID_TO_CHOICE = labels_to_bimap(CHOICE_KEYS)
+    NUM_CHOICES = len(CHOICE_KEYS)
 
-    CHOICE_KEYS = NotImplemented
-    CHOICE_BIMAP = NotImplemented
-    NUM_CHOICES = NotImplemented
+    def get_train_examples(self):
+        return self._create_examples(lines=read_jsonl(self.train_path), set_type="train")
+
+    def get_val_examples(self):
+        return self._create_examples(lines=read_jsonl(self.val_path), set_type="val")
+
+    def get_test_examples(self):
+        return self._create_examples(lines=read_jsonl(self.test_path), set_type="test")
+
+    @classmethod
+    def _create_examples(cls, lines, set_type):
+        examples = []
+        for (i, line) in enumerate(lines):
+            examples.append(
+                Example(
+                    guid="%s-%s" % (set_type, i),
+                    prompt=line["article"] + " " + line["question"],
+                    choice_list=line["options"],
+                    label=line["answer"] if set_type != "test" else cls.CHOICE_KEYS[-1],
+                )
+            )
+        return examples

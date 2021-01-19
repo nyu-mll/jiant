@@ -82,6 +82,6 @@ def wrap_jiant_forward(
             batch=batch.to_dict() if is_multi_gpu else batch, task=task, compute_loss=compute_loss,
         )
     )
-    if is_multi_gpu:
+    if is_multi_gpu and compute_loss:
         model_output.loss = model_output.loss.mean()
     return model_output
