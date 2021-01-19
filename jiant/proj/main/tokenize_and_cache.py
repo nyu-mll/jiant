@@ -1,9 +1,10 @@
 import os
 
+from transformers import AutoConfig, AutoTokenizer
+
 import jiant.proj.main.preprocessing as preprocessing
 import jiant.shared.caching as shared_caching
 import jiant.shared.model_resolution as model_resolution
-import jiant.shared.model_setup as model_setup
 import jiant.tasks as tasks
 import jiant.tasks.evaluate as evaluate
 import jiant.utils.zconf as zconf
@@ -15,8 +16,7 @@ from jiant.shared.constants import PHASE
 class RunConfiguration(zconf.RunConfig):
     # === Required parameters === #
     task_config_path = zconf.attr(type=str, required=True)
-    model_type = zconf.attr(type=str, required=True)
-    model_tokenizer_path = zconf.attr(type=str, required=True)
+    hf_pretrained_model_name_or_path = zconf.attr(type=str, required=True)
     output_dir = zconf.attr(type=str, required=True)
 
     # === Optional parameters === #
@@ -142,13 +142,14 @@ def iter_chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunCo
 
 
 def main(args: RunConfiguration):
+    config = AutoConfig.from_pretrained(args.hf_pretrained_model_name_or_path)
+    model_type = config.model_type
+
     task = tasks.create_task_from_config_path(config_path=args.task_config_path, verbose=True)
     feat_spec = model_resolution.build_featurization_spec(
-        model_type=args.model_type, max_seq_length=args.max_seq_length,
+        model_type=model_type, max_seq_length=args.max_seq_length,
     )
-    tokenizer = model_setup.get_tokenizer(
-        model_type=args.model_type, tokenizer_path=args.model_tokenizer_path,
-    )
+    tokenizer = AutoTokenizer.from_pretrained(args.hf_pretrained_model_name_or_path)
     if isinstance(args.phases, str):
         phases = args.phases.split(",")
     else:

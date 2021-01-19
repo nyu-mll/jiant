@@ -9,7 +9,7 @@ import jiant.proj.main.modeling.heads as heads
 import jiant.utils.transformer_utils as transformer_utils
 from jiant.proj.main.components.outputs import LogitsOutput, LogitsAndLossOutput
 from jiant.utils.python.datastructures import take_one
-from jiant.shared.model_setup import ModelArchitectures
+from jiant.shared.model_resolution import ModelArchitectures
 
 
 class Taskmodel(nn.Module, metaclass=abc.ABCMeta):

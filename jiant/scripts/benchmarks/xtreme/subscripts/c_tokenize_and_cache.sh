@@ -10,8 +10,7 @@ for LG in ar bg de el en es fr hi ru sw th tr ur vi zh; do
     TASK=xnli_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val,test \
         --max_seq_length 256 \
@@ -22,8 +21,7 @@ done
 TASK=pawsx_en
 python jiant/proj/main/tokenize_and_cache.py \
     --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-    --model_type ${MODEL_TYPE} \
-    --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
     --phases train,val,test \
     --max_seq_length 256 \
@@ -32,8 +30,7 @@ for LG in ar de es fr ja ko zh; do
     TASK=pawsx_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val,test \
         --max_seq_length 256 \
@@ -44,8 +41,7 @@ done
 TASK=udpos_en
 python jiant/proj/main/tokenize_and_cache.py \
     --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-    --model_type ${MODEL_TYPE} \
-    --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
     --phases train,val,test \
     --max_seq_length 256 \
@@ -54,8 +50,7 @@ for LG in af ar bg de el es et eu fa fi fr he hi hu id it ja ko mr nl pt ru ta t
     TASK=udpos_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val,test \
         --max_seq_length 256 \
@@ -65,8 +60,7 @@ for LG in kk th tl yo; do
     TASK=udpos_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases test \
         --max_seq_length 256 \
@@ -77,8 +71,7 @@ done
 TASK=panx_en
 python jiant/proj/main/tokenize_and_cache.py \
     --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-    --model_type ${MODEL_TYPE} \
-    --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
     --phases train,val,test \
     --max_seq_length 256 \
@@ -87,8 +80,7 @@ for LG in af ar bg bn de el es et eu fa fi fr he hi hu id it ja jv ka kk ko ml m
     TASK=panx_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val,test \
         --max_seq_length 256 \
@@ -100,8 +92,7 @@ for LG in ar de el en es hi ru th tr vi zh; do
     TASK=xquad_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val \
         --max_seq_length 384 \
@@ -113,8 +104,7 @@ for LG in ar de en es hi vi zh; do
     TASK=mlqa_${LG}_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val,test \
         --max_seq_length 384 \
@@ -125,8 +115,7 @@ done
 TASK=tydiqa_en
 python jiant/proj/main/tokenize_and_cache.py \
     --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-    --model_type ${MODEL_TYPE} \
-    --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
     --phases train,val \
     --max_seq_length 384 \
@@ -135,8 +124,7 @@ for LG in ar bn fi id ko ru sw te; do
     TASK=tydiqa_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val \
         --max_seq_length 384 \
@@ -148,8 +136,7 @@ for LG in de fr ru zh; do
     TASK=bucc2018_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val,test \
         --max_seq_length 512 \
@@ -161,8 +148,7 @@ for LG in af ar bg bn de el es et eu fa fi fr he hi hu id it ja jv ka kk ko ml m
     TASK=tatoeba_${LG}
     python jiant/proj/main/tokenize_and_cache.py \
         --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-        --model_type ${MODEL_TYPE} \
-        --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+        --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
         --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
         --phases val \
         --max_seq_length 512 \
@@ -173,8 +159,7 @@ done
 TASK=mnli
 python jiant/proj/main/tokenize_and_cache.py \
     --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-    --model_type ${MODEL_TYPE} \
-    --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
     --phases train,val \
     --max_seq_length 256 \
@@ -182,8 +167,7 @@ python jiant/proj/main/tokenize_and_cache.py \
 TASK=squad_v1
 python jiant/proj/main/tokenize_and_cache.py \
     --task_config_path ${BASE_PATH}/tasks/configs/${TASK}_config.json \
-    --model_type ${MODEL_TYPE} \
-    --model_tokenizer_path ${BASE_PATH}/models/${MODEL_TYPE}/tokenizer \
+    --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
     --output_dir ${BASE_PATH}/cache/${MODEL_TYPE}/${TASK} \
     --phases train,val \
     --max_seq_length 384 \
