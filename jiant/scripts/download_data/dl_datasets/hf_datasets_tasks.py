@@ -163,6 +163,12 @@ HF_DATASETS_CONVERSION_DICT = {
         "phase_list": ["train", "val", "test"],
         "jiant_task_name": "arc_challenge",
     },
+    "quail": {
+        "path": "quail",
+        "phase_list": ["train", "val", "test"],
+        "jiant_task_name": "quail",
+        "phase_map": {"validation": "val", "challenge": "test"}
+    },
 }
 
 # HF-Datasets uses "validation", we use "val"
