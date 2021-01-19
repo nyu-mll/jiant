@@ -73,6 +73,8 @@ from jiant.tasks.lib.mcscript import MCScriptTask
 from jiant.tasks.lib.arct import ArctTask
 from jiant.tasks.lib.winogrande import WinograndeTask
 from jiant.tasks.lib.piqa import PiqaTask
+from jiant.tasks.lib.semi_auto_nli import SemiAutoNLITask
+from jiant.tasks.lib.nli_intervention import NLIInterventionTask
 
 from jiant.tasks.core import Task
 from jiant.utils.python.io import read_json
@@ -115,6 +117,7 @@ TASK_DICT = {
     "mrqa_natural_questions": MrqaNaturalQuestionsTask,
     "ner": NerTask,
     "newsqa": NewsQATask,
+    "nli_intervention": NLIInterventionTask,
     "pawsx": PawsXTask,
     "panx": PanxTask,
     "pos": PosTask,
@@ -129,6 +132,7 @@ TASK_DICT = {
     "scitail": SciTailTask,
     "senteval_tense": SentevalTenseTask,
     "semeval": SemevalTask,
+    "semi_auto_nli": SemiAutoNLITask,
     "snli": SnliTask,
     "socialiqa": SocialIQATask,
     "spr1": Spr1Task,

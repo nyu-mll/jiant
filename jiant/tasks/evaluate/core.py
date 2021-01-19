@@ -1033,6 +1033,8 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
             tasks.MCScriptTask,
             tasks.ArctTask,
             tasks.PiqaTask,
+            tasks.NLIInterventionTask,
+            tasks.SemiAutoNLITask,
         ),
     ):
         return SimpleAccuracyEvaluationScheme()
