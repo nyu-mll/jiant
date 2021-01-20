@@ -301,7 +301,7 @@ def test_featurization_of_task_data():
         tokenized_examples[0].hypothesis
     )
     feat_spec = model_resolution.build_featurization_spec(
-        model_type="bert-", max_seq_length=train_example_0_length
+        model_type="bert", max_seq_length=train_example_0_length
     )
     featurized_examples = [
         tokenized_example.featurize(tokenizer=tokenizer, feat_spec=feat_spec)

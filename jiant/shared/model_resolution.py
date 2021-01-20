@@ -7,14 +7,14 @@ from jiant.tasks.core import FeaturizationSpec
 
 
 class ModelArchitectures(Enum):
-    BERT = 1
-    XLM = 2
-    ROBERTA = 3
-    ALBERT = 4
-    XLM_ROBERTA = 5
-    BART = 6
-    MBART = 7
-    ELECTRA = 8
+    BERT = "bert"
+    XLM = "xlm"
+    ROBERTA = "roberta"
+    ALBERT = "albert"
+    XLM_ROBERTA = "xlm-roberta"
+    BART = "bart"
+    MBART = "mbart"
+    ELECTRA = "electra"
 
     @classmethod
     def from_model_type(cls, model_type: str):
@@ -27,85 +27,24 @@ class ModelArchitectures(Enum):
             Model architecture associated with the provided shortcut name.
 
         """
-        if model_type.startswith("bert"):
+        if model_type == "bert":
             return cls.BERT
-        elif model_type.startswith("xlm") and not model_type.startswith("xlm-roberta"):
+        elif model_type == "xlm":
             return cls.XLM
-        elif model_type.startswith("roberta"):
+        elif model_type == "roberta":
             return cls.ROBERTA
-        elif model_type.startswith("albert"):
+        elif model_type == "albert":
             return cls.ALBERT
-        elif model_type == "glove_lstm":
-            return cls.GLOVE_LSTM
-        elif model_type.startswith("xlm-roberta"):
+        elif model_type == "xlm-roberta":
             return cls.XLM_ROBERTA
-        elif model_type.startswith("bart"):
+        elif model_type == "bart":
             return cls.BART
-        elif model_type.startswith("mbart"):
+        elif model_type == "mbart":
             return cls.MBART
-        elif model_type.startswith("electra"):
+        elif model_type == "electra":
             return cls.ELECTRA
         else:
             raise KeyError(model_type)
-
-    @classmethod
-    def from_transformers_model(cls, transformers_model):
-        if isinstance(
-            transformers_model, transformers.BertPreTrainedModel
-        ) and transformers_model.__class__.__name__.startswith("Bert"):
-            return cls.BERT
-        elif isinstance(transformers_model, transformers.XLMPreTrainedModel):
-            return cls.XLM
-        elif isinstance(
-            transformers_model, transformers.BertPreTrainedModel
-        ) and transformers_model.__class__.__name__.startswith("Robert"):
-            return cls.ROBERTA
-        elif isinstance(
-            transformers_model, transformers.BertPreTrainedModel
-        ) and transformers_model.__class__.__name__.startswith("XLMRoberta"):
-            return cls.XLM_ROBERTA
-        elif isinstance(transformers_model, transformers.modeling_albert.AlbertPreTrainedModel):
-            return cls.ALBERT
-        elif isinstance(transformers_model, transformers.modeling_bart.PretrainedBartModel):
-            return bart_or_mbart_model_heuristic(model_config=transformers_model.config)
-        elif isinstance(transformers_model, transformers.modeling_electra.ElectraPreTrainedModel):
-            return cls.ELECTRA
-        else:
-            raise KeyError(str(transformers_model))
-
-    @classmethod
-    def from_tokenizer_class(cls, tokenizer_class):
-        if isinstance(tokenizer_class, transformers.BertTokenizer):
-            return cls.BERT
-        elif isinstance(tokenizer_class, transformers.XLMTokenizer):
-            return cls.XLM
-        elif isinstance(tokenizer_class, transformers.RobertaTokenizer):
-            return cls.ROBERTA
-        elif isinstance(tokenizer_class, transformers.XLMRobertaTokenizer):
-            return cls.XLM_ROBERTA
-        elif isinstance(tokenizer_class, transformers.AlbertTokenizer):
-            return cls.ALBERT
-        elif isinstance(tokenizer_class, transformers.BartTokenizer):
-            return cls.BART
-        elif isinstance(tokenizer_class, transformers.MBartTokenizer):
-            return cls.MBART
-        elif isinstance(tokenizer_class, transformers.ElectraTokenizer):
-            return cls.ELECTRA
-        else:
-            raise KeyError(str(tokenizer_class))
-
-    @classmethod
-    def is_transformers_model_arch(cls, model_arch):
-        return model_arch in [
-            cls.BERT,
-            cls.XLM,
-            cls.ROBERTA,
-            cls.ALBERT,
-            cls.XLM_ROBERTA,
-            cls.BART,
-            cls.MBART,
-            cls.ELECTRA,
-        ]
 
     @classmethod
     def from_encoder(cls, encoder):

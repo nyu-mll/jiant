@@ -1,53 +1,106 @@
 import abc
+
 from dataclasses import dataclass
 from typing import Any
+from typing import Callable
 
 import torch
 import torch.nn as nn
 
 import jiant.proj.main.modeling.heads as heads
 import jiant.utils.transformer_utils as transformer_utils
-from jiant.proj.main.components.outputs import LogitsOutput, LogitsAndLossOutput
-from jiant.utils.python.datastructures import take_one
+
+from jiant.proj.main.components.outputs import LogitsAndLossOutput
+from jiant.proj.main.components.outputs import LogitsOutput
 from jiant.shared.model_resolution import ModelArchitectures
+from jiant.tasks.core import TaskTypes
+from jiant.utils.python.datastructures import take_one
+
+
+class JiantTaskModelFactory:
+
+    """This factory is used to create task models bundling the task, encoder, and task head within the task model.
+
+    Attributes:
+        registry (dict): Dynamic registry mapping task types to task models
+    """
+
+    registry = {}
+
+    @classmethod
+    def register(cls, task_type: TaskTypes) -> Callable:
+        """Register task_type as a key mapping to a TaskModel
+
+        Args:
+            task_type (TaskTypes): TaskType key mapping to a BaseHead task head
+
+        Returns:
+            Callable: inner_wrapper() wrapping TaskModel constructor
+        """
+
+        def inner_wrapper(wrapped_class: Taskmodel) -> Callable:
+            assert task_type not in cls.registry
+            cls.registry[task_type] = wrapped_class
+            return wrapped_class
+
+        return inner_wrapper
+
+    def __call__(cls, task, jiant_transformers_model, head, **kwargs):
+        """This creates the TaskModel corresponding to the Task, abc.abstractmethod,
+            and encoder used.
+
+        Args:
+            task (Task): Task
+            jiant_transformers_model (JiantTransformersModel): Encoder
+            head (BaseHead): Task head
+            **kwargs: Additional arguments for initializing TaskModel
+
+        Returns:
+            TaskModel: Initialized task model bundling task, encoder, and head
+        """
+        taskmodel_class = cls.registry[task.TASK_TYPE]
+        taskmodel = taskmodel_class(task, jiant_transformers_model, head, **kwargs)
+        return taskmodel
 
 
 class Taskmodel(nn.Module, metaclass=abc.ABCMeta):
-    def __init__(self, encoder):
+    def __init__(self, task, encoder, head):
         super().__init__()
+        self.task = task
         self.encoder = encoder
+        self.head = head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         raise NotImplementedError
 
 
+@JiantTaskModelFactory.register(TaskTypes.CLASSIFICATION)
 class ClassificationModel(Taskmodel):
-    def __init__(self, encoder, classification_head: heads.ClassificationHead):
-        super().__init__(encoder=encoder)
-        self.classification_head = classification_head
+    def __init__(self, task, encoder, head: heads.ClassificationHead, **kwargs):
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+        super().__init__(task=task, encoder=encoder, head=head)
+
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
+
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
-        logits = self.classification_head(pooled=encoder_output.pooled)
+        logits = self.head(pooled=encoder_output.pooled)
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(
-                logits.view(-1, self.classification_head.num_labels), batch.label_id.view(-1),
-            )
+            loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_id.view(-1),)
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.REGRESSION)
 class RegressionModel(Taskmodel):
-    def __init__(self, encoder, regression_head: heads.RegressionHead):
-        super().__init__(encoder=encoder)
-        self.regression_head = regression_head
+    def __init__(self, task, encoder, head: heads.RegressionHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         # TODO: Abuse of notation - these aren't really logits  (issue #1187)
-        logits = self.regression_head(pooled=encoder_output.pooled)
+        logits = self.head(pooled=encoder_output.pooled)
         if compute_loss:
             loss_fct = nn.MSELoss()
             loss = loss_fct(logits.view(-1), batch.label.view(-1))
@@ -56,13 +109,13 @@ class RegressionModel(Taskmodel):
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.MULTIPLE_CHOICE)
 class MultipleChoiceModel(Taskmodel):
-    def __init__(self, encoder, num_choices: int, choice_scoring_head: heads.RegressionHead):
-        super().__init__(encoder=encoder)
-        self.num_choices = num_choices
-        self.choice_scoring_head = choice_scoring_head
+    def __init__(self, task, encoder, head: heads.RegressionHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
+        self.num_choices = task.NUM_CHOICES
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         input_ids = batch.input_ids
         segment_ids = batch.segment_ids
         input_mask = batch.input_mask
@@ -76,7 +129,7 @@ class MultipleChoiceModel(Taskmodel):
                 segment_ids=segment_ids[:, i],
                 input_mask=input_mask[:, i],
             )
-            choice_score = self.choice_scoring_head(pooled=encoder_output.pooled)
+            choice_score = self.head(pooled=encoder_output.pooled)
             choice_score_list.append(choice_score)
             encoder_output_other_ls.append(encoder_output.other)
 
@@ -103,36 +156,34 @@ class MultipleChoiceModel(Taskmodel):
             return LogitsOutput(logits=logits, other=reshaped_outputs)
 
 
+@JiantTaskModelFactory.register(TaskTypes.SPAN_COMPARISON_CLASSIFICATION)
 class SpanComparisonModel(Taskmodel):
-    def __init__(self, encoder, span_comparison_head: heads.SpanComparisonHead):
-        super().__init__(encoder=encoder)
-        self.span_comparison_head = span_comparison_head
+    def __init__(self, task, encoder, head: heads.SpanComparisonHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
-        logits = self.span_comparison_head(unpooled=encoder_output.unpooled, spans=batch.spans)
+        logits = self.head(unpooled=encoder_output.unpooled, spans=batch.spans)
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(
-                logits.view(-1, self.span_comparison_head.num_labels), batch.label_id.view(-1),
-            )
+            loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_id.view(-1),)
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.SPAN_PREDICTION)
 class SpanPredictionModel(Taskmodel):
-    def __init__(self, encoder, span_prediction_head: heads.TokenClassificationHead):
-        super().__init__(encoder=encoder)
+    def __init__(self, task, encoder, head: heads.TokenClassificationHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
         self.offset_margin = 1000
         # 1000 is a big enough number that exp(-1000) will be strict 0 in float32.
         # So that if we add 1000 to the valid dimensions in the input of softmax,
         # we can guarantee the output distribution will only be non-zero at those dimensions.
-        self.span_prediction_head = span_prediction_head
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
-        logits = self.span_prediction_head(unpooled=encoder_output.unpooled)
+        logits = self.head(unpooled=encoder_output.unpooled)
         # Ensure logits in valid range is at least self.offset_margin higher than others
         logits_offset = logits.max() - logits.min() + self.offset_margin
         logits = logits + logits_offset * batch.selection_token_mask.unsqueeze(dim=2)
@@ -146,38 +197,36 @@ class SpanPredictionModel(Taskmodel):
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.MULTI_LABEL_SPAN_CLASSIFICATION)
 class MultiLabelSpanComparisonModel(Taskmodel):
-    def __init__(self, encoder, span_comparison_head: heads.SpanComparisonHead):
-        super().__init__(encoder=encoder)
-        self.span_comparison_head = span_comparison_head
+    def __init__(self, task, encoder, head: heads.SpanComparisonHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
-        logits = self.span_comparison_head(unpooled=encoder_output.unpooled, spans=batch.spans)
+        logits = self.head(unpooled=encoder_output.unpooled, spans=batch.spans)
         if compute_loss:
             loss_fct = nn.BCEWithLogitsLoss()
-            loss = loss_fct(
-                logits.view(-1, self.span_comparison_head.num_labels), batch.label_ids.float(),
-            )
+            loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_ids.float(),)
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.TAGGING)
 class TokenClassificationModel(Taskmodel):
     """From RobertaForTokenClassification"""
 
-    def __init__(self, encoder, token_classification_head: heads.TokenClassificationHead):
-        super().__init__(encoder=encoder)
-        self.token_classification_head = token_classification_head
+    def __init__(self, task, encoder, head: heads.TokenClassificationHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
-        logits = self.token_classification_head(unpooled=encoder_output.unpooled)
+        logits = self.head(unpooled=encoder_output.unpooled)
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
             active_loss = batch.label_mask.view(-1) == 1
-            active_logits = logits.view(-1, self.token_classification_head.num_labels)[active_loss]
+            active_logits = logits.view(-1, self.head.num_labels)[active_loss]
             active_labels = batch.label_ids.view(-1)[active_loss]
             loss = loss_fct(active_logits, active_labels)
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
@@ -185,14 +234,14 @@ class TokenClassificationModel(Taskmodel):
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.SQUAD_STYLE_QA)
 class QAModel(Taskmodel):
-    def __init__(self, encoder, qa_head: heads.QAHead):
-        super().__init__(encoder=encoder)
-        self.qa_head = qa_head
+    def __init__(self, task, encoder, head: heads.QAHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
-        logits = self.qa_head(unpooled=encoder_output.unpooled)
+        logits = self.head(unpooled=encoder_output.unpooled)
         if compute_loss:
             loss = compute_qa_loss(
                 logits=logits,
@@ -204,14 +253,16 @@ class QAModel(Taskmodel):
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.MASKED_LANGUAGE_MODELING)
 class MLMModel(Taskmodel):
-    def __init__(self, encoder, mlm_head: heads.BaseMLMHead):
-        super().__init__(encoder=encoder)
-        self.mlm_head = mlm_head
+    def __init__(self, task, encoder, head: heads.BaseMLMHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         masked_batch = batch.get_masked(
-            mlm_probability=task.mlm_probability, tokenizer=tokenizer, do_mask=task.do_mask,
+            mlm_probability=self.task.mlm_probability,
+            tokenizer=tokenizer,
+            do_mask=self.task.do_mask,
         )
         encoder_output = get_output_from_encoder(
             encoder=self.encoder,
@@ -219,7 +270,7 @@ class MLMModel(Taskmodel):
             segment_ids=masked_batch.segment_ids,
             input_mask=masked_batch.input_mask,
         )
-        logits = self.mlm_head(unpooled=encoder_output.unpooled)
+        logits = self.head(unpooled=encoder_output.unpooled)
         if compute_loss:
             loss = compute_mlm_loss(logits=logits, masked_lm_labels=masked_batch.masked_lm_labels)
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
@@ -227,25 +278,25 @@ class MLMModel(Taskmodel):
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
+@JiantTaskModelFactory.register(TaskTypes.EMBEDDING)
 class EmbeddingModel(Taskmodel):
-    def __init__(self, encoder, pooler_head: heads.AbstractPoolerHead, layer):
-        super().__init__(encoder=encoder)
-        self.pooler_head = pooler_head
-        self.layer = layer
+    def __init__(self, task, encoder, head: heads.AbstractPoolerHead, **kwargs):
+        super().__init__(task=task, encoder=encoder, head=head)
+        self.layer = kwargs["layer"]
 
-    def forward(self, batch, task, tokenizer, compute_loss: bool = False):
+    def forward(self, batch, tokenizer, compute_loss: bool = False):
         with transformer_utils.output_hidden_states_context(self.encoder):
             encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
         # A tuple of layers of hidden states
         hidden_states = take_one(encoder_output.other)
         layer_hidden_states = hidden_states[self.layer]
 
-        if isinstance(self.pooler_head, heads.MeanPoolerHead):
-            logits = self.pooler_head(unpooled=layer_hidden_states, input_mask=batch.input_mask)
-        elif isinstance(self.pooler_head, heads.FirstPoolerHead):
-            logits = self.pooler_head(layer_hidden_states)
+        if isinstance(self.head, heads.MeanPoolerHead):
+            logits = self.head(unpooled=layer_hidden_states, input_mask=batch.input_mask)
+        elif isinstance(self.head, heads.FirstPoolerHead):
+            logits = self.head(layer_hidden_states)
         else:
-            raise TypeError(type(self.pooler_head))
+            raise TypeError(type(self.head))
 
         # TODO: Abuse of notation - these aren't really logits  (issue #1187)
         if compute_loss:
@@ -261,6 +312,7 @@ class EmbeddingModel(Taskmodel):
 
 @dataclass
 class EncoderOutput:
+
     pooled: torch.Tensor
     unpooled: torch.Tensor
     other: Any = None
