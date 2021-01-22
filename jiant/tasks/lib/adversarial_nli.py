@@ -97,7 +97,7 @@ class AdversarialNliTask(Task):
                     guid="%s-%s" % (set_type, i),
                     input_premise=line["context"],
                     input_hypothesis=line["hypothesis"],
-                    label=line["label"] if set_type != "test" else cls.LABELS[-1],
+                    label=line["label"]
                 )
             )
         return examples
