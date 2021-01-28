@@ -17,36 +17,6 @@ class ModelArchitectures(Enum):
     ELECTRA = "electra"
 
     @classmethod
-    def from_model_type(cls, model_type: str):
-        """Get the model architecture for the provided shortcut name.
-
-        Args:
-            model_type (str): model shortcut name.
-
-        Returns:
-            Model architecture associated with the provided shortcut name.
-
-        """
-        if model_type == "bert":
-            return cls.BERT
-        elif model_type == "xlm":
-            return cls.XLM
-        elif model_type == "roberta":
-            return cls.ROBERTA
-        elif model_type == "albert":
-            return cls.ALBERT
-        elif model_type == "xlm-roberta":
-            return cls.XLM_ROBERTA
-        elif model_type == "bart":
-            return cls.BART
-        elif model_type == "mbart":
-            return cls.MBART
-        elif model_type == "electra":
-            return cls.ELECTRA
-        else:
-            raise KeyError(model_type)
-
-    @classmethod
     def from_encoder(cls, encoder):
         if (
             isinstance(encoder, transformers.BertModel)
@@ -94,7 +64,7 @@ class ModelClassSpec:
 
 
 def build_featurization_spec(model_type, max_seq_length):
-    model_arch = ModelArchitectures.from_model_type(model_type)
+    model_arch = ModelArchitectures(model_type)
     if model_arch == ModelArchitectures.BERT:
         return FeaturizationSpec(
             max_seq_length=max_seq_length,
@@ -242,7 +212,7 @@ def resolve_tokenizer_class(model_type):
         Tokenizer associated with the given model.
 
     """
-    return TOKENIZER_CLASS_DICT[ModelArchitectures.from_model_type(model_type)]
+    return TOKENIZER_CLASS_DICT[ModelArchitectures(model_type)]
 
 
 def resolve_is_lower_case(tokenizer):

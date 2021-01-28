@@ -135,7 +135,7 @@ class JiantTransformersModelFactory:
             JiantTransformersModel: Jiant wrapper class for Hugging Face model
         """
         jiant_transformers_model_class = cls.registry[
-            ModelArchitectures.from_model_type(hf_model.config.model_type)
+            ModelArchitectures(hf_model.config.model_type)
         ]
         jiant_transformers_model = jiant_transformers_model_class(hf_model)
         return jiant_transformers_model

@@ -1,8 +1,10 @@
-import os
-from collections import Counter
 import numpy as np
+import os
+
+from collections import Counter
 
 from jiant.shared import model_resolution
+from jiant.shared.model_resolution import ModelArchitectures
 from jiant.tasks import create_task_from_config_path
 from jiant.utils.testing.tokenizer import SimpleSpaceTokenizer
 
@@ -301,7 +303,7 @@ def test_featurization_of_task_data():
         tokenized_examples[0].hypothesis
     )
     feat_spec = model_resolution.build_featurization_spec(
-        model_type="bert", max_seq_length=train_example_0_length
+        model_type=ModelArchitectures.BERT.value, max_seq_length=train_example_0_length
     )
     featurized_examples = [
         tokenized_example.featurize(tokenizer=tokenizer, feat_spec=feat_spec)
