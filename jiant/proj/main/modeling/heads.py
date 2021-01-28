@@ -20,7 +20,6 @@ We're going to abstract away from that and just choose one implementation.
 
 
 class JiantHeadFactory:
-
     """This factory is used to create task-specific heads for the supported Transformer encoders.
 
     Attributes:
@@ -34,7 +33,8 @@ class JiantHeadFactory:
         """Register each TaskType in task_type_list as a key mapping to a BaseHead task head
 
         Args:
-            task_type_list (List[TaskType]): List of TaskTypes that are associated to a BaseHead task head
+            task_type_list (List[TaskType]): List of TaskTypes that are associated to a
+                                             BaseHead task head
 
         Returns:
             Callable: inner_wrapper() wrapping task head constructor or task head factory
@@ -72,9 +72,7 @@ class JiantHeadFactory:
 
 
 class BaseHead(nn.Module, metaclass=abc.ABCMeta):
-
-    """Absract class for task heads
-    """
+    """Absract class for task heads"""
 
     @abc.abstractmethod
     def __init__(self):
@@ -170,7 +168,6 @@ class QAHead(BaseHead):
 
 @JiantHeadFactory.register([TaskTypes.MASKED_LANGUAGE_MODELING])
 class JiantMLMHeadFactory:
-
     """This factory is used to create masked language modeling (MLM) task heads.
     This is required due to Transformers implementing different MLM heads for
     different encoders.

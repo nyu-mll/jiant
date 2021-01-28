@@ -18,8 +18,8 @@ from jiant.utils.python.datastructures import take_one
 
 
 class JiantTaskModelFactory:
-
-    """This factory is used to create task models bundling the task, encoder, and task head within the task model.
+    """This factory is used to create task models bundling the task,
+       encoder, and task head within the task model.
 
     Attributes:
         registry (dict): Dynamic registry mapping task types to task models

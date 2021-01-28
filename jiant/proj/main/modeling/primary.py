@@ -95,7 +95,6 @@ def wrap_jiant_forward(
 
 
 class JiantTransformersModelFactory:
-
     """This factory is used to create JiantTransformersModels based on Huggingface's models.
     A wrapper class around Huggingface's Transformer models is used to abstract any inconsistencies
     in the classes.
@@ -111,7 +110,8 @@ class JiantTransformersModelFactory:
         """Register model_arch as a key mapping to a TaskModel
 
         Args:
-            model_arch (ModelArchitectures): ModelArchitecture key mapping to a JiantTransformersModel
+            model_arch (ModelArchitectures): ModelArchitecture key mapping to a
+                                             JiantTransformersModel
 
         Returns:
             Callable: inner_wrapper() wrapping TaskModel constructor
