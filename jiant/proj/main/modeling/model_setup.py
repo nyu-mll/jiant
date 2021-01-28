@@ -288,9 +288,7 @@ def create_taskmodel(task, jiant_transformers_model, **taskmodel_kwargs) -> Task
     head_kwargs["vocab_size"] = jiant_transformers_model.config.vocab_size
     head_kwargs["layer_norm_eps"] = (jiant_transformers_model.config.layer_norm_eps,)
     head_kwargs["hidden_act"] = jiant_transformers_model.config.hidden_act
-    head_kwargs["model_arch"] = ModelArchitectures(
-        jiant_transformers_model.config.model_type
-    )
+    head_kwargs["model_arch"] = ModelArchitectures(jiant_transformers_model.config.model_type)
 
     head = JiantHeadFactory()(task, **head_kwargs)
 
