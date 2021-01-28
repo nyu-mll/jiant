@@ -23,7 +23,7 @@ def export_model(
     - Tokenizer data
     - JSON file pointing to paths for the above
     Args:
-        pretrained_model_name_or_path (:obj:`str` or :obj:`os.PathLike`):
+        hf_pretrained_model_name_or_path (:obj:`str` or :obj:`os.PathLike`):
                         Can be either:
 
                             - A string, the `model id` of a pretrained model configuration
