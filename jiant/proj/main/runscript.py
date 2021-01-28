@@ -22,7 +22,6 @@ class RunConfiguration(zconf.RunConfig):
 
     # === Model parameters === #
     hf_pretrained_model_name_or_path = zconf.attr(type=str, required=True)
-    model_type = zconf.attr(type=str, required=True)
     model_path = zconf.attr(type=str, required=True)
     model_config_path = zconf.attr(default=None, type=str)
     model_load_mode = zconf.attr(default="from_transformers", type=str)
