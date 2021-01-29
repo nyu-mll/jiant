@@ -89,6 +89,11 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_ropes_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
+    elif task_name in ["acceptability_definiteness", "acceptability_coord",
+                       "acceptability_eos", "acceptability_whwords",]:
+        download_acceptability_judgments_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
     else:
         raise KeyError(task_name)
 
@@ -1009,6 +1014,45 @@ def download_ropes_data_and_write_config(
             },
             "name": task_name,
             "kwargs": {"include_background": True},
+        },
+        path=task_config_path,
+    )
+
+
+def download_acceptability_judgments_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    name_map = {
+        "acceptability_definiteness": "definiteness",
+        "acceptability_coord": "coordinating-conjunctions",
+        "acceptability_whwords": "whwords",
+        "acceptability_eos": "eos",
+    }
+    dataset_name = name_map[task_name]
+    os.makedirs(task_data_path, exist_ok=True)
+    # data contains all train/val/test examples
+    # metadata contains the split indicators
+    data_path = os.path.join(task_data_path, "data.json")
+    metadata_path = os.path.join(task_data_path, "metadata.json")
+    download_utils.download_file(
+        url="https://raw.githubusercontent.com/decompositional-semantics-initiative/DNC/master/function_words/"
+            f"ACCEPTABILITY/acceptability-{dataset_name}_data.json",
+        file_path=data_path,
+    )
+    download_utils.download_file(
+        url="https://raw.githubusercontent.com/decompositional-semantics-initiative/DNC/master/function_words/"
+            f"ACCEPTABILITY/acceptability-{dataset_name}_metadata.json",
+        file_path=metadata_path,
+    )
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "data": data_path,
+                "metadata": metadata_path,
+            },
+            "name": task_name,
+            "kwargs": {"fold": "fold1"},  # use fold1 (out of 10) by default
         },
         path=task_config_path,
     )

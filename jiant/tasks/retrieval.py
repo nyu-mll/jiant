@@ -3,6 +3,9 @@ from typing import Optional
 
 from jiant.tasks.lib.abductive_nli import AbductiveNliTask
 from jiant.tasks.lib.acceptability_judgement.definiteness import AcceptabilityDefinitenessTask
+from jiant.tasks.lib.acceptability_judgement.coord import AcceptabilityCoordTask
+from jiant.tasks.lib.acceptability_judgement.eos import AcceptabilityEOSTask
+from jiant.tasks.lib.acceptability_judgement.whwords import AcceptabilityWHwordsTask
 from jiant.tasks.lib.adversarial_nli import AdversarialNliTask
 from jiant.tasks.lib.arc_easy import ArcEasyTask
 from jiant.tasks.lib.arc_challenge import ArcChallengeTask
@@ -86,6 +89,9 @@ TASK_DICT = {
     "arc_challenge": ArcChallengeTask,
     "superglue_axg": SuperglueWinogenderDiagnosticsTask,
     "acceptability_definiteness": AcceptabilityDefinitenessTask,
+    "acceptability_coord": AcceptabilityCoordTask,
+    "acceptability_eos": AcceptabilityEOSTask,
+    "acceptability_whwords": AcceptabilityWHwordsTask,
     "adversarial_nli": AdversarialNliTask,
     "boolq": BoolQTask,
     "bucc2018": Bucc2018Task,

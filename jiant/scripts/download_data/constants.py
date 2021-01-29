@@ -24,6 +24,10 @@ OTHER_DOWNLOAD_TASKS = {
     "piqa",
     "winogrande",
     "ropes",
+    "acceptability_definiteness",
+    "acceptability_coord",
+    "acceptability_eos",
+    "acceptability_whwords",
 }
 
 DIRECT_DOWNLOAD_TASKS = set(
