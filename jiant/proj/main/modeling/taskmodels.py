@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 
 import jiant.proj.main.modeling.heads as heads
-import jiant.utils.transformer_utils as transformer_utils
 
 from jiant.proj.main.components.outputs import LogitsAndLossOutput
 from jiant.proj.main.components.outputs import LogitsOutput
@@ -285,8 +284,9 @@ class EmbeddingModel(Taskmodel):
         self.layer = kwargs["layer"]
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        with transformer_utils.output_hidden_states_context(self.encoder):
-            encoder_output = get_output_from_encoder_and_batch(encoder=self.encoder, batch=batch)
+        encoder_output = get_output_from_encoder_and_batch(
+            encoder=self.encoder, batch=batch, output_hidden_states=True
+        )
         # A tuple of layers of hidden states
         hidden_states = take_one(encoder_output.other)
         layer_hidden_states = hidden_states[self.layer]
@@ -319,7 +319,7 @@ class EncoderOutput:
     # Extend later with attention, hidden_acts, etc
 
 
-def get_output_from_encoder_and_batch(encoder, batch) -> EncoderOutput:
+def get_output_from_encoder_and_batch(encoder, batch, output_hidden_states=False) -> EncoderOutput:
     """Pass batch to encoder, return encoder model output.
 
     Args:
@@ -335,10 +335,13 @@ def get_output_from_encoder_and_batch(encoder, batch) -> EncoderOutput:
         input_ids=batch.input_ids,
         segment_ids=batch.segment_ids,
         input_mask=batch.input_mask,
+        output_hidden_states=output_hidden_states,
     )
 
 
-def get_output_from_encoder(encoder, input_ids, segment_ids, input_mask) -> EncoderOutput:
+def get_output_from_encoder(
+    encoder, input_ids, segment_ids, input_mask, output_hidden_states=False
+) -> EncoderOutput:
     """Pass inputs to encoder, return encoder output.
 
     Args:
@@ -362,18 +365,29 @@ def get_output_from_encoder(encoder, input_ids, segment_ids, input_mask) -> Enco
         ModelArchitectures.XLM_ROBERTA,
     ]:
         pooled, unpooled, other = get_output_from_standard_transformer_models(
-            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+            encoder=encoder,
+            input_ids=input_ids,
+            segment_ids=segment_ids,
+            input_mask=input_mask,
+            output_hidden_states=output_hidden_states,
         )
     elif model_arch == ModelArchitectures.ELECTRA:
         pooled, unpooled, other = get_output_from_electra(
-            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+            encoder=encoder,
+            input_ids=input_ids,
+            segment_ids=segment_ids,
+            input_mask=input_mask,
+            output_hidden_states=output_hidden_states,
         )
     elif model_arch in [
         ModelArchitectures.BART,
         ModelArchitectures.MBART,
     ]:
         pooled, unpooled, other = get_output_from_bart_models(
-            encoder=encoder, input_ids=input_ids, input_mask=input_mask,
+            encoder=encoder,
+            input_ids=input_ids,
+            input_mask=input_mask,
+            output_hidden_states=output_hidden_states,
         )
     else:
         raise KeyError(model_arch)
@@ -385,38 +399,52 @@ def get_output_from_encoder(encoder, input_ids, segment_ids, input_mask) -> Enco
         return EncoderOutput(pooled=pooled, unpooled=unpooled)
 
 
-def get_output_from_standard_transformer_models(encoder, input_ids, segment_ids, input_mask):
-    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
-    pooled, unpooled, other = output[1], output[0], output[2:]
-    return pooled, unpooled, other
+def get_output_from_standard_transformer_models(
+    encoder, input_ids, segment_ids, input_mask, output_hidden_states=False
+):
+    output = encoder(
+        input_ids=input_ids,
+        token_type_ids=segment_ids,
+        attention_mask=input_mask,
+        output_hidden_states=output_hidden_states,
+    )
+    return output.pooler_output, output.last_hidden_state, output.hidden_states
 
 
-def get_output_from_bart_models(encoder, input_ids, input_mask):
+def get_output_from_bart_models(encoder, input_ids, input_mask, output_hidden_states=False):
     # BART and mBART and encoder-decoder architectures.
     # As described in the BART paper and implemented in Transformers,
     # for single input tasks, the encoder input is the sequence,
     # the decode input is 1-shifted sequence, and the resulting
     # sentence representation is the final decoder state.
     # That's what we use for `unpooled` here.
-    dec_last, dec_all, enc_last, enc_all = encoder(
-        input_ids=input_ids, attention_mask=input_mask, output_hidden_states=True,
+    output = encoder(
+        input_ids=input_ids, attention_mask=input_mask, output_hidden_states=output_hidden_states,
     )
-    unpooled = dec_last
+    dec_all = output.decoder_hidden_states
+    enc_all = output.encoder_hidden_states
 
-    other = (enc_all + dec_all,)
+    unpooled = output
+
+    hidden_states = (enc_all + dec_all,)
 
     bsize, slen = input_ids.shape
     batch_idx = torch.arange(bsize).to(input_ids.device)
     # Get last non-pad index
     pooled = unpooled[batch_idx, slen - input_ids.eq(encoder.config.pad_token_id).sum(1) - 1]
-    return pooled, unpooled, other
+    return pooled, unpooled, hidden_states
 
 
-def get_output_from_electra(encoder, input_ids, segment_ids, input_mask):
-    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
-    unpooled = output[0]
+def get_output_from_electra(encoder, input_ids, segment_ids, input_mask, output_hidden_states=False):
+    output = encoder(
+        input_ids=input_ids,
+        token_type_ids=segment_ids,
+        attention_mask=input_mask,
+        output_hidden_states=output_hidden_states,
+    )
+    unpooled = output.hidden_states
     pooled = unpooled[:, 0, :]
-    return pooled, unpooled, output
+    return pooled, unpooled, output.hidden_states
 
 
 def compute_mlm_loss(logits, masked_lm_labels):
