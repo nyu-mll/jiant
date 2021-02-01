@@ -90,8 +90,23 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
     elif task_name in ["acceptability_definiteness", "acceptability_coord",
-                       "acceptability_eos", "acceptability_whwords",]:
+                       "acceptability_eos", "acceptability_whwords"]:
         download_acceptability_judgments_data_and_write_config(
+            task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
+        )
+    elif task_name in [
+        "senteval_bigram_shift",
+        "senteval_coordination_inversion",
+        "senteval_obj_number",
+        "senteval_odd_man_out",
+        "senteval_past_present",
+        "senteval_sentence_length",
+        "senteval_subj_number",
+        "senteval_top_constituents",
+        "senteval_tree_depth",
+        "senteval_word_content",
+    ]:
+        download_senteval_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
     else:
@@ -1032,6 +1047,7 @@ def download_acceptability_judgments_data_and_write_config(
     os.makedirs(task_data_path, exist_ok=True)
     # data contains all train/val/test examples
     # metadata contains the split indicators
+    # (there are 10 CV folds, we use fold1 by default, see below)
     data_path = os.path.join(task_data_path, "data.json")
     metadata_path = os.path.join(task_data_path, "metadata.json")
     download_utils.download_file(
@@ -1053,6 +1069,42 @@ def download_acceptability_judgments_data_and_write_config(
             },
             "name": task_name,
             "kwargs": {"fold": "fold1"},  # use fold1 (out of 10) by default
+        },
+        path=task_config_path,
+    )
+
+
+def download_senteval_data_and_write_config(
+    task_name: str, task_data_path: str, task_config_path: str
+):
+    name_map = {
+        "senteval_bigram_shift": "bigram_shift",
+        "senteval_coordination_inversion": "coordination_inversion",
+        "senteval_obj_number": "obj_number",
+        "senteval_odd_man_out": "odd_man_out",
+        "senteval_past_present": "past_present",
+        "senteval_sentence_length": "sentence_length",
+        "senteval_subj_number": "subj_number",
+        "senteval_top_constituents": "top_constituents",
+        "senteval_tree_depth": "tree_depth",
+        "senteval_word_content": "word_content",
+    }
+    dataset_name = name_map[task_name]
+    os.makedirs(task_data_path, exist_ok=True)
+    # data contains all train/val/test examples, first column indicates the split
+    data_path = os.path.join(task_data_path, "data.tsv")
+    download_utils.download_file(
+        url="https://raw.githubusercontent.com/facebookresearch/SentEval/master/data/probing/"
+            f"{dataset_name}.txt",
+        file_path=data_path,
+    )
+    py_io.write_json(
+        data={
+            "task": task_name,
+            "paths": {
+                "data": data_path,
+            },
+            "name": task_name,
         },
         path=task_config_path,
     )
