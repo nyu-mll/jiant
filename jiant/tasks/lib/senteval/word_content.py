@@ -1034,6 +1034,6 @@ class SentEvalWordContentTask(base.BaseSentEvalTask):
         "yard",
         "yards",
         "yelling",
-        "zach"
+        "zach",
     ]
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)

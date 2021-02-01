@@ -89,8 +89,12 @@ def download_task_data_and_write_config(task_name: str, task_data_path: str, tas
         download_ropes_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
-    elif task_name in ["acceptability_definiteness", "acceptability_coord",
-                       "acceptability_eos", "acceptability_whwords"]:
+    elif task_name in [
+        "acceptability_definiteness",
+        "acceptability_coord",
+        "acceptability_eos",
+        "acceptability_whwords",
+    ]:
         download_acceptability_judgments_data_and_write_config(
             task_name=task_name, task_data_path=task_data_path, task_config_path=task_config_path
         )
@@ -1051,22 +1055,19 @@ def download_acceptability_judgments_data_and_write_config(
     data_path = os.path.join(task_data_path, "data.json")
     metadata_path = os.path.join(task_data_path, "metadata.json")
     download_utils.download_file(
-        url="https://raw.githubusercontent.com/decompositional-semantics-initiative/DNC/master/function_words/"
-            f"ACCEPTABILITY/acceptability-{dataset_name}_data.json",
+        url="https://raw.githubusercontent.com/decompositional-semantics-initiative/DNC/master/"
+        f"function_words/ACCEPTABILITY/acceptability-{dataset_name}_data.json",
         file_path=data_path,
     )
     download_utils.download_file(
-        url="https://raw.githubusercontent.com/decompositional-semantics-initiative/DNC/master/function_words/"
-            f"ACCEPTABILITY/acceptability-{dataset_name}_metadata.json",
+        url="https://raw.githubusercontent.com/decompositional-semantics-initiative/DNC/master/"
+        f"function_words/ACCEPTABILITY/acceptability-{dataset_name}_metadata.json",
         file_path=metadata_path,
     )
     py_io.write_json(
         data={
             "task": task_name,
-            "paths": {
-                "data": data_path,
-                "metadata": metadata_path,
-            },
+            "paths": {"data": data_path, "metadata": metadata_path},
             "name": task_name,
             "kwargs": {"fold": "fold1"},  # use fold1 (out of 10) by default
         },
@@ -1095,16 +1096,10 @@ def download_senteval_data_and_write_config(
     data_path = os.path.join(task_data_path, "data.tsv")
     download_utils.download_file(
         url="https://raw.githubusercontent.com/facebookresearch/SentEval/master/data/probing/"
-            f"{dataset_name}.txt",
+        f"{dataset_name}.txt",
         file_path=data_path,
     )
     py_io.write_json(
-        data={
-            "task": task_name,
-            "paths": {
-                "data": data_path,
-            },
-            "name": task_name,
-        },
+        data={"task": task_name, "paths": {"data": data_path}, "name": task_name},
         path=task_config_path,
     )

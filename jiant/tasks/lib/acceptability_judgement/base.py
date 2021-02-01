@@ -99,9 +99,9 @@ class BaseAcceptabilityTask(Task):
             row_phase = self.DATA_PHASE_MAP[metadata_row["misc"][self.fold]]
             if row_phase != set_type:
                 continue
-            examples.append(Example(
-                guid=data_row["pair-id"],
-                text=data_row["context"],
-                label=data_row["label"],
-            ))
+            examples.append(
+                Example(
+                    guid=data_row["pair-id"], text=data_row["context"], label=data_row["label"],
+                )
+            )
         return examples

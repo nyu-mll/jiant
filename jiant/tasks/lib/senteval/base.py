@@ -78,7 +78,6 @@ class BaseSentEvalTask(Task):
     TASK_TYPE = TaskTypes.CLASSIFICATION
     LABELS = None  # Override this
 
-
     def get_train_examples(self):
         return self._create_examples(set_type="train")
 
@@ -91,11 +90,7 @@ class BaseSentEvalTask(Task):
     def _create_examples(self, set_type):
         examples = []
         df = pd.read_csv(self.path_dict["data"], sep="\t", names=["phase", "label", "text"])
-        phase_key = {
-            "train": "tr",
-            "val": "va",
-            "test": "te",
-        }[set_type]
+        phase_key = {"train": "tr", "val": "va", "test": "te"}[set_type]
         sub_df = df[df["phase"] == phase_key]
         for i, row in sub_df.iterrows():
             # noinspection PyArgumentList
