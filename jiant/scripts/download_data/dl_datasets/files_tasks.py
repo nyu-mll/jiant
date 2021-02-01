@@ -1041,13 +1041,12 @@ def download_ropes_data_and_write_config(
 def download_acceptability_judgments_data_and_write_config(
     task_name: str, task_data_path: str, task_config_path: str
 ):
-    name_map = {
+    dataset_name = {
         "acceptability_definiteness": "definiteness",
         "acceptability_coord": "coordinating-conjunctions",
         "acceptability_whwords": "whwords",
         "acceptability_eos": "eos",
-    }
-    dataset_name = name_map[task_name]
+    }[task_name]
     os.makedirs(task_data_path, exist_ok=True)
     # data contains all train/val/test examples
     # metadata contains the split indicators
