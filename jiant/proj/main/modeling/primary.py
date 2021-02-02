@@ -1,9 +1,12 @@
 import abc
 
+from dataclasses import dataclass
+from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Union
-from typing import Callable
 
+import torch
 import torch.nn as nn
 import transformers
 
@@ -12,6 +15,13 @@ import jiant.tasks as tasks
 
 from jiant.proj.main.components.outputs import construct_output_from_dict
 from jiant.shared.model_resolution import ModelArchitectures
+
+
+@dataclass
+class JiantModelOutput:
+    pooled: torch.Tensor
+    unpooled: torch.Tensor
+    other: Any = None
 
 
 class JiantModel(nn.Module):
@@ -154,6 +164,19 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
     def get_hidden_dropout_prob(self):
         return self.config.hidden_dropout_prob
 
+    def __call__(self, input_ids, segment_ids, input_mask, output_hidden_states=True):
+        output = self.forward(
+            input_ids=input_ids,
+            token_type_ids=segment_ids,
+            attention_mask=input_mask,
+            output_hidden_states=output_hidden_states,
+        )
+        return JiantModelOutput(
+            pooled=output.pooler_output,
+            unpooled=output.last_hidden_state,
+            other=output.hidden_states,
+        )
+
 
 @JiantTransformersModelFactory.register(ModelArchitectures.BERT)
 class JiantBertModel(JiantTransformersModel):
@@ -189,6 +212,14 @@ class JiantElectraModel(JiantTransformersModel):
         super().__init__(baseObject)
         self.hf_pretrained_encoder_with_pretrained_head = transformers.ElectraForPreTraining
 
+    def __call__(self, encoder, input_ids, segment_ids, input_mask):
+        output = super().__call__(
+            input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask
+        )
+        unpooled = output.hidden_states
+        pooled = unpooled[:, 0, :]
+        return JiantModelOutput(pooled=pooled, unpooled=unpooled, other=output.hidden_states)
+
 
 @JiantTransformersModelFactory.register(ModelArchitectures.BART)
 class JiantBartModel(JiantTransformersModel):
@@ -201,6 +232,28 @@ class JiantBartModel(JiantTransformersModel):
 
     def get_hidden_dropout_prob(self):
         return self.config.dropout
+
+    def __call__(self, encoder, input_ids, input_mask):
+        # BART and mBART and encoder-decoder architectures.
+        # As described in the BART paper and implemented in Transformers,
+        # for single input tasks, the encoder input is the sequence,
+        # the decode input is 1-shifted sequence, and the resulting
+        # sentence representation is the final decoder state.
+        # That's what we use for `unpooled` here.
+        dec_last, dec_all, enc_last, enc_all = super().__call__(
+            input_ids=input_ids,
+            attention_mask=input_mask,
+            output_hidden_states=True,
+            return_dict=True,
+        )
+        unpooled = dec_last
+        other = (enc_all + dec_all,)
+
+        bsize, slen = input_ids.shape
+        batch_idx = torch.arange(bsize).to(input_ids.device)
+        # Get last non-pad index
+        pooled = unpooled[batch_idx, slen - input_ids.eq(encoder.config.pad_token_id).sum(1) - 1]
+        return JiantModelOutput(pooled=pooled, unpooled=unpooled, other=other)
 
 
 @JiantTransformersModelFactory.register(ModelArchitectures.MBART)
