@@ -3,6 +3,9 @@ from typing import Optional
 
 from jiant.tasks.lib.abductive_nli import AbductiveNliTask
 from jiant.tasks.lib.acceptability_judgement.definiteness import AcceptabilityDefinitenessTask
+from jiant.tasks.lib.acceptability_judgement.coord import AcceptabilityCoordTask
+from jiant.tasks.lib.acceptability_judgement.eos import AcceptabilityEOSTask
+from jiant.tasks.lib.acceptability_judgement.whwords import AcceptabilityWHwordsTask
 from jiant.tasks.lib.adversarial_nli import AdversarialNliTask
 from jiant.tasks.lib.arc_easy import ArcEasyTask
 from jiant.tasks.lib.arc_challenge import ArcChallengeTask
@@ -50,7 +53,6 @@ from jiant.tasks.lib.record import ReCoRDTask
 from jiant.tasks.lib.rte import RteTask
 from jiant.tasks.lib.ropes import RopesTask
 from jiant.tasks.lib.scitail import SciTailTask
-from jiant.tasks.lib.senteval.tense import SentevalTenseTask
 from jiant.tasks.lib.edge_probing.semeval import SemevalTask
 from jiant.tasks.lib.snli import SnliTask
 from jiant.tasks.lib.socialiqa import SocialIQATask
@@ -58,6 +60,16 @@ from jiant.tasks.lib.edge_probing.spr1 import Spr1Task
 from jiant.tasks.lib.edge_probing.spr2 import Spr2Task
 from jiant.tasks.lib.squad import SquadTask
 from jiant.tasks.lib.edge_probing.srl import SrlTask
+from jiant.tasks.lib.senteval.bigram_shift import SentEvalBigramShiftTask
+from jiant.tasks.lib.senteval.coordination_inversion import SentEvalCoordinationInversionTask
+from jiant.tasks.lib.senteval.obj_number import SentEvalObjNumberTask
+from jiant.tasks.lib.senteval.odd_man_out import SentEvalOddManOutTask
+from jiant.tasks.lib.senteval.past_present import SentEvalPastPresentTask
+from jiant.tasks.lib.senteval.sentence_length import SentEvalSentenceLengthTask
+from jiant.tasks.lib.senteval.subj_number import SentEvalSubjNumberTask
+from jiant.tasks.lib.senteval.top_constituents import SentEvalTopConstituentsTask
+from jiant.tasks.lib.senteval.tree_depth import SentEvalTreeDepthTask
+from jiant.tasks.lib.senteval.word_content import SentEvalWordContentTask
 from jiant.tasks.lib.sst import SstTask
 from jiant.tasks.lib.stsb import StsbTask
 from jiant.tasks.lib.superglue_axg import SuperglueWinogenderDiagnosticsTask
@@ -86,6 +98,9 @@ TASK_DICT = {
     "arc_challenge": ArcChallengeTask,
     "superglue_axg": SuperglueWinogenderDiagnosticsTask,
     "acceptability_definiteness": AcceptabilityDefinitenessTask,
+    "acceptability_coord": AcceptabilityCoordTask,
+    "acceptability_eos": AcceptabilityEOSTask,
+    "acceptability_whwords": AcceptabilityWHwordsTask,
     "adversarial_nli": AdversarialNliTask,
     "boolq": BoolQTask,
     "bucc2018": Bucc2018Task,
@@ -131,8 +146,17 @@ TASK_DICT = {
     "ropes": RopesTask,
     "rte": RteTask,
     "scitail": SciTailTask,
-    "senteval_tense": SentevalTenseTask,
     "semeval": SemevalTask,
+    "senteval_bigram_shift": SentEvalBigramShiftTask,
+    "senteval_coordination_inversion": SentEvalCoordinationInversionTask,
+    "senteval_obj_number": SentEvalObjNumberTask,
+    "senteval_odd_man_out": SentEvalOddManOutTask,
+    "senteval_past_present": SentEvalPastPresentTask,
+    "senteval_sentence_length": SentEvalSentenceLengthTask,
+    "senteval_subj_number": SentEvalSubjNumberTask,
+    "senteval_top_constituents": SentEvalTopConstituentsTask,
+    "senteval_tree_depth": SentEvalTreeDepthTask,
+    "senteval_word_content": SentEvalWordContentTask,
     "snli": SnliTask,
     "socialiqa": SocialIQATask,
     "spr1": Spr1Task,

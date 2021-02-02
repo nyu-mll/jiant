@@ -22,5 +22,5 @@ class Batch(base.Batch):
     pass
 
 
-class AcceptabilityDefinitenessTask(base.BaseAcceptabilityTask):
+class AcceptabilityCoordTask(base.BaseAcceptabilityTask):
     pass

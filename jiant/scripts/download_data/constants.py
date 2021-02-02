@@ -24,6 +24,20 @@ OTHER_DOWNLOAD_TASKS = {
     "piqa",
     "winogrande",
     "ropes",
+    "acceptability_definiteness",
+    "acceptability_coord",
+    "acceptability_eos",
+    "acceptability_whwords",
+    "senteval_bigram_shift",
+    "senteval_coordination_inversion",
+    "senteval_obj_number",
+    "senteval_odd_man_out",
+    "senteval_past_present",
+    "senteval_sentence_length",
+    "senteval_subj_number",
+    "senteval_top_constituents",
+    "senteval_tree_depth",
+    "senteval_word_content",
 }
 
 DIRECT_DOWNLOAD_TASKS = set(

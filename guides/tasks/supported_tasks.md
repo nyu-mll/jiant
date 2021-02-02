@@ -7,8 +7,11 @@
 | [Argument Reasoning Comprehension](https://arxiv.org/abs/1708.01425) | arct | ✅ | ✅ | arct | [Github](https://github.com/UKPLab/argument-reasoning-comprehension-task) |
 | Abductive NLI | abductive_nli | ✅ | ✅ | abductive_nli |  |
 | SuperGLUE Winogender Diagnostic | superglue_axg | ✅ | ✅ | superglue_axg | SuperGLUE |
-| Acceptability Definiteness | acceptability_definiteness | ✅ |  | acceptability_definiteness | Function Words |
-| Adversarial NLI | `adversarial_nli_{round}` | ✅ |  | adversarial_nli | 3 rounds |
+| Acceptability Definiteness | acceptability_definiteness | ✅ | ✅ | acceptability_definiteness | Function Words |
+| Acceptability Coord | acceptability_coord | ✅ | ✅ | acceptability_coord | Function Words |
+| Acceptability EOS | acceptability_eos | ✅ | ✅ | acceptability_eos | Function Words |
+| Acceptability WH Words | acceptability_whwords | ✅ | ✅ | acceptability_whwords | Function Words |
+| Adversarial NLI | `adversarial_nli_{round}` | ✅ | ✅ | adversarial_nli | 3 rounds |
 | ARC ("easy" version) | arc_easy | ✅ | ✅ | arc_easy | [site](https://allenai.org/data/arc) |
 | ARC ("challenge" version) | arc_challenge | ✅ | ✅ | arc_challenge | [site](https://allenai.org/data/arc) |
 | BoolQ | boolq | ✅ | ✅ | boolq | SuperGLUE |
@@ -55,7 +58,16 @@
 | ReCord | record | ✅ | ✅ | record | SuperGLUE |
 | RTE | rte | ✅ | ✅ | rte | GLUE, SuperGLUE |
 | SciTail | scitail | ✅ | ✅ | scitail |  |
-| SentEval: Tense | senteval_tense | ✅ |  | senteval_tense | SentEval |
+| SentEval: Bigram Shift | senteval_bigram_shift | ✅ | ✅ | senteval_bigram_shift | SentEval |
+| SentEval: Coord Inversion | senteval_coordination_inversion | ✅ | ✅ | senteval_coordination_inversion | SentEval |
+| SentEval: Obj number | senteval_obj_number | ✅ | ✅ | senteval_obj_number | SentEval |
+| SentEval: Odd Man Out | senteval_odd_man_out | ✅ | ✅ | senteval_odd_man_out | SentEval |
+| SentEval: Past-Present | senteval_past_present | ✅ | ✅ | senteval_past_present | SentEval |
+| SentEval: Sentence Length | senteval_sentence_length | ✅ | ✅ | senteval_sentence_length | SentEval |
+| SentEval: Subj Number | senteval_subj_number | ✅ | ✅ | senteval_subj_number | SentEval |
+| SentEval: Top Constituents | senteval_top_constituents | ✅ | ✅ | senteval_top_constituents | SentEval |
+| SentEval: Tree Depth | senteval_tree_depth | ✅ | ✅ | senteval_tree_depth | SentEval |
+| SentEval: Word Content | senteval_word_content | ✅ | ✅ | senteval_word_content | SentEval |
 | EP-Rel | semeval | ✅ |  | semeval | Edge-Probing |
 | SNLI | snli | ✅ | ✅ | snli |  |
 | SocialIQA | socialiqa | ✅ | ✅ | socialiqa |  |
