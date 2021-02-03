@@ -10,11 +10,13 @@ import torch
 import torch.nn as nn
 import transformers
 
-import jiant.proj.main.modeling.taskmodels as taskmodels
 import jiant.tasks as tasks
+from jiant.tasks.core import FeaturizationSpec
+
+from jiant.proj.main.modeling.taskmodels import Taskmodel
+from jiant.shared.model_resolution import ModelArchitectures
 
 from jiant.proj.main.components.outputs import construct_output_from_dict
-from jiant.shared.model_resolution import ModelArchitectures
 
 
 @dataclass
@@ -29,7 +31,7 @@ class JiantModel(nn.Module):
         self,
         task_dict: Dict[str, tasks.Task],
         encoder: nn.Module,
-        taskmodels_dict: Dict[str, taskmodels.Taskmodel],
+        taskmodels_dict: Dict[str, Taskmodel],
         task_to_taskmodel_map: Dict[str, str],
         tokenizer,
     ):
@@ -116,6 +118,16 @@ class JiantTransformersModelFactory:
     registry = {}
 
     @classmethod
+    def get_registry(cls):
+        return cls.registry
+
+    @classmethod
+    def build_featurization_spec(cls, model_type, max_seq_length):
+        model_arch = ModelArchitectures.from_model_type(model_type)
+        model_class = cls.get_registry()[model_arch]
+        return model_class.get_feat_spec(model_type, max_seq_length)
+
+    @classmethod
     def register(cls, model_arch: ModelArchitectures) -> Callable:
         """Register model_arch as a key mapping to a TaskModel
 
@@ -158,6 +170,14 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
         )
         self.__dict__ = baseObject.__dict__
 
+    @abc.abstractmethod
+    def get_mlm_weights_dict(self, weights_dict):
+        pass
+
+    @abc.abstractmethod
+    def get_feat_spec(self, weights_dict):
+        pass
+
     def get_hidden_size(self):
         return self.config.hidden_size
 
@@ -182,35 +202,146 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
 class JiantBertModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
-        self.hf_pretrained_encoder_with_pretrained_head = transformers.BertForPreTraining
+
+    def get_feat_spec(self, max_seq_length):
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=0,
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=1,
+            sep_token_extra=False,
+        )
+
+    def get_mlm_weights_dict(self, weights_dict):
+        mlm_weights_map = {
+            "bias": "cls.predictions.bias",
+            "dense.weight": "cls.predictions.transform.dense.weight",
+            "dense.bias": "cls.predictions.transform.dense.bias",
+            "LayerNorm.weight": "cls.predictions.transform.LayerNorm.weight",
+            "LayerNorm.bias": "cls.predictions.transform.LayerNorm.bias",
+            "decoder.weight": "cls.predictions.decoder.weight",
+            "decoder.bias": "cls.predictions.bias",  # <-- linked directly to bias
+        }
+        mlm_weights_dict = {new_k: weights_dict[old_k] for new_k, old_k in mlm_weights_map.items()}
+        return mlm_weights_dict
 
 
 @JiantTransformersModelFactory.register(ModelArchitectures.ROBERTA)
 class JiantRobertaModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
-        self.hf_pretrained_encoder_with_pretrained_head = transformers.RobertaForMaskedLM
 
+    def get_mlm_weights_dict(self, weights_dict):
+        mlm_weights_dict = {
+            strings.remove_prefix(k, "lm_head."): v for k, v in weights_dict.items()
+        }
+        mlm_weights_dict["decoder.bias"] = mlm_weights_dict["bias"]
+        return mlm_weights_dict
 
-@JiantTransformersModelFactory.register(ModelArchitectures.ALBERT)
-class JiantAlbertModel(JiantTransformersModel):
-    def __init__(self, baseObject):
-        super().__init__(baseObject)
-        self.hf_pretrained_encoder_with_pretrained_head = transformers.AlbertForMaskedLM
+    def get_feat_spec(self, max_seq_length):
+        # RoBERTa is weird
+        # token 0 = '<s>' which is the cls_token
+        # token 1 = '</s>' which is the sep_token
+        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=1,  # Roberta uses pad_token_id = 1
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=0,  # RoBERTa has no token_type_ids
+            sep_token_extra=True,
+        )
 
 
 @JiantTransformersModelFactory.register(ModelArchitectures.XLM_ROBERTA)
 class JiantXLMRobertaModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
-        self.hf_pretrained_encoder_with_pretrained_head = transformers.XLMRobertaForMaskedLM
+
+    def get_feat_spec(self, max_seq_length):
+        # XLM-RoBERTa is weird
+        # token 0 = '<s>' which is the cls_token
+        # token 1 = '</s>' which is the sep_token
+        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=1,  # XLM-RoBERTa uses pad_token_id = 1
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=0,  # XLM-RoBERTa has no token_type_ids
+            sep_token_extra=True,
+        )
+
+    def get_mlm_weights_dict(self, weights_dict):
+        mlm_weights_dict = {
+            strings.remove_prefix(k, "lm_head."): v for k, v in weights_dict.items()
+        }
+        mlm_weights_dict["decoder.bias"] = mlm_weights_dict["bias"]
+        return mlm_weights_dict
+
+
+@JiantTransformersModelFactory.register(ModelArchitectures.XLM)
+class JiantXLMModel(JiantTransformersModel):
+    def __init__(self, baseObject):
+        super().__init__(baseObject)
+
+    def get_feat_spec(self, max_seq_length):
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=0,
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=0,  # RoBERTa has no token_type_ids
+            sep_token_extra=False,
+        )
+
+
+@JiantTransformersModelFactory.register(ModelArchitectures.ALBERT)
+class JiantAlbertModel(JiantTransformersModel):
+    def __init__(self, baseObject):
+        super().__init__(baseObject)
+
+    def get_mlm_weights_dict(self, weights_dict):
+        mlm_weights_dict = {
+            strings.remove_prefix(k, "predictions."): v for k, v in weights_dict.items()
+        }
+
+    def get_feat_spec(self, max_seq_length):
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,  # ?
+            pad_on_left=False,  # ok
+            cls_token_segment_id=0,  # ok
+            pad_token_segment_id=0,  # ok
+            pad_token_id=0,  # I think?
+            pad_token_mask_id=0,  # I think?
+            sequence_a_segment_id=0,  # I think?
+            sequence_b_segment_id=1,  # I think?
+            sep_token_extra=False,
+        )
 
 
 @JiantTransformersModelFactory.register(ModelArchitectures.ELECTRA)
 class JiantElectraModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
-        self.hf_pretrained_encoder_with_pretrained_head = transformers.ElectraForPreTraining
 
     def __call__(self, encoder, input_ids, segment_ids, input_mask):
         output = super().__call__(
@@ -220,18 +351,49 @@ class JiantElectraModel(JiantTransformersModel):
         pooled = unpooled[:, 0, :]
         return JiantModelOutput(pooled=pooled, unpooled=unpooled, other=output.hidden_states)
 
+    def get_feat_spec(self, max_seq_length):
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=0,
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=1,
+            sep_token_extra=False,
+        )
+
 
 @JiantTransformersModelFactory.register(ModelArchitectures.BART)
 class JiantBartModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
-        self.hf_pretrained_encoder_with_pretrained_head = transformers.BartForConditionalGeneration
 
     def get_hidden_size(self):
         return self.config.d_model
 
     def get_hidden_dropout_prob(self):
         return self.config.dropout
+
+    def get_feat_spec(self, max_seq_length):
+        # BART is weird
+        # token 0 = '<s>' which is the cls_token
+        # token 1 = '</s>' which is the sep_token
+        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=1,  # BART uses pad_token_id = 1
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=0,  # BART has no token_type_ids
+            sep_token_extra=True,
+        )
 
     def __call__(self, encoder, input_ids, input_mask):
         # BART and mBART and encoder-decoder architectures.
@@ -260,3 +422,21 @@ class JiantBartModel(JiantTransformersModel):
 class JiantMBartModel(JiantBartModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
+
+    def get_feat_spec(self, max_seq_length):
+        # mBART is weird
+        # token 0 = '<s>' which is the cls_token
+        # token 1 = '</s>' which is the sep_token
+        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=1,  # mBART uses pad_token_id = 1
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=0,  # mBART has no token_type_ids
+            sep_token_extra=True,
+        )

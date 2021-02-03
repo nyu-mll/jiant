@@ -31,72 +31,12 @@ def input_flat_strip(tokens):
     return "".join(tokens).lower()
 
 
-def delegate_flat_strip(tokens, tokenizer, return_indices=False):
-    if isinstance(tokenizer, transformers.BertTokenizer):
-        return bert_flat_strip(tokens=tokens, return_indices=return_indices)
-    elif isinstance(tokenizer, transformers.RobertaTokenizer):
-        return roberta_flat_strip(tokens=tokens, return_indices=return_indices)
-    elif isinstance(tokenizer, transformers.AlbertTokenizer):
-        return albert_flat_strip(tokens=tokens, return_indices=return_indices)
-    elif isinstance(tokenizer, transformers.XLMRobertaTokenizer):
-        return xlm_roberta_flat_strip(tokens=tokens, return_indices=return_indices)
-    else:
-        raise KeyError(type(tokenizer))
-
-
-def bert_flat_strip(tokens, return_indices=False):
+def flat_strip(tokens, tokenizer, return_indices=False):
     ls = []
     count = 0
     indices = []
     for token in tokens:
-        if token.startswith("##"):
-            token = token.replace("##", "")
-        else:
-            pass
-        ls.append(token)
-        indices += [count] * len(token)
-        count += 1
-    string = "".join(ls).lower()
-    if return_indices:
-        return string, indices
-    else:
-        return string
-
-
-def roberta_flat_strip(tokens, return_indices=False):
-    ls = []
-    count = 0
-    indices = []
-    for token in tokens:
-        if token.startswith("Ġ"):
-            token = token.replace("Ġ", "")
-        else:
-            pass
-        ls.append(token)
-        indices += [count] * len(token)
-        count += 1
-    string = "".join(ls).lower()
-    if return_indices:
-        return string, indices
-    else:
-        return string
-
-
-def xlm_roberta_flat_strip(tokens, return_indices=False):
-    # TODO: Refactor to use general SentencePiece function  (issue #1181)
-    return albert_flat_strip(tokens=tokens, return_indices=return_indices)
-
-
-def albert_flat_strip(tokens, return_indices=False):
-    ls = []
-    count = 0
-    indices = []
-    for token in tokens:
-        token = token.replace('"', "``")
-        if token.startswith("▁"):
-            token = token[1:]
-        else:
-            pass
+        tokenizer.convert_tokens_to_string(token)
         ls.append(token)
         indices += [count] * len(token)
         count += 1
@@ -118,7 +58,7 @@ def get_token_span(sentence, span: ExclusiveSpan, tokenizer):
     assert starts_with(tokenized, tokenized_start1)
     # assert starts_with(tokenized, tokenized_start2)  # <- fails because of "does" in "doesn't"
     word = sentence[span.to_slice()]
-    assert word.lower().replace(" ", "") in delegate_flat_strip(
+    assert word.lower().replace(" ", "") in flat_strip(
         tokenized_start2[len(tokenized_start1) :], tokenizer=tokenizer,
     )
     token_span = ExclusiveSpan(start=len(tokenized_start1), end=len(tokenized_start2))

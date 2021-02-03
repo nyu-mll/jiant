@@ -154,7 +154,7 @@ def load_encoder_from_transformers_weights(
     """
     remainder_weights_dict = {}
     load_weights_dict = {}
-    model_arch = ModelArchitectures.from_encoder(encoder=encoder)
+    model_arch = ModelArchitectures.from_model_type(model_type=encoder.config.model_type)
     encoder_prefix = model_arch.value + "."
     # Encoder
     for k, v in weights_dict.items():
@@ -168,29 +168,7 @@ def load_encoder_from_transformers_weights(
 
 
 def load_lm_heads_from_transformers_weights(jiant_model, weights_dict):
-    model_arch = get_model_arch_from_jiant_model(jiant_model=jiant_model)
-    if model_arch == ModelArchitectures.BERT:
-        mlm_weights_map = {
-            "bias": "cls.predictions.bias",
-            "dense.weight": "cls.predictions.transform.dense.weight",
-            "dense.bias": "cls.predictions.transform.dense.bias",
-            "LayerNorm.weight": "cls.predictions.transform.LayerNorm.weight",
-            "LayerNorm.bias": "cls.predictions.transform.LayerNorm.bias",
-            "decoder.weight": "cls.predictions.decoder.weight",
-            "decoder.bias": "cls.predictions.bias",  # <-- linked directly to bias
-        }
-        mlm_weights_dict = {new_k: weights_dict[old_k] for new_k, old_k in mlm_weights_map.items()}
-    elif model_arch in (ModelArchitectures.ROBERTA, ModelArchitectures.XLM_ROBERTA):
-        mlm_weights_dict = {
-            strings.remove_prefix(k, "lm_head."): v for k, v in weights_dict.items()
-        }
-        mlm_weights_dict["decoder.bias"] = mlm_weights_dict["bias"]
-    elif model_arch == ModelArchitectures.ALBERT:
-        mlm_weights_dict = {
-            strings.remove_prefix(k, "predictions."): v for k, v in weights_dict.items()
-        }
-    else:
-        raise KeyError(model_arch)
+    mlm_weights_dict = jiant_model.encoder.get_mlm_weights_dict(weights_dict)
     missed = set()
     for taskmodel_name, taskmodel in jiant_model.taskmodels_dict.items():
         if not isinstance(taskmodel, MLMModel):
@@ -286,9 +264,12 @@ def create_taskmodel(task, jiant_transformers_model, **taskmodel_kwargs) -> Task
     head_kwargs["hidden_size"] = jiant_transformers_model.get_hidden_size()
     head_kwargs["hidden_dropout_prob"] = jiant_transformers_model.get_hidden_dropout_prob()
     head_kwargs["vocab_size"] = jiant_transformers_model.config.vocab_size
-    head_kwargs["layer_norm_eps"] = (jiant_transformers_model.config.layer_norm_eps,)
-    head_kwargs["hidden_act"] = jiant_transformers_model.config.hidden_act
     head_kwargs["model_arch"] = ModelArchitectures(jiant_transformers_model.config.model_type)
+
+    if hasattr(jiant_transformers_model, "hidden_act"):
+        head_kwargs["hidden_act"] = jiant_transformers_model.config.hidden_act
+    if hasattr(jiant_transformers_model, "layer_norm_eps"):
+        head_kwargs["layer_norm_eps"] = jiant_transformers_model.config.layer_norm_eps
 
     head = JiantHeadFactory()(task, **head_kwargs)
 
@@ -319,10 +300,6 @@ def get_taskmodel_and_task_names(task_to_taskmodel_map: Dict[str, str]) -> Dict[
             taskmodel_and_task_names[taskmodel_name] = []
         taskmodel_and_task_names[taskmodel_name].append(task_name)
     return taskmodel_and_task_names
-
-
-def get_model_arch_from_jiant_model(jiant_model: nn.Module) -> ModelArchitectures:
-    return ModelArchitectures.from_encoder(encoder=jiant_model.encoder)
 
 
 def get_ancestor_model(transformers_class_spec, model_config_path):

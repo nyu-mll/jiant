@@ -4,6 +4,7 @@ import jiant.shared.model_resolution as model_resolution
 import jiant.tasks as tasks
 
 from jiant.shared.model_resolution import ModelArchitectures
+from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
 
 
 def test_tokenization_and_featurization():
@@ -38,7 +39,7 @@ def test_tokenization_and_featurization():
 
     data_row = tokenized_example.featurize(
         tokenizer=tokenizer,
-        feat_spec=model_resolution.build_featurization_spec(
+        feat_spec=JiantTransformersModelFactory.build_featurization_spec(
             model_type=ModelArchitectures.ROBERTA.value, max_seq_length=16,
         ),
     )

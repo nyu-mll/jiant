@@ -3,8 +3,6 @@ from enum import Enum
 
 import transformers
 
-from jiant.tasks.core import FeaturizationSpec
-
 
 class ModelArchitectures(Enum):
     BERT = "bert"
@@ -17,43 +15,8 @@ class ModelArchitectures(Enum):
     ELECTRA = "electra"
 
     @classmethod
-    def from_encoder(cls, encoder):
-        if (
-            isinstance(encoder, transformers.BertModel)
-            and encoder.__class__.__name__ == "BertModel"
-        ):
-            return cls.BERT
-        elif (
-            isinstance(encoder, transformers.XLMModel) and encoder.__class__.__name__ == "XLMModel"
-        ):
-            return cls.XLM
-        elif (
-            isinstance(encoder, transformers.RobertaModel)
-            and encoder.__class__.__name__ == "RobertaModel"
-        ):
-            return cls.ROBERTA
-        elif (
-            isinstance(encoder, transformers.AlbertModel)
-            and encoder.__class__.__name__ == "AlbertModel"
-        ):
-            return cls.ALBERT
-        elif (
-            isinstance(encoder, transformers.XLMRobertaModel)
-            and encoder.__class__.__name__ == "XlmRobertaModel"
-        ):
-            return cls.XLM_ROBERTA
-        elif (
-            isinstance(encoder, transformers.BartModel)
-            and encoder.__class__.__name__ == "BartModel"
-        ):
-            return bart_or_mbart_model_heuristic(model_config=encoder.config)
-        elif (
-            isinstance(encoder, transformers.ElectraModel)
-            and encoder.__class__.__name__ == "ElectraModel"
-        ):
-            return cls.ELECTRA
-        else:
-            raise KeyError(type(encoder))
+    def from_model_type(cls, model_type: str):
+        return cls(model_type)
 
 
 @dataclass
@@ -61,133 +24,6 @@ class ModelClassSpec:
     config_class: type
     tokenizer_class: type
     model_class: type
-
-
-def build_featurization_spec(model_type, max_seq_length):
-    model_arch = ModelArchitectures(model_type)
-    if model_arch == ModelArchitectures.BERT:
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,
-            pad_on_left=False,
-            cls_token_segment_id=0,
-            pad_token_segment_id=0,
-            pad_token_id=0,
-            pad_token_mask_id=0,
-            sequence_a_segment_id=0,
-            sequence_b_segment_id=1,
-            sep_token_extra=False,
-        )
-    elif model_arch == ModelArchitectures.XLM:
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,
-            pad_on_left=False,
-            cls_token_segment_id=0,
-            pad_token_segment_id=0,
-            pad_token_id=0,
-            pad_token_mask_id=0,
-            sequence_a_segment_id=0,
-            sequence_b_segment_id=0,  # RoBERTa has no token_type_ids
-            sep_token_extra=False,
-        )
-    elif model_arch == ModelArchitectures.ROBERTA:
-        # RoBERTa is weird
-        # token 0 = '<s>' which is the cls_token
-        # token 1 = '</s>' which is the sep_token
-        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,
-            pad_on_left=False,
-            cls_token_segment_id=0,
-            pad_token_segment_id=0,
-            pad_token_id=1,  # Roberta uses pad_token_id = 1
-            pad_token_mask_id=0,
-            sequence_a_segment_id=0,
-            sequence_b_segment_id=0,  # RoBERTa has no token_type_ids
-            sep_token_extra=True,
-        )
-    elif model_arch == ModelArchitectures.ALBERT:
-        #
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,  # ?
-            pad_on_left=False,  # ok
-            cls_token_segment_id=0,  # ok
-            pad_token_segment_id=0,  # ok
-            pad_token_id=0,  # I think?
-            pad_token_mask_id=0,  # I think?
-            sequence_a_segment_id=0,  # I think?
-            sequence_b_segment_id=1,  # I think?
-            sep_token_extra=False,
-        )
-    elif model_arch == ModelArchitectures.XLM_ROBERTA:
-        # XLM-RoBERTa is weird
-        # token 0 = '<s>' which is the cls_token
-        # token 1 = '</s>' which is the sep_token
-        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,
-            pad_on_left=False,
-            cls_token_segment_id=0,
-            pad_token_segment_id=0,
-            pad_token_id=1,  # XLM-RoBERTa uses pad_token_id = 1
-            pad_token_mask_id=0,
-            sequence_a_segment_id=0,
-            sequence_b_segment_id=0,  # XLM-RoBERTa has no token_type_ids
-            sep_token_extra=True,
-        )
-    elif model_arch == ModelArchitectures.BART:
-        # BART is weird
-        # token 0 = '<s>' which is the cls_token
-        # token 1 = '</s>' which is the sep_token
-        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,
-            pad_on_left=False,
-            cls_token_segment_id=0,
-            pad_token_segment_id=0,
-            pad_token_id=1,  # BART uses pad_token_id = 1
-            pad_token_mask_id=0,
-            sequence_a_segment_id=0,
-            sequence_b_segment_id=0,  # BART has no token_type_ids
-            sep_token_extra=True,
-        )
-    elif model_arch == ModelArchitectures.MBART:
-        # mBART is weird
-        # token 0 = '<s>' which is the cls_token
-        # token 1 = '</s>' which is the sep_token
-        # Also two '</s>'s are used between sentences. Yes, not '</s><s>'.
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,
-            pad_on_left=False,
-            cls_token_segment_id=0,
-            pad_token_segment_id=0,
-            pad_token_id=1,  # mBART uses pad_token_id = 1
-            pad_token_mask_id=0,
-            sequence_a_segment_id=0,
-            sequence_b_segment_id=0,  # mBART has no token_type_ids
-            sep_token_extra=True,
-        )
-    elif model_arch == ModelArchitectures.ELECTRA:
-        return FeaturizationSpec(
-            max_seq_length=max_seq_length,
-            cls_token_at_end=False,
-            pad_on_left=False,
-            cls_token_segment_id=0,
-            pad_token_segment_id=0,
-            pad_token_id=0,
-            pad_token_mask_id=0,
-            sequence_a_segment_id=0,
-            sequence_b_segment_id=1,
-            sep_token_extra=False,
-        )
-    else:
-        raise KeyError(model_arch)
 
 
 TOKENIZER_CLASS_DICT = {
