@@ -7,6 +7,7 @@ from jiant.shared import model_resolution
 from jiant.shared.model_resolution import ModelArchitectures
 from jiant.tasks import create_task_from_config_path
 from jiant.utils.testing.tokenizer import SimpleSpaceTokenizer
+from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
 
 
 TRAIN_EXAMPLES = [
@@ -302,7 +303,7 @@ def test_featurization_of_task_data():
     train_example_0_length = len(tokenized_examples[0].premise) + len(
         tokenized_examples[0].hypothesis
     )
-    feat_spec = model_resolution.build_featurization_spec(
+    feat_spec = JiantTransformersModelFactory.build_featurization_spec(
         model_type=ModelArchitectures.BERT.value, max_seq_length=train_example_0_length
     )
     featurized_examples = [
