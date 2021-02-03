@@ -49,7 +49,7 @@ def normalize_tokenizations(
     if len(space_tokenization) == 0 or len(target_tokenization) == 0:
         raise ValueError("Empty token sequence.")
 
-    if isinstance(tokenizer, transformers.BertTokenizer):
+    if isinstance(tokenizer, (transformers.BertTokenizer, transformers.MobileBertTokenizer)):
         if tokenizer.init_kwargs.get("do_lower_case", False):
             space_tokenization = [token.lower() for token in space_tokenization]
         modifed_space_tokenization = bow_tag_tokens(space_tokenization)

@@ -261,8 +261,9 @@ class JiantRobertaModel(JiantTransformersModel):
             sep_token_extra=True,
         )
 
-@JiantTransformersModelFactory.register(ModelArchitectures.ALBERT)
-class JiantAlbertModel(JiantTransformersModel):
+
+@JiantTransformersModelFactory.register(ModelArchitectures.MOBILEBERT)
+class JiantMobileBertModel(JiantBertModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
 

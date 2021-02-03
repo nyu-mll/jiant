@@ -13,6 +13,7 @@ class ModelArchitectures(Enum):
     BART = "bart"
     MBART = "mbart"
     ELECTRA = "electra"
+    MOBILEBERT = "mobilebert"
 
     @classmethod
     def from_model_type(cls, model_type: str):
