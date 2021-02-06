@@ -57,7 +57,6 @@ def export_model(
     tokenizer.save_pretrained(tokenizer_fol_path)
     config = {
         "hf_pretrained_model_name_or_path": hf_pretrained_model_name_or_path,
-        "model_type": model_type,
         "model_path": model_path,
         "model_config_path": model_config_path,
     }
