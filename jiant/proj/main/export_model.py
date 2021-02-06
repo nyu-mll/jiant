@@ -44,8 +44,8 @@ def export_model(
     model_type = model.config_class.model_type
 
     model_fol_path = os.path.join(output_base_path, "model")
-    model_path = os.path.join(model_fol_path, f"{model_type}.p")
-    model_config_path = os.path.join(model_fol_path, f"{model_type}.json")
+    model_path = os.path.join(model_fol_path, "model.p")
+    model_config_path = os.path.join(model_fol_path, "config.json")
     tokenizer_fol_path = os.path.join(output_base_path, "tokenizer")
 
     os.makedirs(tokenizer_fol_path, exist_ok=True)

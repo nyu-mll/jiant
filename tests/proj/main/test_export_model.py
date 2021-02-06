@@ -20,5 +20,5 @@ def test_export_model(tmp_path, model_type, model_class, hf_pretrained_model_nam
     )
     read_config = py_io.read_json(os.path.join(tmp_path, f"config.json"))
     assert read_config["model_type"] == model_type
-    assert read_config["model_path"] == os.path.join(tmp_path, "model", f"{model_type}.p")
-    assert read_config["model_config_path"] == os.path.join(tmp_path, "model", f"{model_type}.json")
+    assert read_config["model_path"] == os.path.join(tmp_path, "model", "model.p")
+    assert read_config["model_config_path"] == os.path.join(tmp_path, "model", "config.json")
