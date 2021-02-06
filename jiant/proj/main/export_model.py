@@ -41,7 +41,6 @@ def export_model(
         output_base_path: Base path to save output to
     """
     model = AutoModelForPreTraining.from_pretrained(hf_pretrained_model_name_or_path)
-    model_type = model.config_class.model_type
 
     model_fol_path = os.path.join(output_base_path, "model")
     model_path = os.path.join(model_fol_path, "model.p")
