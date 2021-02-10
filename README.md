@@ -71,15 +71,17 @@ Python version:
 from jiant.proj.simple import runscript as run
 import jiant.scripts.download_data.runscript as downloader
 
+EXP_DIR = "/path/to/exp"
+
 # Download the Data
-downloader.download_data(["mrpc"], "/content/data")
+downloader.download_data(["mrpc"], f"{EXP_DIR}/tasks")
 
 # Set up the arguments for the Simple API
 args = run.RunConfiguration(
    run_name="simple",
-   exp_dir="/path/to/exp",
-   data_dir="/path/to/exp/tasks",
-   model_type="roberta-base",
+   exp_dir=EXP_DIR,
+   data_dir=f"{EXP_DIR}/tasks",
+   hf_pretrained_model_name_or_path="roberta-base",
    tasks="mrpc",
    train_batch_size=16,
    num_train_epochs=3
@@ -91,15 +93,17 @@ run.run_simple(args)
 
 Bash version:
 ```bash
+EXP_DIR=/path/to/exp
+
 python jiant/scripts/download_data/runscript.py \
     download \
     --tasks mrpc \
-    --output_path /path/to/exp/tasks
+    --output_path ${EXP_DIR}/tasks
 python jiant/proj/simple/runscript.py \
     run \
     --run_name simple \
-    --exp_dir /path/to/exp \
-    --data_dir /path/to/exp/tasks \
+    --exp_dir ${EXP_DIR}/ \
+    --data_dir ${EXP_DIR}/tasks \
     --model_type roberta-base \
     --tasks mrpc \
     --train_batch_size 16 \

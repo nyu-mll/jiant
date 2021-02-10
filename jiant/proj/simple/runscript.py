@@ -193,7 +193,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         else:
             model_load_mode = "from_transformers"
         model_weights_path = os.path.join(
-            model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.p"
+            model_cache_path, hf_config.model_type, "model", "model.p"
         )
     run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
 
@@ -213,10 +213,9 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             output_dir=run_output_dir,
             # === Model parameters === #
             hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
-            model_type=hf_config.model_type,
             model_path=model_weights_path,
             model_config_path=os.path.join(
-                model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.json"
+                model_cache_path, hf_config.model_type, "model", "config.json",
             ),
             model_load_mode=model_load_mode,
             # === Running Setup === #
@@ -258,7 +257,7 @@ def main():
     args = RunConfiguration.default_run_cli(cl_args=cl_args)
     if mode == "run":
         run_simple(args, with_continue=False)
-    if mode == "run_with_continue":
+    elif mode == "run_with_continue":
         run_simple(args, with_continue=True)
     else:
         raise zconf.ModeLookupError(mode)
