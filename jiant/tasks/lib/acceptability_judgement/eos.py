@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import jiant.tasks.lib.acceptability_judgement.base as base
+from . import base as base
 
 
 @dataclass
