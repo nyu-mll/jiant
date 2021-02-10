@@ -257,7 +257,7 @@ def main():
     args = RunConfiguration.default_run_cli(cl_args=cl_args)
     if mode == "run":
         run_simple(args, with_continue=False)
-    if mode == "run_with_continue":
+    elif mode == "run_with_continue":
         run_simple(args, with_continue=True)
     else:
         raise zconf.ModeLookupError(mode)
