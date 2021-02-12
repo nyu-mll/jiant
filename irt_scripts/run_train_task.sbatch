@@ -15,11 +15,14 @@ echo $RUN_CONFIG_DIR
 echo $SEED
 export PYTHONPATH=jiant/
 
+SHORT_MODEL_NAME="${MODEL_TYPE##*/}"
 
 python $JIANT_PATH/proj/main/runscript.py   \
     run_with_continue \
-       --ZZsrc ${MODELS_DIR}/${MODEL_TYPE}/config.json \
        --jiant_task_container_config_path ${RUN_CONFIG_DIR} \
+       --hf_pretrained_model_name_or_path ${MODEL_TYPE} \
+       --model_path ${MODELS_DIR}/${SHORT_MODEL_NAME}/model/model.p \
+       --model_config_path ${MODELS_DIR}/${SHORT_MODEL_NAME}/model/config.json \
        --model_load_mode from_transformers \
        --learning_rate $LR \
        --force_overwrite \
