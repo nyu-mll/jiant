@@ -383,7 +383,9 @@ def get_output_from_bart_models(encoder, input_ids, input_mask, output_hidden_st
     return pooled, unpooled, hidden_states
 
 
-def get_output_from_electra(encoder, input_ids, segment_ids, input_mask, output_hidden_states=False):
+def get_output_from_electra(
+    encoder, input_ids, segment_ids, input_mask, output_hidden_states=False
+):
     output = encoder(
         input_ids=input_ids,
         token_type_ids=segment_ids,
