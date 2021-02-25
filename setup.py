@@ -75,7 +75,7 @@ setup(
         "tokenizers == 0.9.4",
         "torch >= 1.5.0",
         "tqdm == 4.46.0",
-        "transformers == 4.2.1",
+        "transformers == 4.3.3",
         "torchvision == 0.6.0",
     ],
     extras_require=extras,

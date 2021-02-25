@@ -15,4 +15,4 @@ scipy==1.4.1
 sentencepiece==0.1.86
 tokenizers==0.9.4
 tqdm==4.46.0
-transformers==4.2.1
+transformers==4.3.3
