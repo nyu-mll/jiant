@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -10,14 +9,14 @@ import transformers
 
 
 import jiant.proj.main.components.container_setup as container_setup
-import jiant.proj.main.modeling.heads as heads
 import jiant.proj.main.modeling.primary as primary
-import jiant.proj.main.modeling.taskmodels as taskmodels
 import jiant.utils.python.strings as strings
+
+from jiant.proj.main.modeling.heads import JiantHeadFactory
+from jiant.proj.main.modeling.taskmodels import JiantTaskModelFactory, Taskmodel, MLMModel
 
 from jiant.shared.model_resolution import ModelArchitectures
 from jiant.tasks import Task
-from jiant.tasks import TaskTypes
 
 
 def setup_jiant_model(
@@ -52,19 +51,13 @@ def setup_jiant_model(
         JiantModel nn.Module.
 
     """
-    model = transformers.AutoModel.from_pretrained(hf_pretrained_model_name_or_path)
-    model_arch = ModelArchitectures.from_model_type(model.base_model_prefix)
-    transformers_class_spec = TRANSFORMERS_CLASS_SPEC_DICT[model_arch]
+    hf_model = transformers.AutoModel.from_pretrained(hf_pretrained_model_name_or_path)
     tokenizer = transformers.AutoTokenizer.from_pretrained(hf_pretrained_model_name_or_path)
-    ancestor_model = get_ancestor_model(
-        transformers_class_spec=transformers_class_spec, model_config_path=model_config_path,
-    )
-    encoder = get_encoder(model_arch=model_arch, ancestor_model=ancestor_model)
+    jiant_transformers_model = primary.JiantTransformersModelFactory()(hf_model)
     taskmodels_dict = {
         taskmodel_name: create_taskmodel(
             task=task_dict[task_name_list[0]],  # Take the first task
-            model_arch=model_arch,
-            encoder=encoder,
+            jiant_transformers_model=jiant_transformers_model,
             taskmodel_kwargs=taskmodels_config.get_taskmodel_kwargs(taskmodel_name),
         )
         for taskmodel_name, task_name_list in get_taskmodel_and_task_names(
@@ -73,7 +66,7 @@ def setup_jiant_model(
     }
     return primary.JiantModel(
         task_dict=task_dict,
-        encoder=encoder,
+        encoder=jiant_transformers_model,
         taskmodels_dict=taskmodels_dict,
         task_to_taskmodel_map=taskmodels_config.task_to_taskmodel_map,
         tokenizer=tokenizer,
@@ -162,7 +155,7 @@ def load_encoder_from_transformers_weights(
     remainder_weights_dict = {}
     load_weights_dict = {}
     model_arch = ModelArchitectures.from_encoder(encoder=encoder)
-    encoder_prefix = MODEL_PREFIX[model_arch] + "."
+    encoder_prefix = model_arch.value + "."
     # Encoder
     for k, v in weights_dict.items():
         if k.startswith(encoder_prefix):
@@ -200,7 +193,7 @@ def load_lm_heads_from_transformers_weights(jiant_model, weights_dict):
         raise KeyError(model_arch)
     missed = set()
     for taskmodel_name, taskmodel in jiant_model.taskmodels_dict.items():
-        if not isinstance(taskmodel, taskmodels.MLMModel):
+        if not isinstance(taskmodel, MLMModel):
             continue
         mismatch = taskmodel.mlm_head.load_state_dict(mlm_weights_dict)
         assert not mismatch.missing_keys
@@ -273,196 +266,34 @@ def load_partial_heads(
     return result
 
 
-def create_taskmodel(
-    task, model_arch, encoder, taskmodel_kwargs: Optional[Dict] = None
-) -> taskmodels.Taskmodel:
+def create_taskmodel(task, jiant_transformers_model, **taskmodel_kwargs) -> Taskmodel:
     """Creates, initializes and returns the task model for a given task type and encoder.
 
     Args:
         task (Task): Task object associated with the taskmodel being created.
-        model_arch (ModelArchitectures.Any): Model architecture (e.g., ModelArchitectures.BERT).
-        encoder (PreTrainedModel): Transformer w/o heads (embedding layer + self-attention layer).
-        taskmodel_kwargs (Optional[Dict]): map containing any kwargs needed for taskmodel setup.
+        jiant_transformers_model (JiantTransformersModel): Transformer w/o heads
+            (embedding layer + self-attention layer).
+        **taskmodel_kwargs: Additional args for taskmodel setup
 
     Raises:
         KeyError if task does not have valid TASK_TYPE.
 
     Returns:
-        Taskmodel (e.g., ClassificationModel) appropriate for the task type and encoder.
+        Taskmodel
 
     """
-    if model_arch in [
-        ModelArchitectures.BERT,
-        ModelArchitectures.ROBERTA,
-        ModelArchitectures.ALBERT,
-        ModelArchitectures.XLM_ROBERTA,
-        ModelArchitectures.ELECTRA,
-    ]:
-        hidden_size = encoder.config.hidden_size
-        hidden_dropout_prob = encoder.config.hidden_dropout_prob
-    elif model_arch in [
-        ModelArchitectures.BART,
-        ModelArchitectures.MBART,
-    ]:
-        hidden_size = encoder.config.d_model
-        hidden_dropout_prob = encoder.config.dropout
-    else:
-        raise KeyError()
+    head_kwargs = {}
+    head_kwargs["hidden_size"] = jiant_transformers_model.get_hidden_size()
+    head_kwargs["hidden_dropout_prob"] = jiant_transformers_model.get_hidden_dropout_prob()
+    head_kwargs["vocab_size"] = jiant_transformers_model.config.vocab_size
+    head_kwargs["layer_norm_eps"] = (jiant_transformers_model.config.layer_norm_eps,)
+    head_kwargs["hidden_act"] = jiant_transformers_model.config.hidden_act
+    head_kwargs["model_arch"] = ModelArchitectures(jiant_transformers_model.config.model_type)
 
-    if task.TASK_TYPE == TaskTypes.CLASSIFICATION:
-        assert taskmodel_kwargs is None
-        classification_head = heads.ClassificationHead(
-            hidden_size=hidden_size,
-            hidden_dropout_prob=hidden_dropout_prob,
-            num_labels=len(task.LABELS),
-        )
-        taskmodel = taskmodels.ClassificationModel(
-            encoder=encoder, classification_head=classification_head,
-        )
-    elif task.TASK_TYPE == TaskTypes.REGRESSION:
-        assert taskmodel_kwargs is None
-        regression_head = heads.RegressionHead(
-            hidden_size=hidden_size, hidden_dropout_prob=hidden_dropout_prob,
-        )
-        taskmodel = taskmodels.RegressionModel(encoder=encoder, regression_head=regression_head)
-    elif task.TASK_TYPE == TaskTypes.MULTIPLE_CHOICE:
-        assert taskmodel_kwargs is None
-        choice_scoring_head = heads.RegressionHead(
-            hidden_size=hidden_size, hidden_dropout_prob=hidden_dropout_prob,
-        )
-        taskmodel = taskmodels.MultipleChoiceModel(
-            encoder=encoder, num_choices=task.NUM_CHOICES, choice_scoring_head=choice_scoring_head,
-        )
-    elif task.TASK_TYPE == TaskTypes.SPAN_PREDICTION:
-        assert taskmodel_kwargs is None
-        span_prediction_head = heads.TokenClassificationHead(
-            hidden_size=hidden_size,
-            hidden_dropout_prob=encoder.config.hidden_dropout_prob,
-            num_labels=2,
-        )
-        taskmodel = taskmodels.SpanPredictionModel(
-            encoder=encoder, span_prediction_head=span_prediction_head,
-        )
-    elif task.TASK_TYPE == TaskTypes.SPAN_COMPARISON_CLASSIFICATION:
-        assert taskmodel_kwargs is None
-        span_comparison_head = heads.SpanComparisonHead(
-            hidden_size=hidden_size,
-            hidden_dropout_prob=hidden_dropout_prob,
-            num_spans=task.num_spans,
-            num_labels=len(task.LABELS),
-        )
-        taskmodel = taskmodels.SpanComparisonModel(
-            encoder=encoder, span_comparison_head=span_comparison_head,
-        )
-    elif task.TASK_TYPE == TaskTypes.MULTI_LABEL_SPAN_CLASSIFICATION:
-        assert taskmodel_kwargs is None
-        span_comparison_head = heads.SpanComparisonHead(
-            hidden_size=hidden_size,
-            hidden_dropout_prob=hidden_dropout_prob,
-            num_spans=task.num_spans,
-            num_labels=len(task.LABELS),
-        )
-        taskmodel = taskmodels.MultiLabelSpanComparisonModel(
-            encoder=encoder, span_comparison_head=span_comparison_head,
-        )
-    elif task.TASK_TYPE == TaskTypes.TAGGING:
-        assert taskmodel_kwargs is None
-        token_classification_head = heads.TokenClassificationHead(
-            hidden_size=hidden_size,
-            hidden_dropout_prob=hidden_dropout_prob,
-            num_labels=len(task.LABELS),
-        )
-        taskmodel = taskmodels.TokenClassificationModel(
-            encoder=encoder, token_classification_head=token_classification_head,
-        )
-    elif task.TASK_TYPE == TaskTypes.SQUAD_STYLE_QA:
-        assert taskmodel_kwargs is None
-        qa_head = heads.QAHead(hidden_size=hidden_size)
-        taskmodel = taskmodels.QAModel(encoder=encoder, qa_head=qa_head)
-    elif task.TASK_TYPE == TaskTypes.MASKED_LANGUAGE_MODELING:
-        assert taskmodel_kwargs is None
-        if model_arch == ModelArchitectures.BERT:
-            mlm_head = heads.BertMLMHead(
-                hidden_size=hidden_size,
-                vocab_size=encoder.config.vocab_size,
-                layer_norm_eps=encoder.config.layer_norm_eps,
-                hidden_act=encoder.config.hidden_act,
-            )
-        elif model_arch == ModelArchitectures.ROBERTA:
-            mlm_head = heads.RobertaMLMHead(
-                hidden_size=hidden_size,
-                vocab_size=encoder.config.vocab_size,
-                layer_norm_eps=encoder.config.layer_norm_eps,
-            )
-        elif model_arch == ModelArchitectures.ALBERT:
-            mlm_head = heads.AlbertMLMHead(
-                hidden_size=hidden_size,
-                embedding_size=encoder.config.embedding_size,
-                vocab_size=encoder.config.vocab_size,
-                hidden_act=encoder.config.hidden_act,
-            )
-        elif model_arch == ModelArchitectures.XLM_ROBERTA:
-            mlm_head = heads.RobertaMLMHead(
-                hidden_size=hidden_size,
-                vocab_size=encoder.config.vocab_size,
-                layer_norm_eps=encoder.config.layer_norm_eps,
-            )
-        elif model_arch in (
-            ModelArchitectures.BART,
-            ModelArchitectures.MBART,
-            ModelArchitectures.ELECTRA,
-        ):
-            raise NotImplementedError()
-        else:
-            raise KeyError(model_arch)
-        taskmodel = taskmodels.MLMModel(encoder=encoder, mlm_head=mlm_head)
-    elif task.TASK_TYPE == TaskTypes.EMBEDDING:
-        if taskmodel_kwargs["pooler_type"] == "mean":
-            pooler_head = heads.MeanPoolerHead()
-        elif taskmodel_kwargs["pooler_type"] == "first":
-            pooler_head = heads.FirstPoolerHead()
-        else:
-            raise KeyError(taskmodel_kwargs["pooler_type"])
-        taskmodel = taskmodels.EmbeddingModel(
-            encoder=encoder, pooler_head=pooler_head, layer=taskmodel_kwargs["layer"],
-        )
-    else:
-        raise KeyError(task.TASK_TYPE)
+    head = JiantHeadFactory()(task, **head_kwargs)
+
+    taskmodel = JiantTaskModelFactory()(task, jiant_transformers_model, head, **taskmodel_kwargs)
     return taskmodel
-
-
-def get_encoder(model_arch, ancestor_model):
-    """From model architecture, get the encoder (encoder = embedding layer + self-attention layer).
-
-    This function will return the "The bare Bert Model transformer outputting raw hidden-states
-    without any specific head on top", when provided with ModelArchitectures and BertForPreTraining
-    model. See Hugging Face's BertForPreTraining and BertModel documentation for more info.
-
-    Args:
-        model_arch: Model architecture.
-        ancestor_model: Model with pretraining heads attached.
-
-    Raises:
-        KeyError if ModelArchitectures
-
-    Returns:
-        Bare pretrained model outputting raw hidden-states without a specific head on top.
-
-    """
-    if model_arch == ModelArchitectures.BERT:
-        return ancestor_model.bert
-    elif model_arch == ModelArchitectures.ROBERTA:
-        return ancestor_model.roberta
-    elif model_arch == ModelArchitectures.ALBERT:
-        return ancestor_model.albert
-    elif model_arch == ModelArchitectures.XLM_ROBERTA:
-        return ancestor_model.roberta
-    elif model_arch in (ModelArchitectures.BART, ModelArchitectures.MBART):
-        return ancestor_model.model
-    elif model_arch == ModelArchitectures.ELECTRA:
-        return ancestor_model.electra
-    else:
-        raise KeyError(model_arch)
 
 
 @dataclass
@@ -470,45 +301,6 @@ class TransformersClassSpec:
     config_class: Any
     tokenizer_class: Any
     model_class: Any
-
-
-TRANSFORMERS_CLASS_SPEC_DICT = {
-    ModelArchitectures.BERT: TransformersClassSpec(
-        config_class=transformers.BertConfig,
-        tokenizer_class=transformers.BertTokenizer,
-        model_class=transformers.BertForPreTraining,
-    ),
-    ModelArchitectures.ROBERTA: TransformersClassSpec(
-        config_class=transformers.RobertaConfig,
-        tokenizer_class=transformers.RobertaTokenizer,
-        model_class=transformers.RobertaForMaskedLM,
-    ),
-    ModelArchitectures.ALBERT: TransformersClassSpec(
-        config_class=transformers.AlbertConfig,
-        tokenizer_class=transformers.AlbertTokenizer,
-        model_class=transformers.AlbertForMaskedLM,
-    ),
-    ModelArchitectures.XLM_ROBERTA: TransformersClassSpec(
-        config_class=transformers.XLMRobertaConfig,
-        tokenizer_class=transformers.XLMRobertaTokenizer,
-        model_class=transformers.XLMRobertaForMaskedLM,
-    ),
-    ModelArchitectures.BART: TransformersClassSpec(
-        config_class=transformers.BartConfig,
-        tokenizer_class=transformers.BartTokenizer,
-        model_class=transformers.BartForConditionalGeneration,
-    ),
-    ModelArchitectures.MBART: TransformersClassSpec(
-        config_class=transformers.BartConfig,
-        tokenizer_class=transformers.MBartTokenizer,
-        model_class=transformers.BartForConditionalGeneration,
-    ),
-    ModelArchitectures.ELECTRA: TransformersClassSpec(
-        config_class=transformers.ElectraConfig,
-        tokenizer_class=transformers.ElectraTokenizer,
-        model_class=transformers.ElectraForPreTraining,
-    ),
-}
 
 
 def get_taskmodel_and_task_names(task_to_taskmodel_map: Dict[str, str]) -> Dict[str, List[str]]:
@@ -531,17 +323,6 @@ def get_taskmodel_and_task_names(task_to_taskmodel_map: Dict[str, str]) -> Dict[
 
 def get_model_arch_from_jiant_model(jiant_model: nn.Module) -> ModelArchitectures:
     return ModelArchitectures.from_encoder(encoder=jiant_model.encoder)
-
-
-MODEL_PREFIX = {
-    ModelArchitectures.BERT: "bert",
-    ModelArchitectures.ROBERTA: "roberta",
-    ModelArchitectures.ALBERT: "albert",
-    ModelArchitectures.XLM_ROBERTA: "xlm-roberta",
-    ModelArchitectures.BART: "model",
-    ModelArchitectures.MBART: "model",
-    ModelArchitectures.ELECTRA: "electra",
-}
 
 
 def get_ancestor_model(transformers_class_spec, model_config_path):

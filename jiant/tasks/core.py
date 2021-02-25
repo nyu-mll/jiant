@@ -85,18 +85,18 @@ def data_row_collate_fn(batch):
 
 
 class TaskTypes(Enum):
-    CLASSIFICATION = 1
-    REGRESSION = 2
-    SPAN_COMPARISON_CLASSIFICATION = 3
-    MULTIPLE_CHOICE = 4
-    SPAN_CHOICE_PROB_TASK = 5
-    SQUAD_STYLE_QA = 6
-    TAGGING = 7
-    MASKED_LANGUAGE_MODELING = 8
-    EMBEDDING = 9
-    MULTI_LABEL_SPAN_CLASSIFICATION = 10
-    SPAN_PREDICTION = 11
-    UNDEFINED = -1
+    CLASSIFICATION = "classification"
+    REGRESSION = "regression"
+    SPAN_COMPARISON_CLASSIFICATION = "span_comparison_classification"
+    MULTIPLE_CHOICE = "multiple_choice"
+    SPAN_CHOICE_PROB_TASK = "span_choice_prob_task"
+    SQUAD_STYLE_QA = "squad_style_qa"
+    TAGGING = "tagging"
+    MASKED_LANGUAGE_MODELING = "masked_language_modeling"
+    EMBEDDING = "embedding"
+    MULTI_LABEL_SPAN_CLASSIFICATION = "multi_label_span_classification"
+    SPAN_PREDICTION = "span_prediction"
+    UNDEFINED = "undefined"
 
 
 class BatchTuple(NamedTuple):
