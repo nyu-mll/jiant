@@ -221,8 +221,10 @@ class BertMLMHead(BaseMLMHead):
     def __init__(self, hidden_size, vocab_size, layer_norm_eps=1e-12, hidden_act="gelu"):
         super().__init__()
         self.dense = nn.Linear(hidden_size, hidden_size)
-        self.transform_act_fn = transformers.modeling_bert.ACT2FN[hidden_act]
-        self.LayerNorm = transformers.modeling_bert.BertLayerNorm(hidden_size, eps=layer_norm_eps)
+        self.transform_act_fn = transformers.models.bert.modeling_bert.ACT2FN[hidden_act]
+        self.LayerNorm = transformers.models.bert.modeling_bert.BertLayerNorm(
+            hidden_size, eps=layer_norm_eps
+        )
 
         self.decoder = nn.Linear(hidden_size, vocab_size, bias=False)
         self.bias = nn.Parameter(torch.zeros(vocab_size), requires_grad=True)
@@ -246,7 +248,9 @@ class RobertaMLMHead(BaseMLMHead):
     def __init__(self, hidden_size, vocab_size, layer_norm_eps=1e-12):
         super().__init__()
         self.dense = nn.Linear(hidden_size, hidden_size)
-        self.layer_norm = transformers.modeling_bert.BertLayerNorm(hidden_size, eps=layer_norm_eps)
+        self.layer_norm = transformers.models.bert.modeling_bert.BertLayerNorm(
+            hidden_size, eps=layer_norm_eps
+        )
 
         self.decoder = nn.Linear(hidden_size, vocab_size, bias=False)
         self.bias = nn.Parameter(torch.zeros(vocab_size), requires_grad=True)
@@ -257,7 +261,7 @@ class RobertaMLMHead(BaseMLMHead):
 
     def forward(self, unpooled):
         x = self.dense(unpooled)
-        x = transformers.modeling_bert.gelu(x)
+        x = transformers.models.bert.modeling_bert.gelu(x)
         x = self.layer_norm(x)
 
         # project back to size of vocabulary with bias
@@ -276,7 +280,7 @@ class AlbertMLMHead(BaseMLMHead):
         self.bias = nn.Parameter(torch.zeros(vocab_size), requires_grad=True)
         self.dense = nn.Linear(hidden_size, embedding_size)
         self.decoder = nn.Linear(embedding_size, vocab_size)
-        self.activation = transformers.modeling_bert.ACT2FN[hidden_act]
+        self.activation = transformers.models.bert.modeling_bert.ACT2FN[hidden_act]
 
         # Need a link between the two variables so that the bias is correctly resized with
         # `resize_token_embeddings`

@@ -47,7 +47,9 @@ def download_data(task_names, output_base_path):
     task_data_base_path = py_io.create_dir(output_base_path, "data")
     task_config_base_path = py_io.create_dir(output_base_path, "configs")
 
-    assert set(task_names).issubset(SUPPORTED_TASKS)
+    assert set(task_names).issubset(SUPPORTED_TASKS), "Following tasks are not support: {}".format(
+        ",".join(set(task_names) - SUPPORTED_TASKS)
+    )
 
     # Download specified tasks and generate configs for specified tasks
     for i, task_name in enumerate(task_names):

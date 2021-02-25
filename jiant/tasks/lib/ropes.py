@@ -90,7 +90,9 @@ class Example(squad_style_template.Example):
         # (This may not apply for future added models that don't start with a CLS token,
         #   such as XLNet/GPT-2)
         sequence_added_tokens = 1
-        sequence_pair_added_tokens = tokenizer.max_len - tokenizer.max_len_sentences_pair
+        sequence_pair_added_tokens = (
+            tokenizer.model_max_length - tokenizer.model_max_length_sentences_pair
+        )
 
         span_doc_tokens = all_doc_tokens
         while len(spans) * doc_stride < len(all_doc_tokens):

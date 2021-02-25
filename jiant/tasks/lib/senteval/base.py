@@ -12,7 +12,7 @@ from jiant.tasks.core import (
     Task,
     TaskTypes,
 )
-from jiant.tasks.lib.templates.shared import single_sentence_featurize, labels_to_bimap
+from jiant.tasks.lib.templates.shared import single_sentence_featurize
 
 
 @dataclass
@@ -21,11 +21,15 @@ class Example(BaseExample):
     text: str
     label: str
 
+    @property
+    def label_to_id(self):
+        raise NotImplementedError()
+
     def tokenize(self, tokenizer):
         return TokenizedExample(
             guid=self.guid,
             text=tokenizer.tokenize(self.text),
-            label_id=SentevalTenseTask.LABEL_TO_ID[self.label],
+            label_id=self.label_to_id[self.label],
         )
 
 
@@ -65,35 +69,36 @@ class Batch(BatchMixin):
     tokens: list
 
 
-class SentevalTenseTask(Task):
+class BaseSentEvalTask(Task):
     Example = Example
     TokenizedExample = TokenizedExample
     DataRow = DataRow
     Batch = Batch
 
     TASK_TYPE = TaskTypes.CLASSIFICATION
-    LABELS = ["PAST", "PRES"]
-    LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
+    LABELS = None  # Override this
 
     def get_train_examples(self):
-        return self._create_examples(path=self.train_path, set_type="train")
+        return self._create_examples(set_type="train")
 
     def get_val_examples(self):
-        return self._create_examples(path=self.val_path, set_type="val")
+        return self._create_examples(set_type="val")
 
     def get_test_examples(self):
-        return self._create_examples(path=self.test_path, set_type="test")
+        return self._create_examples(set_type="test")
 
-    @classmethod
-    def _create_examples(cls, path, set_type):
+    def _create_examples(self, set_type):
         examples = []
-        df = pd.read_csv(path, index_col=0, names=["split", "label", "text", "unk_1", "unk_2"])
-        for i, row in df.iterrows():
+        df = pd.read_csv(self.path_dict["data"], sep="\t", names=["phase", "label", "text"])
+        phase_key = {"train": "tr", "val": "va", "test": "te"}[set_type]
+        sub_df = df[df["phase"] == phase_key]
+        for i, row in sub_df.iterrows():
+            # noinspection PyArgumentList
             examples.append(
-                Example(
+                self.Example(
                     guid="%s-%s" % (set_type, i),
                     text=row.text,
-                    label=row.label if set_type != "test" else cls.LABELS[-1],
+                    label=row.label if set_type != "test" else self.LABELS[-1],
                 )
             )
         return examples
