@@ -1,6 +1,7 @@
 import abc
 
 from dataclasses import dataclass
+
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -10,13 +11,17 @@ import torch
 import torch.nn as nn
 import transformers
 
-import jiant.tasks as tasks
+from jiant.tasks.core import BatchMixin
 from jiant.tasks.core import FeaturizationSpec
+from jiant.tasks.core import Task
 
+from jiant.proj.main.components.outputs import construct_output_from_dict
 from jiant.proj.main.modeling.taskmodels import Taskmodel
 from jiant.shared.model_resolution import ModelArchitectures
 
-from jiant.proj.main.components.outputs import construct_output_from_dict
+from jiant.utils.tokenization_utils import bow_tag_tokens
+from jiant.utils.tokenization_utils import eow_tag_tokens
+from jiant.utils.tokenization_utils import _process_bytebpe_tokens
 
 
 @dataclass
@@ -29,7 +34,7 @@ class JiantModelOutput:
 class JiantModel(nn.Module):
     def __init__(
         self,
-        task_dict: Dict[str, tasks.Task],
+        task_dict: Dict[str, Task],
         encoder: nn.Module,
         taskmodels_dict: Dict[str, Taskmodel],
         task_to_taskmodel_map: Dict[str, str],
@@ -42,15 +47,15 @@ class JiantModel(nn.Module):
         self.task_to_taskmodel_map = task_to_taskmodel_map
         self.tokenizer = tokenizer
 
-    def forward(self, batch: tasks.BatchMixin, task: tasks.Task, compute_loss: bool = False):
+    def forward(self, batch: BatchMixin, task: Task, compute_loss: bool = False):
         """Calls to this forward method are delegated to the forward of the appropriate taskmodel.
 
         When JiantModel forward is called, the task name from the task argument is used as a key
         to select the appropriate submodule/taskmodel, and that taskmodel's forward is called.
 
         Args:
-            batch (tasks.BatchMixin): model input.
-            task (tasks.Task): task to which to delegate the forward call.
+            batch (BatchMixin): model input.
+            task (Task): task to which to delegate the forward call.
             compute_loss (bool): whether to calculate and return the loss.
 
         Returns:
@@ -74,20 +79,20 @@ class JiantModel(nn.Module):
 
 def wrap_jiant_forward(
     jiant_model: Union[JiantModel, nn.DataParallel],
-    batch: tasks.BatchMixin,
-    task: tasks.Task,
+    batch: BatchMixin,
+    task: Task,
     compute_loss: bool = False,
 ):
     """Wrapper to repackage model inputs using dictionaries for compatibility with DataParallel.
 
-    Wrapper that converts batches (type tasks.BatchMixin) to dictionaries before delegating to
+    Wrapper that converts batches (type BatchMixin) to dictionaries before delegating to
     JiantModel's forward method, and then converts the resulting model output dict into the
     appropriate model output dataclass.
 
     Args:
         jiant_model (Union[JiantModel, nn.DataParallel]):
-        batch (tasks.BatchMixin): model input batch.
-        task (tasks.Task): Task object passed for access in the taskmodel.
+        batch (BatchMixin): model input batch.
+        task (Task): Task object passed for access in the taskmodel.
         compute_loss (bool): True if loss should be computed, False otherwise.
 
     Returns:
@@ -203,6 +208,16 @@ class JiantBertModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
 
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        """See tokenization_normalization.py for details"""
+        if tokenizer.init_kwargs.get("do_lower_case", False):
+            space_tokenization = [token.lower() for token in space_tokenization]
+        modifed_space_tokenization = bow_tag_tokens(space_tokenization)
+        modifed_target_tokenization = _process_wordpiece_tokens(target_tokenization)
+
+        return modifed_space_tokenization, modifed_target_tokenization
+
     def get_feat_spec(self, max_seq_length):
         return FeaturizationSpec(
             max_seq_length=max_seq_length,
@@ -236,6 +251,15 @@ class JiantRobertaModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
 
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        """See tokenization_normalization.py for details"""
+        modifed_space_tokenization = bow_tag_tokens(space_tokenization)
+        modifed_target_tokenization = ["Ġ" + target_tokenization[0]] + target_tokenization[1:]
+        modifed_target_tokenization = _process_bytebpe_tokens(modifed_target_tokenization)
+
+        return modifed_space_tokenization, modifed_target_tokenization
+
     def get_mlm_weights_dict(self, weights_dict):
         mlm_weights_dict = {
             strings.remove_prefix(k, "lm_head."): v for k, v in weights_dict.items()
@@ -261,16 +285,20 @@ class JiantRobertaModel(JiantTransformersModel):
             sep_token_extra=True,
         )
 
-@JiantTransformersModelFactory.register(ModelArchitectures.ALBERT)
-class JiantAlbertModel(JiantTransformersModel):
-    def __init__(self, baseObject):
-        super().__init__(baseObject)
-
 
 @JiantTransformersModelFactory.register(ModelArchitectures.XLM_ROBERTA)
 class JiantXLMRobertaModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
+
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        """See tokenization_normalization.py for details"""
+        space_tokenization = [token.lower() for token in space_tokenization]
+        modifed_space_tokenization = bow_tag_tokens(space_tokenization)
+        modifed_target_tokenization = _process_sentencepiece_tokens(target_tokenization)
+
+        return modifed_space_tokenization, modifed_target_tokenization
 
     def get_feat_spec(self, max_seq_length):
         # XLM-RoBERTa is weird
@@ -303,6 +331,16 @@ class JiantXLMModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
 
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        """See tokenization_normalization.py for details"""
+        if tokenizer.init_kwargs.get("do_lowercase_and_remove_accent", False):
+            space_tokenization = [token.lower() for token in space_tokenization]
+        modifed_space_tokenization = eow_tag_tokens(space_tokenization)
+        modifed_target_tokenization = target_tokenization
+
+        return modifed_space_tokenization, modifed_target_tokenization
+
     def get_feat_spec(self, max_seq_length):
         return FeaturizationSpec(
             max_seq_length=max_seq_length,
@@ -322,6 +360,15 @@ class JiantXLMModel(JiantTransformersModel):
 class JiantAlbertModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
+
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        """See tokenization_normalization.py for details"""
+        space_tokenization = [token.lower() for token in space_tokenization]
+        modifed_space_tokenization = bow_tag_tokens(space_tokenization)
+        modifed_target_tokenization = _process_sentencepiece_tokens(target_tokenization)
+
+        return modifed_space_tokenization, modifed_target_tokenization
 
     def get_mlm_weights_dict(self, weights_dict):
         mlm_weights_dict = {
