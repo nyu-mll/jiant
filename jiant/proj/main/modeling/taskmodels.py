@@ -12,7 +12,6 @@ from jiant.proj.main.components.outputs import LogitsOutput, LogitsAndLossOutput
 from jiant.utils.python.datastructures import take_one
 from jiant.shared.model_resolution import ModelArchitectures
 from jiant.tasks.core import TaskTypes
-from jiant.utils.python.datastructures import take_one
 
 
 class JiantTaskModelFactory:
