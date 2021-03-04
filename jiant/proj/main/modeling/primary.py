@@ -156,11 +156,11 @@ class JiantTransformersModelFactory:
         Returns:
             JiantTransformersModel: Jiant wrapper class for Hugging Face model
         """
-        jiant_transformers_model_class = cls.registry[
+        encoder_class = cls.registry[
             ModelArchitectures(hf_model.config.model_type)
         ]
-        jiant_transformers_model = jiant_transformers_model_class(hf_model)
-        return jiant_transformers_model
+        encoder = encoder_class(hf_model)
+        return encoder
 
 
 class JiantTransformersModel(metaclass=abc.ABCMeta):

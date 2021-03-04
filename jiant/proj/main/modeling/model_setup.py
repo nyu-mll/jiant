@@ -53,11 +53,11 @@ def setup_jiant_model(
     """
     hf_model = transformers.AutoModel.from_pretrained(hf_pretrained_model_name_or_path)
     tokenizer = transformers.AutoTokenizer.from_pretrained(hf_pretrained_model_name_or_path)
-    jiant_transformers_model = primary.JiantTransformersModelFactory()(hf_model)
+    encoder = primary.JiantTransformersModelFactory()(hf_model)
     taskmodels_dict = {
         taskmodel_name: create_taskmodel(
             task=task_dict[task_name_list[0]],  # Take the first task
-            jiant_transformers_model=jiant_transformers_model,
+            encoder=encoder,
             taskmodel_kwargs=taskmodels_config.get_taskmodel_kwargs(taskmodel_name),
         )
         for taskmodel_name, task_name_list in get_taskmodel_and_task_names(
@@ -66,7 +66,7 @@ def setup_jiant_model(
     }
     return primary.JiantModel(
         task_dict=task_dict,
-        encoder=jiant_transformers_model,
+        encoder=encoder,
         taskmodels_dict=taskmodels_dict,
         task_to_taskmodel_map=taskmodels_config.task_to_taskmodel_map,
         tokenizer=tokenizer,
@@ -244,12 +244,12 @@ def load_partial_heads(
     return result
 
 
-def create_taskmodel(task, jiant_transformers_model, **taskmodel_kwargs) -> Taskmodel:
+def create_taskmodel(task, encoder, **taskmodel_kwargs) -> Taskmodel:
     """Creates, initializes and returns the task model for a given task type and encoder.
 
     Args:
         task (Task): Task object associated with the taskmodel being created.
-        jiant_transformers_model (JiantTransformersModel): Transformer w/o heads
+        encoder (JiantTransformersModel): Transformer w/o heads
             (embedding layer + self-attention layer).
         **taskmodel_kwargs: Additional args for taskmodel setup
 
@@ -261,19 +261,19 @@ def create_taskmodel(task, jiant_transformers_model, **taskmodel_kwargs) -> Task
 
     """
     head_kwargs = {}
-    head_kwargs["hidden_size"] = jiant_transformers_model.get_hidden_size()
-    head_kwargs["hidden_dropout_prob"] = jiant_transformers_model.get_hidden_dropout_prob()
-    head_kwargs["vocab_size"] = jiant_transformers_model.config.vocab_size
-    head_kwargs["model_arch"] = ModelArchitectures(jiant_transformers_model.config.model_type)
+    head_kwargs["hidden_size"] = encoder.get_hidden_size()
+    head_kwargs["hidden_dropout_prob"] = encoder.get_hidden_dropout_prob()
+    head_kwargs["vocab_size"] = encoder.config.vocab_size
+    head_kwargs["model_arch"] = ModelArchitectures(encoder.config.model_type)
 
-    if hasattr(jiant_transformers_model, "hidden_act"):
-        head_kwargs["hidden_act"] = jiant_transformers_model.config.hidden_act
-    if hasattr(jiant_transformers_model, "layer_norm_eps"):
-        head_kwargs["layer_norm_eps"] = jiant_transformers_model.config.layer_norm_eps
+    if hasattr(encoder, "hidden_act"):
+        head_kwargs["hidden_act"] = encoder.config.hidden_act
+    if hasattr(encoder, "layer_norm_eps"):
+        head_kwargs["layer_norm_eps"] = encoder.config.layer_norm_eps
 
     head = JiantHeadFactory()(task, **head_kwargs)
 
-    taskmodel = JiantTaskModelFactory()(task, jiant_transformers_model, head, **taskmodel_kwargs)
+    taskmodel = JiantTaskModelFactory()(task, encoder, head, **taskmodel_kwargs)
     return taskmodel
 
 
