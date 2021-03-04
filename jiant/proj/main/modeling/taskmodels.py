@@ -85,9 +85,7 @@ class ClassificationModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_id.view(-1),)
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
@@ -106,9 +104,7 @@ class RegressionModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.MSELoss()
             loss = loss_fct(logits.view(-1), batch.label.view(-1))
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
@@ -137,10 +133,7 @@ class MultipleChoiceModel(Taskmodel):
             for j in range(len(encoder_output_other_ls[0])):
                 reshaped_outputs.append(
                     [
-                        torch.stack(
-                            [misc[j][layer_i] for misc in encoder_output_other_ls],
-                            dim=1,
-                        )
+                        torch.stack([misc[j][layer_i] for misc in encoder_output_other_ls], dim=1,)
                         for layer_i in range(len(encoder_output_other_ls[0][0]))
                     ]
                 )
@@ -181,18 +174,14 @@ class SpanComparisonModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_id.view(-1),)
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
 
 @JiantTaskModelFactory.register(TaskTypes.SPAN_PREDICTION)
 class SpanPredictionModel(Taskmodel):
-    def __init__(
-        self, task, encoder, head: heads.TokenClassificationHead, **kwargs
-    ):
+    def __init__(self, task, encoder, head: heads.TokenClassificationHead, **kwargs):
         super().__init__(task=task, encoder=encoder, head=head)
         self.offset_margin = 1000
         # 1000 is a big enough number that exp(-1000) will be strict 0 in float32.
@@ -212,9 +201,7 @@ class SpanPredictionModel(Taskmodel):
             loss = loss_fct(
                 logits.transpose(dim0=1, dim1=2).flatten(end_dim=1), batch.gt_span_idxs.flatten(),
             )
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
@@ -232,9 +219,7 @@ class MultiLabelSpanComparisonModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.BCEWithLogitsLoss()
             loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_ids.float(),)
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
@@ -243,9 +228,7 @@ class MultiLabelSpanComparisonModel(Taskmodel):
 class TokenClassificationModel(Taskmodel):
     """From RobertaForTokenClassification"""
 
-    def __init__(
-        self, task, encoder, head: heads.TokenClassificationHead, **kwargs
-    ):
+    def __init__(self, task, encoder, head: heads.TokenClassificationHead, **kwargs):
         super().__init__(task=task, encoder=encoder, head=head)
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
@@ -259,9 +242,7 @@ class TokenClassificationModel(Taskmodel):
             active_logits = logits.view(-1, self.head.num_labels)[active_loss]
             active_labels = batch.label_ids.view(-1)[active_loss]
             loss = loss_fct(active_logits, active_labels)
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
@@ -282,9 +263,7 @@ class QAModel(Taskmodel):
                 start_positions=batch.start_position,
                 end_positions=batch.end_position,
             )
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 
@@ -308,9 +287,7 @@ class MLMModel(Taskmodel):
         logits = self.head(unpooled=encoder_output.unpooled)
         if compute_loss:
             loss = compute_mlm_loss(logits=logits, masked_lm_labels=masked_batch.masked_lm_labels)
-            return LogitsAndLossOutput(
-                logits=logits, loss=loss, other=encoder_output.other
-            )
+            return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
 

@@ -8,13 +8,13 @@ from typing import Union
 
 import torch
 import torch.nn as nn
-import transformers
 
 import jiant.tasks as tasks
-from jiant.tasks.core import FeaturizationSpec
+import jiant.utils.python.strings as strings
 
 from jiant.proj.main.modeling.taskmodels import Taskmodel
 from jiant.shared.model_resolution import ModelArchitectures
+from jiant.tasks.core import FeaturizationSpec
 
 from jiant.proj.main.components.outputs import construct_output_from_dict
 
@@ -156,9 +156,7 @@ class JiantTransformersModelFactory:
         Returns:
             JiantTransformersModel: Jiant wrapper class for Hugging Face model
         """
-        encoder_class = cls.registry[
-            ModelArchitectures(hf_model.config.model_type)
-        ]
+        encoder_class = cls.registry[ModelArchitectures(hf_model.config.model_type)]
         encoder = encoder_class(hf_model)
         return encoder
 
@@ -322,6 +320,7 @@ class JiantAlbertModel(JiantTransformersModel):
         mlm_weights_dict = {
             strings.remove_prefix(k, "predictions."): v for k, v in weights_dict.items()
         }
+        return mlm_weights_dict
 
     def get_feat_spec(self, max_seq_length):
         return FeaturizationSpec(

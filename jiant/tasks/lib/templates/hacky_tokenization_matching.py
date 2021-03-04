@@ -1,5 +1,4 @@
 """TODO: Remove when Tokenizers gets better  (issue #1189)"""
-import transformers
 from jiant.tasks.utils import ExclusiveSpan
 
 
