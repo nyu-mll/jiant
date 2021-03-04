@@ -78,7 +78,7 @@ class ClassificationModel(Taskmodel):
         super().__init__(task=task, jiant_transformers_model=jiant_transformers_model, head=head)
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
         logits = self.head(pooled=jiant_transformers_model_output.pooled)
@@ -98,7 +98,7 @@ class RegressionModel(Taskmodel):
         super().__init__(task=task, jiant_transformers_model=jiant_transformers_model, head=head)
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
         # TODO: Abuse of notation - these aren't really logits  (issue #1187)
@@ -123,7 +123,7 @@ class MultipleChoiceModel(Taskmodel):
         choice_score_list = []
         jiant_transformers_model_output_other_ls = []
         for i in range(self.num_choices):
-            jiant_transformers_model_output = self.jiant_transformers_model(
+            jiant_transformers_model_output = self.jiant_transformers_model.encode(
                 input_ids=batch.input_ids[:, i],
                 segment_ids=batch.segment_ids[:, i],
                 input_mask=batch.input_mask[:, i],
@@ -174,7 +174,7 @@ class SpanComparisonModel(Taskmodel):
         Returns:
             TYPE: Description
         """
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=jiant_transformers_model_output.unpooled, spans=batch.spans)
@@ -200,7 +200,7 @@ class SpanPredictionModel(Taskmodel):
         # we can guarantee the output distribution will only be non-zero at those dimensions.
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=jiant_transformers_model_output.unpooled)
@@ -225,7 +225,7 @@ class MultiLabelSpanComparisonModel(Taskmodel):
         super().__init__(task=task, jiant_transformers_model=jiant_transformers_model, head=head)
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=jiant_transformers_model_output.unpooled, spans=batch.spans)
@@ -249,7 +249,7 @@ class TokenClassificationModel(Taskmodel):
         super().__init__(task=task, jiant_transformers_model=jiant_transformers_model, head=head)
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=jiant_transformers_model_output.unpooled)
@@ -272,7 +272,7 @@ class QAModel(Taskmodel):
         super().__init__(task=task, jiant_transformers_model=jiant_transformers_model, head=head)
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=jiant_transformers_model_output.unpooled)
@@ -300,7 +300,7 @@ class MLMModel(Taskmodel):
             tokenizer=tokenizer,
             do_mask=self.task.do_mask,
         )
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=masked_batch.input_ids,
             segment_ids=masked_batch.segment_ids,
             input_mask=masked_batch.input_mask,
@@ -322,7 +322,7 @@ class EmbeddingModel(Taskmodel):
         self.layer = kwargs["layer"]
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
-        jiant_transformers_model_output = self.jiant_transformers_model(
+        jiant_transformers_model_output = self.jiant_transformers_model.encode(
             input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
         )
 

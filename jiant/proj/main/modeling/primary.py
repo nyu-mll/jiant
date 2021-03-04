@@ -164,7 +164,7 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
     def get_hidden_dropout_prob(self):
         return self.config.hidden_dropout_prob
 
-    def __call__(self, input_ids, segment_ids, input_mask, output_hidden_states=True):
+    def encode(self, input_ids, segment_ids, input_mask, output_hidden_states=True):
         output = self.forward(
             input_ids=input_ids,
             token_type_ids=segment_ids,
