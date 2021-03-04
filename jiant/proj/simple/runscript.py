@@ -213,7 +213,6 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             output_dir=run_output_dir,
             # === Model parameters === #
             hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
-            model_type=hf_config.model_type,
             model_path=model_weights_path,
             model_config_path=os.path.join(
                 model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.json"
