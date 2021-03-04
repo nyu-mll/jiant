@@ -8,7 +8,7 @@ import jiant.scripts.download_data.runscript as downloader
 import jiant.utils.torch_utils as torch_utils
 
 
-@pytest.mark.gpu
+@pytest.mark.slow
 @pytest.mark.parametrize("task_name", ["copa"])
 @pytest.mark.parametrize("model_type", ["bert-base-cased"])
 def test_simple_runscript(tmpdir, task_name, model_type):
