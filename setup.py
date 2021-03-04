@@ -72,7 +72,7 @@ setup(
         "scikit-learn == 0.22.2.post1",
         "scipy == 1.4.1",
         "sentencepiece == 0.1.86",
-        "tokenizers == 0.9.4",
+        "tokenizers == 0.10.1",
         "torch >= 1.5.0",
         "tqdm == 4.46.0",
         "transformers == 4.3.3",
