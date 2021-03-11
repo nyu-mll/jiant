@@ -31,19 +31,7 @@ def input_flat_strip(tokens):
 
 
 def flat_strip(tokens, tokenizer, return_indices=False):
-    ls = []
-    count = 0
-    indices = []
-    for token in tokens:
-        tokenizer.convert_tokens_to_string(token)
-        ls.append(token)
-        indices += [count] * len(token)
-        count += 1
-    string = "".join(ls).lower()
-    if return_indices:
-        return string, indices
-    else:
-        return string
+    return tokenizer.convert_tokens_to_string(tokens).replace(" ", "").lower()
 
 
 def starts_with(ls, prefix):
