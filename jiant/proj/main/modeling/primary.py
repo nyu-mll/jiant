@@ -291,6 +291,60 @@ class JiantRobertaModel(JiantTransformersModel):
         )
 
 
+@JiantTransformersModelFactory.register(ModelArchitectures.DEBERTA)
+class JiantDebertaModel(JiantTransformersModel):
+    def __init__(self, baseObject):
+        super().__init__(baseObject)
+
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        """See tokenization_normalization.py for details"""
+        breakpoint()
+        space_tokenization = [token.lower() for token in space_tokenization]
+        modifed_space_tokenization = bow_tag_tokens(space_tokenization)
+        modifed_target_tokenization = _process_sentencepiece_tokens(target_tokenization)
+
+        return modifed_space_tokenization, modifed_target_tokenization
+
+    def encode(self, input_ids, segment_ids, input_mask, output_hidden_states=True):
+        output = self.forward(
+            input_ids=input_ids,
+            token_type_ids=segment_ids,
+            attention_mask=input_mask,
+            output_hidden_states=output_hidden_states,
+        )
+        return JiantModelOutput(
+            pooled=output.last_hidden_state[:, 0, :],
+            unpooled=output.last_hidden_state,
+            other=output.hidden_states,
+        )
+
+    def get_mlm_weights_dict(self, weights_dict):
+        mlm_weights_map = {
+            "lm_predictions.lm_head.bias": "cls.predictions.bias",
+            "lm_predictions.lm_head.dense.weight": "cls.predictions.transform.dense.weight",
+            "lm_predictions.lm_head.dense.bias": "cls.predictions.transform.dense.bias",
+            "lm_predictions.lm_head.LayerNorm.weight": "cls.predictions.transform.LayerNorm.weight",
+            "lm_predictions.lm_head.LayerNorm.bias": "cls.predictions.transform.LayerNorm.bias",
+        }
+        mlm_weights_dict = {new_k: weights_dict[old_k] for new_k, old_k in mlm_weights_map.items()}
+        return mlm_weights_dict
+
+    def get_feat_spec(self, max_seq_length):
+        return FeaturizationSpec(
+            max_seq_length=max_seq_length,
+            cls_token_at_end=False,
+            pad_on_left=False,
+            cls_token_segment_id=0,
+            pad_token_segment_id=0,
+            pad_token_id=0,
+            pad_token_mask_id=0,
+            sequence_a_segment_id=0,
+            sequence_b_segment_id=1,
+            sep_token_extra=False,
+        )
+
+
 @JiantTransformersModelFactory.register(ModelArchitectures.XLM_ROBERTA)
 class JiantXLMRobertaModel(JiantTransformersModel):
     def __init__(self, baseObject):
@@ -401,8 +455,8 @@ class JiantElectraModel(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
 
-    def __call__(self, encoder, input_ids, segment_ids, input_mask):
-        output = super().__call__(
+    def encode(self, input_ids, segment_ids, input_mask):
+        output = self.forward(
             input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask
         )
         unpooled = output.hidden_states
@@ -460,7 +514,7 @@ class JiantBartModel(JiantTransformersModel):
             sep_token_extra=True,
         )
 
-    def __call__(self, encoder, input_ids, input_mask):
+    def encode(self, input_ids, input_mask, *args):
         # BART and mBART and encoder-decoder architectures.
         # As described in the BART paper and implemented in Transformers,
         # for single input tasks, the encoder input is the sequence,
