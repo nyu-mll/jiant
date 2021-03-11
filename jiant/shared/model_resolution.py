@@ -64,7 +64,6 @@ def resolve_model_arch_tokenizer(tokenizer):
         ModelArchitecture
 
     """
-    print(TOKENIZER_CLASS_DICT.inverse)
     assert len(TOKENIZER_CLASS_DICT.inverse[tokenizer.__class__]) == 1
     return TOKENIZER_CLASS_DICT.inverse[tokenizer.__class__][0]
 
