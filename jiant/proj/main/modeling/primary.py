@@ -423,6 +423,13 @@ class JiantElectraModel(JiantTransformersModel):
             sep_token_extra=False,
         )
 
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        raise NotImplementedError()
+
+    def get_mlm_weights_dict(self, weights_dict):
+        raise NotImplementedError()
+
 
 @JiantTransformersModelFactory.register(ModelArchitectures.BART)
 class JiantBartModel(JiantTransformersModel):
@@ -475,11 +482,18 @@ class JiantBartModel(JiantTransformersModel):
         pooled = unpooled[batch_idx, slen - input_ids.eq(encoder.config.pad_token_id).sum(1) - 1]
         return JiantModelOutput(pooled=pooled, unpooled=unpooled, other=other)
 
+    def get_mlm_weights_dict(self, weights_dict):
+        raise NotImplementedError()
+
 
 @JiantTransformersModelFactory.register(ModelArchitectures.MBART)
 class JiantMBartModel(JiantBartModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
+
+    @classmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        raise NotImplementedError()
 
     def get_feat_spec(self, max_seq_length):
         # mBART is weird
@@ -498,3 +512,6 @@ class JiantMBartModel(JiantBartModel):
             sequence_b_segment_id=0,  # mBART has no token_type_ids
             sep_token_extra=True,
         )
+
+    def get_mlm_weights_dict(self, weights_dict):
+        raise NotImplementedError()
