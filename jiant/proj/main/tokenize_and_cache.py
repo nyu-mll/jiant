@@ -1,15 +1,17 @@
 import os
 
-from transformers import AutoConfig, AutoTokenizer
+from transformers import AutoConfig
+from transformers import AutoTokenizer
 
 import jiant.proj.main.preprocessing as preprocessing
 import jiant.shared.caching as shared_caching
-import jiant.tasks as tasks
 import jiant.tasks.evaluate as evaluate
-import jiant.utils.zconf as zconf
 import jiant.utils.python.io as py_io
-from jiant.shared.constants import PHASE
+import jiant.utils.zconf as zconf
+
 from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
+from jiant.shared.constants import PHASE
+from jiant.tasks.retrieval import create_task_from_config_path
 
 
 @zconf.run_config
@@ -145,7 +147,7 @@ def main(args: RunConfiguration):
     config = AutoConfig.from_pretrained(args.hf_pretrained_model_name_or_path)
     model_type = config.model_type
 
-    task = tasks.create_task_from_config_path(config_path=args.task_config_path, verbose=True)
+    task = create_task_from_config_path(config_path=args.task_config_path, verbose=True)
     feat_spec = JiantTransformersModelFactory.build_featurization_spec(
         model_type=model_type, max_seq_length=args.max_seq_length,
     )
