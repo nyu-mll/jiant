@@ -53,7 +53,7 @@ def test_process_wordpiece_token_sequence():
         "rules",
         ".",
     ]
-    adjusted_wordpiece_tokens = tu._process_wordpiece_tokens(original_wordpiece_tokens)
+    adjusted_wordpiece_tokens = tu.process_wordpiece_tokens(original_wordpiece_tokens)
     assert adjusted_wordpiece_tokens == expected_adjusted_wordpiece_tokens
 
 
@@ -104,7 +104,7 @@ def test_process_sentencepiece_token_sequence():
         "▁rules",
         ".",
     ]
-    adjusted_sentencepiece_tokens = tu._process_sentencepiece_tokens(original_sentencepiece_tokens)
+    adjusted_sentencepiece_tokens = tu.process_sentencepiece_tokens(original_sentencepiece_tokens)
     assert adjusted_sentencepiece_tokens == expected_adjusted_sentencepiece_tokens
 
 
@@ -145,7 +145,7 @@ def test_process_bytebpe_token_sequence():
         "Ġrules",
         ".",
     ]
-    adjusted_bytebpe_tokens = tu._process_bytebpe_tokens(original_bytebpe_tokens)
+    adjusted_bytebpe_tokens = tu.process_bytebpe_tokens(original_bytebpe_tokens)
     assert adjusted_bytebpe_tokens == expected_adjusted_bytebpe_tokens
 
 

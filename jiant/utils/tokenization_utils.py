@@ -13,19 +13,19 @@ def eow_tag_tokens(tokens: Sequence[str], eow_tag: str = "</w>"):
     return [t + eow_tag for t in tokens]
 
 
-def _process_wordpiece_tokens(tokens: Sequence[str]):
-    return [_process_wordpiece_token_for_alignment(token) for token in tokens]
+def process_wordpiece_tokens(tokens: Sequence[str]):
+    return [process_wordpiece_token_for_alignment(token) for token in tokens]
 
 
-def _process_sentencepiece_tokens(tokens: Sequence[str]):
-    return [_process_sentencepiece_token_for_alignment(token) for token in tokens]
+def process_sentencepiece_tokens(tokens: Sequence[str]):
+    return [process_sentencepiece_token_for_alignment(token) for token in tokens]
 
 
-def _process_bytebpe_tokens(tokens: Sequence[str]):
-    return [_process_bytebpe_token_for_alignment(token) for token in tokens]
+def process_bytebpe_tokens(tokens: Sequence[str]):
+    return [process_bytebpe_token_for_alignment(token) for token in tokens]
 
 
-def _process_wordpiece_token_for_alignment(t):
+def process_wordpiece_token_for_alignment(t):
     """Add word boundary markers, removes token prefix (no-space meta-symbol — '##' for BERT)."""
     if t.startswith("##"):
         return re.sub(r"^##", "", t)
@@ -33,7 +33,7 @@ def _process_wordpiece_token_for_alignment(t):
         return "<w>" + t
 
 
-def _process_sentencepiece_token_for_alignment(t):
+def process_sentencepiece_token_for_alignment(t):
     """Add word boundary markers, removes token prefix (space meta-symbol)."""
     if t.startswith("▁"):
         return "<w>" + re.sub(r"^▁", "", t)
@@ -41,7 +41,7 @@ def _process_sentencepiece_token_for_alignment(t):
         return t
 
 
-def _process_bytebpe_token_for_alignment(t):
+def process_bytebpe_token_for_alignment(t):
     """Add word boundary markers, removes token prefix (space meta-symbol)."""
     if t.startswith("Ġ"):
         return "<w>" + re.sub(r"^Ġ", "", t)

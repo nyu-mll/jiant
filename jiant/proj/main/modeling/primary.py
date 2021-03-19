@@ -21,9 +21,9 @@ from jiant.shared.model_resolution import ModelArchitectures
 
 from jiant.utils.tokenization_utils import bow_tag_tokens
 from jiant.utils.tokenization_utils import eow_tag_tokens
-from jiant.utils.tokenization_utils import _process_bytebpe_tokens
-from jiant.utils.tokenization_utils import _process_wordpiece_tokens
-from jiant.utils.tokenization_utils import _process_sentencepiece_tokens
+from jiant.utils.tokenization_utils import process_bytebpe_tokens
+from jiant.utils.tokenization_utils import process_wordpiece_tokens
+from jiant.utils.tokenization_utils import process_sentencepiece_tokens
 
 
 @dataclass
@@ -175,6 +175,11 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
         )
         self.__dict__ = baseObject.__dict__
 
+    @classmethod
+    @abc.abstractmethod
+    def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        pass
+
     @abc.abstractmethod
     def get_mlm_weights_dict(self, weights_dict):
         pass
@@ -214,7 +219,7 @@ class JiantBertModel(JiantTransformersModel):
         if tokenizer.init_kwargs.get("do_lower_case", False):
             space_tokenization = [token.lower() for token in space_tokenization]
         modifed_space_tokenization = bow_tag_tokens(space_tokenization)
-        modifed_target_tokenization = _process_wordpiece_tokens(target_tokenization)
+        modifed_target_tokenization = process_wordpiece_tokens(target_tokenization)
 
         return modifed_space_tokenization, modifed_target_tokenization
 
@@ -256,7 +261,7 @@ class JiantRobertaModel(JiantTransformersModel):
         """See tokenization_normalization.py for details"""
         modifed_space_tokenization = bow_tag_tokens(space_tokenization)
         modifed_target_tokenization = ["Ġ" + target_tokenization[0]] + target_tokenization[1:]
-        modifed_target_tokenization = _process_bytebpe_tokens(modifed_target_tokenization)
+        modifed_target_tokenization = process_bytebpe_tokens(modifed_target_tokenization)
 
         return modifed_space_tokenization, modifed_target_tokenization
 
@@ -296,7 +301,7 @@ class JiantXLMRobertaModel(JiantTransformersModel):
         """See tokenization_normalization.py for details"""
         space_tokenization = [token.lower() for token in space_tokenization]
         modifed_space_tokenization = bow_tag_tokens(space_tokenization)
-        modifed_target_tokenization = _process_sentencepiece_tokens(target_tokenization)
+        modifed_target_tokenization = process_sentencepiece_tokens(target_tokenization)
 
         return modifed_space_tokenization, modifed_target_tokenization
 
@@ -366,7 +371,7 @@ class JiantAlbertModel(JiantTransformersModel):
         """See tokenization_normalization.py for details"""
         space_tokenization = [token.lower() for token in space_tokenization]
         modifed_space_tokenization = bow_tag_tokens(space_tokenization)
-        modifed_target_tokenization = _process_sentencepiece_tokens(target_tokenization)
+        modifed_target_tokenization = process_sentencepiece_tokens(target_tokenization)
 
         return modifed_space_tokenization, modifed_target_tokenization
 
