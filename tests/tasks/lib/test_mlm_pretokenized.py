@@ -1,14 +1,14 @@
 import transformers
 
 import jiant.shared.model_resolution as model_resolution
-from jiant.tasks.retrieval import MLMPretokenizedTask
+import jiant.tasks as tasks
 
 from jiant.shared.model_resolution import ModelArchitectures
 from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
 
 
 def test_tokenization_and_featurization():
-    task = MLMPretokenizedTask(name="mlm_pretokenized", path_dict={})
+    task = tasks.MLMPretokenizedTask(name="mlm_pretokenized", path_dict={})
     tokenizer = transformers.RobertaTokenizer.from_pretrained("roberta-base")
     example = task.Example(
         guid=None,

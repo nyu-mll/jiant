@@ -4,8 +4,7 @@ from typing import Dict, List, Optional
 
 import jiant.proj.main.components.task_sampler as jiant_task_sampler
 import jiant.shared.caching as caching
-from jiant.tasks.core import Task
-from jiant.tasks.retrieval import create_task_from_config_path
+import jiant.tasks as tasks
 import jiant.utils.python.io as py_io
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
 
@@ -49,7 +48,7 @@ class TaskRunConfig(ExtendedDataClassMixin):
 
 @dataclass
 class JiantTaskContainer:
-    task_dict: Dict[str, Task]
+    task_dict: Dict[str, tasks.Task]
     task_sampler: jiant_task_sampler.BaseMultiTaskSampler
     task_cache_dict: Dict
     global_train_config: GlobalTrainConfig
@@ -59,7 +58,7 @@ class JiantTaskContainer:
     metrics_aggregator: jiant_task_sampler.BaseMetricAggregator
 
 
-def create_task_dict(task_config_dict: dict, verbose: bool = True) -> Dict[str, Task]:
+def create_task_dict(task_config_dict: dict, verbose: bool = True) -> Dict[str, tasks.Task]:
     """Make map of task name to task instances from map of task name to task config file paths.
 
     Args:
@@ -72,7 +71,7 @@ def create_task_dict(task_config_dict: dict, verbose: bool = True) -> Dict[str, 
     """
     task_dict = {}
     for task_name, task_config_path in task_config_dict.items():
-        task = create_task_from_config_path(config_path=task_config_path, verbose=False)
+        task = tasks.create_task_from_config_path(config_path=task_config_path, verbose=False)
         if not task.name == task_name:
             warnings.warn(
                 "task {} from {} has conflicting names: {}/{}. Using {}".format(

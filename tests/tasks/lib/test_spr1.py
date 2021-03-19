@@ -6,7 +6,7 @@ import transformers
 from unittest.mock import Mock
 
 from jiant.shared import model_resolution
-from jiant.tasks.retrieval import create_task_from_config_path
+from jiant.tasks import create_task_from_config_path
 from jiant.utils.testing.tokenizer import SimpleSpaceTokenizer
 from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
 

@@ -3,11 +3,7 @@ import pytest
 import jiant.utils.tokenization_normalization as tn
 import jiant.utils.tokenization_utils as tu
 
-from transformers import AlbertTokenizer
-from transformers import BertTokenizer
-from transformers import DebertaTokenizer
-from transformers import RobertaTokenizer
-from transformers import XLMTokenizer
+from transformers import BertTokenizer, XLMTokenizer, RobertaTokenizer, AlbertTokenizer
 
 
 def test_process_wordpiece_token_sequence():

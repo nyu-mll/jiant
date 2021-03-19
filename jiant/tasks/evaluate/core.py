@@ -1,33 +1,26 @@
 import itertools
 import json
-
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 import seqeval.metrics as seqeval_metrics
 import torch
-
-from scipy.stats import pearsonr
-from scipy.stats import spearmanr
-from sklearn.metrics import f1_score
-from sklearn.metrics import matthews_corrcoef
-from typing import Dict
-from typing import List
+from sklearn.metrics import f1_score, matthews_corrcoef
+from scipy.stats import pearsonr, spearmanr
+from typing import Dict, List
 
 import jiant.shared.model_resolution as model_resolution
-from jiant.tasks.retrieval import *
-import jiant.tasks.lib.bucc2018 as bucc2018_lib
-import jiant.tasks.lib.mlqa as mlqa_lib
-import jiant.tasks.lib.tatoeba as tatoeba_lib
+import jiant.tasks as tasks
 import jiant.tasks.lib.templates.squad_style.core as squad_style
 import jiant.tasks.lib.templates.squad_style.utils as squad_style_utils
-
+import jiant.tasks.lib.mlqa as mlqa_lib
+import jiant.tasks.lib.bucc2018 as bucc2018_lib
+import jiant.tasks.lib.tatoeba as tatoeba_lib
 from jiant.tasks.lib.templates import mlm as mlm_template
 from jiant.utils.python.datastructures import ExtendedDataClassMixin
 from jiant.utils.python.io import read_json
-from jiant.utils.string_comparing import exact_match_score
-from jiant.utils.string_comparing import string_f1_score
+from jiant.utils.string_comparing import string_f1_score, exact_match_score
 
 
 @dataclass
@@ -759,7 +752,7 @@ class XlingQAEvaluationScheme(BaseEvaluationScheme):
         self, task, accumulator: BaseAccumulator, tokenizer, labels
     ) -> Metrics:
         logits = accumulator.get_accumulated()
-        assert isinstance(task, (TyDiQATask, XquadTask))
+        assert isinstance(task, (tasks.TyDiQATask, tasks.XquadTask))
         lang = task.language
         results, predictions = squad_style.compute_predictions_logits_v3(
             data_rows=labels,
@@ -961,112 +954,119 @@ def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:
     if isinstance(
         task,
         (
-            AdversarialNliTask,
-            AbductiveNliTask,
-            AcceptabilityDefinitenessTask,
-            AcceptabilityCoordTask,
-            AcceptabilityEOSTask,
-            AcceptabilityWHwordsTask,
-            BoolQTask,
-            CopaTask,
-            FeverNliTask,
-            MnliTask,
-            PawsXTask,
-            QnliTask,
-            RaceTask,
-            RteTask,
-            SciTailTask,
-            SentEvalBigramShiftTask,
-            SentEvalCoordinationInversionTask,
-            SentEvalObjNumberTask,
-            SentEvalOddManOutTask,
-            SentEvalPastPresentTask,
-            SentEvalSentenceLengthTask,
-            SentEvalSubjNumberTask,
-            SentEvalTopConstituentsTask,
-            SentEvalTreeDepthTask,
-            SentEvalWordContentTask,
-            SnliTask,
-            SstTask,
-            WiCTask,
-            WnliTask,
-            WSCTask,
-            XnliTask,
-            MCScriptTask,
-            ArctTask,
-            PiqaTask,
+            tasks.AdversarialNliTask,
+            tasks.AbductiveNliTask,
+            tasks.AcceptabilityDefinitenessTask,
+            tasks.AcceptabilityCoordTask,
+            tasks.AcceptabilityEOSTask,
+            tasks.AcceptabilityWHwordsTask,
+            tasks.BoolQTask,
+            tasks.CopaTask,
+            tasks.FeverNliTask,
+            tasks.MnliTask,
+            tasks.PawsXTask,
+            tasks.QnliTask,
+            tasks.RaceTask,
+            tasks.RteTask,
+            tasks.SciTailTask,
+            tasks.SentEvalBigramShiftTask,
+            tasks.SentEvalCoordinationInversionTask,
+            tasks.SentEvalObjNumberTask,
+            tasks.SentEvalOddManOutTask,
+            tasks.SentEvalPastPresentTask,
+            tasks.SentEvalSentenceLengthTask,
+            tasks.SentEvalSubjNumberTask,
+            tasks.SentEvalTopConstituentsTask,
+            tasks.SentEvalTreeDepthTask,
+            tasks.SentEvalWordContentTask,
+            tasks.SnliTask,
+            tasks.SstTask,
+            tasks.WiCTask,
+            tasks.WnliTask,
+            tasks.WSCTask,
+            tasks.XnliTask,
+            tasks.MCScriptTask,
+            tasks.ArctTask,
+            tasks.PiqaTask,
         ),
     ):
         return SimpleAccuracyEvaluationScheme()
-    elif isinstance(task, MCTACOTask):
+    elif isinstance(task, tasks.MCTACOTask):
         return MCTACOEvaluationScheme()
-    elif isinstance(task, CCGTask):
+    elif isinstance(task, tasks.CCGTask):
         return CCGEvaluationScheme()
-    elif isinstance(task, CommitmentBankTask):
+    elif isinstance(task, tasks.CommitmentBankTask):
         return CommitmentBankEvaluationScheme()
-    elif isinstance(task, ColaTask):
+    elif isinstance(task, tasks.ColaTask):
         return MCCEvaluationScheme()
     elif isinstance(
         task,
         (
-            ArcEasyTask,
-            ArcChallengeTask,
-            CommonsenseQATask,
-            CosmosQATask,
-            SWAGTask,
-            HellaSwagTask,
-            MutualTask,
-            MutualPlusTask,
-            QuailTask,
-            SocialIQATask,
-            WinograndeTask,
-            MCTestTask,
+            tasks.ArcEasyTask,
+            tasks.ArcChallengeTask,
+            tasks.CommonsenseQATask,
+            tasks.CosmosQATask,
+            tasks.SWAGTask,
+            tasks.HellaSwagTask,
+            tasks.MutualTask,
+            tasks.MutualPlusTask,
+            tasks.QuailTask,
+            tasks.SocialIQATask,
+            tasks.WinograndeTask,
+            tasks.MCTestTask,
         ),
     ):
         return MultipleChoiceAccuracyEvaluationScheme()
-    elif isinstance(task, (MrpcTask, QqpTask)):
+    elif isinstance(task, (tasks.MrpcTask, tasks.QqpTask)):
         return AccAndF1EvaluationScheme()
     elif isinstance(
         task,
         (
-            Spr1Task,
-            Spr2Task,
-            SemevalTask,
-            SrlTask,
-            NerTask,
-            CorefTask,
-            DprTask,
-            DepTask,
-            PosTask,
-            NonterminalTask,
+            tasks.Spr1Task,
+            tasks.Spr2Task,
+            tasks.SemevalTask,
+            tasks.SrlTask,
+            tasks.NerTask,
+            tasks.CorefTask,
+            tasks.DprTask,
+            tasks.DepTask,
+            tasks.PosTask,
+            tasks.NonterminalTask,
         ),
     ):
         return MultiLabelAccAndF1EvaluationScheme()
-    elif isinstance(task, ReCoRDTask):
+    elif isinstance(task, tasks.ReCoRDTask):
         return ReCordEvaluationScheme()
     elif isinstance(
-        task, (SquadTask, RopesTask, QuorefTask, NewsQATask, MrqaNaturalQuestionsTask,),
+        task,
+        (
+            tasks.SquadTask,
+            tasks.RopesTask,
+            tasks.QuorefTask,
+            tasks.NewsQATask,
+            tasks.MrqaNaturalQuestionsTask,
+        ),
     ):
         return SQuADEvaluationScheme()
-    elif isinstance(task, (TyDiQATask, XquadTask)):
+    elif isinstance(task, (tasks.TyDiQATask, tasks.XquadTask)):
         return XlingQAEvaluationScheme()
-    elif isinstance(task, MlqaTask):
+    elif isinstance(task, tasks.MlqaTask):
         return MLQAEvaluationScheme()
-    elif isinstance(task, MultiRCTask):
+    elif isinstance(task, tasks.MultiRCTask):
         return MultiRCEvaluationScheme()
-    elif isinstance(task, StsbTask):
+    elif isinstance(task, tasks.StsbTask):
         return PearsonAndSpearmanEvaluationScheme()
-    elif isinstance(task, MLMSimpleTask):
+    elif isinstance(task, tasks.MLMSimpleTask):
         return MLMEvaluationScheme()
-    elif isinstance(task, (MLMPremaskedTask, tasks.MLMPretokenizedTask)):
+    elif isinstance(task, (tasks.MLMPremaskedTask, tasks.MLMPretokenizedTask)):
         return MLMPremaskedEvaluationScheme()
-    elif isinstance(task, (QAMRTask, QASRLTask)):
+    elif isinstance(task, (tasks.QAMRTask, tasks.QASRLTask)):
         return SpanPredictionF1andEMScheme()
-    elif isinstance(task, (UdposTask, PanxTask)):
+    elif isinstance(task, (tasks.UdposTask, tasks.PanxTask)):
         return F1TaggingEvaluationScheme()
-    elif isinstance(task, Bucc2018Task):
+    elif isinstance(task, tasks.Bucc2018Task):
         return Bucc2018EvaluationScheme()
-    elif isinstance(task, TatoebaTask):
+    elif isinstance(task, tasks.TatoebaTask):
         return TatoebaEvaluationScheme()
     else:
         raise KeyError(task)

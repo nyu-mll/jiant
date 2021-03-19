@@ -3,7 +3,7 @@ from collections import Counter
 
 import numpy as np
 
-from jiant.tasks.retrieval import create_task_from_config_path
+from jiant.tasks import create_task_from_config_path
 from jiant.utils.testing.tokenizer import SimpleSpaceTokenizer
 
 
