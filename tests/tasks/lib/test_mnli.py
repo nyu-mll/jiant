@@ -5,7 +5,7 @@ from collections import Counter
 
 from jiant.shared import model_resolution
 from jiant.shared.model_resolution import ModelArchitectures
-from jiant.tasks import create_task_from_config_path
+from jiant.tasks.retrieval import create_task_from_config_path
 from jiant.utils.testing.tokenizer import SimpleSpaceTokenizer
 from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
 

@@ -1,12 +1,13 @@
 import transformers
 
 import jiant.shared.model_resolution as model_resolution
-import jiant.tasks as tasks
+
 from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
+from jiant.tasks.retrieval import MLMPremaskedTask
 
 
 def test_tokenization_and_featurization():
-    task = tasks.MLMPremaskedTask(name="mlm_premasked", path_dict={})
+    task = MLMPremaskedTask(name="mlm_premasked", path_dict={})
     tokenizer = transformers.RobertaTokenizer.from_pretrained("roberta-base")
     example = task.Example(guid=None, text="Hi, my name is Bob Roberts.", masked_spans=[[15, 18]],)
     tokenized_example = example.tokenize(tokenizer=tokenizer)

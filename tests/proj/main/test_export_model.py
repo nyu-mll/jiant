@@ -1,6 +1,6 @@
 import os
 import pytest
-from transformers import BertPreTrainedModel, BertTokenizer, RobertaForMaskedLM, RobertaTokenizer
+from transformers import BertPreTrainedModel, RobertaForMaskedLM, DebertaForMaskedLM
 
 import jiant.utils.python.io as py_io
 from jiant.proj.main.export_model import export_model
