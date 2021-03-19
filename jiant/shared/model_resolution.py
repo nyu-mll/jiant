@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from jiant.utils.python.datastructures import BiDict
 
 import transformers
 
@@ -26,16 +27,18 @@ class ModelClassSpec:
     model_class: type
 
 
-TOKENIZER_CLASS_DICT = {
-    ModelArchitectures.BERT: transformers.BertTokenizer,
-    ModelArchitectures.XLM: transformers.XLMTokenizer,
-    ModelArchitectures.ROBERTA: transformers.RobertaTokenizer,
-    ModelArchitectures.XLM_ROBERTA: transformers.XLMRobertaTokenizer,
-    ModelArchitectures.ALBERT: transformers.AlbertTokenizer,
-    ModelArchitectures.BART: transformers.BartTokenizer,
-    ModelArchitectures.MBART: transformers.MBartTokenizer,
-    ModelArchitectures.ELECTRA: transformers.ElectraTokenizer,
-}
+TOKENIZER_CLASS_DICT = BiDict(
+    {
+        ModelArchitectures.BERT: transformers.BertTokenizer,
+        ModelArchitectures.XLM: transformers.XLMTokenizer,
+        ModelArchitectures.ROBERTA: transformers.RobertaTokenizer,
+        ModelArchitectures.XLM_ROBERTA: transformers.XLMRobertaTokenizer,
+        ModelArchitectures.ALBERT: transformers.AlbertTokenizer,
+        ModelArchitectures.BART: transformers.BartTokenizer,
+        ModelArchitectures.MBART: transformers.MBartTokenizer,
+        ModelArchitectures.ELECTRA: transformers.ElectraTokenizer,
+    }
+)
 
 
 def resolve_tokenizer_class(model_type):
@@ -49,6 +52,20 @@ def resolve_tokenizer_class(model_type):
 
     """
     return TOKENIZER_CLASS_DICT[ModelArchitectures(model_type)]
+
+
+def resolve_model_arch_tokenizer(tokenizer):
+    """Get the model architecture for a given tokenizer.
+
+    Args:
+        tokenizer
+
+    Returns:
+        ModelArchitecture
+
+    """
+    assert len(TOKENIZER_CLASS_DICT.inverse[tokenizer.__class__]) == 1
+    return TOKENIZER_CLASS_DICT.inverse[tokenizer.__class__][0]
 
 
 def resolve_is_lower_case(tokenizer):
