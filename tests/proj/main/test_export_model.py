@@ -11,6 +11,7 @@ from jiant.proj.main.export_model import export_model
     [
         ("bert", BertPreTrainedModel, "bert-base-cased"),
         ("roberta", RobertaForMaskedLM, "nyu-mll/roberta-med-small-1M-1",),
+        # ("deberta", DebertaForMaskedLM, "microsoft/deberta-base",)
     ],
 )
 def test_export_model(tmp_path, model_type, model_class, hf_pretrained_model_name_or_path):

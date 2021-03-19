@@ -160,58 +160,21 @@ These tests will only be run with pytest flag --runslow. TODO: consider mocking 
 
 
 @pytest.mark.slow
-def test_space_tokenization_and_bert_uncased_tokenization_normalization():
+@pytest.mark.parametrize(
+    "hf_tokenizer, hf_model",
+    [
+        (BertTokenizer, "bert-base-uncased"),
+        (BertTokenizer, "bert-base-cased"),
+        (XLMTokenizer, "xlm-mlm-en-2048"),
+        (RobertaTokenizer, "roberta-base"),
+        (AlbertTokenizer, "albert-base-v1"),
+        (DebertaTokenizer, "microsoft/deberta-base"),
+    ],
+)
+def test_space_tokenization_tokenization_normalization(hf_tokenizer, hf_model):
     text = "Jeff Immelt chose to focus on the incomprehensibility of accounting rules ."
     space_tokenized = text.split(" ")
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-    target_tokenized = tokenizer.tokenize(text)
-    normed_space_tokenized, normed_target_tokenized = tn.normalize_tokenizations(
-        space_tokenized, target_tokenized, tokenizer
-    )
-    assert "".join(normed_space_tokenized) == "".join(normed_target_tokenized)
-
-
-@pytest.mark.slow
-def test_space_tokenization_and_bert_cased_tokenization_normalization():
-    text = "Jeff Immelt chose to focus on the incomprehensibility of accounting rules ."
-    space_tokenized = text.split(" ")
-    tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
-    target_tokenized = tokenizer.tokenize(text)
-    normed_space_tokenized, normed_target_tokenized = tn.normalize_tokenizations(
-        space_tokenized, target_tokenized, tokenizer
-    )
-    assert "".join(normed_space_tokenized) == "".join(normed_target_tokenized)
-
-
-@pytest.mark.slow
-def test_space_tokenization_and_xlm_uncased_tokenization_normalization():
-    text = "Jeff Immelt chose to focus on the incomprehensibility of accounting rules ."
-    space_tokenized = text.split(" ")
-    tokenizer = XLMTokenizer.from_pretrained("xlm-mlm-en-2048")
-    target_tokenized = tokenizer.tokenize(text)
-    normed_space_tokenized, normed_target_tokenized = tn.normalize_tokenizations(
-        space_tokenized, target_tokenized, tokenizer
-    )
-    assert "".join(normed_space_tokenized) == "".join(normed_target_tokenized)
-
-
-@pytest.mark.slow
-def test_space_tokenization_and_roberta_tokenization_normalization():
-    text = "Jeff Immelt chose to focus on the incomprehensibility of accounting rules ."
-    space_tokenized = text.split(" ")
-    tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
-    target_tokenized = tokenizer.tokenize(text)
-    normed_space_tokenized, normed_target_tokenized = tn.normalize_tokenizations(
-        space_tokenized, target_tokenized, tokenizer
-    )
-    assert "".join(normed_space_tokenized) == "".join(normed_target_tokenized)
-
-
-@pytest.mark.slow
-def test_space_tokenization_and_albert_tokenization_normalization():
-    text = "Jeff Immelt chose to focus on the incomprehensibility of accounting rules ."
-    space_tokenized = text.split(" ")
-    tokenizer = AlbertTokenizer.from_pretrained("albert-base-v1")
+    tokenizer = hf_tokenizer.from_pretrained(hf_model)
     target_tokenized = tokenizer.tokenize(text)
     normed_space_tokenized, normed_target_tokenized = tn.normalize_tokenizations(
         space_tokenized, target_tokenized, tokenizer
