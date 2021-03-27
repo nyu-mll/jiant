@@ -78,7 +78,7 @@
 | EP-SRL | srl | ✅ |  | srl | Edge-Probing |
 | SST-2 | sst | ✅ | ✅ | sst | GLUE |
 | STS-B | stsb | ✅ | ✅ | stsb | GLUE |
-| SuperGLUE Broad Coverage Diagnostic | superglue_axg | ✅ | ✅ | superglue_axg | SuperGLUE |
+| SuperGLUE Broad Coverage Diagnostic | superglue_axb | ✅ | ✅ | superglue_axb | SuperGLUE |
 | SWAG | swag | ✅ | ✅ | swag |  |
 | Tatoeba | `tatoeba_{lang}` | ✅ | ✅ | tatoeba | XTREME, multi-lang |
 | TyDiQA | `tydiqa_{lang}` | ✅ | ✅ | tydiqa | XTREME, multi-lang |
