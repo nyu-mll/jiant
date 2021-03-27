@@ -108,6 +108,13 @@ class TokenizedExample(BaseTokenizedExample):
             end=self.span2_span[1] + unpadded_inputs.cls_offset,
         ).to_inclusive()
 
+        assert span1_span.end <= len(
+            tokens
+        ), "Span 1 spans beyond max_seq_len, consider raising max_seq_len"
+        assert span2_span.end <= len(
+            tokens
+        ), "Span 2 spans beyond max_seq_len, consider raising max_seq_len"
+
         binary_label_ids = np.zeros((self.label_num,), dtype=int)
         for label_id in self.label_ids:
             binary_label_ids[label_id] = 1
