@@ -3,7 +3,7 @@ import pytest
 import jiant.utils.tokenization_normalization as tn
 import jiant.utils.tokenization_utils as tu
 
-from transformers import BertTokenizer, XLMTokenizer, RobertaTokenizer, AlbertTokenizer, DebertaTokenizer
+from transformers import BertTokenizer, XLMTokenizer, RobertaTokenizer, AlbertTokenizer, DebertaV2Tokenizer
 
 
 def test_process_wordpiece_token_sequence():
@@ -164,7 +164,7 @@ These tests will only be run with pytest flag --runslow. TODO: consider mocking 
         (XLMTokenizer, "xlm-mlm-en-2048"),
         (RobertaTokenizer, "roberta-base"),
         (AlbertTokenizer, "albert-base-v1"),
-        (DebertaTokenizer, "microsoft/deberta-base"),
+        (DebertaV2Tokenizer, "microsoft/deberta-v2-xlarge"),
     ],
 )
 def test_space_tokenization_tokenization_normalization(hf_tokenizer, hf_model):

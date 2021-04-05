@@ -71,7 +71,7 @@ setup(
         "seqeval == 0.0.12",
         "scikit-learn == 0.22.2.post1",
         "scipy == 1.4.1",
-        "sentencepiece == 0.1.86",
+        "sentencepiece == 0.1.91",
         "tokenizers == 0.10.1",
         "torch >= 1.5.0",
         "tqdm == 4.46.0",

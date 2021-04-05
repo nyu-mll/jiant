@@ -3,7 +3,7 @@ import pytest
 
 from transformers import BertPreTrainedModel
 from transformers import BertTokenizer
-from transformers import DebertaForMaskedLM
+from transformers import DebertaV2ForMaskedLM
 from transformers import RobertaForMaskedLM
 from transformers import RobertaTokenizer
 
@@ -17,7 +17,7 @@ from jiant.proj.main.export_model import export_model
     [
         ("bert", BertPreTrainedModel, "bert-base-cased"),
         ("roberta", RobertaForMaskedLM, "nyu-mll/roberta-med-small-1M-1",),
-        ("deberta", DebertaForMaskedLM, "microsoft/deberta-base",)
+        ("deberta-v2", DebertaV2ForMaskedLM, "microsoft/deberta-v2-xlarge",)
     ],
 )
 def test_export_model(tmp_path, model_type, model_class, hf_pretrained_model_name_or_path):

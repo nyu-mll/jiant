@@ -291,17 +291,17 @@ class JiantRobertaModel(JiantTransformersModel):
         )
 
 
-@JiantTransformersModelFactory.register(ModelArchitectures.DEBERTA)
-class JiantDebertaModel(JiantTransformersModel):
+@JiantTransformersModelFactory.register(ModelArchitectures.DEBERTAV2)
+class JiantDebertaV2Model(JiantTransformersModel):
     def __init__(self, baseObject):
         super().__init__(baseObject)
 
     @classmethod
     def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
         """See tokenization_normalization.py for details"""
+        space_tokenization = [token for token in space_tokenization]
         modifed_space_tokenization = bow_tag_tokens(space_tokenization)
-        modifed_target_tokenization = ["Ġ" + target_tokenization[0]] + target_tokenization[1:]
-        modifed_target_tokenization = process_bytebpe_tokens(modifed_target_tokenization)
+        modifed_target_tokenization = process_sentencepiece_tokens(target_tokenization)
 
         return modifed_space_tokenization, modifed_target_tokenization
 
