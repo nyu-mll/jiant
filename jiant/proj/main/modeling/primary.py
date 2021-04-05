@@ -320,11 +320,13 @@ class JiantDebertaV2Model(JiantTransformersModel):
 
     def get_mlm_weights_dict(self, weights_dict):
         mlm_weights_map = {
-            "lm_predictions.lm_head.bias": "cls.predictions.bias",
-            "lm_predictions.lm_head.dense.weight": "cls.predictions.transform.dense.weight",
-            "lm_predictions.lm_head.dense.bias": "cls.predictions.transform.dense.bias",
-            "lm_predictions.lm_head.LayerNorm.weight": "cls.predictions.transform.LayerNorm.weight",
-            "lm_predictions.lm_head.LayerNorm.bias": "cls.predictions.transform.LayerNorm.bias",
+            "bias": "cls.predictions.bias",
+            "dense.weight": "cls.predictions.transform.dense.weight",
+            "dense.bias": "cls.predictions.transform.dense.bias",
+            "LayerNorm.weight": "cls.predictions.transform.LayerNorm.weight",
+            "LayerNorm.bias": "cls.predictions.transform.LayerNorm.bias",
+            "decoder.weight": "cls.predictions.decoder.weight",
+            "decoder.bias": "cls.predictions.bias",  # <-- linked directly to bias
         }
         mlm_weights_dict = {new_k: weights_dict[old_k] for new_k, old_k in mlm_weights_map.items()}
         return mlm_weights_dict
