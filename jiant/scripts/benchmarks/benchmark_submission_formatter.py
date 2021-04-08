@@ -4,7 +4,7 @@ benchmark leaderboards.
 import os
 import argparse
 
-from jiant.scripts.postproc.benchmarks import GlueBenchmark, SuperglueBenchmark
+from jiant.scripts.benchmarks.benchmarks import GlueBenchmark, SuperglueBenchmark
 
 
 SUPPORTED_BENCHMARKS = {"GLUE": GlueBenchmark, "SUPERGLUE": SuperglueBenchmark}
@@ -17,7 +17,7 @@ def main():
     parser.add_argument(
         "--input_base_path",
         required=True,
-        help="base input path of benchmark task predictions (contains the benchmark task folders)",
+        help="base path where per-task folders contain raw prediction files",
     )
     parser.add_argument("--output_path", required=True, help="output path for formatted files")
     parser.add_argument(
@@ -31,7 +31,7 @@ def main():
     benchmark = SUPPORTED_BENCHMARKS[args.benchmark]
 
     if args.tasks:
-        assert args.tasks in benchmark.TASKS
+        assert set(args.tasks) <= benchmark.TASKS
         task_names = args.tasks
     else:
         task_names = benchmark.TASKS
@@ -39,7 +39,7 @@ def main():
     for task_name in task_names:
         input_filepath = os.path.join(args.input_base_path, task_name, "test_preds.p")
         output_filepath = os.path.join(
-            args.output_path, benchmark.BENCHMARK_SUBMISSION_FILENAMES[task_name]
+            os.path.abspath(args.output_path), benchmark.BENCHMARK_SUBMISSION_FILENAMES[task_name]
         )
         benchmark.write_predictions(task_name, input_filepath, output_filepath)
 
