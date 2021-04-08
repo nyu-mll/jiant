@@ -16,7 +16,7 @@ from jiant.proj.main.modeling.heads import JiantHeadFactory
 from jiant.proj.main.modeling.taskmodels import JiantTaskModelFactory, Taskmodel, MLMModel
 
 from jiant.shared.model_resolution import ModelArchitectures
-from jiant.tasks import Task
+from jiant.tasks.core import Task
 
 
 def setup_jiant_model(
