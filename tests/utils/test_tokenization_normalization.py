@@ -5,7 +5,7 @@ import jiant.utils.tokenization_utils as tu
 
 from transformers import AlbertTokenizer
 from transformers import BertTokenizer
-from transformers import DebertaTokenizer
+from transformers import DebertaV2Tokenizer
 from transformers import RobertaTokenizer
 from transformers import XLMTokenizer
 
