@@ -21,13 +21,6 @@ class ModelArchitectures(Enum):
         return cls(model_type)
 
 
-@dataclass
-class ModelClassSpec:
-    config_class: type
-    tokenizer_class: type
-    model_class: type
-
-
 TOKENIZER_CLASS_DICT = BiDict(
     {
         ModelArchitectures.BERT: transformers.BertTokenizer,
@@ -41,6 +34,13 @@ TOKENIZER_CLASS_DICT = BiDict(
         ModelArchitectures.DEBERTAV2: transformers.DebertaV2Tokenizer,
     }
 )
+
+
+@dataclass
+class ModelClassSpec:
+    config_class: type
+    tokenizer_class: type
+    model_class: type
 
 
 def resolve_tokenizer_class(model_type):

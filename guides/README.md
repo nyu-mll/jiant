@@ -50,6 +50,9 @@ These are more specific guides about running experiments in `jiant`:
 * [My Experiment and Me](experiments/my_experiment_and_me.md): More info about a `jiant` training/eval run
 * [Tips for Large-scale Experiments](experiments/large_scale_experiments.md)
 
+## Adding a Model
+* [Guide for adding a model to `jiant`](models/adding_models.md)
+
 ## Tasks
 
 These are notes on the tasks supported in `jiant`:

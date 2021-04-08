@@ -178,14 +178,23 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def normalize_tokenizations(cls, tokenizer, space_tokenization, target_tokenization):
+        """Abstract method to tag space_tokenization and process target_tokenization with
+        the relevant tokenization method for the model.
+        """
         pass
 
     @abc.abstractmethod
     def get_mlm_weights_dict(self, weights_dict):
+        """Abstract method to get the pre-trained masked-language modeling head weights
+        from the pretrained model from the weights_dict
+        """
         pass
 
     @abc.abstractmethod
     def get_feat_spec(self, weights_dict):
+        """Abstract method that should return a FeaturizationSpec specifying the
+        tokenization details used for the model
+        """
         pass
 
     def get_hidden_size(self):
