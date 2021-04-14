@@ -141,12 +141,11 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         }
         for task_name in full_task_name_list:
             phases_to_do = []
-            config = None
             for phase, phase_task_list in phase_task_dict.items():
                 if task_name in phase_task_list and not os.path.exists(
                     os.path.join(args.exp_dir, "cache", hf_config.model_type, task_name, phase)
                 ):
-                    config = config or read_json(task_config_path_dict[task_name])
+                    config = read_json(task_config_path_dict[task_name])
                     if phase in config["paths"]:
                         phases_to_do.append(phase)
                     else:
