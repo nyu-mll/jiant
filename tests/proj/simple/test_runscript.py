@@ -10,9 +10,9 @@ import jiant.utils.torch_utils as torch_utils
 
 @pytest.mark.slow
 @pytest.mark.parametrize("task_name", ["copa"])
-@pytest.mark.parametrize("model_type", ["bert-base-cased"])
-def test_simple_runscript(tmpdir, task_name, model_type):
-    RUN_NAME = f"{test_simple_runscript.__name__}_{task_name}_{model_type}"
+@pytest.mark.parametrize("model_type", ["bert-base-uncased", "microsoft/deberta-v2-xlarge"])
+def test_simple_runscript_sanity(tmpdir, task_name, model_type):
+    RUN_NAME = f"{test_simple_runscript_sanity.__name__}_{task_name}_{model_type.replace('/','_')}"
     data_dir = str(tmpdir.mkdir("data"))
     exp_dir = str(tmpdir.mkdir("exp"))
 

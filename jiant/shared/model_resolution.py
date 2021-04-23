@@ -14,17 +14,11 @@ class ModelArchitectures(Enum):
     BART = "bart"
     MBART = "mbart"
     ELECTRA = "electra"
+    DEBERTAV2 = "deberta-v2"
 
     @classmethod
     def from_model_type(cls, model_type: str):
         return cls(model_type)
-
-
-@dataclass
-class ModelClassSpec:
-    config_class: type
-    tokenizer_class: type
-    model_class: type
 
 
 TOKENIZER_CLASS_DICT = BiDict(
@@ -37,8 +31,16 @@ TOKENIZER_CLASS_DICT = BiDict(
         ModelArchitectures.BART: transformers.BartTokenizer,
         ModelArchitectures.MBART: transformers.MBartTokenizer,
         ModelArchitectures.ELECTRA: transformers.ElectraTokenizer,
+        ModelArchitectures.DEBERTAV2: transformers.DebertaV2Tokenizer,
     }
 )
+
+
+@dataclass
+class ModelClassSpec:
+    config_class: type
+    tokenizer_class: type
+    model_class: type
 
 
 def resolve_tokenizer_class(model_type):

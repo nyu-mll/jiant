@@ -160,6 +160,9 @@ def load_encoder_from_transformers_weights(
     for k, v in weights_dict.items():
         if k.startswith(encoder_prefix):
             load_weights_dict[strings.remove_prefix(k, encoder_prefix)] = v
+        elif k.startswith(encoder_prefix.split("-")[0]):
+            # workaround for deberta-v2 -> remove the "-v2" suffix since the weight names are prefixed with "deberta" and not "deberta-v2"
+            load_weights_dict[strings.remove_prefix(k, encoder_prefix.split("-")[0] + ".")] = v
         else:
             remainder_weights_dict[k] = v
     encoder.load_state_dict(load_weights_dict)
