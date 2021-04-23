@@ -1,6 +1,6 @@
  # Adding a model
 
-`jiant` supports or can easily be exteneded to support Hugging Face Hugging Face's [Transformer models](https://huggingface.co/transformers/viewer/) since `jiant` utilizes [Auto Classes](https://huggingface.co/transformers/model_doc/auto.html) to determine the architecture of the model used based on the name of the [pretrained model](https://huggingface.co/models). To add a model not currently supported in `jiant`, follow the following steps:
+`jiant` supports or can easily be extended to support Hugging Face's [Transformer models](https://huggingface.co/transformers/viewer/) since `jiant` utilizes [Auto Classes](https://huggingface.co/transformers/model_doc/auto.html) to determine the architecture of the model used based on the name of the [pretrained model](https://huggingface.co/models). Although `jiant` uses AutoModels to reolve model classes, the `jiant` pipeline requires additional information (such as matching the correct tokenizer for the models). Furthermore, there are subtle differences in the models that `jiant` must abstract and additional steps are required to add a Hugging Face model to `jiant`. To add a model not currently supported in `jiant`, follow the following steps:
 
 ## 1. Add to ModelArchitectures enum
 Add the model to the ModelArchitectures enum in [`model_resolution.py`](../../jiant/tasks/model_resolution.py) as a member-string mapping. For example, adding the field DEBERTAV2 = "deberta-v2" would add Deberta V2 to the ModelArchitectures enum.
@@ -68,3 +68,29 @@ class DebertaV2MLMHead(BaseMLMHead):
     ...
 ````
 
+## 5. Fine-tune the model
+You should now be able to use the new model with the following simple fine-tuning example (Deberta-V2 used as an example below):
+
+```python
+from jiant.proj.simple import runscript as run
+import jiant.scripts.download_data.runscript as downloader
+
+EXP_DIR = "/path/to/exp"
+
+# Download the Data
+downloader.download_data(["mrpc"], f"{EXP_DIR}/tasks")
+
+# Set up the arguments for the Simple API
+args = run.RunConfiguration(
+   run_name="simple",
+   exp_dir=EXP_DIR,
+   data_dir=f"{EXP_DIR}/tasks",
+   hf_pretrained_model_name_or_path="microsoft/deberta-v2-xlarge",
+   tasks="mrpc",
+   train_batch_size=16,
+   num_train_epochs=3
+)
+
+# Run!
+run.run_simple(args)
+```
