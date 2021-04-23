@@ -8,6 +8,8 @@ import pytest
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption("--rungpu", action="store_true", default=False, help="run gpu tests")
+    parser.addoption("--runovernight", action="store_true",
+                     default=False, help="run overnight tests")
 
 
 def pytest_configure(config):
@@ -26,3 +28,8 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "gpu" in item.keywords:
                 item.add_marker(skip_gpu)
+    if not config.getoption("--runovernight"):
+        skip_overnight = pytest.mark.skip(reason="need --runovernight option to run")
+        for item in items:
+            if "overnight" in item.keywords:
+                item.add_marker(skip_overnight)
