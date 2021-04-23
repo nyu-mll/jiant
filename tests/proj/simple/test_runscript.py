@@ -38,7 +38,7 @@ def test_simple_runscript(tmpdir, task_name, model_type):
     assert val_metrics["aggregated"] > 0
 
 
-@pytest.mark.gpu
+@pytest.mark.overnight
 @pytest.mark.parametrize(("task_name", "train_examples_cap"), [("rte", 1024), ("commonsenseqa", 1024), ("squad_v1", 2048)])
 @pytest.mark.parametrize("model_type", ["bert-base-cased", "roberta-base", "xlm-roberta-base"])
 def test_simple_runscript(tmpdir, task_name, train_examples_cap, model_type):
