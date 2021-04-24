@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import jiant.tasks.lib.senteval.base as base
+from . import base as base
 from jiant.tasks.lib.templates.shared import labels_to_bimap
 
 

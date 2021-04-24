@@ -13,6 +13,7 @@ import jiant.shared.distributed as distributed
 import jiant.utils.zconf as zconf
 import jiant.utils.python.io as py_io
 from jiant.utils.python.logic import replace_none
+from jiant.utils.python.io import read_json
 
 
 @zconf.run_config
@@ -143,7 +144,11 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
                 if task_name in phase_task_list and not os.path.exists(
                     os.path.join(args.exp_dir, "cache", hf_config.model_type, task_name, phase)
                 ):
-                    phases_to_do.append(phase)
+                    config = read_json(task_config_path_dict[task_name])
+                    if phase in config["paths"]:
+                        phases_to_do.append(phase)
+                    else:
+                        phase_task_list.remove(task_name)
             if not phases_to_do:
                 continue
             print(f"Tokenizing Task '{task_name}' for phases '{','.join(phases_to_do)}'")
@@ -192,7 +197,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         else:
             model_load_mode = "from_transformers"
         model_weights_path = os.path.join(
-            model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.p"
+            model_cache_path, hf_config.model_type, "model", "model.p"
         )
     run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
 
@@ -214,7 +219,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
             model_path=model_weights_path,
             model_config_path=os.path.join(
-                model_cache_path, hf_config.model_type, "model", f"{hf_config.model_type}.json"
+                model_cache_path, hf_config.model_type, "model", "config.json",
             ),
             model_load_mode=model_load_mode,
             # === Running Setup === #
@@ -256,7 +261,7 @@ def main():
     args = RunConfiguration.default_run_cli(cl_args=cl_args)
     if mode == "run":
         run_simple(args, with_continue=False)
-    if mode == "run_with_continue":
+    elif mode == "run_with_continue":
         run_simple(args, with_continue=True)
     else:
         raise zconf.ModeLookupError(mode)

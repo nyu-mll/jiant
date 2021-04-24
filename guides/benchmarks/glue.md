@@ -8,7 +8,7 @@
 python benchmark_submission_formatter.py \
     --benchmark GLUE \
     --input_base_path $INPUT_BASE_PATH \
-    --output_path $OUTPUT_BASE PATH
+    --output_path $OUTPUT_BASE_PATH
 ```
 
 where `$INPUT_BASE_PATH` contains the task folder(s) output by [runscript.py](https://github.com/jiant-dev/jiant/blob/master/jiant/proj/main/runscript.py). Alternatively, a subset of tasks can be formatted using:
@@ -18,5 +18,5 @@ python benchmark_submission_formatter.py \
     --benchmark GLUE \
     --tasks cola mrpc \
     --input_base_path $INPUT_BASE_PATH \
-    --output_path $OUTPUT_BASE PATH
+    --output_path $OUTPUT_BASE_PATH
 ```

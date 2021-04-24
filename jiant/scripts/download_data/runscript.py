@@ -44,6 +44,7 @@ def download_data_cli(args):
 
 
 def download_data(task_names, output_base_path):
+    output_base_path = os.path.abspath(output_base_path)
     task_data_base_path = py_io.create_dir(output_base_path, "data")
     task_config_base_path = py_io.create_dir(output_base_path, "configs")
 
