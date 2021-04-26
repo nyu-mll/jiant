@@ -6,7 +6,7 @@ from typing import List
 import torch
 import torch.nn as nn
 import transformers
-
+import warnings
 
 import jiant.proj.main.components.container_setup as container_setup
 import jiant.proj.main.modeling.primary as primary
@@ -166,7 +166,9 @@ def load_encoder_from_transformers_weights(
             load_weights_dict[strings.remove_prefix(k, encoder_prefix.split("-")[0] + ".")] = v
         else:
             remainder_weights_dict[k] = v
-    encoder.load_state_dict(load_weights_dict)
+    encoder.load_state_dict(load_weights_dict, strict=False)
+    if remainder_weights_dict:
+        warnings.warn("The following weights were not loaded: {}".format(remainder_weights_dict))
     if return_remainder:
         return remainder_weights_dict
 

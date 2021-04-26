@@ -84,12 +84,12 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         hf_pretrained_model_name_or_path=model_type,
         tasks=task_name,
-        max_steps=1,
+        train_examples_cap=32,
         train_batch_size=32,
         do_save=True,
-        eval_every_steps=10,
+        eval_every_steps=1,
         learning_rate=0.01,
-        num_train_epochs=5,
+        num_train_epochs=2,
     )
     run.run_simple(args)
 
@@ -115,7 +115,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         hf_pretrained_model_name_or_path=model_type,
         tasks=task_name,
-        max_steps=1,
+        train_examples_cap=32,
         train_batch_size=16,
         do_save_best=True,
     )
@@ -135,7 +135,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         hf_pretrained_model_name_or_path=model_type,
         tasks=task_name,
-        max_steps=1,
+        train_examples_cap=32,
         train_batch_size=16,
         do_save_last=True,
     )

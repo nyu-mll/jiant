@@ -15,6 +15,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "gpu: mark test as gpu required to run")
+    config.addinivalue_line("markers", "overnight: mark test as gpu required to run")
 
 
 def pytest_collection_modifyitems(config, items):

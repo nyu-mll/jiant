@@ -81,6 +81,10 @@ class RteTask(SuperGlueMixin, GlueMixin, Task):
     LABELS = ["entailment", "not_entailment"]
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
 
+    @property
+    def num_labels(self):
+        return len(self.LABELS)
+
     def get_train_examples(self):
         return self._create_examples(lines=read_jsonl(self.train_path), set_type="train")
 
