@@ -8,8 +8,9 @@ import pytest
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption("--rungpu", action="store_true", default=False, help="run gpu tests")
-    parser.addoption("--runovernight", action="store_true",
-                     default=False, help="run overnight tests")
+    parser.addoption(
+        "--runovernight", action="store_true", default=False, help="run overnight tests"
+    )
 
 
 def pytest_configure(config):

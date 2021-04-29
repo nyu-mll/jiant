@@ -52,7 +52,9 @@ def setup_jiant_model(
 
     """
     hf_model = transformers.AutoModel.from_pretrained(hf_pretrained_model_name_or_path)
-    tokenizer = transformers.AutoTokenizer.from_pretrained(hf_pretrained_model_name_or_path)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(
+        hf_pretrained_model_name_or_path, use_fast=False
+    )
     encoder = primary.JiantTransformersModelFactory()(hf_model)
     taskmodels_dict = {
         taskmodel_name: create_taskmodel(
@@ -168,7 +170,9 @@ def load_encoder_from_transformers_weights(
             remainder_weights_dict[k] = v
     encoder.load_state_dict(load_weights_dict, strict=False)
     if remainder_weights_dict:
-        warnings.warn("The following weights were not loaded: {}".format(remainder_weights_dict))
+        warnings.warn(
+            "The following weights were not loaded: {}".format(remainder_weights_dict.keys())
+        )
     if return_remainder:
         return remainder_weights_dict
 

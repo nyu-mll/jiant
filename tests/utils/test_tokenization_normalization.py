@@ -10,7 +10,6 @@ from transformers import RobertaTokenizer
 from transformers import XLMTokenizer
 
 
-
 def test_process_wordpiece_token_sequence():
     expected_adjusted_wordpiece_tokens = [
         "<w>Mr",
