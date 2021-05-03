@@ -10,19 +10,19 @@ import jiant.utils.torch_utils as torch_utils
 
 EXPECTED_AGG_VAL_METRICS = {
     "bert-base-cased": {
-        "rte": 0.5740072202166066,
-        "commonsenseqa": 0.4258804258804259,
-        "squad_v1": 29.071789929086883,
+        "rte": 0.5956678700361011,
+        "commonsenseqa": 0.5176085176085176,
+        "squad_v1": 54.045103183650156,
     },
     "roberta-base": {
-        "rte": 0.4729241877256318,
-        "commonsenseqa": 0.23013923013923013,
-        "squad_v1": 48.222444172918955,
+        "rte": 0.6967509025270758,
+        "commonsenseqa": 0.44963144963144963,
+        "squad_v1": 68.66217365509084,
     },
     "xlm-roberta-base": {
-        "rte": 0.4729241877256318,
-        "commonsenseqa": 0.2072072072072072,
-        "squad_v1": 10.30104037978786,
+        "rte": 0.5956678700361011,
+        "commonsenseqa": 0.24242424242424243,
+        "squad_v1": 42.86723254466678,
     },
 }
 
@@ -57,7 +57,7 @@ def test_simple_runscript_sanity(tmpdir, task_name, model_type):
 @pytest.mark.overnight
 @pytest.mark.parametrize(
     ("task_name", "train_examples_cap"),
-    [("rte", 1024), ("commonsenseqa", 1024), ("squad_v1", 2048)],
+    [("rte", 4096), ("commonsenseqa", 4096), ("squad_v1", 4096)],
 )
 @pytest.mark.parametrize("model_type", ["bert-base-cased", "roberta-base", "xlm-roberta-base"])
 def test_simple_runscript(tmpdir, task_name, train_examples_cap, model_type):
