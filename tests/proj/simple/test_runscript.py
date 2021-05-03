@@ -105,7 +105,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         hf_pretrained_model_name_or_path=model_type,
         tasks=task_name,
-        train_examples_cap=32,
+        train_examples_cap=64,
         train_batch_size=32,
         do_save=True,
         eval_every_steps=1,
