@@ -52,7 +52,7 @@ def export_model(
 
     torch.save(model.state_dict(), model_path)
     py_io.write_json(model.config.to_dict(), model_config_path)
-    tokenizer = AutoTokenizer.from_pretrained(hf_pretrained_model_name_or_path)
+    tokenizer = AutoTokenizer.from_pretrained(hf_pretrained_model_name_or_path, use_fast=False)
     tokenizer.save_pretrained(tokenizer_fol_path)
     config = {
         "hf_pretrained_model_name_or_path": hf_pretrained_model_name_or_path,

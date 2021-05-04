@@ -6,7 +6,7 @@ import string
 from dataclasses import dataclass
 from typing import List, Dict
 
-from transformers.tokenization_bert import BasicTokenizer
+from transformers.models.bert.tokenization_bert import BasicTokenizer
 from jiant.utils.display import maybe_tqdm
 
 

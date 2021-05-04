@@ -8,13 +8,15 @@ import pytest
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption("--rungpu", action="store_true", default=False, help="run gpu tests")
-    parser.addoption("--runovernight", action="store_true",
-                     default=False, help="run overnight tests")
+    parser.addoption(
+        "--runovernight", action="store_true", default=False, help="run overnight tests"
+    )
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "gpu: mark test as gpu required to run")
+    config.addinivalue_line("markers", "overnight: mark test as gpu required to run")
 
 
 def pytest_collection_modifyitems(config, items):

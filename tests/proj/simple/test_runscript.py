@@ -8,15 +8,30 @@ from jiant.proj.simple import runscript as run
 import jiant.scripts.download_data.runscript as downloader
 import jiant.utils.torch_utils as torch_utils
 
-EXPECTED_AGG_VAL_METRICS = {"bert-base-cased": {"rte": 0.5740072202166066, "commonsenseqa": 0.4258804258804259, "squad_v1": 29.071789929086883},
-                            "roberta-base": {"rte": 0.49458483754512633, "commonsenseqa": 0.23013923013923013, "squad_v1": 48.222444172918955},
-                            "xlm-roberta-base": {"rte": 0.4729241877256318, "commonsenseqa": 0.22686322686322685, "squad_v1": 10.30104037978786}}
+EXPECTED_AGG_VAL_METRICS = {
+    "bert-base-cased": {
+        "rte": 0.5956678700361011,
+        "commonsenseqa": 0.5176085176085176,
+        "squad_v1": 54.045103183650156,
+    },
+    "roberta-base": {
+        "rte": 0.6967509025270758,
+        "commonsenseqa": 0.44963144963144963,
+        "squad_v1": 68.66217365509084,
+    },
+    "xlm-roberta-base": {
+        "rte": 0.5956678700361011,
+        "commonsenseqa": 0.24242424242424243,
+        "squad_v1": 42.86723254466678,
+    },
+}
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("task_name", ["copa"])
-@pytest.mark.parametrize("model_type", ["bert-base-cased"])
-def test_simple_runscript(tmpdir, task_name, model_type):
-    RUN_NAME = f"{test_simple_runscript.__name__}_{task_name}_{model_type}"
+@pytest.mark.parametrize("model_type", ["bert-base-uncased", "microsoft/deberta-v2-xlarge"])
+def test_simple_runscript_sanity(tmpdir, task_name, model_type):
+    RUN_NAME = f"{test_simple_runscript_sanity.__name__}_{task_name}_{model_type.replace('/','_')}"
     data_dir = str(tmpdir.mkdir("data"))
     exp_dir = str(tmpdir.mkdir("exp"))
 
@@ -38,8 +53,12 @@ def test_simple_runscript(tmpdir, task_name, model_type):
     assert val_metrics["aggregated"] > 0
 
 
+@pytest.mark.gpu
 @pytest.mark.overnight
-@pytest.mark.parametrize(("task_name", "train_examples_cap"), [("rte", 1024), ("commonsenseqa", 1024), ("squad_v1", 2048)])
+@pytest.mark.parametrize(
+    ("task_name", "train_examples_cap"),
+    [("rte", 4096), ("commonsenseqa", 4096), ("squad_v1", 4096)],
+)
 @pytest.mark.parametrize("model_type", ["bert-base-cased", "roberta-base", "xlm-roberta-base"])
 def test_simple_runscript(tmpdir, task_name, train_examples_cap, model_type):
     RUN_NAME = f"{test_simple_runscript.__name__}_{task_name}_{model_type}"
@@ -63,7 +82,10 @@ def test_simple_runscript(tmpdir, task_name, train_examples_cap, model_type):
     run.run_simple(args)
 
     val_metrics = py_io.read_json(os.path.join(exp_dir, "runs", RUN_NAME, "val_metrics.json"))
-    assert math.isclose(val_metrics["aggregated"], EXPECTED_AGG_VAL_METRICS[model_type][task_name])
+    assert (
+        math.isclose(val_metrics["aggregated"], EXPECTED_AGG_VAL_METRICS[model_type][task_name])
+        or val_metrics["aggregated"] >= EXPECTED_AGG_VAL_METRICS[model_type][task_name]
+    )
     torch.use_deterministic_algorithms(False)
 
 
@@ -83,12 +105,12 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         hf_pretrained_model_name_or_path=model_type,
         tasks=task_name,
-        max_steps=1,
+        train_examples_cap=64,
         train_batch_size=32,
         do_save=True,
-        eval_every_steps=10,
+        eval_every_steps=1,
         learning_rate=0.01,
-        num_train_epochs=5,
+        num_train_epochs=2,
     )
     run.run_simple(args)
 
@@ -114,7 +136,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         hf_pretrained_model_name_or_path=model_type,
         tasks=task_name,
-        max_steps=1,
+        train_examples_cap=32,
         train_batch_size=16,
         do_save_best=True,
     )
@@ -134,7 +156,7 @@ def test_simple_runscript_save(tmpdir, task_name, model_type):
         data_dir=data_dir,
         hf_pretrained_model_name_or_path=model_type,
         tasks=task_name,
-        max_steps=1,
+        train_examples_cap=32,
         train_batch_size=16,
         do_save_last=True,
     )

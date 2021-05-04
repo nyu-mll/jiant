@@ -5,7 +5,9 @@ import torch
 from dataclasses import dataclass
 from typing import Union, List, Dict, Optional
 
-from transformers.tokenization_bert import whitespace_tokenize
+from transformers.models.bert.tokenization_bert import whitespace_tokenize
+from transformers.tokenization_utils_base import TruncationStrategy
+
 
 from jiant.tasks.lib.templates.squad_style import utils as squad_utils
 from jiant.shared.constants import PHASE
@@ -144,20 +146,30 @@ class Example(BaseExample):
         # in the way they compute mask of added tokens.
         tokenizer_type = type(tokenizer).__name__.replace("Tokenizer", "").lower()
         sequence_added_tokens = (
-            tokenizer.max_len - tokenizer.max_len_single_sentence + 1
+            tokenizer.model_max_length - tokenizer.max_len_single_sentence + 1
             if tokenizer_type in MULTI_SEP_TOKENS_TOKENIZERS_SET
-            else tokenizer.max_len - tokenizer.max_len_single_sentence
+            else tokenizer.model_max_length - tokenizer.max_len_single_sentence
         )
-        sequence_pair_added_tokens = tokenizer.max_len - tokenizer.max_len_sentences_pair
+        sequence_pair_added_tokens = tokenizer.model_max_length - tokenizer.max_len_sentences_pair
 
         span_doc_tokens = all_doc_tokens
         while len(spans) * doc_stride < len(all_doc_tokens):
 
+            # Define the side we want to truncate / pad and the text/pair sorting
+            if tokenizer.padding_side == "right":
+                texts = truncated_query
+                pairs = span_doc_tokens
+                truncation = TruncationStrategy.ONLY_SECOND.value
+            else:
+                texts = span_doc_tokens
+                pairs = truncated_query
+                truncation = TruncationStrategy.ONLY_FIRST.value
+
             encoded_dict = tokenizer.encode_plus(  # TODO(thom) update this logic
-                truncated_query if tokenizer.padding_side == "right" else span_doc_tokens,
-                span_doc_tokens if tokenizer.padding_side == "right" else truncated_query,
-                truncation="only_second" if tokenizer.padding_side == "right" else "only_first",
-                pad_to_max_length=True,
+                texts,
+                pairs,
+                truncation=truncation,
+                padding="max_length",
                 max_length=max_seq_length,
                 return_overflowing_tokens=True,
                 stride=max_seq_length
@@ -234,9 +246,9 @@ class Example(BaseExample):
             # Identify the position of the CLS token
             cls_index = span["input_ids"].index(tokenizer.cls_token_id)
 
-            # p_mask: mask with 1 for token than cannot be in the answer
-            #         (0 for token which can be in an answer)
-            # Original TF implem also keep the classification token (set to 0) (not sure why...)
+            # p_mask: mask with 1 for token than cannot be in the answer (0 for token
+            # which can be in an answer)
+            # Original TF implementation also keep the classification token (set to 0)
             p_mask = np.ones_like(span["token_type_ids"])
             if tokenizer.padding_side == "right":
                 p_mask[len(truncated_query) + sequence_added_tokens :] = 0

@@ -104,7 +104,6 @@ def create_and_write_task_configs(task_name_list, data_dir, task_config_base_pat
 
 def run_simple(args: RunConfiguration, with_continue: bool = False):
     hf_config = AutoConfig.from_pretrained(args.hf_pretrained_model_name_or_path)
-
     model_cache_path = replace_none(
         args.model_cache_path, default=os.path.join(args.exp_dir, "models")
     )

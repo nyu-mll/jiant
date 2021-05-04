@@ -31,7 +31,7 @@ class Example(BaseExample):
         tokenized = tokenizer.tokenize(self.text)
         split_text = self.text.split(" ")  # CCG data is space-tokenized
         input_flat_stripped = tokenization_utils.input_flat_strip(split_text)
-        flat_stripped, indices = tokenization_utils.delegate_flat_strip(
+        flat_stripped, indices = tokenization_utils.flat_strip(
             tokens=tokenized, tokenizer=tokenizer, return_indices=True,
         )
         assert flat_stripped == input_flat_stripped

@@ -6,8 +6,9 @@ import transformers
 from unittest.mock import Mock
 
 from jiant.shared import model_resolution
-from jiant.tasks import create_task_from_config_path
+from jiant.tasks.retrieval import create_task_from_config_path
 from jiant.utils.testing.tokenizer import SimpleSpaceTokenizer
+from jiant.proj.main.modeling.primary import JiantTransformersModelFactory
 
 
 TRAIN_EXAMPLES = [
@@ -314,8 +315,8 @@ def test_featurization_of_task_data():
 
     # Testing conversion of a tokenized example to a featurized example
     train_example_0_length = len(tokenized_examples[0].tokens) + 4
-    feat_spec = model_resolution.build_featurization_spec(
-        model_type="bert-", max_seq_length=train_example_0_length
+    feat_spec = JiantTransformersModelFactory.build_featurization_spec(
+        model_type="bert", max_seq_length=train_example_0_length
     )
     featurized_examples = [
         tokenized_example.featurize(tokenizer=tokenizer, feat_spec=feat_spec)
