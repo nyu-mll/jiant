@@ -1,8 +1,17 @@
 """
 Simple check list from huggingface/transformers repo: https://github.com/huggingface/transformers/blob/master/setup.py
 To create the package for pypi.
+
+Automatic Workflow Using GitHub Workflows (./.github/workflows/publish-to-test-pypi.yml)
 1. Change the version in setup.py and docs (if applicable).
-2. Unpin specific versions from setup.py.
+2. Create a new branch and commit these changes with the message: "Release: VERSION"
+3. Open a pull request for the newly created branch
+4. Closing the pull request will trigger this publishing script (publish-to-test-pypi.yml)
+5. Add the release version to docs deployment (if applicable)
+6. Update README.md to redirect to correct documentation.
+
+Manual Instructions
+1. Change the version in setup.py and docs (if applicable).
 2. Commit these changes with the message: "Release: VERSION"
 3. Add a tag in git to mark the release: "git tag VERSION -m'Adds tag VERSION for pypi' "
    Push the tag to git: git push --tags origin master
@@ -23,9 +32,8 @@ To create the package for pypi.
    pip install -i https://testpypi.python.org/pypi jiant
 6. Upload the final version to actual pypi:
    twine upload dist/* -r pypi
-7. Copy the release notes from RELEASE.md to the tag in github once everything is looking hunky-dory.
-8. Add the release version to docs deployment (if applicable)
-9. Update README.md to redirect to correct documentation.
+7. Add the release version to docs deployment (if applicable)
+8. Update README.md to redirect to correct documentation.
 """
 
 import shutil
