@@ -187,7 +187,7 @@ def get_seed(seed):
 
     """
     if seed == -1:
-        return int(np.random.randint(0, 2 ** 32 - 1))
+        return int(np.random.randint(0, 2 ** 32 - 1,dtype=np.int64))
     else:
         return seed
 
