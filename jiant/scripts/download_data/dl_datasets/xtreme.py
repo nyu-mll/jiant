@@ -162,8 +162,8 @@ def download_udpos_data_and_write_config(task_data_base_path: str, task_config_b
         udpos_temp_path,
     )
     download_utils.download_file(
-        "https://raw.githubusercontent.com/google-research/xtreme/master/third_party/"
-        "ud-conversion-tools/lib/conll.py",
+        "https://raw.githubusercontent.com/google-research/xtreme/"
+        "4fd68dc6b53796413e05dc3f3f73c2106f88ec57/third_party/ud-conversion-tools/lib/conll.py",
         os.path.join(udpos_temp_path, "conll.py"),
     )
     conll = filesystem.import_from_path(os.path.join(udpos_temp_path, "conll.py"))
