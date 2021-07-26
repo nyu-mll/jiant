@@ -157,7 +157,7 @@ def load_encoder_from_transformers_weights(
     remainder_weights_dict = {}
     load_weights_dict = {}
     model_arch = ModelArchitectures.from_model_type(model_type=encoder.config.model_type)
-    encoder_prefix = model_arch.value + "."
+    encoder_prefix = model_arch.get_encoder_prefix() + "."
     # Encoder
     for k, v in weights_dict.items():
         if k.startswith(encoder_prefix):
