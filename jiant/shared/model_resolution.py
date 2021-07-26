@@ -20,6 +20,12 @@ class ModelArchitectures(Enum):
     def from_model_type(cls, model_type: str):
         return cls(model_type)
 
+    def get_encoder_prefix(self):
+        if self.value == "xlm-roberta":
+            return "roberta"
+        else:
+            return self.value
+
 
 TOKENIZER_CLASS_DICT = BiDict(
     {
