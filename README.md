@@ -1,3 +1,5 @@
+🚨**Update**🚨: As of 2021/10/17, the `jiant` project is no longer being actively maintained. This means there will be no plans to add new models, tasks, or features, or update support to new libraries.
+
 <div align="center">
 
 # `jiant` is an NLP toolkit
