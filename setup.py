@@ -68,7 +68,7 @@ setup(
         "attrs == 19.3.0",
         "bs4 == 0.0.1",
         "jsonnet == 0.15.0",
-        "lxml == 4.6.3",
+        "lxml == 4.6.5",
         "datasets == 1.1.2",
         "nltk >= 3.5",
         "numexpr == 2.7.1",
