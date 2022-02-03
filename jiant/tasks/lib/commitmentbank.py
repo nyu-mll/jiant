@@ -77,7 +77,7 @@ class CommitmentBankTask(SuperGlueMixin, Task):
     Batch = Batch
 
     TASK_TYPE = TaskTypes.CLASSIFICATION
-    LABELS = ["neutral", "entailment", "contradiction"]
+    LABELS = ["entailment", "contradiction", "neutral"]
     LABEL_TO_ID, ID_TO_LABEL = labels_to_bimap(LABELS)
 
     def get_train_examples(self):
