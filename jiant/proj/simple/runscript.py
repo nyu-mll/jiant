@@ -125,11 +125,12 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
                 )
 
         # === Step 2: Download models === #
-        if not os.path.exists(os.path.join(model_cache_path, hf_config.model_type)):
+        if not os.path.exists(os.path.join(model_cache_path, args.hf_pretrained_model_name_or_path)):
             print("Downloading model")
             export_model.export_model(
                 hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
-                output_base_path=os.path.join(model_cache_path, hf_config.model_type),
+                #output_base_path=os.path.join(model_cache_path, hf_config.model_type),
+                output_base_path=os.path.join(model_cache_path, args.hf_pretrained_model_name_or_path),
             )
 
         # === Step 3: Tokenize and cache === #
@@ -197,7 +198,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
         else:
             model_load_mode = "from_transformers"
         model_weights_path = os.path.join(
-            model_cache_path, hf_config.model_type, "model", "model.p"
+            model_cache_path, args.hf_pretrained_model_name_or_path, "model", "model.p"
         )
     run_output_dir = os.path.join(args.exp_dir, "runs", args.run_name)
 
@@ -219,7 +220,7 @@ def run_simple(args: RunConfiguration, with_continue: bool = False):
             hf_pretrained_model_name_or_path=args.hf_pretrained_model_name_or_path,
             model_path=model_weights_path,
             model_config_path=os.path.join(
-                model_cache_path, hf_config.model_type, "model", "config.json",
+                model_cache_path, args.hf_pretrained_model_name_or_path, "model", "config.json",
             ),
             model_load_mode=model_load_mode,
             # === Running Setup === #
