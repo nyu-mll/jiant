@@ -46,7 +46,8 @@ def get_token_span(sentence, span: ExclusiveSpan, tokenizer):
     # assert starts_with(tokenized, tokenized_start2)  # <- fails because of "does" in "doesn't"
     word = sentence[span.to_slice()]
     assert word.lower().replace(" ", "") in flat_strip(
-        tokenized_start2[len(tokenized_start1) :], tokenizer=tokenizer,
+        tokenized_start2[len(tokenized_start1) :],
+        tokenizer=tokenizer,
     )
     token_span = ExclusiveSpan(start=len(tokenized_start1), end=len(tokenized_start2))
     return tokenized, token_span

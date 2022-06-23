@@ -137,7 +137,8 @@ class TimeDependentProbMultiTaskSampler(BaseMultiTaskSampler):
 
         for i, task_name in enumerate(self.task_names):
             p_ls[i] = numexpr.evaluate(
-                self.task_to_unnormalized_prob_funcs_dict[task_name], local_dict={"t": t},
+                self.task_to_unnormalized_prob_funcs_dict[task_name],
+                local_dict={"t": t},
             )
         p_ls /= p_ls.sum()
         return p_ls
@@ -171,7 +172,9 @@ def create_task_sampler(
     elif sampler_type == "ProportionalMultiTaskSampler":
         assert len(sampler_config) == 1
         return ProportionalMultiTaskSampler(
-            task_dict=task_dict, rng=rng, task_to_num_examples_dict=task_to_num_examples_dict,
+            task_dict=task_dict,
+            rng=rng,
+            task_to_num_examples_dict=task_to_num_examples_dict,
         )
     elif sampler_type == "SpecifiedProbMultiTaskSampler":
         assert len(sampler_config) == 2

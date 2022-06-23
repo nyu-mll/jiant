@@ -44,7 +44,9 @@ def single_sentence_featurize(
     data_row_class,
 ):
     unpadded_inputs = construct_single_input_tokens_and_segment_ids(
-        input_tokens=input_tokens, tokenizer=tokenizer, feat_spec=feat_spec,
+        input_tokens=input_tokens,
+        tokenizer=tokenizer,
+        feat_spec=feat_spec,
     )
     return create_generic_data_row_from_tokens_and_segments(
         guid=guid,
@@ -105,7 +107,8 @@ def construct_single_input_tokens_and_segment_ids(
     special_tokens_count = 2  # CLS, SEP
 
     (input_tokens,) = truncate_sequences(
-        tokens_ls=[input_tokens], max_length=feat_spec.max_seq_length - special_tokens_count,
+        tokens_ls=[input_tokens],
+        max_length=feat_spec.max_seq_length - special_tokens_count,
     )
 
     return add_cls_token(
@@ -296,13 +299,19 @@ def pad_features_with_feat_spec(
     """
     return InputSet(
         input_ids=pad_single_with_feat_spec(
-            ls=input_ids, feat_spec=feat_spec, pad_idx=feat_spec.pad_token_id,
+            ls=input_ids,
+            feat_spec=feat_spec,
+            pad_idx=feat_spec.pad_token_id,
         ),
         input_mask=pad_single_with_feat_spec(
-            ls=input_mask, feat_spec=feat_spec, pad_idx=feat_spec.pad_token_mask_id,
+            ls=input_mask,
+            feat_spec=feat_spec,
+            pad_idx=feat_spec.pad_token_mask_id,
         ),
         segment_ids=pad_single_with_feat_spec(
-            ls=unpadded_segment_ids, feat_spec=feat_spec, pad_idx=feat_spec.pad_token_segment_id,
+            ls=unpadded_segment_ids,
+            feat_spec=feat_spec,
+            pad_idx=feat_spec.pad_token_segment_id,
         ),
     )
 

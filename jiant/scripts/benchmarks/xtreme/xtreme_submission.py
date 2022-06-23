@@ -116,7 +116,9 @@ def run_loop(args: RunConfiguration):
         )
     elif supertask == "tatoeba":
         generate_and_write_preds_for_tatoeba(
-            runner=runner, output_dir=output_dir, skip_if_done=args.skip_if_done,
+            runner=runner,
+            output_dir=output_dir,
+            skip_if_done=args.skip_if_done,
         )
     else:
         raise KeyError(supertask)
@@ -135,7 +137,8 @@ def generate_and_write_preds_for_classification(
         task_name_list=runner.jiant_task_container.task_run_config.test_task_list,
     )
     jiant_evaluate.write_preds(
-        eval_results_dict=test_results_dict, path=preds_pickle_path,
+        eval_results_dict=test_results_dict,
+        path=preds_pickle_path,
     )
     preds_output_dir = os.path.join(output_dir, "preds", supertask)
     os.makedirs(preds_output_dir, exist_ok=True)
@@ -172,7 +175,9 @@ def generate_and_write_preds_for_tagging(
         task = runner.jiant_task_container.task_dict[task_name]
         assert isinstance(task, (tasks.UdposTask, tasks.PanxTask))
         preds_list = get_preds_for_single_tagging_task(
-            task=task, test_dataloader=test_dataloader_dict[task_name], runner=runner,
+            task=task,
+            test_dataloader=test_dataloader_dict[task_name],
+            runner=runner,
         )
         preds_dict[task_name] = preds_list
         lang = task.language
@@ -204,7 +209,10 @@ def get_preds_for_single_tagging_task(
 
         with torch.no_grad():
             model_output = wrap_jiant_forward(
-                jiant_model=jiant_model, batch=batch, task=task, compute_loss=False,
+                jiant_model=jiant_model,
+                batch=batch,
+                task=task,
+                compute_loss=False,
             )
         batch_logits = model_output.logits.detach().cpu().numpy()
         label_mask_arr = batch.label_mask.cpu().bool().numpy()
@@ -294,7 +302,8 @@ def generate_and_write_preds_for_qa(
         test_results_dict[task_name]["preds"] = predictions
 
     jiant_evaluate.write_preds(
-        eval_results_dict=test_results_dict, path=preds_pickle_path,
+        eval_results_dict=test_results_dict,
+        path=preds_pickle_path,
     )
     preds_output_dir = os.path.join(output_dir, "preds", supertask)
     os.makedirs(preds_output_dir, exist_ok=True)
@@ -354,11 +363,13 @@ def generate_and_write_preds_for_bucc2018(
         task_name_list=runner.jiant_task_container.task_run_config.test_task_list,
     )
     jiant_evaluate.write_preds(
-        eval_results_dict=test_results_dict, path=preds_pickle_path,
+        eval_results_dict=test_results_dict,
+        path=preds_pickle_path,
     )
     for task_name, task_results in test_results_dict.items():
         bitext = bucc2018_lib.bucc_extract(
-            cand2score=task_results["preds"], th=thresholds_dict[task_name],
+            cand2score=task_results["preds"],
+            th=thresholds_dict[task_name],
         )
         lang = runner.jiant_task_container.task_dict[task_name].language
         with open(os.path.join(preds_output_dir, f"test-{lang}.tsv"), "w") as f:
@@ -374,10 +385,12 @@ def generate_and_write_preds_for_tatoeba(runner, output_dir: str, skip_if_done: 
         print(f"Skipping cause {preds_pickle_path} exists")
         return
     val_results_dict = runner.run_val(
-        task_name_list=runner.jiant_task_container.task_run_config.val_task_list, return_preds=True,
+        task_name_list=runner.jiant_task_container.task_run_config.val_task_list,
+        return_preds=True,
     )
     jiant_evaluate.write_preds(
-        eval_results_dict=val_results_dict, path=preds_pickle_path,
+        eval_results_dict=val_results_dict,
+        path=preds_pickle_path,
     )
     preds_output_dir = os.path.join(output_dir, "preds", "tatoeba")
     os.makedirs(preds_output_dir, exist_ok=True)

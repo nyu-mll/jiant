@@ -27,7 +27,10 @@ class Example(BaseExample):
     text: str
 
     def tokenize(self, tokenizer):
-        return TokenizedExample(guid=self.guid, input_tokens=tokenizer.tokenize(self.text),)
+        return TokenizedExample(
+            guid=self.guid,
+            input_tokens=tokenizer.tokenize(self.text),
+        )
 
 
 @dataclass
@@ -37,7 +40,9 @@ class TokenizedExample(BaseTokenizedExample):
 
     def featurize(self, tokenizer, feat_spec):
         unpadded_inputs = construct_single_input_tokens_and_segment_ids(
-            input_tokens=self.input_tokens, tokenizer=tokenizer, feat_spec=feat_spec,
+            input_tokens=self.input_tokens,
+            tokenizer=tokenizer,
+            feat_spec=feat_spec,
         )
         input_set = create_input_set_from_tokens_and_segments(
             unpadded_tokens=unpadded_inputs.unpadded_tokens,
@@ -80,7 +85,9 @@ class Batch(BatchMixin, BaseMLMBatch):
     def get_masked(self, mlm_probability, tokenizer, do_mask):
         if do_mask:
             masked_input_ids, masked_lm_labels = mlm_mask_tokens(
-                inputs=self.input_ids, tokenizer=tokenizer, mlm_probability=mlm_probability,
+                inputs=self.input_ids,
+                tokenizer=tokenizer,
+                mlm_probability=mlm_probability,
             )
             return MaskedBatch(
                 masked_input_ids=masked_input_ids,
@@ -136,7 +143,8 @@ class MLMTask(Task):
         with open(path, "r") as f:
             for (i, line) in enumerate(f):
                 yield Example(
-                    guid="%s-%s" % (set_type, i), text=line.strip(),
+                    guid="%s-%s" % (set_type, i),
+                    text=line.strip(),
                 )
 
     @classmethod

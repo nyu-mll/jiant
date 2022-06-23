@@ -105,7 +105,8 @@ def read_parser(parser, class_with_attributes: Any, skip_non_class_attributes=No
 def run_cli(cls, args=None, prog=None, description=None):
     parser = argparse.ArgumentParser(prog=prog, description=description)
     update_parser(
-        parser=parser, class_with_attributes=cls,
+        parser=parser,
+        class_with_attributes=cls,
     )
     result = read_parser(parser=parser, class_with_attributes=cls, args=args)
     assert isinstance(result, cls)
@@ -155,7 +156,8 @@ class RunConfig:
     @classmethod
     def run_from_parser(cls, parser):
         update_parser(
-            parser=parser, class_with_attributes=cls,
+            parser=parser,
+            class_with_attributes=cls,
         )
         result = read_parser(parser=parser, class_with_attributes=cls)
         assert isinstance(result, cls)
@@ -215,7 +217,8 @@ class RunConfig:
             assert pre_args.ZZoverrides is None
             submitted_args = cl_args
         update_parser(
-            parser=parser, class_with_attributes=cls,
+            parser=parser,
+            class_with_attributes=cls,
         )
         result, _ = read_parser(
             parser=parser,

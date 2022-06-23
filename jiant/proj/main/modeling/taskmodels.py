@@ -79,12 +79,17 @@ class ClassificationModel(Taskmodel):
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
         logits = self.head(pooled=encoder_output.pooled)
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_id.view(-1),)
+            loss = loss_fct(
+                logits.view(-1, self.head.num_labels),
+                batch.label_id.view(-1),
+            )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
@@ -97,7 +102,9 @@ class RegressionModel(Taskmodel):
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
         # TODO: Abuse of notation - these aren't really logits  (issue #1187)
         logits = self.head(pooled=encoder_output.pooled)
@@ -133,7 +140,10 @@ class MultipleChoiceModel(Taskmodel):
             for j in range(len(encoder_output_other_ls[0])):
                 reshaped_outputs.append(
                     [
-                        torch.stack([misc[j][layer_i] for misc in encoder_output_other_ls], dim=1,)
+                        torch.stack(
+                            [misc[j][layer_i] for misc in encoder_output_other_ls],
+                            dim=1,
+                        )
                         for layer_i in range(len(encoder_output_other_ls[0][0]))
                     ]
                 )
@@ -168,12 +178,17 @@ class SpanComparisonModel(Taskmodel):
             TYPE: Description
         """
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=encoder_output.unpooled, spans=batch.spans)
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_id.view(-1),)
+            loss = loss_fct(
+                logits.view(-1, self.head.num_labels),
+                batch.label_id.view(-1),
+            )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
@@ -190,7 +205,9 @@ class SpanPredictionModel(Taskmodel):
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=encoder_output.unpooled)
         # Ensure logits in valid range is at least self.offset_margin higher than others
@@ -199,7 +216,8 @@ class SpanPredictionModel(Taskmodel):
         if compute_loss:
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(
-                logits.transpose(dim0=1, dim1=2).flatten(end_dim=1), batch.gt_span_idxs.flatten(),
+                logits.transpose(dim0=1, dim1=2).flatten(end_dim=1),
+                batch.gt_span_idxs.flatten(),
             )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
@@ -213,12 +231,17 @@ class MultiLabelSpanComparisonModel(Taskmodel):
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=encoder_output.unpooled, spans=batch.spans)
         if compute_loss:
             loss_fct = nn.BCEWithLogitsLoss()
-            loss = loss_fct(logits.view(-1, self.head.num_labels), batch.label_ids.float(),)
+            loss = loss_fct(
+                logits.view(-1, self.head.num_labels),
+                batch.label_ids.float(),
+            )
             return LogitsAndLossOutput(logits=logits, loss=loss, other=encoder_output.other)
         else:
             return LogitsOutput(logits=logits, other=encoder_output.other)
@@ -233,7 +256,9 @@ class TokenClassificationModel(Taskmodel):
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=encoder_output.unpooled)
         if compute_loss:
@@ -254,7 +279,9 @@ class QAModel(Taskmodel):
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
         logits = self.head(unpooled=encoder_output.unpooled)
         if compute_loss:
@@ -300,7 +327,9 @@ class EmbeddingModel(Taskmodel):
 
     def forward(self, batch, tokenizer, compute_loss: bool = False):
         encoder_output = self.encoder.encode(
-            input_ids=batch.input_ids, segment_ids=batch.segment_ids, input_mask=batch.input_mask,
+            input_ids=batch.input_ids,
+            segment_ids=batch.segment_ids,
+            input_mask=batch.input_mask,
         )
 
         # A tuple of layers of hidden states

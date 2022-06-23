@@ -63,7 +63,8 @@ class MLMSimpleTask(mlm_template.MLMTask):
                 if not line:
                     continue
                 yield Example(
-                    guid="%s-%s" % (set_type, i), text=line,
+                    guid="%s-%s" % (set_type, i),
+                    text=line,
                 )
 
     @classmethod

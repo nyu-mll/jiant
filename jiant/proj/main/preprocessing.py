@@ -51,7 +51,9 @@ def smart_truncate(dataset: torch_utils.ListDataset, max_seq_length: int, verbos
     for datum in maybe_tqdm(dataset.data, desc="Smart truncate data", verbose=verbose):
         new_datum_ls.append(
             smart_truncate_datum(
-                datum=datum, max_seq_length=max_seq_length, max_valid_length=max_valid_length,
+                datum=datum,
+                max_seq_length=max_seq_length,
+                max_valid_length=max_valid_length,
             )
         )
     new_dataset = torch_utils.ListDataset(new_datum_ls)
@@ -70,7 +72,9 @@ def smart_truncate_cache(
         for datum in maybe_tqdm(chunk, desc="Smart truncate chunk-datum", verbose=verbose):
             new_chunk.append(
                 smart_truncate_datum(
-                    datum=datum, max_seq_length=max_seq_length, max_valid_length=max_valid_length,
+                    datum=datum,
+                    max_seq_length=max_seq_length,
+                    max_valid_length=max_valid_length,
                 )
             )
         torch.save(new_chunk, cache.get_chunk_path(chunk_i))

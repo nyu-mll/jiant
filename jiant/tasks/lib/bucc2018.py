@@ -44,7 +44,9 @@ class TokenizedExample(BaseTokenizedExample):
 
     def featurize(self, tokenizer, feat_spec):
         unpadded_inputs = construct_single_input_tokens_and_segment_ids(
-            input_tokens=self.text_tokens, tokenizer=tokenizer, feat_spec=feat_spec,
+            input_tokens=self.text_tokens,
+            tokenizer=tokenizer,
+            feat_spec=feat_spec,
         )
         input_set = create_input_set_from_tokens_and_segments(
             unpadded_tokens=unpadded_inputs.unpadded_tokens,
@@ -111,10 +113,14 @@ class Bucc2018Task(Task):
 
     def _get_examples(self, phase):
         eng_examples = self._create_examples(
-            lines=read_file_lines(self.path_dict[phase]["eng"]), is_english=True, set_type=phase,
+            lines=read_file_lines(self.path_dict[phase]["eng"]),
+            is_english=True,
+            set_type=phase,
         )
         other_examples = self._create_examples(
-            lines=read_file_lines(self.path_dict[phase]["other"]), is_english=False, set_type=phase,
+            lines=read_file_lines(self.path_dict[phase]["other"]),
+            is_english=False,
+            set_type=phase,
         )
         return eng_examples + other_examples
 

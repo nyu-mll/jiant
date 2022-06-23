@@ -135,7 +135,8 @@ def run_loop(args: RunConfiguration, checkpoint=None):
     print(quick_init_out.n_gpu)
     with quick_init_out.log_writer.log_context():
         jiant_task_container = container_setup.create_jiant_task_container_from_json(
-            jiant_task_container_config_path=args.jiant_task_container_config_path, verbose=True,
+            jiant_task_container_config_path=args.jiant_task_container_config_path,
+            verbose=True,
         )
         runner = setup_runner(
             args=args,

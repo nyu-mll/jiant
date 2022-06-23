@@ -60,7 +60,12 @@ class ArctTask(mc_template.AbstractMultipleChoiceTask):
             "debateInfo",
         ]
 
-        df = pd.read_csv(path, sep="\t", header=0, names=df_names,)
+        df = pd.read_csv(
+            path,
+            sep="\t",
+            header=0,
+            names=df_names,
+        )
         choice_pre = "And since "
         examples = []
 

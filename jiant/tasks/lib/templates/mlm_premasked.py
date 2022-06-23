@@ -48,7 +48,9 @@ class Example(BaseExample):
             label_tokens += [tokenizer.pad_token] * len(tokenized_text)
 
         return TokenizedExample(
-            guid=self.guid, masked_tokens=masked_tokens, label_tokens=label_tokens,
+            guid=self.guid,
+            masked_tokens=masked_tokens,
+            label_tokens=label_tokens,
         )
 
 
@@ -61,7 +63,9 @@ class TokenizedExample(BaseTokenizedExample):
     def featurize(self, tokenizer, feat_spec):
         # Handle masked_tokens
         unpadded_masked_inputs = construct_single_input_tokens_and_segment_ids(
-            input_tokens=self.masked_tokens, tokenizer=tokenizer, feat_spec=feat_spec,
+            input_tokens=self.masked_tokens,
+            tokenizer=tokenizer,
+            feat_spec=feat_spec,
         )
         masked_input_set = create_input_set_from_tokens_and_segments(
             unpadded_tokens=unpadded_masked_inputs.unpadded_tokens,
@@ -82,7 +86,9 @@ class TokenizedExample(BaseTokenizedExample):
             unpadded_label_tokens = [pad_token] + unpadded_label_tokens + [pad_token]
         unpadded_label_token_ids = tokenizer.convert_tokens_to_ids(unpadded_label_tokens)
         masked_lm_labels = pad_single_with_feat_spec(
-            ls=unpadded_label_token_ids, feat_spec=feat_spec, pad_idx=feat_spec.pad_token_id,
+            ls=unpadded_label_token_ids,
+            feat_spec=feat_spec,
+            pad_idx=feat_spec.pad_token_id,
         )
         masked_lm_labels = np.array(masked_lm_labels)
         masked_lm_labels[

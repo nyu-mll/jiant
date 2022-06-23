@@ -308,7 +308,10 @@ class MCTACOEvaluationScheme(BaseLogitsEvaluationScheme):
             "f1": f1,
             "f1_em": (f1 + em) / 2,
         }
-        metrics = Metrics(major=minor["f1_em"], minor=minor,)
+        metrics = Metrics(
+            major=minor["f1_em"],
+            minor=minor,
+        )
         return metrics
 
 
@@ -396,7 +399,8 @@ class MultipleChoiceAccuracyEvaluationScheme(BaseLogitsEvaluationScheme):
 
     def get_preds_from_accumulator(self, task, accumulator):
         return SimpleAccuracyEvaluationScheme.get_preds_from_accumulator(
-            task=task, accumulator=accumulator,
+            task=task,
+            accumulator=accumulator,
         )
 
     def compute_metrics_from_preds_and_labels(self, preds, labels):
@@ -465,7 +469,10 @@ class MultiRCEvaluationScheme(BaseEvaluationScheme):
         self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
-        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels,)
+        return self.compute_metrics_from_preds_and_labels(
+            preds=preds,
+            labels=labels,
+        )
 
     @classmethod
     def compute_metrics_from_preds_and_labels(cls, preds, labels):
@@ -481,7 +488,10 @@ class MultiRCEvaluationScheme(BaseEvaluationScheme):
         )
         exact_match = float(exact_match)
         f1 = f1_score(y_true=df["label_values"], y_pred=df["preds"])
-        return Metrics(major=mean(exact_match, f1), minor={"em": exact_match, "f1": f1},)
+        return Metrics(
+            major=mean(exact_match, f1),
+            minor={"em": exact_match, "f1": f1},
+        )
 
 
 @dataclass
@@ -582,7 +592,10 @@ class ReCordEvaluationScheme(BaseEvaluationScheme):
             "f1": f1,
             "f1_em": (f1 + em) / 2,
         }
-        metrics = Metrics(major=minor["f1_em"], minor=minor,)
+        metrics = Metrics(
+            major=minor["f1_em"],
+            minor=minor,
+        )
         return predictions_dict, metrics
 
     @classmethod
@@ -620,7 +633,10 @@ class CCGEvaluationScheme(BaseEvaluationScheme):
         self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
-        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels,)
+        return self.compute_metrics_from_preds_and_labels(
+            preds=preds,
+            labels=labels,
+        )
 
     @classmethod
     def compute_metrics_from_preds_and_labels(cls, preds, labels):
@@ -636,13 +652,15 @@ class CCGEvaluationScheme(BaseEvaluationScheme):
         flat_preds = preds.reshape(-1)[bool_mask]
         flat_labels = label_ids.reshape(-1)[bool_mask]
         return cls.compute_metrics_from_flat_preds_and_labels(
-            flat_preds=flat_preds, flat_labels=flat_labels,
+            flat_preds=flat_preds,
+            flat_labels=flat_labels,
         )
 
     @classmethod
     def compute_metrics_from_flat_preds_and_labels(cls, flat_preds, flat_labels):
         return SimpleAccuracyEvaluationScheme.compute_metrics_from_preds_and_labels(
-            preds=flat_preds, labels=flat_labels,
+            preds=flat_preds,
+            labels=flat_labels,
         )
 
 
@@ -674,7 +692,11 @@ class F1TaggingEvaluationScheme(BaseEvaluationScheme):
         self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
-        return self.compute_metrics_from_preds_and_labels(task=task, preds=preds, labels=labels,)
+        return self.compute_metrics_from_preds_and_labels(
+            task=task,
+            preds=preds,
+            labels=labels,
+        )
 
     @classmethod
     def compute_metrics_from_preds_and_labels(cls, task, preds, labels):
@@ -697,7 +719,10 @@ class F1TaggingEvaluationScheme(BaseEvaluationScheme):
             "recall": seqeval_metrics.recall_score(labels_for_eval, preds_for_eval),
             "f1": seqeval_metrics.f1_score(labels_for_eval, preds_for_eval),
         }
-        return Metrics(major=minor["f1"], minor=minor,)
+        return Metrics(
+            major=minor["f1"],
+            minor=minor,
+        )
 
 
 class SQuADEvaluationScheme(BaseEvaluationScheme):
@@ -774,7 +799,10 @@ class XlingQAEvaluationScheme(BaseEvaluationScheme):
             skip_get_final_text=(lang == "zh"),
             tokenizer=tokenizer,
         )
-        return Metrics(major=(results["f1"] + results["exact"]) / 2, minor=results,)
+        return Metrics(
+            major=(results["f1"] + results["exact"]) / 2,
+            minor=results,
+        )
 
     @classmethod
     def get_label_from_data_row(cls, data_row):
@@ -809,8 +837,15 @@ class MLQAEvaluationScheme(SQuADEvaluationScheme):
             verbose=True,
         )
         dataset = read_json(task.val_path)["data"]
-        results = mlqa_lib.evaluate(dataset=dataset, predictions=predictions, lang=lang,)
-        return Metrics(major=(results["f1"] + results["exact_match"]) / 2, minor=results,)
+        results = mlqa_lib.evaluate(
+            dataset=dataset,
+            predictions=predictions,
+            lang=lang,
+        )
+        return Metrics(
+            major=(results["f1"] + results["exact_match"]) / 2,
+            minor=results,
+        )
 
 
 class MLMEvaluationScheme(BaseEvaluationScheme):
@@ -893,7 +928,10 @@ class TatoebaEvaluationScheme(BaseEvaluationScheme):
         self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
-        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels,)
+        return self.compute_metrics_from_preds_and_labels(
+            preds=preds,
+            labels=labels,
+        )
 
     @classmethod
     def compute_metrics_from_preds_and_labels(cls, preds, labels):
@@ -949,13 +987,19 @@ class Bucc2018EvaluationScheme(BaseEvaluationScheme):
         self, task, accumulator: ConcatenateLogitsAccumulator, tokenizer, labels: list
     ) -> Metrics:
         preds = self.get_preds_from_accumulator(task=task, accumulator=accumulator)
-        return self.compute_metrics_from_preds_and_labels(preds=preds, labels=labels,)
+        return self.compute_metrics_from_preds_and_labels(
+            preds=preds,
+            labels=labels,
+        )
 
     @classmethod
     def compute_metrics_from_preds_and_labels(cls, preds, labels):
         labels = [tuple(x.split("\t")) for x in labels]
         result = bucc2018_lib.bucc_eval(preds, gold=labels, threshold=None)
-        return Metrics(major=result["F1"], minor=result,)
+        return Metrics(
+            major=result["F1"],
+            minor=result,
+        )
 
 
 def get_evaluation_scheme_for_task(task) -> BaseEvaluationScheme:

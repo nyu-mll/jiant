@@ -25,7 +25,15 @@ def get_code_base_path():
     Returns:
         Path to root of jiant code base
     """
-    return os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir, os.pardir,))
+    return os.path.abspath(
+        os.path.join(
+            __file__,
+            os.pardir,
+            os.pardir,
+            os.pardir,
+            os.pardir,
+        )
+    )
 
 
 def get_code_asset_path(*rel_path):
