@@ -105,14 +105,18 @@ def delegate_load(jiant_model, weights_dict: dict, load_mode: str):
     """
     if load_mode == "from_transformers":
         return load_encoder_from_transformers_weights(
-            encoder=jiant_model.encoder, weights_dict=weights_dict,
+            encoder=jiant_model.encoder,
+            weights_dict=weights_dict,
         )
     elif load_mode == "from_transformers_with_mlm":
         remainder = load_encoder_from_transformers_weights(
-            encoder=jiant_model.encoder, weights_dict=weights_dict, return_remainder=True,
+            encoder=jiant_model.encoder,
+            weights_dict=weights_dict,
+            return_remainder=True,
         )
         load_lm_heads_from_transformers_weights(
-            jiant_model=jiant_model, weights_dict=remainder,
+            jiant_model=jiant_model,
+            weights_dict=remainder,
         )
         return
     elif load_mode == "all":
@@ -121,11 +125,15 @@ def delegate_load(jiant_model, weights_dict: dict, load_mode: str):
         return load_encoder_only(jiant_model=jiant_model, weights_dict=weights_dict)
     elif load_mode == "partial_weights":
         return load_partial_heads(
-            jiant_model=jiant_model, weights_dict=weights_dict, allow_missing_head_weights=True,
+            jiant_model=jiant_model,
+            weights_dict=weights_dict,
+            allow_missing_head_weights=True,
         )
     elif load_mode == "partial_heads":
         return load_partial_heads(
-            jiant_model=jiant_model, weights_dict=weights_dict, allow_missing_head_model=True,
+            jiant_model=jiant_model,
+            weights_dict=weights_dict,
+            allow_missing_head_model=True,
         )
     elif load_mode == "partial":
         return load_partial_heads(

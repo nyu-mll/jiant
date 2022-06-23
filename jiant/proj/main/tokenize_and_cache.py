@@ -87,7 +87,9 @@ def full_chunk_and_save(task, phase, examples, feat_spec, tokenizer, args: RunCo
     )
     if args.smart_truncate:
         dataset, length = preprocessing.smart_truncate(
-            dataset=dataset, max_seq_length=args.max_seq_length, verbose=True,
+            dataset=dataset,
+            max_seq_length=args.max_seq_length,
+            verbose=True,
         )
         os.makedirs(os.path.join(args.output_dir, phase), exist_ok=True)
         py_io.write_json(
@@ -149,7 +151,8 @@ def main(args: RunConfiguration):
 
     task = create_task_from_config_path(config_path=args.task_config_path, verbose=True)
     feat_spec = JiantTransformersModelFactory.build_featurization_spec(
-        model_type=model_type, max_seq_length=args.max_seq_length,
+        model_type=model_type,
+        max_seq_length=args.max_seq_length,
     )
     tokenizer = AutoTokenizer.from_pretrained(args.hf_pretrained_model_name_or_path, use_fast=False)
     if isinstance(args.phases, str):

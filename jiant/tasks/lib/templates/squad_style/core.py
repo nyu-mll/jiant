@@ -83,7 +83,12 @@ class Example(BaseExample):
         raise NotImplementedError("SQuaD is weird")
 
     def to_feature_list(
-        self, tokenizer, max_seq_length, doc_stride, max_query_length, set_type,
+        self,
+        tokenizer,
+        max_seq_length,
+        doc_stride,
+        max_query_length,
+        set_type,
     ):
         is_training = set_type == PHASE.TRAIN
         features = []
@@ -410,7 +415,11 @@ class BaseSquadStyleTask(Task):
 
     @classmethod
     def read_squad_examples(cls, path, set_type):
-        return generic_read_squad_examples(path=path, set_type=set_type, example_class=cls.Example,)
+        return generic_read_squad_examples(
+            path=path,
+            set_type=set_type,
+            example_class=cls.Example,
+        )
 
 
 def generic_read_squad_examples(
@@ -558,7 +567,9 @@ def logits_to_pred_results_list(logits):
     """
     return [
         squad_utils.SquadResult(
-            unique_id=1000000000 + i, start_logits=logits[i, 0], end_logits=logits[i, 1],
+            unique_id=1000000000 + i,
+            start_logits=logits[i, 0],
+            end_logits=logits[i, 1],
         )
         for i in range(logits.shape[0])
     ]

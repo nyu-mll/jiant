@@ -71,7 +71,8 @@ class TokenizedExample(BaseTokenizedExample):
         special_tokens_count = 2  # CLS, SEP
 
         (tokens,) = truncate_sequences(
-            tokens_ls=[self.tokens], max_length=feat_spec.max_seq_length - special_tokens_count,
+            tokens_ls=[self.tokens],
+            max_length=feat_spec.max_seq_length - special_tokens_count,
         )
 
         unpadded_tokens = tokens + [tokenizer.sep_token]

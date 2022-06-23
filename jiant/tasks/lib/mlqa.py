@@ -58,7 +58,9 @@ class MlqaTask(squad_style_template.BaseSquadStyleTask):
     @classmethod
     def read_squad_examples(cls, path, set_type):
         return squad_style_template.generic_read_squad_examples(
-            path=path, set_type=set_type, example_class=cls.Example,
+            path=path,
+            set_type=set_type,
+            example_class=cls.Example,
         )
 
 

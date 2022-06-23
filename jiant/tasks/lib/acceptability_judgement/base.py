@@ -101,7 +101,9 @@ class BaseAcceptabilityTask(Task):
                 continue
             examples.append(
                 Example(
-                    guid=data_row["pair-id"], text=data_row["context"], label=data_row["label"],
+                    guid=data_row["pair-id"],
+                    text=data_row["context"],
+                    label=data_row["label"],
                 )
             )
         return examples

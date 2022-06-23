@@ -44,7 +44,12 @@ class BatchMixin(ExtendedDataClassMixin):
         # noinspection PyArgumentList
         return self.__class__(
             **{
-                k: self._val_to_device(v=v, device=device, non_blocking=non_blocking, copy=copy,)
+                k: self._val_to_device(
+                    v=v,
+                    device=device,
+                    non_blocking=non_blocking,
+                    copy=copy,
+                )
                 for k, v in self.to_dict().items()
             }
         )
@@ -105,7 +110,11 @@ class BatchTuple(NamedTuple):
 
     def to(self, device, non_blocking=False, copy=False):
         return BatchTuple(
-            batch=self.batch.to(device=device, non_blocking=non_blocking, copy=copy,),
+            batch=self.batch.to(
+                device=device,
+                non_blocking=non_blocking,
+                copy=copy,
+            ),
             metadata=self.metadata,
         )
 

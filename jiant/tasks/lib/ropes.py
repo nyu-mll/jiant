@@ -22,7 +22,12 @@ class Example(squad_style_template.Example):
         raise NotImplementedError("SQuaD is weird")
 
     def to_feature_list(
-        self, tokenizer, max_seq_length, doc_stride, max_query_length, set_type,
+        self,
+        tokenizer,
+        max_seq_length,
+        doc_stride,
+        max_query_length,
+        set_type,
     ):
         is_training = set_type == PHASE.TRAIN
         features = []

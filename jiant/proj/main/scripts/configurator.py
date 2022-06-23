@@ -103,7 +103,8 @@ class SingleTaskConfigurator(zconf.RunConfig):
         elif self.task_config_base_path is not None:
             assert self.task_config_path is None
             task_config_path = os.path.join(
-                self.task_config_base_path, f"{self.task_name}_config.json",
+                self.task_config_base_path,
+                f"{self.task_name}_config.json",
             )
         else:
             raise RuntimeError("Require either `task_config_path` or `task_config_base_path`")
@@ -316,21 +317,29 @@ class SimpleAPIMultiTaskConfigurator(zconf.RunConfig):
                 task_cache_config_dict[task_name] = {}
                 if task_name in task_name_list_dict["train"]:
                     task_cache_config_dict[task_name]["train"] = os.path.join(
-                        self.task_cache_base_path, task_name, "train",
+                        self.task_cache_base_path,
+                        task_name,
+                        "train",
                     )
                 if (
                     task_name in task_name_list_dict["train_val"]
                     or task_name in task_name_list_dict["val"]
                 ):
                     task_cache_config_dict[task_name]["val"] = os.path.join(
-                        self.task_cache_base_path, task_name, "val",
+                        self.task_cache_base_path,
+                        task_name,
+                        "val",
                     )
                     task_cache_config_dict[task_name]["val_labels"] = os.path.join(
-                        self.task_cache_base_path, task_name, "val_labels",
+                        self.task_cache_base_path,
+                        task_name,
+                        "val_labels",
                     )
                 if task_name in task_name_list_dict["test"]:
                     task_cache_config_dict[task_name]["test"] = os.path.join(
-                        self.task_cache_base_path, task_name, "test",
+                        self.task_cache_base_path,
+                        task_name,
+                        "test",
                     )
         elif isinstance(self.task_cache_config_dict, str):
             assert self.task_cache_base_path is None

@@ -28,7 +28,9 @@ class Example(BaseExample):
 
     def tokenize(self, tokenizer):
         return TokenizedExample(
-            guid=self.guid, is_english=self.is_english, text_tokens=tokenizer.tokenize(self.text),
+            guid=self.guid,
+            is_english=self.is_english,
+            text_tokens=tokenizer.tokenize(self.text),
         )
 
 
@@ -40,7 +42,9 @@ class TokenizedExample(BaseTokenizedExample):
 
     def featurize(self, tokenizer, feat_spec):
         unpadded_inputs = construct_single_input_tokens_and_segment_ids(
-            input_tokens=self.text_tokens, tokenizer=tokenizer, feat_spec=feat_spec,
+            input_tokens=self.text_tokens,
+            tokenizer=tokenizer,
+            feat_spec=feat_spec,
         )
         input_set = create_input_set_from_tokens_and_segments(
             unpadded_tokens=unpadded_inputs.unpadded_tokens,
@@ -95,10 +99,14 @@ class TatoebaTask(Task):
 
     def get_val_examples(self):
         eng_examples = self._create_examples(
-            lines=read_file_lines(self.path_dict["eng"]), is_english=True, set_type="val",
+            lines=read_file_lines(self.path_dict["eng"]),
+            is_english=True,
+            set_type="val",
         )
         other_examples = self._create_examples(
-            lines=read_file_lines(self.path_dict["other"]), is_english=False, set_type="val",
+            lines=read_file_lines(self.path_dict["other"]),
+            is_english=False,
+            set_type="val",
         )
         return eng_examples + other_examples
 
@@ -115,7 +123,11 @@ class TatoebaTask(Task):
         examples = []
         for (i, line) in enumerate(lines):
             examples.append(
-                Example(guid="%s-%s" % (set_type, i), is_english=is_english, text=line,)
+                Example(
+                    guid="%s-%s" % (set_type, i),
+                    is_english=is_english,
+                    text=line,
+                )
             )
         return examples
 

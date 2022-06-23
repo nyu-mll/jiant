@@ -87,7 +87,11 @@ def match_path_ls(path_ls, path_pattern, format_dict=None, default_format="\\w+"
         List of matches
     """
     regex = re.compile(
-        tags_to_regex(path_pattern, format_dict=format_dict, default_format=default_format,)
+        tags_to_regex(
+            path_pattern,
+            format_dict=format_dict,
+            default_format=default_format,
+        )
     )
     result_ls = []
     for path in path_ls:

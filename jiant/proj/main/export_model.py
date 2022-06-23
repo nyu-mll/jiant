@@ -14,7 +14,8 @@ class RunConfiguration(zconf.RunConfig):
 
 
 def export_model(
-    hf_pretrained_model_name_or_path: str, output_base_path: str,
+    hf_pretrained_model_name_or_path: str,
+    output_base_path: str,
 ):
     """Retrieve model and tokenizer from Transformers and save all necessary data
     Things saved:

@@ -105,7 +105,9 @@ def create_optimizer_from_params(
         raise KeyError(optimizer_type)
 
     warmup_steps = resolve_warmup_steps(
-        t_total=t_total, warmup_steps=warmup_steps, warmup_proportion=warmup_proportion,
+        t_total=t_total,
+        warmup_steps=warmup_steps,
+        warmup_proportion=warmup_proportion,
     )
     scheduler = transformers.get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=warmup_steps, num_training_steps=t_total
@@ -145,7 +147,9 @@ def parallelize_gpu(model):
 
 def parallelize_dist(model, local_rank):
     return torch.nn.parallel.DistributedDataParallel(
-        model, device_ids=[local_rank], output_device=local_rank,
+        model,
+        device_ids=[local_rank],
+        output_device=local_rank,
     )
 
 

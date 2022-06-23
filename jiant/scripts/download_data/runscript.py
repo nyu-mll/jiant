@@ -39,7 +39,8 @@ def download_data_cli(args):
     else:
         raise RuntimeError()
     download_data(
-        task_names=task_names, output_base_path=output_base_path,
+        task_names=task_names,
+        output_base_path=output_base_path,
     )
 
 

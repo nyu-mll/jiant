@@ -139,7 +139,8 @@ def download_squad_data_and_write_config(
         file_path=train_path,
     )
     download_utils.download_file(
-        url=f"https://rajpurkar.github.io/SQuAD-explorer/dataset/{dev_file}", file_path=val_path,
+        url=f"https://rajpurkar.github.io/SQuAD-explorer/dataset/{dev_file}",
+        file_path=val_path,
     )
     py_io.write_json(
         data={
@@ -279,10 +280,12 @@ def download_mctest160_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTest.zip", task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTest.zip",
+        task_data_path,
     )
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip", task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip",
+        task_data_path,
     )
     os.rename(
         os.path.join(task_data_path, "MCTestAnswers", f"mc160.test.ans"),
@@ -322,10 +325,12 @@ def download_mctest500_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTest.zip", task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTest.zip",
+        task_data_path,
     )
     download_utils.download_and_unzip(
-        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip", task_data_path,
+        "https://mattr1.github.io/mctest/data/MCTestAnswers.zip",
+        task_data_path,
     )
     os.rename(
         os.path.join(task_data_path, "MCTestAnswers", f"mc500.test.ans"),
@@ -437,13 +442,15 @@ def download_fever_nli_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1", task_data_path,
+        "https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1",
+        task_data_path,
     )
     # Since the FEVER NLI dataset doesn't have labels for the dev set, we also download the original
     # FEVER dev set and match example CIDs to obtain labels.
     orig_dev_path = os.path.join(task_data_path, "fever-dev-temp.jsonl")
     download_utils.download_file(
-        "https://s3-eu-west-1.amazonaws.com/fever.public/shared_task_dev.jsonl", orig_dev_path,
+        "https://s3-eu-west-1.amazonaws.com/fever.public/shared_task_dev.jsonl",
+        orig_dev_path,
     )
     id_to_label = {}
     for line in py_io.read_jsonl(orig_dev_path):
@@ -495,7 +502,8 @@ def download_fever_nli_data_and_write_config(
 def download_swag_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://github.com/rowanz/swagaf/archive/master.zip", task_data_path,
+        "https://github.com/rowanz/swagaf/archive/master.zip",
+        task_data_path,
     )
     for phase in ["train", "val", "test"]:
         os.rename(
@@ -520,7 +528,8 @@ def download_swag_data_and_write_config(task_name: str, task_data_path: str, tas
 def download_qamr_data_and_write_config(task_name: str, task_data_path: str, task_config_path: str):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_unzip(
-        "https://github.com/uwnlp/qamr/archive/master.zip", task_data_path,
+        "https://github.com/uwnlp/qamr/archive/master.zip",
+        task_data_path,
     )
     data_phase_list = ["train", "dev", "test"]
     jiant_phase_list = ["train", "val", "test"]
@@ -554,7 +563,8 @@ def download_qasrl_data_and_write_config(
 ):
     os.makedirs(task_data_path, exist_ok=True)
     download_utils.download_and_untar(
-        "http://qasrl.org/data/qasrl-v2.tar", task_data_path,
+        "http://qasrl.org/data/qasrl-v2.tar",
+        task_data_path,
     )
     data_phase_list = ["train", "dev", "test"]
     jiant_phase_list = ["train", "val", "test"]
