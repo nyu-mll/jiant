@@ -45,7 +45,7 @@ extras = {}
 extras["testing"] = ["pytest", "pytest-cov", "pre-commit"]
 extras["docs"] = ["sphinx"]
 extras["quality"] = [
-    "black == 19.10b0",
+    "black == 22.10.0",
     "flake8-docstrings == 1.5.0",
     "flake8 >= 3.7.9",
     "mypy == 0.770",
@@ -72,7 +72,7 @@ setup(
         "datasets == 1.1.2",
         "nltk >= 3.5",
         "numexpr == 2.7.1",
-        "numpy == 1.19",
+        "numpy == 1.22.4",
         "pandas == 1.0.3",
         "python-Levenshtein == 0.12.0",
         "sacremoses == 0.0.43",
