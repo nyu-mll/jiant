@@ -72,7 +72,7 @@ setup(
         "datasets == 1.1.2",
         "nltk >= 3.5",
         "numexpr == 2.7.1",
-        "numpy == 1.18.4",
+        "numpy == 1.19",
         "pandas == 1.0.3",
         "python-Levenshtein == 0.12.0",
         "sacremoses == 0.0.43",
