@@ -82,7 +82,7 @@ setup(
         "sentencepiece == 0.1.91",
         "tokenizers == 0.10.1",
         "tqdm == 4.46.0",
-        "transformers == 4.5.0",
+        "transformers == 4.30.0",
         "torch >= 1.8.1",
         "torchvision == 0.9.1",
     ],
