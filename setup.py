@@ -78,7 +78,7 @@ setup(
         "sacremoses == 0.0.43",
         "seqeval == 0.0.12",
         "scikit-learn == 0.22.2.post1",
-        "scipy == 1.4.1",
+        "scipy == 1.10.0",
         "sentencepiece == 0.1.91",
         "tokenizers == 0.10.1",
         "tqdm == 4.46.0",
